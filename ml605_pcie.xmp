@@ -24,8 +24,3 @@ UcfFile: data/ml605_pcie.ucf
 EnableParTimingError: 1
 ShowLicenseDialog: 1
 BInfo: 
-#ICacheAddr: DDR3_SDRAM,C_S_AXI_BASEADDR
-#DCacheAddr: DDR3_SDRAM,C_S_AXI_BASEADDR
-#Processor: microblaze_0
-#ElfImp: 
-#ElfSim: 

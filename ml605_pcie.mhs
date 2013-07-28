@@ -10,6 +10,7 @@
 # ##############################################################################
  PARAMETER VERSION = 2.1.0
 
+
  PORT RESET = RESET, DIR = I, SIGIS = RST, RST_POLARITY = 1
  PORT PCI_Express_pci_exp_txp = PCI_Express_pci_exp_txp, DIR = O, VEC = [3:0]
  PORT PCI_Express_pci_exp_txn = PCI_Express_pci_exp_txn, DIR = O, VEC = [3:0]
@@ -177,3 +178,4 @@ BEGIN axi_dma
  PORT m_axi_mm2s_aclk = clk_100_0000MHzMMCM0
  PORT m_axi_s2mm_aclk = clk_100_0000MHzMMCM0
 END
+
