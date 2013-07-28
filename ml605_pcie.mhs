@@ -37,9 +37,7 @@ BEGIN proc_sys_reset
  PARAMETER HW_VER = 3.00.a
  PARAMETER C_EXT_RESET_HIGH = 1
  PARAMETER C_AUX_RESET_HIGH = 0
- PORT MB_Debug_Sys_Rst = proc_sys_reset_0_MB_Debug_Sys_Rst
  PORT Dcm_locked = proc_sys_reset_0_Dcm_locked
- PORT MB_Reset = proc_sys_reset_0_MB_Reset
  PORT Slowest_sync_clk = clk_100_0000MHzMMCM0
  PORT Interconnect_aresetn = proc_sys_reset_0_Interconnect_aresetn
  PORT Ext_Reset_In = RESET
@@ -69,22 +67,22 @@ BEGIN clock_generator
  PORT CLKOUT1 = clk_200_0000MHzMMCM0
  PORT CLKIN = CLK
  PORT PSCLK = clk_200_0000MHzMMCM0
- PORT PSEN = psen
- PORT PSINCDEC = psincdec
- PORT PSDONE = psdone
+# PORT PSEN = psen
+# PORT PSINCDEC = psincdec
+# PORT PSDONE = psdone
 END
 
-BEGIN axi2axi_connector
- PARAMETER INSTANCE = axi4lite_0_to_axi4_0_connector
- PARAMETER HW_VER = 1.00.a
- PARAMETER C_S_AXI_NUM_ADDR_RANGES = 2
- PARAMETER C_S_AXI_RNG00_BASEADDR = 0x72e20000
- PARAMETER C_S_AXI_RNG00_HIGHADDR = 0x72e2ffff
- PARAMETER C_S_AXI_RNG01_BASEADDR = 0x74000000
- PARAMETER C_S_AXI_RNG01_HIGHADDR = 0x77ffffff
- BUS_INTERFACE M_AXI = axi4_0
- BUS_INTERFACE S_AXI = axi4lite_0
-END
+#BEGIN axi2axi_connector
+# PARAMETER INSTANCE = axi4lite_0_to_axi4_0_connector
+# PARAMETER HW_VER = 1.00.a
+# PARAMETER C_S_AXI_NUM_ADDR_RANGES = 2
+# PARAMETER C_S_AXI_RNG00_BASEADDR = 0x72e20000
+# PARAMETER C_S_AXI_RNG00_HIGHADDR = 0x72e2ffff
+# PARAMETER C_S_AXI_RNG01_BASEADDR = 0x74000000
+# PARAMETER C_S_AXI_RNG01_HIGHADDR = 0x77ffffff
+# BUS_INTERFACE M_AXI = axi4_0
+# BUS_INTERFACE S_AXI = axi4lite_0
+#END
 
 BEGIN axi_interconnect
  PARAMETER INSTANCE = axi4lite_0
@@ -138,13 +136,13 @@ BEGIN axi_pcie
  PARAMETER C_S_AXI_CTL_ACLK_FREQ_HZ = 125000000
  PARAMETER C_AXI_ACLK_FREQ_HZ = 125000000
  PARAMETER C_FAMILY = virtex6
- PARAMETER C_INTERCONNECT_S_AXI_MASTERS = axi_dma_0.M_AXI_SG & axi_dma_0.M_AXI_MM2S & axi_dma_0.M_AXI_S2MM & axi4lite_0_to_axi4_0_connector.M_AXI
+ PARAMETER C_INTERCONNECT_S_AXI_MASTERS = axi_dma_0.M_AXI_SG & axi_dma_0.M_AXI_MM2S & axi_dma_0.M_AXI_S2MM
  PARAMETER C_AXIBAR_0 = 0x72e20000
  PARAMETER C_AXIBAR_HIGHADDR_0 = 0x72e2ffff
  PARAMETER C_BASEADDR = 0x72e00000
  PARAMETER C_HIGHADDR = 0x72e0ffff
  BUS_INTERFACE S_AXI_CTL = axi4lite_0
- BUS_INTERFACE M_AXI = axi4_0
+ BUS_INTERFACE M_AXI = axi4lite_0
  BUS_INTERFACE S_AXI = axi4_0
  PORT pci_exp_txp = PCI_Express_pci_exp_txp
  PORT pci_exp_txn = PCI_Express_pci_exp_txn
@@ -173,9 +171,37 @@ BEGIN axi_dma
  BUS_INTERFACE M_AXI_SG = axi4_0
  BUS_INTERFACE M_AXI_MM2S = axi4_0
  BUS_INTERFACE M_AXI_S2MM = axi4_0
+ BUS_INTERFACE M_AXIS_MM2S = M_AXIS_MM2S_0
+ BUS_INTERFACE S_AXIS_S2MM = S_AXIS_S2MM_0
+ BUS_INTERFACE M_AXIS_MM2S_CNTRL = M_AXIS_MM2S_CNTRL_0
+ BUS_INTERFACE S_AXIS_S2MM_STS = S_AXIS_S2MM_STS_0
  PORT s_axi_lite_aclk = clk_100_0000MHzMMCM0
  PORT m_axi_sg_aclk = clk_100_0000MHzMMCM0
  PORT m_axi_mm2s_aclk = clk_100_0000MHzMMCM0
  PORT m_axi_s2mm_aclk = clk_100_0000MHzMMCM0
+ PORT mm2s_prmry_reset_out_n = mm2s_prmry_reset_out_n_0
+ PORT mm2s_cntrl_reset_out_n = mm2s_cntrl_reset_out_n_0
+ PORT s2mm_prmry_reset_out_n = s2mm_prmry_reset_out_n_0
+ PORT s2mm_sts_reset_out_n = s2mm_sts_reset_out_n_0
 END
 
+BEGIN axi_aes
+ PARAMETER INSTANCE = axi_aes_0
+ PARAMETER HW_VER = 1.00.a
+ PARAMETER C_BASEADDR = 0x41f00000
+ PARAMETER C_HIGHADDR = 0x41f0ffff
+ PARAMETER C_M_AXIS_MM2S_TDATA_WIDTH = 128
+ PARAMETER C_S_AXIS_S2MM_TDATA_WIDTH = 128
+ BUS_INTERFACE S_AXI_LITE = axi4lite_0
+ BUS_INTERFACE M_AXIS_MM2S = M_AXIS_MM2S_0
+ BUS_INTERFACE S_AXIS_S2MM = S_AXIS_S2MM_0
+ BUS_INTERFACE M_AXIS_MM2S_CNTRL = M_AXIS_MM2S_CNTRL_0
+ BUS_INTERFACE S_AXIS_S2MM_STS = S_AXIS_S2MM_STS_0
+ PORT s_axi_lite_aclk = clk_100_0000MHzMMCM0
+ PORT m_axi_mm2s_aclk = clk_100_0000MHzMMCM0
+ PORT m_axi_s2mm_aclk = clk_100_0000MHzMMCM0
+ PORT mm2s_prmry_reset_out_n = mm2s_prmry_reset_out_n_0
+ PORT mm2s_cntrl_reset_out_n = mm2s_cntrl_reset_out_n_0
+ PORT s2mm_prmry_reset_out_n = s2mm_prmry_reset_out_n_0
+ PORT s2mm_sts_reset_out_n = s2mm_sts_reset_out_n_0
+END
