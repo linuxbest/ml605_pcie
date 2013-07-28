@@ -1,0 +1,135 @@
+#
+# pin constraints
+#
+NET CLK_N LOC = "H9"  |  DIFF_TERM = "TRUE"  |  IOSTANDARD = "LVDS_25";
+NET CLK_P LOC = "J9"  |  DIFF_TERM = "TRUE"  |  IOSTANDARD = "LVDS_25";
+NET RESET LOC = "H10"  |  IOSTANDARD = "SSTL15"  |  TIG;
+#
+# additional constraints
+#
+
+NET "CLK" TNM_NET = sys_clk_pin;
+TIMESPEC TS_sys_clk_pin = PERIOD sys_clk_pin 200000 kHz;
+#
+# PERSTN (input) signal.  The perstn signal should be
+# obtained from the PCI Express interface if possible.  For
+# slot based form factors, a perstn reset signal is usually
+# present on the connector.  For cable based form factors, a
+# perstn signal may not be available.  In this case, the
+# system reset signal must be generated locally by some form of
+# supervisory circuit.  You may change the IOSTANDARD and LOC
+# to suit your requirements and VCCO voltage banking rules.
+#
+
+NET "PCIe_perstn" TIG;
+NET "PCIe_perstn" LOC = AE13 | IOSTANDARD = LVCMOS25 | PULLUP | NODELAY ;
+
+
+
+###############################################################################
+#
+# Placement Constraints
+#
+###############################################################################
+
+#
+# SYS clock 250 MHz (input) signal.  The sys_clk_p and sys_clk_n
+# signals are the PCI Express reference clock. Virtex-6 GT
+# Transceiver architecture requires the use of a dedicated clock
+# resources (FPGA input pins) associated with each GT Transceiver.
+# To use these pins an IBUFDS primitive (refclk_ibuf) is
+# instantiated in user's design.
+# Please refer to the Virtex-5 GT Transceiver User Guide
+# (UG) for guidelines regarding clock resource selection.
+#
+
+INST "*/PCIe_Diff_Clk_I/USE_IBUFDS_GTXE1.GEN_IBUFDS_GTXE1[0].IBUFDS_GTXE1_I" LOC = IBUFDS_GTXE1_X0Y6;
+
+#
+# Transceiver instance placement.  This constraint selects the
+# transceivers to be used, which also dictates the pinout for the
+# transmit and receive differential pairs.  Please refer to the
+# Virtex-6 GT Transceiver User Guide (UG) for more
+# information.
+#
+
+# PCIe Lane 0
+INST "*/pcie_2_0_i/pcie_gt_i/gtx_v6_i/GTXD[0].GTX" LOC = GTXE1_X0Y15;
+
+# PCIe Lane 1
+INST "*/pcie_2_0_i/pcie_gt_i/gtx_v6_i/GTXD[1].GTX" LOC = GTXE1_X0Y14;
+
+# PCIe Lane 2
+INST "*/pcie_2_0_i/pcie_gt_i/gtx_v6_i/GTXD[2].GTX" LOC = GTXE1_X0Y13;
+
+# PCIe Lane 3
+INST "*/pcie_2_0_i/pcie_gt_i/gtx_v6_i/GTXD[3].GTX" LOC = GTXE1_X0Y12;
+
+#
+# PCI Express Block placement. This constraint selects the PCI Express
+# Block to be used.
+#
+
+INST "*/pcie_2_0_i/pcie_block_i" LOC = PCIE_X0Y1;
+
+
+#
+# MMCM Placment. This constraint selects the MMCM placement.
+#
+
+# (from CoreGen) INST "core*/pcie_clocking_i/mmcm_adv_i" LOC = MMCM_ADV_X0Y7;
+INST "*/pcie_clocking_i/mmcm_adv_i" LOC = MMCM_ADV_X0Y7;
+
+
+
+
+
+###############################################################################
+#
+# Timing Constraints
+#
+###############################################################################
+
+
+# 100 MHz Reference Clock
+NET "PCIe_Diff_Clk" TNM_NET = "SYSCLK" ;
+
+# 250MHz Refclk
+# TIMESPEC "TS_SYSCLK"  = PERIOD "SYSCLK" 250.00 MHz HIGH 50 % ;
+# 100MHz Refclk
+TIMESPEC "TS_SYSCLK"  = PERIOD "SYSCLK" 100.00 MHz HIGH 50 % ;
+# 125 MHz Clock on output of MMCM
+# (need to update this constraint to a derived constraint, and
+# only constrain the input clock to the MMCM module)
+
+NET "*/pcie_clocking_i/clk_125" TNM_NET = "CLK_125" ;
+
+# 250MHz Refclk
+# TIMESPEC "TS_CLK_125" = PERIOD "CLK_125" TS_SYSCLK/2.0 HIGH 50 % PRIORITY 1;
+# 100 MHz Refclk
+TIMESPEC "TS_CLK_125" = PERIOD "CLK_125" TS_SYSCLK/0.8 HIGH 50 % PRIORITY 1;
+
+
+# (updated constraints from CoreGen)
+PIN "*/trn_reset_n_int_i.CLR" TIG;
+PIN "*/trn_reset_n_i.CLR" TIG;
+PIN "*/pcie_clocking_i/mmcm_adv_i.RST" TIG;
+
+
+# New Multi-Cycle Constraints from PCIe hard block
+
+NET "*/sig_blk_command<2>" TPTHRU = "TP_SIG_BLK_COMMAND";
+
+NET "*/sig_blk_dcontrol<5>" TPTHRU = "TP_SIG_BLK_DCONTROL";
+NET "*/sig_blk_dcontrol<6>" TPTHRU = "TP_SIG_BLK_DCONTROL";
+NET "*/sig_blk_dcontrol<7>" TPTHRU = "TP_SIG_BLK_DCONTROL";
+NET "*/sig_blk_dcontrol<12>" TPTHRU = "TP_SIG_BLK_DCONTROL";
+NET "*/sig_blk_dcontrol<13>" TPTHRU = "TP_SIG_BLK_DCONTROL";
+NET "*/sig_blk_dcontrol<14>" TPTHRU = "TP_SIG_BLK_DCONTROL";
+
+
+INST "*/comp_enhanced_core_top_wrap/*/pcie_block_i" TNM_NET = "TNM_PCIE_HARD_BLOCK";
+
+TIMESPEC TS_SIG_BLK_COMMAND = FROM "TNM_PCIE_HARD_BLOCK" THRU "TP_SIG_BLK_COMMAND" TO FFS TIG;
+TIMESPEC TS_SIG_BLK_DCONTROL = FROM "TNM_PCIE_HARD_BLOCK" THRU "TP_SIG_BLK_DCONTROL" TO FFS TIG;
+
