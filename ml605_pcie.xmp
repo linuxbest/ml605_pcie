@@ -17,7 +17,7 @@ SdkExportBmmBit: 1
 SdkExportDir: SDK/SDK_Export
 InsertNoPads: 0
 WarnForEAArch: 1
-HdlLang: VHDL
+HdlLang: Verilog
 SimModel: BEHAVIORAL
 ExternalMemSim: 0
 UcfFile: data/ml605_pcie.ucf

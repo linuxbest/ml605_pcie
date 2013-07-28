@@ -67,22 +67,7 @@ BEGIN clock_generator
  PORT CLKOUT1 = clk_200_0000MHzMMCM0
  PORT CLKIN = CLK
  PORT PSCLK = clk_200_0000MHzMMCM0
-# PORT PSEN = psen
-# PORT PSINCDEC = psincdec
-# PORT PSDONE = psdone
 END
-
-#BEGIN axi2axi_connector
-# PARAMETER INSTANCE = axi4lite_0_to_axi4_0_connector
-# PARAMETER HW_VER = 1.00.a
-# PARAMETER C_S_AXI_NUM_ADDR_RANGES = 2
-# PARAMETER C_S_AXI_RNG00_BASEADDR = 0x72e20000
-# PARAMETER C_S_AXI_RNG00_HIGHADDR = 0x72e2ffff
-# PARAMETER C_S_AXI_RNG01_BASEADDR = 0x74000000
-# PARAMETER C_S_AXI_RNG01_HIGHADDR = 0x77ffffff
-# BUS_INTERFACE M_AXI = axi4_0
-# BUS_INTERFACE S_AXI = axi4lite_0
-#END
 
 BEGIN axi_interconnect
  PARAMETER INSTANCE = axi4lite_0
@@ -205,3 +190,4 @@ BEGIN axi_aes
  PORT s2mm_prmry_reset_out_n = s2mm_prmry_reset_out_n_0
  PORT s2mm_sts_reset_out_n = s2mm_sts_reset_out_n_0
 END
+
