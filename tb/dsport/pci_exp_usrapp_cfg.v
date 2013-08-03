@@ -208,7 +208,7 @@ begin
   cfg_rd_en_n <= #(Tcq) 1'b0;
 
   $display("[%t] : Reading Cfg Addr [0x%h]", $realtime, addr_);
-  $fdisplay(board.RP.com_usrapp.tx_file_ptr,
+  $fdisplay(ml605_pcie_tb.RP.com_usrapp.tx_file_ptr,
             "\n[%t] : Local Configuration Read Access :", 
             $realtime);
                  
@@ -217,7 +217,7 @@ begin
   wait ( cfg_rd_wr_done_n == 1'b0)
   #(Tcq);
 
-  $fdisplay(board.RP.com_usrapp.tx_file_ptr,
+  $fdisplay(ml605_pcie_tb.RP.com_usrapp.tx_file_ptr,
             "\t\t\tCfg Addr [0x%h] -> Data [0x%h]\n", 
             {addr_,2'b00}, cfg_do);
   cfg_rd_en_n <= #(Tcq) 1'b1;
@@ -257,7 +257,7 @@ begin
   cfg_rd_en_n <= #(Tcq) 1'b1;
 
   $display("[%t] : Writing Cfg Addr [0x%h]", $realtime, addr_);
-  $fdisplay(board.RP.com_usrapp.tx_file_ptr,
+  $fdisplay(ml605_pcie_tb.RP.com_usrapp.tx_file_ptr,
             "\n[%t] : Local Configuration Write Access :",
             $realtime);
 

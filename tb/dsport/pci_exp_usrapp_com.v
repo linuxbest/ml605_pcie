@@ -584,13 +584,13 @@ end
 
         if (txrx) begin
 
-          board.RP.com_usrapp.frame_store_tx[board.RP.com_usrapp.frame_store_tx_idx] = _byte;
-          board.RP.com_usrapp.frame_store_tx_idx = board.RP.com_usrapp.frame_store_tx_idx + 1;
+          ml605_pcie_tb.RP.com_usrapp.frame_store_tx[ml605_pcie_tb.RP.com_usrapp.frame_store_tx_idx] = _byte;
+          ml605_pcie_tb.RP.com_usrapp.frame_store_tx_idx = ml605_pcie_tb.RP.com_usrapp.frame_store_tx_idx + 1;
 
         end else begin
 
-          board.RP.com_usrapp.frame_store_rx[board.RP.com_usrapp.frame_store_rx_idx] = _byte;
-          board.RP.com_usrapp.frame_store_rx_idx = board.RP.com_usrapp.frame_store_rx_idx + 1;
+          ml605_pcie_tb.RP.com_usrapp.frame_store_rx[ml605_pcie_tb.RP.com_usrapp.frame_store_rx_idx] = _byte;
+          ml605_pcie_tb.RP.com_usrapp.frame_store_rx_idx = ml605_pcie_tb.RP.com_usrapp.frame_store_rx_idx + 1;
         end
 
       end
