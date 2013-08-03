@@ -9,6 +9,8 @@ vlog -novopt -work axi_aes_v1_00_a "../../pcores/axi_aes_v1_00_a/hdl/verilog/axi
 
 vlog -novopt -work work "ml605_pcie_tb.v"
 
+do ml605_pcie_setup.do
+
 s
 w
 
