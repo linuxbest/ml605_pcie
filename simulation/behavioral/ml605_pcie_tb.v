@@ -74,7 +74,6 @@ module ml605_pcie_tb
     end
 
   // Reset Generator for RESET
-
   initial
     begin
       RESET = 1'b1;
@@ -86,6 +85,34 @@ module ml605_pcie_tb
   // User: Put your stimulus here. Code in this
   //       section will not be overwritten.
 
+   //
+   // PCI-Express Model Root Port Instance
+   //
+   xilinx_pcie_2_0_rport_v6 
+     # (.REF_CLK_FREQ(0),
+	.PL_FAST_TRAIN("TRUE"),
+	.LINK_CAP_MAX_LINK_WIDTH(6'h01),
+	.DEVICE_ID(16'h6011),
+	.ALLOW_X8_GEN2("FALSE"),
+	.LINK_CAP_MAX_LINK_SPEED(4'h1),
+	.LINK_CTRL2_TARGET_LINK_SPEED(4'h1),
+	.DEV_CAP_MAX_PAYLOAD_SUPPORTED(3'h2),
+	.VC0_TX_LASTPACKET(29),
+	.VC0_RX_RAM_LIMIT(13'h7FF),
+	.VC0_CPL_INFINITE("TRUE"),
+	.VC0_TOTAL_CREDITS_PD(308),
+	.VC0_TOTAL_CREDITS_CD(308),
+	.USER_CLK_FREQ(1))
+   RP (// SYS Inteface
+       .sys_clk    (CLK_P),
+       .sys_reset_n(~RESET),
+       
+       // PCI-Express Interface
+       .pci_exp_txn(PCI_Express_pci_exp_txn), // OUTPUT
+       .pci_exp_txp(PCI_Express_pci_exp_txp), // OUTPUT
+       .pci_exp_rxn(PCI_Express_pci_exp_rxn), // INPUT
+       .pci_exp_rxp(PCI_Express_pci_exp_rxp)); // INPUT
+   
   // END USER CODE (Do not remove this line)
 
 endmodule
