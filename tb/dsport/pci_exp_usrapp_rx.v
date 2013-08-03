@@ -56,7 +56,7 @@
 
 `include "board_common.v"
 
-`define EXPECT_FINISH_CHECK board.RP.tx_usrapp.expect_finish_check
+`define EXPECT_FINISH_CHECK ml605_pcie_tb.RP.tx_usrapp.expect_finish_check
 module pci_exp_usrapp_rx                   (
                      
                                            trn_rdst_rdy_n,
@@ -170,7 +170,7 @@ always @(posedge trn_clk or negedge trn_reset_n) begin
               (trn_rsrc_rdy_n == 1'b0) &&
                (trn_rdst_rdy_n == 1'b0)  ) begin
 
-          board.RP.com_usrapp.TSK_READ_DATA(0, `RX_LOG, trn_rd, trn_rrem_n);
+          ml605_pcie_tb.RP.com_usrapp.TSK_READ_DATA(0, `RX_LOG, trn_rd, trn_rrem_n);
 
           trn_rx_state <= #(Tcq) `TRN_RX_ACTIVE;
 
@@ -197,15 +197,15 @@ always @(posedge trn_clk or negedge trn_reset_n) begin
                 (trn_reof_n == 1'b0) &&
                  (trn_rdst_rdy_n == 1'b0)  ) begin
 
-        board.RP.com_usrapp.TSK_READ_DATA(1, `RX_LOG, trn_rd, trn_rrem_n);
-        board.RP.com_usrapp.TSK_PARSE_FRAME(`RX_LOG);
+        ml605_pcie_tb.RP.com_usrapp.TSK_READ_DATA(1, `RX_LOG, trn_rd, trn_rrem_n);
+        ml605_pcie_tb.RP.com_usrapp.TSK_PARSE_FRAME(`RX_LOG);
 
         trn_rx_state <= #(Tcq) `TRN_RX_IDLE;
 
       end else if (  (trn_rsrc_rdy_n == 1'b0) &&
                      (trn_rdst_rdy_n == 1'b0)  ) begin
 
-        board.RP.com_usrapp.TSK_READ_DATA(0, `RX_LOG, trn_rd, trn_rrem_n);
+        ml605_pcie_tb.RP.com_usrapp.TSK_READ_DATA(0, `RX_LOG, trn_rd, trn_rrem_n);
 
         trn_rx_state <= #(Tcq) `TRN_RX_ACTIVE;
 
@@ -213,8 +213,8 @@ always @(posedge trn_clk or negedge trn_reset_n) begin
           (trn_reof_n == 1'b0) &&
           (trn_rsrc_dsc_n == 1'b0)  ) begin
 
-        board.RP.com_usrapp.TSK_READ_DATA(1, `RX_LOG, trn_rd, trn_rrem_n);
-        board.RP.com_usrapp.TSK_PARSE_FRAME(`RX_LOG);
+        ml605_pcie_tb.RP.com_usrapp.TSK_READ_DATA(1, `RX_LOG, trn_rd, trn_rrem_n);
+        ml605_pcie_tb.RP.com_usrapp.TSK_PARSE_FRAME(`RX_LOG);
 
         trn_rx_state <= #(Tcq) `TRN_RX_SRC_DSC;
 

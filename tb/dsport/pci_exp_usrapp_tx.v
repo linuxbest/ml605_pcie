@@ -1605,7 +1605,7 @@ end
                 last_ = (trn_trem_n == 8'h00) ? 0 : 1;
 
                 // read data driven into memory
-                board.RP.com_usrapp.TSK_READ_DATA(last_,
+                ml605_pcie_tb.RP.com_usrapp.TSK_READ_DATA(last_,
                                                                             `TX_LOG,
                                                                             trn_td,
                                                                             trn_trem_n);
@@ -1614,7 +1614,7 @@ end
 
             if (last_call_)
 
-                 board.RP.com_usrapp.TSK_PARSE_FRAME(`TX_LOG);
+                 ml605_pcie_tb.RP.com_usrapp.TSK_PARSE_FRAME(`TX_LOG);
         end
     endtask // TSK_TX_SYNCHRONIZE
 
@@ -1661,7 +1661,7 @@ end
   task TSK_SIMULATION_TIMEOUT;
     input [31:0] timeout;
     begin
-      force board.RP.rx_usrapp.sim_timeout = timeout;
+      force ml605_pcie_tb.RP.rx_usrapp.sim_timeout = timeout;
     end
   endtask
 
@@ -2451,40 +2451,40 @@ end
     $display("[%t] : Reading Local Configuration Space via CFG interface...", $realtime);
 
     CFG_DWADDR = 10'h0;
-    board.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
+    ml605_pcie_tb.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
 
     CFG_DWADDR = 10'h4;
-    board.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
+    ml605_pcie_tb.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
 
     CFG_DWADDR = 10'h5;
-    board.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
+    ml605_pcie_tb.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
 
     CFG_DWADDR = 10'h6;
-    board.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
+    ml605_pcie_tb.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
 
     CFG_DWADDR = 10'h7;
-    board.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
+    ml605_pcie_tb.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
 
     CFG_DWADDR = 10'h8;
-    board.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
+    ml605_pcie_tb.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
 
     CFG_DWADDR = 10'h9;
-    board.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
+    ml605_pcie_tb.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
 
     CFG_DWADDR = 10'hc;
-    board.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
+    ml605_pcie_tb.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
 
     CFG_DWADDR = 10'h17;
-    board.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
+    ml605_pcie_tb.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
 
     CFG_DWADDR = 10'h18;
-    board.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
+    ml605_pcie_tb.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
 
     CFG_DWADDR = 10'h19;
-    board.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
+    ml605_pcie_tb.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
 
     CFG_DWADDR = 10'h1a;
-    board.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
+    ml605_pcie_tb.RP.cfg_usrapp.TSK_READ_CFG_DW(CFG_DWADDR);
 
       end
     endtask // TSK_CFG_READBACK_CONFIG
