@@ -45,45 +45,45 @@
 // Code:
 module axi_aes (/*AUTOARG*/
    // Outputs
-   s_axi_lite_wready, s_axi_lite_bresp, s_axi_lite_bvalid,
-   s_axi_lite_arready, s_axi_lite_rvalid, s_axi_lite_rdata,
-   s_axi_lite_rresp, m_axis_mm2s_tready, m_axis_mm2s_cntrl_tready,
-   s_axis_s2mm_tdata, s_axis_s2mm_tkeep, m_axis_s2mm_tvalid,
-   m_axis_s2mm_tlast, m_axis_s2mm_tuser, m_axis_s2mm_tid,
-   m_axis_s2mm_tdest, s_axis_s2mm_sts_tdata, s_axis_s2mm_sts_tkeep,
-   s_axis_s2mm_sts_tvalid, s_axis_s2mm_sts_tlast,
+   s_axi_lite_awready, s_axi_lite_wready, s_axi_lite_bresp,
+   s_axi_lite_bvalid, s_axi_lite_arready, s_axi_lite_rvalid,
+   s_axi_lite_rdata, s_axi_lite_rresp, m_axis_mm2s_tready,
+   m_axis_mm2s_cntrl_tready, s_axis_s2mm_tdata, s_axis_s2mm_tkeep,
+   s_axis_s2mm_tvalid, s_axis_s2mm_tlast, s_axis_s2mm_tuser,
+   s_axis_s2mm_tid, s_axis_s2mm_tdest, s_axis_s2mm_sts_tdata,
+   s_axis_s2mm_sts_tkeep, s_axis_s2mm_sts_tvalid,
+   s_axis_s2mm_sts_tlast,
    // Inputs
-   s_axi_lite_aclk, s_axi_mm2s_aclk, s_axi_s2mm_aclk, axi_resetn,
-   s_axi_lite_awvalid, s_axi_lite_awready, s_axi_lite_awaddr,
-   s_axi_lite_wvalid, s_axi_lite_wdata, s_axi_lite_bready,
-   s_axi_lite_arvalid, s_axi_lite_araddr, s_axi_lite_rready,
-   mm2s_prmry_reset_out_n, m_axis_mm2s_tdata, m_axis_mm2s_tkeep,
-   m_axis_mm2s_tvalid, m_axis_mm2s_tlast, m_axis_mm2s_tuser,
-   m_axis_mm2s_tid, m_axis_mm2s_tdest, mm2s_cntrl_reset_out_n,
-   m_axis_mm2s_cntrl_tdata, m_axis_mm2s_cntrl_tkeep,
-   m_axis_mm2s_cntrl_tvalid, m_axis_mm2s_cntrl_tlast,
-   s2mm_prmry_reset_out_n, m_axis_s2mm_tready, s2mm_sts_reset_out_n,
-   s_axis_s2mm_sts_tready
+   s_axi_lite_aclk, m_axi_mm2s_aclk, m_axi_s2mm_aclk, axi_resetn,
+   s_axi_lite_awvalid, s_axi_lite_awaddr, s_axi_lite_wvalid,
+   s_axi_lite_wdata, s_axi_lite_bready, s_axi_lite_arvalid,
+   s_axi_lite_araddr, s_axi_lite_rready, mm2s_prmry_reset_out_n,
+   m_axis_mm2s_tdata, m_axis_mm2s_tkeep, m_axis_mm2s_tvalid,
+   m_axis_mm2s_tlast, m_axis_mm2s_tuser, m_axis_mm2s_tid,
+   m_axis_mm2s_tdest, mm2s_cntrl_reset_out_n, m_axis_mm2s_cntrl_tdata,
+   m_axis_mm2s_cntrl_tkeep, m_axis_mm2s_cntrl_tvalid,
+   m_axis_mm2s_cntrl_tlast, s2mm_prmry_reset_out_n,
+   s_axis_s2mm_tready, s2mm_sts_reset_out_n, s_axis_s2mm_sts_tready
    );
    parameter C_FAMILY = "virtex6";
    parameter C_INSTANCE = "axi_aes_0";
    
-   parameter C_M_AXIS_MM2S_TDATA_WIDTH = 128;
-   parameter C_S_AXIS_S2MM_TDATA_WIDTH = 128;
-   
-   parameter C_M_AXIS_MM2S_CNTRL_TDATA_WIDTH = 32;
-   parameter C_S_AXIS_S2MM_STS_TDATA_WIDTH = 32;
-
    parameter C_S_AXI_LITE_ADDR_WIDTH = 10;
    parameter C_S_AXI_LITE_DATA_WIDTH = 32;
-
+   
+   parameter C_M_AXIS_MM2S_TDATA_WIDTH = 128;
+   parameter C_M_AXIS_MM2S_CNTRL_TDATA_WIDTH = 32;
+   
+   parameter C_S_AXIS_S2MM_STS_TDATA_WIDTH = 32;
+   parameter C_S_AXIS_S2MM_TDATA_WIDTH = 128;
+   
    input s_axi_lite_aclk;
-   input s_axi_mm2s_aclk;
-   input s_axi_s2mm_aclk;
+   input m_axi_mm2s_aclk;
+   input m_axi_s2mm_aclk;
    input axi_resetn;
    
    input s_axi_lite_awvalid;
-   input s_axi_lite_awready;
+   output s_axi_lite_awready;
    input [C_S_AXI_LITE_ADDR_WIDTH-1:0] s_axi_lite_awaddr;
    
    input 			       s_axi_lite_wvalid;
@@ -122,13 +122,13 @@ module axi_aes (/*AUTOARG*/
 
    input 					   s2mm_prmry_reset_out_n;
    output [C_S_AXIS_S2MM_TDATA_WIDTH-1:0] 	   s_axis_s2mm_tdata;
-   output [(C_S_AXIS_S2MM_TDATA_WIDTH-1)/8-1:0]    s_axis_s2mm_tkeep;
-   output 					   m_axis_s2mm_tvalid;
-   output 					   m_axis_s2mm_tlast;
-   output [3:0] 				   m_axis_s2mm_tuser;
-   output [4:0] 				   m_axis_s2mm_tid;
-   output [4:0] 				   m_axis_s2mm_tdest;
-   input 					   m_axis_s2mm_tready;
+   output [(C_S_AXIS_S2MM_TDATA_WIDTH/8)-1:0]      s_axis_s2mm_tkeep;
+   output 					   s_axis_s2mm_tvalid;
+   output 					   s_axis_s2mm_tlast;
+   output [3:0] 				   s_axis_s2mm_tuser;
+   output [4:0] 				   s_axis_s2mm_tid;
+   output [4:0] 				   s_axis_s2mm_tdest;
+   input 					   s_axis_s2mm_tready;
    
    input 					   s2mm_sts_reset_out_n;
    output [C_S_AXIS_S2MM_STS_TDATA_WIDTH-1:0] 	   s_axis_s2mm_sts_tdata;
@@ -136,7 +136,37 @@ module axi_aes (/*AUTOARG*/
    output 					   s_axis_s2mm_sts_tvalid;
    output 					   s_axis_s2mm_sts_tlast;
    input 					   s_axis_s2mm_sts_tready;
+
+
+   /***************************************************************************/
+   /*AUTOREG*/
+
+
+   /***************************************************************************/
+   assign m_axis_mm2s_cntrl_tready = 0;
+   assign m_axis_mm2s_tready = 0;
+   assign s_axis_s2mm_tdest = 0;
+   assign s_axis_s2mm_tlast = 0;
+   assign s_axis_s2mm_tuser = 0;
+   assign s_axis_s2mm_tvalid = 0;
+   assign s_axis_s2mm_tid = 0;
    
+   assign s_axi_lite_arready = 0;
+   assign s_axi_lite_awready = 0;
+   assign s_axi_lite_rdata = 0;
+   assign s_axi_lite_rresp = 0;
+   assign s_axi_lite_rvalid = 0;
+   assign s_axi_lite_wready = 0;
+   assign s_axi_lite_bresp = 0;
+   assign s_axi_lite_bvalid = 0;
+   
+   assign s_axis_s2mm_sts_tdata = 0;
+   assign s_axis_s2mm_sts_tkeep = 0;
+   assign s_axis_s2mm_sts_tlast = 0;
+   assign s_axis_s2mm_sts_tvalid = 0;
+   
+   assign s_axis_s2mm_tdata = 0;
+   assign s_axis_s2mm_tkeep = 0;
 endmodule // axi_aes
 // 
 // axi_aes.v ends here

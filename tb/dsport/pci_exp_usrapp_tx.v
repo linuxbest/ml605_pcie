@@ -396,27 +396,13 @@ end
     TSK_TX_TYPE0_CONFIGURATION_READ(DEFAULT_TAG, 12'h0, 4'hF);
     TSK_WAIT_FOR_READ_DATA;
 
-    if  (P_READ_DATA[31:16] != 16'h6011) begin
+    if  (P_READ_DATA[31:16] != 16'h0505) begin
         $display("[%t] :    Check Device/Vendor ID - FAILED", $realtime);
-        $display("[%t] : Data Error Mismatch, Parameter Data %x != Read Data %x", $realtime, 16'h6011, P_READ_DATA);
+        $display("[%t] : Data Error Mismatch, Parameter Data %x != Read Data %x", $realtime, 16'h0505, P_READ_DATA);
         error_check = 1;
     end else begin
         $display("[%t] :    Check Device/Vendor ID - PASSED", $realtime);
     end
-
-
-   // Check CMPS
-    TSK_TX_TYPE0_CONFIGURATION_READ(DEFAULT_TAG, 12'h64, 4'hF);
-    TSK_WAIT_FOR_READ_DATA;
-
-   if (P_READ_DATA[2:0] != 3'd2) begin
-        $display("[%t] :    Check CMPS ID - FAILED", $realtime);
-        $display("[%t] : Data Error Mismatch, Parameter Data %x != Read data %x", $realtime, 3'h2, P_READ_DATA);
-      error_check = 1;
-   end else begin
-        $display("[%t] :    Check CMPS ID - PASSED", $realtime);
-
-   end
 
 
    if (error_check == 0) begin
