@@ -12,7 +12,7 @@ UserCmd1:
 UserCmd1Type: 0
 UserCmd2: 
 UserCmd2Type: 0
-GenSimTB: 0
+GenSimTB: 1
 SdkExportBmmBit: 1
 SdkExportDir: SDK/SDK_Export
 InsertNoPads: 0
