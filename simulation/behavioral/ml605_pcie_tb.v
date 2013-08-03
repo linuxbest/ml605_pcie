@@ -85,6 +85,34 @@ module ml605_pcie_tb
   // User: Put your stimulus here. Code in this
   //       section will not be overwritten.
 
+   wire PCI_Express_pci_exp_rxn_wire;
+   wire PCI_Express_pci_exp_rxp_wire;
+   always @(*)
+     begin
+	PCI_Express_pci_exp_rxn = PCI_Express_pci_exp_rxn_wire;
+	PCI_Express_pci_exp_rxp = PCI_Express_pci_exp_rxp_wire;	
+     end
+
+   initial
+     begin
+	PCIe_Diff_Clk_P = 1'b0;
+	forever #(CLK_P_PERIOD/2.00)
+	  PCIe_Diff_Clk_P = ~PCIe_Diff_Clk_P;
+     end
+
+   initial
+     begin
+	PCIe_Diff_Clk_N = 1'b1;
+	forever #(CLK_N_PERIOD/2.00)
+	  PCIe_Diff_Clk_N = ~PCIe_Diff_Clk_N;
+     end
+
+  initial
+    begin
+      PCIe_perstn = 1'b0;
+       #(RESET_LENGTH*10)
+      PCIe_perstn = ~PCIe_perstn;
+    end
    //
    // PCI-Express Model Root Port Instance
    //
@@ -108,10 +136,10 @@ module ml605_pcie_tb
        .sys_reset_n(~RESET),
        
        // PCI-Express Interface
-       .pci_exp_txn(PCI_Express_pci_exp_txn), // OUTPUT
-       .pci_exp_txp(PCI_Express_pci_exp_txp), // OUTPUT
-       .pci_exp_rxn(PCI_Express_pci_exp_rxn), // INPUT
-       .pci_exp_rxp(PCI_Express_pci_exp_rxp)); // INPUT
+       .pci_exp_txn(PCI_Express_pci_exp_rxn_wire), // OUTPUT
+       .pci_exp_txp(PCI_Express_pci_exp_rxp_wire), // OUTPUT
+       .pci_exp_rxn(PCI_Express_pci_exp_txn),  // INPUT
+       .pci_exp_rxp(PCI_Express_pci_exp_txp)); // INPUT
    
   // END USER CODE (Do not remove this line)
 

@@ -6,3 +6,8 @@ vlog -work work \
       -f ../../tb/ml605/board.f
 
 vlog -novopt -incr -work work "ml605_pcie_tb.v"
+
+s
+w
+
+run 80us
