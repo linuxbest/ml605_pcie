@@ -236,6 +236,8 @@ module axi_aes (/*AUTOARG*/
 
    wire aes_rd_fifo;
    wire aes_rd_empty;
+   wire [C_S_AXIS_S2MM_TDATA_WIDTH-1:0] s_axis_s2mm_tdata;
+   wire 				s_axis_s2mm_tlast;   
    axi_async_fifo #(.C_FAMILY              (C_FAMILY),
 		    .C_FIFO_DEPTH          (256),
 		    .C_PROG_FULL_THRESH    (128),
@@ -259,15 +261,75 @@ module axi_aes (/*AUTOARG*/
    assign m_axis_mm2s_tready = ~aes_rd_full;
    assign s_axis_s2mm_tvalid = ~aes_rd_empty;
    /***************************************************************************/
+   localparam C_STS_CNT = 4'h6;
+   reg [3:0] 				sts_cnt;
+   reg 					sts_wr_en;
+   reg 					sts_wr_last;
+   reg [31:0] 				sts_wr_din;
+   always @(posedge m_axi_mm2s_aclk)
+     begin
+	if (~mm2s_prmry_reset_out_n)
+	  begin
+	     sts_cnt <= #1 0;
+	  end
+	else if (s_axis_s2mm_tready & s_axis_s2mm_tvalid & s_axis_s2mm_tlast)
+	  begin
+	     sts_cnt <= #1 C_STS_CNT;
+	  end
+	else if (sts_wr_en && sts_cnt != 0)
+	  begin
+	     sts_cnt <= #1 sts_cnt - 1'b1;
+	  end
+     end // always @ (posedge m_axi_mm2s_aclk)
+   always @(posedge m_axi_mm2s_aclk)
+     begin
+	if (sts_cnt == C_STS_CNT && ~sts_wr_en)
+	  begin
+	     sts_wr_din <= #1 32'h5000_0000;
+	  end
+	else
+	  begin
+	     sts_wr_din <= #1 32'h0;
+	  end
+     end // always @ (posedge m_axi_mm2s_aclk)
+   always @(posedge m_axi_mm2s_aclk)
+     begin
+	sts_wr_en   <= #1 sts_cnt != 0;
+	sts_wr_last <= #1 sts_cnt == 0;
+     end
+   wire sts_rd_fifo;
+   wire sts_rd_empty;
+
+   wire [C_S_AXIS_S2MM_STS_TDATA_WIDTH-1:0] s_axis_s2mm_sts_tdata;
+   wire 				    s_axis_s2mm_sts_tlast;
+   axi_async_fifo #(.C_FAMILY              (C_FAMILY),
+		    .C_FIFO_DEPTH          (256),
+		    .C_PROG_FULL_THRESH    (128),
+		    .C_DATA_WIDTH          (33),
+		    .C_PTR_WIDTH           (8),
+		    .C_MEMORY_TYPE         (1),
+		    .C_COMMON_CLOCK        (1),
+		    .C_IMPLEMENTATION_TYPE (0),
+		    .C_SYNCHRONIZER_STAGE  (2))
+   sts_fifo (.rst      (~mm2s_prmry_reset_out_n),
+	     .wr_clk   (m_axi_mm2s_aclk),
+	     .rd_clk   (m_axi_mm2s_aclk),
+	     .sync_clk (m_axi_mm2s_aclk),
+	     .din      ({sts_wr_last, sts_wr_din}),
+	     .wr_en    (sts_wr_en),
+	     .rd_en    (s_axis_s2mm_sts_tready & s_axis_s2mm_sts_tvalid),
+	     .dout     ({s_axis_s2mm_sts_tlast, s_axis_s2mm_sts_tdata}),
+	     .full     (),
+	     .empty    (sts_rd_empty),
+	     .prog_full(sts_rd_full));
+   assign s_axis_s2mm_sts_tready = ~sts_rd_full;
+   assign s_axis_s2mm_sts_tvalid = ~sts_rd_empty;
+   assign s_axis_s2mm_sts_tkeep  = 4'hf;   
+   /***************************************************************************/
    assign s_axis_s2mm_tdest = 0;
    assign s_axis_s2mm_tuser = 0;
    assign s_axis_s2mm_tid = 0;
-   assign s_axis_s2mm_tkeep = 0;
-   
-   assign s_axis_s2mm_sts_tdata = 0;
-   assign s_axis_s2mm_sts_tkeep = 0;
-   assign s_axis_s2mm_sts_tlast = 0;
-   assign s_axis_s2mm_sts_tvalid = 0;
+   assign s_axis_s2mm_tkeep = 16'hffff;
 endmodule // axi_aes
 // 
 // axi_aes.v ends here

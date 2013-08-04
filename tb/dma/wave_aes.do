@@ -85,3 +85,20 @@ if { ![info exists aespath] } { set aespath "/dma_tb_tb${ps}dut/axi_aes_0/axi_ae
  eval add wave -noupdate $binopt $aespath${ps}aes_fifo${ps}full
  eval add wave -noupdate $binopt $aespath${ps}aes_fifo${ps}empty
  eval add wave -noupdate $binopt $aespath${ps}aes_fifo${ps}prog_full
+ 
+ eval add wave -noupdate -divider {"aes sts fifo"}
+ eval add wave -noupdate $binopt $aespath${ps}sts_fifo${ps}wr_clk
+ eval add wave -noupdate $binopt $aespath${ps}sts_fifo${ps}rst
+
+ eval add wave -noupdate $hexopt $aespath${ps}sts_fifo${ps}din
+ eval add wave -noupdate $binopt $aespath${ps}sts_fifo${ps}wr_en
+ 
+ eval add wave -noupdate $binopt $aespath${ps}sts_fifo${ps}rd_en
+ eval add wave -noupdate $hexopt $aespath${ps}sts_fifo${ps}dout
+ eval add wave -noupdate $binopt $aespath${ps}sts_fifo${ps}full
+ eval add wave -noupdate $binopt $aespath${ps}sts_fifo${ps}empty
+ eval add wave -noupdate $binopt $aespath${ps}sts_fifo${ps}prog_full
+
+ eval add wave -noupdate $hexopt $aespath${ps}sts_cnt
+ eval add wave -noupdate $binopt $aespath${ps}sts_wr_en
+ eval add wave -noupdate $hexopt $aespath${ps}sts_wr_din
