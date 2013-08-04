@@ -14,6 +14,7 @@
  PORT RESET = RESET, DIR = I, SIGIS = RST, RST_POLARITY = 1
  PORT CLK = CLK, DIR = I, SIGIS = CLK, CLK_FREQ = 200000000
 
+
 BEGIN proc_sys_reset
  PARAMETER INSTANCE = proc_sys_reset_0
  PARAMETER HW_VER = 3.00.a
@@ -35,7 +36,6 @@ BEGIN clock_generator
  PORT CLKOUT0 = clk_100_0000MHzMMCM0
  PORT RST = RESET
  PORT CLKIN = CLK
- PORT PSCLK = clk_200_0000MHzMMCM0
 END
 
 BEGIN axi_interconnect
@@ -101,5 +101,31 @@ BEGIN axi_aes
  PORT mm2s_cntrl_reset_out_n = mm2s_cntrl_reset_out_n_0
  PORT s2mm_prmry_reset_out_n = s2mm_prmry_reset_out_n_0
  PORT s2mm_sts_reset_out_n = s2mm_sts_reset_out_n_0
+END
+
+BEGIN axi_bram_ctrl
+ PARAMETER INSTANCE = axi_bram_ctrl_0
+ PARAMETER HW_VER = 1.03.a
+ PARAMETER C_S_AXI_BASEADDR = 0x00000000
+ PARAMETER C_S_AXI_HIGHADDR = 0x0000ffff
+ PARAMETER C_INTERCONNECT_S_AXI_MASTERS = axi_dma_0.M_AXI_SG & axi_dma_0.M_AXI_MM2S & axi_dma_0.M_AXI_S2MM
+ BUS_INTERFACE S_AXI = axi4_0
+ BUS_INTERFACE BRAM_PORTA = axi_bram_ctrl_0_BRAM_PORTA
+ BUS_INTERFACE BRAM_PORTB = axi_bram_ctrl_0_BRAM_PORTB
+ PORT S_AXI_ACLK = clk_100_0000MHzMMCM0
+END
+
+BEGIN bram_block
+ PARAMETER INSTANCE = bram_block_0
+ PARAMETER HW_VER = 1.00.a
+ BUS_INTERFACE PORTA = axi_bram_ctrl_0_BRAM_PORTA
+ BUS_INTERFACE PORTB = axi_bram_ctrl_0_BRAM_PORTB
+END
+
+BEGIN axi_master_lite_sc 
+ PARAMETER INSTANCE = axi_master_lite_sc_0
+ PARAMETER HW_VER = 2.00.a
+ BUS_INTERFACE M_AXI_LITE = axi4lite_0
+ PORT m_axi_lite_aclk = clk_100_0000MHzMMCM0
 END
 
