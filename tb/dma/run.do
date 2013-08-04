@@ -14,4 +14,6 @@ do dma_tb_setup.do
 s
 w
 
-run 20us
+do ../../tb/dma/wave_aes.do
+
+run 80us
