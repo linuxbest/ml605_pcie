@@ -182,6 +182,11 @@ module axi_aes (/*AUTOARG*/
 		.m_axis_mm2s_cntrl_tkeep(m_axis_mm2s_cntrl_tkeep[(C_M_AXIS_MM2S_CNTRL_TDATA_WIDTH/8)-1:0]),
 		.m_axis_mm2s_cntrl_tvalid(m_axis_mm2s_cntrl_tvalid),
 		.m_axis_mm2s_cntrl_tlast(m_axis_mm2s_cntrl_tlast));
+
+   aes_256 aes_256(.clk  (m_axi_mm2s_aclk),
+		   .state(m_axis_mm2s_tdata),
+		   .key  (256'h02),
+		   .out  ());
    /***************************************************************************/
    assign m_axis_mm2s_tready = 0;
    assign s_axis_s2mm_tdest = 0;

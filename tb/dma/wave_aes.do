@@ -63,3 +63,8 @@ if { ![info exists aespath] } { set aespath "/dma_tb_tb${ps}dut/axi_aes_0/axi_ae
  eval add wave -noupdate $binopt $aespath${ps}s_axis_s2mm_sts_tready
  eval add wave -noupdate $binopt $aespath${ps}s_axis_s2mm_sts_tlast
 
+ eval add wave -noupdate -divider {"aes "}
+ eval add wave -noupdate $binopt $aespath${ps}aes_256${ps}clk
+ eval add wave -noupdate $hexopt $aespath${ps}aes_256${ps}key
+ eval add wave -noupdate $hexopt $aespath${ps}aes_256${ps}state
+ eval add wave -noupdate $hexopt $aespath${ps}aes_256${ps}out
