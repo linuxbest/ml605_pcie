@@ -1,4 +1,5 @@
 #include <systemc.h>
+#include <stdint.h>
 
 SC_MODULE(axi_master_systemc)
 {
@@ -24,11 +25,13 @@ public:
 	sc_out < sc_uint<32> > ip2bus_mstwr_d;
 	sc_in  <bool> bus2ip_mstwr_dst_rdy_n;
 
-	void mem_model();
+	void master_init();
+	void iomem_out32(uint32_t off, uint32_t val);
+	uint32_t iomem_in32(uint32_t off);
 
 	SC_CTOR(axi_master_systemc)
 	{
-		SC_THREAD(mem_model);
+		SC_THREAD(master_init);
 
 	}
 
@@ -37,8 +40,49 @@ public:
 	}
 };
 
-void axi_master_systemc::mem_model(void)
+void axi_master_systemc::iomem_out32(uint32_t off, uint32_t val)
 {
+}
+
+uint32_t axi_master_systemc::iomem_in32(uint32_t off)
+{
+}
+
+static axi_master_systemc * obj;
+
+#include "osChip.h"
+
+static uint32_t base = 0xC4001000;
+
+uint32_t osChipRegRead(uint32_t addr)
+{
+	return obj->iomem_in32(addr);
+}
+
+void osChipRegWrite(uint32_t addr, uint32_t val)
+{
+	obj->iomem_out32(addr, val);
+}
+
+void systemc_stop(void)
+{
+	sc_core::sc_stop();
+}
+
+void axi_master_systemc::master_init(void)
+{
+	int i;
+
+	obj = this;
+
+	for (i = 0; i < 100; i ++) 
+		wait (bus2ip_clk->posedge_event());
+
+	osChip_init(base);
+
+	for (;;) {
+		wait (bus2ip_clk->posedge_event());
+	}
 }
 
 
