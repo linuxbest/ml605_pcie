@@ -42,10 +42,44 @@ public:
 
 void axi_master_systemc::iomem_out32(uint32_t off, uint32_t val)
 {
+	ip2bus_mstwr_req.write(1);
+	ip2bus_mst_addr.write(off);
+	ip2bus_mst_be.write(0xf);
+
+	ip2bus_mstwr_d.write(val);
+
+	for(;;) {
+		if (bus2ip_mst_cmdack.read()) 
+			break;
+		wait (bus2ip_clk->posedge_event());
+	}
+	ip2bus_mstwr_req.write(0);
+	for(;;) {
+		if (bus2ip_mst_cmplt.read())
+				break;
+		wait (bus2ip_clk->posedge_event());
+	}
 }
 
 uint32_t axi_master_systemc::iomem_in32(uint32_t off)
 {
+	uint32_t val;
+	ip2bus_mstrd_req.write(1);
+	ip2bus_mst_addr.write(off);
+	ip2bus_mst_be.write(0);
+
+	for(;;) {
+		if (bus2ip_mst_cmdack.read()) 
+			break;
+		wait (bus2ip_clk->posedge_event());
+	}
+	ip2bus_mstrd_req.write(0);
+	for (;;) {
+		if (bus2ip_mstrd_src_rdy_n.read() == 0)
+			break;
+		wait (bus2ip_clk->posedge_event());
+	}
+	return bus2ip_mstrd_d.read();
 }
 
 static axi_master_systemc * obj;

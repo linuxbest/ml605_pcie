@@ -5,7 +5,13 @@
 
 int osChip_init(uint32_t base)
 {
+	uint32_t val;
 	printf("Calling osChip_init\n");
+
+	val = osChipRegRead(base);
+	printf("osChipRegRead %08x\n", base);
+
+	return 0;
 }
 
 int osChip_intr(uint32_t base)
