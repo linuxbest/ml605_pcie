@@ -146,28 +146,31 @@ module axi_aes (/*AUTOARG*/
    /*AUTOREG*/
 
 
-   axi_lite_slave
-     axi_lite_slave (/*AUTOINST*/
-		     // Outputs
-		     .s_axi_lite_awready(s_axi_lite_awready),
-		     .s_axi_lite_wready	(s_axi_lite_wready),
-		     .s_axi_lite_bresp	(s_axi_lite_bresp[1:0]),
-		     .s_axi_lite_bvalid	(s_axi_lite_bvalid),
-		     .s_axi_lite_arready(s_axi_lite_arready),
-		     .s_axi_lite_rvalid	(s_axi_lite_rvalid),
-		     .s_axi_lite_rdata	(s_axi_lite_rdata[C_S_AXI_LITE_DATA_WIDTH-1:0]),
-		     .s_axi_lite_rresp	(s_axi_lite_rresp[1:0]),
-		     // Inputs
-		     .s_axi_lite_aclk	(s_axi_lite_aclk),
-		     .axi_resetn	(axi_resetn),
-		     .s_axi_lite_awvalid(s_axi_lite_awvalid),
-		     .s_axi_lite_awaddr	(s_axi_lite_awaddr[C_S_AXI_LITE_ADDR_WIDTH-1:0]),
-		     .s_axi_lite_wvalid	(s_axi_lite_wvalid),
-		     .s_axi_lite_wdata	(s_axi_lite_wdata[C_S_AXI_LITE_DATA_WIDTH-1:0]),
-		     .s_axi_lite_bready	(s_axi_lite_bready),
-		     .s_axi_lite_arvalid(s_axi_lite_arvalid),
-		     .s_axi_lite_araddr	(s_axi_lite_araddr[C_S_AXI_LITE_ADDR_WIDTH-1:0]),
-		     .s_axi_lite_rready	(s_axi_lite_rready));
+   axi_lite_slave # (/*AUTOINSTPARAM*/
+		     // Parameters
+		     .C_S_AXI_LITE_ADDR_WIDTH(C_S_AXI_LITE_ADDR_WIDTH),
+		     .C_S_AXI_LITE_DATA_WIDTH(C_S_AXI_LITE_DATA_WIDTH))
+   axi_lite_slave (/*AUTOINST*/
+		   // Outputs
+		   .s_axi_lite_awready	(s_axi_lite_awready),
+		   .s_axi_lite_wready	(s_axi_lite_wready),
+		   .s_axi_lite_bresp	(s_axi_lite_bresp[1:0]),
+		   .s_axi_lite_bvalid	(s_axi_lite_bvalid),
+		   .s_axi_lite_arready	(s_axi_lite_arready),
+		   .s_axi_lite_rvalid	(s_axi_lite_rvalid),
+		   .s_axi_lite_rdata	(s_axi_lite_rdata[C_S_AXI_LITE_DATA_WIDTH-1:0]),
+		   .s_axi_lite_rresp	(s_axi_lite_rresp[1:0]),
+		   // Inputs
+		   .s_axi_lite_aclk	(s_axi_lite_aclk),
+		   .axi_resetn		(axi_resetn),
+		   .s_axi_lite_awvalid	(s_axi_lite_awvalid),
+		   .s_axi_lite_awaddr	(s_axi_lite_awaddr[C_S_AXI_LITE_ADDR_WIDTH-1:0]),
+		   .s_axi_lite_wvalid	(s_axi_lite_wvalid),
+		   .s_axi_lite_wdata	(s_axi_lite_wdata[C_S_AXI_LITE_DATA_WIDTH-1:0]),
+		   .s_axi_lite_bready	(s_axi_lite_bready),
+		   .s_axi_lite_arvalid	(s_axi_lite_arvalid),
+		   .s_axi_lite_araddr	(s_axi_lite_araddr[C_S_AXI_LITE_ADDR_WIDTH-1:0]),
+		   .s_axi_lite_rready	(s_axi_lite_rready));
 
    /***************************************************************************/
    assign m_axis_mm2s_cntrl_tready = 0;
