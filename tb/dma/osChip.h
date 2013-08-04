@@ -13,6 +13,9 @@ extern "C" {
 
 	extern void systemc_stop(void);
 
+	extern size_t mem_size;
+	extern unsigned char *base0;
+
 #ifdef __cplusplus
 }
 #endif
