@@ -1,0 +1,105 @@
+
+# ##############################################################################
+# Created by Base System Builder Wizard for Xilinx EDK 14.6 Build EDK_P.68d
+# Sat Jul 27 23:53:02 2013
+# Target Board:  xilinx.com ml605 Rev D
+# Family:    virtex6
+# Device:    xc6vlx240t
+# Package:   ff1156
+# Speed Grade:  -1
+# ##############################################################################
+ PARAMETER VERSION = 2.1.0
+
+
+ PORT RESET = RESET, DIR = I, SIGIS = RST, RST_POLARITY = 1
+ PORT CLK = CLK, DIR = I, SIGIS = CLK, CLK_FREQ = 200000000
+
+BEGIN proc_sys_reset
+ PARAMETER INSTANCE = proc_sys_reset_0
+ PARAMETER HW_VER = 3.00.a
+ PARAMETER C_EXT_RESET_HIGH = 1
+ PORT Dcm_locked = clk_gen_locked
+ PORT Slowest_sync_clk = clk_100_0000MHzMMCM0
+ PORT Interconnect_aresetn = proc_sys_reset_0_Interconnect_aresetn
+ PORT Ext_Reset_In = RESET
+ PORT BUS_STRUCT_RESET = proc_sys_reset_0_BUS_STRUCT_RESET
+END
+
+BEGIN clock_generator
+ PARAMETER INSTANCE = clock_generator_0
+ PARAMETER HW_VER = 4.03.a
+ PARAMETER C_CLKIN_FREQ = 200000000
+ PARAMETER C_CLKOUT0_FREQ = 100000000
+ PARAMETER C_CLKOUT0_GROUP = MMCM0
+ PORT LOCKED = clk_gen_locked
+ PORT CLKOUT0 = clk_100_0000MHzMMCM0
+ PORT RST = RESET
+ PORT CLKIN = CLK
+ PORT PSCLK = clk_200_0000MHzMMCM0
+END
+
+BEGIN axi_interconnect
+ PARAMETER INSTANCE = axi4lite_0
+ PARAMETER HW_VER = 1.06.a
+ PARAMETER C_INTERCONNECT_CONNECTIVITY_MODE = 0
+ PORT INTERCONNECT_ARESETN = proc_sys_reset_0_Interconnect_aresetn
+ PORT INTERCONNECT_ACLK = clk_100_0000MHzMMCM0
+END
+
+BEGIN axi_interconnect
+ PARAMETER INSTANCE = axi4_0
+ PARAMETER HW_VER = 1.06.a
+ PORT interconnect_aclk = clk_100_0000MHzMMCM0
+ PORT INTERCONNECT_ARESETN = proc_sys_reset_0_Interconnect_aresetn
+END
+
+BEGIN axi_dma
+ PARAMETER INSTANCE = axi_dma_0
+ PARAMETER HW_VER = 6.03.a
+ PARAMETER C_BASEADDR = 0xC4000000
+ PARAMETER C_HIGHADDR = 0xC4000fff
+ PARAMETER C_M_AXI_MM2S_DATA_WIDTH = 128
+ PARAMETER C_M_AXIS_MM2S_TDATA_WIDTH = 128
+ PARAMETER C_MM2S_BURST_SIZE = 256
+ PARAMETER C_M_AXI_S2MM_DATA_WIDTH = 128
+ PARAMETER C_S_AXIS_S2MM_TDATA_WIDTH = 128
+ PARAMETER C_S2MM_BURST_SIZE = 256
+ BUS_INTERFACE S_AXI_LITE = axi4lite_0
+ BUS_INTERFACE M_AXI_SG = axi4_0
+ BUS_INTERFACE M_AXI_MM2S = axi4_0
+ BUS_INTERFACE M_AXI_S2MM = axi4_0
+ BUS_INTERFACE M_AXIS_MM2S = M_AXIS_MM2S_0
+ BUS_INTERFACE S_AXIS_S2MM = S_AXIS_S2MM_0
+ BUS_INTERFACE M_AXIS_MM2S_CNTRL = M_AXIS_MM2S_CNTRL_0
+ BUS_INTERFACE S_AXIS_S2MM_STS = S_AXIS_S2MM_STS_0
+ PORT s_axi_lite_aclk = clk_100_0000MHzMMCM0
+ PORT m_axi_sg_aclk = clk_100_0000MHzMMCM0
+ PORT m_axi_mm2s_aclk = clk_100_0000MHzMMCM0
+ PORT m_axi_s2mm_aclk = clk_100_0000MHzMMCM0
+ PORT mm2s_prmry_reset_out_n = mm2s_prmry_reset_out_n_0
+ PORT mm2s_cntrl_reset_out_n = mm2s_cntrl_reset_out_n_0
+ PORT s2mm_prmry_reset_out_n = s2mm_prmry_reset_out_n_0
+ PORT s2mm_sts_reset_out_n = s2mm_sts_reset_out_n_0
+END
+
+BEGIN axi_aes
+ PARAMETER INSTANCE = axi_aes_0
+ PARAMETER HW_VER = 1.00.a
+ PARAMETER C_BASEADDR = 0xC4001000
+ PARAMETER C_HIGHADDR = 0xC4001fff
+ PARAMETER C_M_AXIS_MM2S_TDATA_WIDTH = 128
+ PARAMETER C_S_AXIS_S2MM_TDATA_WIDTH = 128
+ BUS_INTERFACE S_AXI_LITE = axi4lite_0
+ BUS_INTERFACE M_AXIS_MM2S = M_AXIS_MM2S_0
+ BUS_INTERFACE S_AXIS_S2MM = S_AXIS_S2MM_0
+ BUS_INTERFACE M_AXIS_MM2S_CNTRL = M_AXIS_MM2S_CNTRL_0
+ BUS_INTERFACE S_AXIS_S2MM_STS = S_AXIS_S2MM_STS_0
+ PORT s_axi_lite_aclk = clk_100_0000MHzMMCM0
+ PORT m_axi_mm2s_aclk = clk_100_0000MHzMMCM0
+ PORT m_axi_s2mm_aclk = clk_100_0000MHzMMCM0
+ PORT mm2s_prmry_reset_out_n = mm2s_prmry_reset_out_n_0
+ PORT mm2s_cntrl_reset_out_n = mm2s_cntrl_reset_out_n_0
+ PORT s2mm_prmry_reset_out_n = s2mm_prmry_reset_out_n_0
+ PORT s2mm_sts_reset_out_n = s2mm_sts_reset_out_n_0
+END
+
