@@ -198,43 +198,7 @@ entity axi_master_lite_sc is
     -- AXI4 Write Response Channel                                            -- AXI4
     m_axi_lite_bready          : out std_logic                           ;    -- AXI4
     m_axi_lite_bvalid          : in  std_logic                           ;    -- AXI4
-    m_axi_lite_bresp           : in  std_logic_vector(1 downto 0)        ;    -- AXI4
-
-
-
-
-    -----------------------------------------------------------------------------
-    -- IP Master Request/Qualifers
-    -----------------------------------------------------------------------------
-    ip2bus_mstrd_req           : In  std_logic;                                           -- IPIC
-    ip2bus_mstwr_req           : In  std_logic;                                           -- IPIC
-    ip2bus_mst_addr            : in  std_logic_vector(C_M_AXI_LITE_ADDR_WIDTH-1 downto 0);    -- IPIC
-    ip2bus_mst_be              : in  std_logic_vector((C_M_AXI_LITE_DATA_WIDTH/8)-1 downto 0);-- IPIC     
-    ip2bus_mst_lock            : In  std_logic;                                           -- IPIC
-    ip2bus_mst_reset           : In  std_logic;                                           -- IPIC
-                                                                                          -- IPIC
-    -----------------------------------------------------------------------------
-    -- IP Request Status Reply                                                            
-    -----------------------------------------------------------------------------
-    bus2ip_mst_cmdack          : Out std_logic;                                           -- IPIC
-    bus2ip_mst_cmplt           : Out std_logic;                                           -- IPIC
-    bus2ip_mst_error           : Out std_logic;                                           -- IPIC
-    bus2ip_mst_rearbitrate     : Out std_logic;                                           -- IPIC
-    bus2ip_mst_cmd_timeout     : out std_logic;                                           -- IPIC
-                                                                                          -- IPIC
-                                                                                          -- IPIC
-    -----------------------------------------------------------------------------
-    -- IPIC Read data                                                                     
-    -----------------------------------------------------------------------------
-    bus2ip_mstrd_d             : out std_logic_vector(C_M_AXI_LITE_DATA_WIDTH-1 downto 0);-- IPIC
-    bus2ip_mstrd_src_rdy_n     : Out std_logic;                                           -- IPIC
-                                                                                          -- IPIC
-    -----------------------------------------------------------------------------
-    -- IPIC Write data                                                                    
-    -----------------------------------------------------------------------------
-    ip2bus_mstwr_d             : In  std_logic_vector(C_M_AXI_LITE_DATA_WIDTH-1 downto 0);-- IPIC
-    bus2ip_mstwr_dst_rdy_n     : Out  std_logic                                           -- IPIC
-                                               
+    m_axi_lite_bresp           : in  std_logic_vector(1 downto 0)             -- AXI4
     );
 
 end entity axi_master_lite_sc;
@@ -242,15 +206,84 @@ end entity axi_master_lite_sc;
 
 architecture implementation of axi_master_lite_sc is
 
+    component axi_master_systemc is 
+    port (
+    bus2ip_clk                 : In  std_logic;
+    bus2ip_reset               : In  Std_logic;
 
+    -----------------------------------------------------------------------------
+    -- IP Master Request/Qualifers
+    -----------------------------------------------------------------------------
+    ip2bus_mstrd_req           : Out std_logic;                                           -- IPIC
+    ip2bus_mstwr_req           : Out std_logic;                                           -- IPIC
+    ip2bus_mst_addr            : Out std_logic_vector(32-1 downto 0);    -- IPIC
+    ip2bus_mst_be              : Out std_logic_vector((32/8)-1 downto 0);-- IPIC     
+    ip2bus_mst_lock            : Out std_logic;                                           -- IPIC
+                                                                                          -- IPIC
+    -----------------------------------------------------------------------------
+    -- IP Request Status Reply                                                            
+    -----------------------------------------------------------------------------
+    bus2ip_mst_cmdack          : In  std_logic;                                           -- IPIC
+    bus2ip_mst_cmplt           : In  std_logic;                                           -- IPIC
+    bus2ip_mst_error           : In  std_logic;                                           -- IPIC
+    bus2ip_mst_rearbitrate     : In  std_logic;                                           -- IPIC
+    bus2ip_mst_cmd_timeout     : In  std_logic;                                           -- IPIC
+                                                                                          -- IPIC
+                                                                                          -- IPIC
+    -----------------------------------------------------------------------------
+    -- IPIC Read data                                                                     
+    -----------------------------------------------------------------------------
+    bus2ip_mstrd_d             : In  std_logic_vector(32-1 downto 0);-- IPIC
+    bus2ip_mstrd_src_rdy_n     : In  std_logic;                                           -- IPIC
+                                                                                          -- IPIC
+    -----------------------------------------------------------------------------
+    -- IPIC Write data                                                                    
+    -----------------------------------------------------------------------------
+    ip2bus_mstwr_d             : Out std_logic_vector(32-1 downto 0);-- IPIC
+    bus2ip_mstwr_dst_rdy_n     : In  std_logic                                           -- IPIC
+                                               
+    );
+
+    end component;
   
   -- Signals
   signal sig_master_reset        : std_logic := '0';
   
-  
-  
-   
-                      
+ 
+    signal bus2ip_clk   : std_logic;
+    signal bus2ip_reset : std_logic;
+
+    -----------------------------------------------------------------------------
+    -- IP Master Request/Qualifers
+    -----------------------------------------------------------------------------
+    signal ip2bus_mstrd_req           : std_logic;                                           -- IPIC
+    signal ip2bus_mstwr_req           : std_logic;                                           -- IPIC
+    signal ip2bus_mst_addr            : std_logic_vector(C_M_AXI_LITE_ADDR_WIDTH-1 downto 0);    -- IPIC
+    signal ip2bus_mst_be              : std_logic_vector((C_M_AXI_LITE_DATA_WIDTH/8)-1 downto 0);-- IPIC     
+    signal ip2bus_mst_lock            : std_logic;                                           -- IPIC
+    signal ip2bus_mst_reset           : std_logic;                                           -- IPIC
+                                                                                          -- IPIC
+    -----------------------------------------------------------------------------
+    -- IP Request Status Reply                                                            
+    -----------------------------------------------------------------------------
+    signal bus2ip_mst_cmdack          : std_logic;                                           -- IPIC
+    signal bus2ip_mst_cmplt           : std_logic;                                           -- IPIC
+    signal bus2ip_mst_error           : std_logic;                                           -- IPIC
+    signal bus2ip_mst_rearbitrate     : std_logic;                                           -- IPIC
+    signal bus2ip_mst_cmd_timeout     : std_logic;                                           -- IPIC
+                                                                                          -- IPIC
+                                                                                          -- IPIC
+    -----------------------------------------------------------------------------
+    -- IPIC Read data                                                                     
+    -----------------------------------------------------------------------------
+    signal bus2ip_mstrd_d             : std_logic_vector(C_M_AXI_LITE_DATA_WIDTH-1 downto 0);-- IPIC
+    signal bus2ip_mstrd_src_rdy_n     : std_logic;                                           -- IPIC
+                                                                                          -- IPIC
+    -----------------------------------------------------------------------------
+    -- IPIC Write data                                                                    
+    -----------------------------------------------------------------------------
+    signal ip2bus_mstwr_d             : std_logic_vector(C_M_AXI_LITE_DATA_WIDTH-1 downto 0);-- IPIC
+    signal bus2ip_mstwr_dst_rdy_n     : std_logic                                           ;-- IPIC
 
 begin --(architecture implementation)
 
@@ -396,8 +429,46 @@ begin --(architecture implementation)
     );
 
         
-        
+    AXI_MASTER_IF : axi_master_systemc 
+    port map 
+    (
+    bus2ip_clk              => bus2ip_clk,
+    bus2ip_reset            => bus2ip_reset,
+
+    -----------------------------------
+    -- IP Master Request/Qualifers
+    -----------------------------------
+    ip2bus_mstrd_req        => ip2bus_mstrd_req   ,         
+    ip2bus_mstwr_req        => ip2bus_mstwr_req   ,         
+    ip2bus_mst_addr         => ip2bus_mst_addr    ,         
+    ip2bus_mst_be           => ip2bus_mst_be      ,              
+    ip2bus_mst_lock         => ip2bus_mst_lock    ,         
+                                    
+    -----------------------------------
+    -- IP Request Status Reply                  
+    -----------------------------------
+    bus2ip_mst_cmdack       => bus2ip_mst_cmdack       ,    
+    bus2ip_mst_cmplt        => bus2ip_mst_cmplt        ,    
+    bus2ip_mst_error        => bus2ip_mst_error        ,    
+    bus2ip_mst_rearbitrate  => bus2ip_mst_rearbitrate  ,    
+    bus2ip_mst_cmd_timeout  => bus2ip_mst_cmd_timeout  ,    
+                               
+                               
+    -----------------------------------
+    -- IPIC Read data                           
+    -----------------------------------
+    bus2ip_mstrd_d          => bus2ip_mstrd_d          ,    
+    bus2ip_mstrd_src_rdy_n  => bus2ip_mstrd_src_rdy_n  ,    
+                               
+    ----------------------------------
+    -- IPIC Write data                         
+    ----------------------------------
+    ip2bus_mstwr_d          => ip2bus_mstwr_d          ,    
+    bus2ip_mstwr_dst_rdy_n  => bus2ip_mstwr_dst_rdy_n      
+    
+    );
           
-          
-          
+    bus2ip_clk   <= m_axi_lite_aclk;
+    bus2ip_reset <= not m_axi_lite_aresetn;
+
 end implementation;
