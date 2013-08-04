@@ -115,17 +115,12 @@ BEGIN axi_bram_ctrl
  PORT S_AXI_ACLK = clk_100_0000MHzMMCM0
 END
 
-BEGIN bram_block
- PARAMETER INSTANCE = bram_block_0
- PARAMETER HW_VER = 1.00.a
- BUS_INTERFACE PORTA = axi_bram_ctrl_0_BRAM_PORTA
- BUS_INTERFACE PORTB = axi_bram_ctrl_0_BRAM_PORTB
-END
-
 BEGIN axi_master_lite_sc 
  PARAMETER INSTANCE = axi_master_lite_sc_0
  PARAMETER HW_VER = 2.00.a
  BUS_INTERFACE M_AXI_LITE = axi4lite_0
+ BUS_INTERFACE PORTA = axi_bram_ctrl_0_BRAM_PORTA
+ BUS_INTERFACE PORTB = axi_bram_ctrl_0_BRAM_PORTB
  PORT m_axi_lite_aclk = clk_100_0000MHzMMCM0
 END
 

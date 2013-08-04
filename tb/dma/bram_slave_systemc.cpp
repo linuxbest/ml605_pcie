@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include "osChip.h"
 
-SC_MODULE(dma_tb_bram_block_0_wrapper)
+SC_MODULE(bram_slave_systemc)
 {
 public:
 	sc_in <bool> BRAM_Rst_A;
@@ -23,17 +23,17 @@ public:
 
 	void bram_model(void);
 	
-	SC_CTOR(dma_tb_bram_block_0_wrapper)
+	SC_CTOR(bram_slave_systemc)
 	{
 		SC_THREAD(bram_model);
 	}
 
-	~dma_tb_bram_block_0_wrapper()
+	~bram_slave_systemc()
 	{
 	}
 };
 
-void dma_tb_bram_block_0_wrapper::bram_model(void)
+void bram_slave_systemc::bram_model(void)
 {
 	printf("bram model init, %d\n", mem_size);
 
@@ -52,4 +52,4 @@ void dma_tb_bram_block_0_wrapper::bram_model(void)
 	}
 }
 
-SC_MODULE_EXPORT(dma_tb_bram_block_0_wrapper);
+SC_MODULE_EXPORT(bram_slave_systemc);

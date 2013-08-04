@@ -21,6 +21,10 @@ int osChip_init(uint32_t base)
 	val = osChipRegRead(base);
 	printf("osChipRegRead %08x\n", val);
 
+	osChipRegWrite(base + 0x00, 0x4);   /* Reset */
+	osChipRegWrite(base + 0x08, 0x1000);/* Cur Desc */
+	osChipRegWrite(base + 0x00, 0x1);   /* RUN */	
+
 	return 0;
 }
 

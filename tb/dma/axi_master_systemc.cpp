@@ -86,7 +86,7 @@ static axi_master_systemc * obj;
 
 #include "osChip.h"
 
-static uint32_t base = 0xC4001000;
+static uint32_t base = 0xC4000000;
 
 uint32_t osChipRegRead(uint32_t addr)
 {
@@ -106,6 +106,8 @@ void systemc_stop(void)
 void axi_master_systemc::master_init(void)
 {
 	int i;
+
+	printf("osChip init\n");
 
 	obj = this;
 

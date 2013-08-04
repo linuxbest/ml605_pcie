@@ -114,8 +114,6 @@ library axi_master_lite_sc_v2_00_a;
 Use axi_master_lite_sc_v2_00_a.axi_master_lite_reset;
 Use axi_master_lite_sc_v2_00_a.axi_master_lite_cntlr;
 
-
-
 -------------------------------------------------------------------------------
 
 entity axi_master_lite_sc is
@@ -131,10 +129,14 @@ entity axi_master_lite_sc is
              
     
     -- FPGA Family Parameter      
-    C_FAMILY               : String := "virtex6"
+    C_FAMILY               : String := "virtex6";
       -- Select the target architecture type
       -- see the family.vhd package in the proc_common
       -- library
+
+    C_NUM_WE      : integer;
+    C_PORT_AWIDTH : integer;
+    C_PORT_DWIDTH : integer
     );
   port (
     
@@ -198,7 +200,24 @@ entity axi_master_lite_sc is
     -- AXI4 Write Response Channel                                            -- AXI4
     m_axi_lite_bready          : out std_logic                           ;    -- AXI4
     m_axi_lite_bvalid          : in  std_logic                           ;    -- AXI4
-    m_axi_lite_bresp           : in  std_logic_vector(1 downto 0)             -- AXI4
+    m_axi_lite_bresp           : in  std_logic_vector(1 downto 0)        ;    -- AXI4
+
+
+    BRAM_Rst_A : in  std_logic;
+    BRAM_Clk_A : in  std_logic;
+    BRAM_EN_A  : in  std_logic;
+    BRAM_WEN_A : in  std_logic_vector(3 downto 0);
+    BRAM_Addr_A: in  std_logic_vector(31 downto 0);
+    BRAM_Din_A : out std_logic_vector(31 downto 0);
+    BRAM_Dout_A: in  std_logic_vector(31 downto 0);
+
+    BRAM_Rst_B : in  std_logic;
+    BRAM_Clk_B : in  std_logic;
+    BRAM_EN_B  : in  std_logic;
+    BRAM_WEN_B : in  std_logic_vector(3 downto 0);
+    BRAM_Addr_B: in  std_logic_vector(31 downto 0);
+    BRAM_Din_B : out std_logic_vector(31 downto 0);
+    BRAM_Dout_B: in  std_logic_vector(31 downto 0)
     );
 
 end entity axi_master_lite_sc;
@@ -245,7 +264,28 @@ architecture implementation of axi_master_lite_sc is
     );
 
     end component;
-  
+
+    component bram_slave_systemc is 
+    port (
+    BRAM_Rst_A : in  std_logic;
+    BRAM_Clk_A : in  std_logic;
+    BRAM_EN_A  : in  std_logic;
+    BRAM_WEN_A : in  std_logic_vector(3 downto 0);
+    BRAM_Addr_A: in  std_logic_vector(31 downto 0);
+    BRAM_Din_A : out std_logic_vector(31 downto 0);
+    BRAM_Dout_A: in  std_logic_vector(31 downto 0);
+
+    BRAM_Rst_B : in  std_logic;
+    BRAM_Clk_B : in  std_logic;
+    BRAM_EN_B  : in  std_logic;
+    BRAM_WEN_B : in  std_logic_vector(3 downto 0);
+    BRAM_Addr_B: in  std_logic_vector(31 downto 0);
+    BRAM_Din_B : out std_logic_vector(31 downto 0);
+    BRAM_Dout_B: in  std_logic_vector(31 downto 0)
+    );
+
+    end component;
+
   -- Signals
   signal sig_master_reset        : std_logic := '0';
   
@@ -429,7 +469,7 @@ begin --(architecture implementation)
     );
 
         
-    AXI_MASTER_IF : axi_master_systemc 
+    AXI_MASTER_IF : axi_master_systemc
     port map 
     (
     bus2ip_clk              => bus2ip_clk,
@@ -467,7 +507,27 @@ begin --(architecture implementation)
     bus2ip_mstwr_dst_rdy_n  => bus2ip_mstwr_dst_rdy_n      
     
     );
-          
+
+    BRAM_IF : bram_slave_systemc 
+    port map 
+    (
+BRAM_Rst_A  =>  BRAM_Rst_A,
+BRAM_Clk_A  =>  BRAM_Clk_A,
+BRAM_EN_A   =>  BRAM_EN_A,
+BRAM_WEN_A  =>  BRAM_WEN_A, 
+BRAM_Addr_A =>  BRAM_Addr_A,
+BRAM_Din_A  =>  BRAM_Din_A,
+BRAM_Dout_A =>  BRAM_Dout_A,
+                     
+BRAM_Rst_B  =>  BRAM_Rst_B,
+BRAM_Clk_B  =>  BRAM_Clk_B,
+BRAM_EN_B   =>  BRAM_EN_B, 
+BRAM_WEN_B  =>  BRAM_WEN_B,
+BRAM_Addr_B =>  BRAM_Addr_B,
+BRAM_Din_B  =>  BRAM_Din_B,
+BRAM_Dout_B =>  BRAM_Dout_B
+    );
+
     bus2ip_clk   <= m_axi_lite_aclk;
     bus2ip_reset <= not m_axi_lite_aresetn;
 
