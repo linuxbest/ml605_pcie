@@ -6,8 +6,7 @@ sccom -work axi_master_lite_sc_v2_00_a  ../../tb/dma/bram_slave_systemc.cpp
 sccom -work axi_master_lite_sc_v2_00_a  ../../tb/dma/axi_dma.c
 sccom -work axi_master_lite_sc_v2_00_a  -link
 
-
-#vlog -novopt -incr -work work "../../tb/dma/dma_tb_bram_block_0_wrapper.v"
+vlog -novopt -incr -work axi_aes_v1_00_a /home/hugang/project/ml605_pcie/pcores/axi_aes_v1_00_a/hdl/verilog/*.v
 
 do dma_tb_setup.do
 
