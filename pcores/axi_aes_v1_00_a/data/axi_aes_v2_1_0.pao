@@ -1,3 +1,10 @@
-lib axi_aes_v1_00_a axi_aes.v verilog
+lib axi_aes_v1_00_a axi_aes.v        verilog
+lib axi_aes_v1_00_a mm2s_cntrl.v     verilog
 lib axi_aes_v1_00_a axi_lite_slave.v verilog
 lib axi_aes_v1_00_a axi_lite_write.v verilog
+
+lib axi_aes_v1_00_a aes_256.v        verilog
+lib axi_aes_v1_00_a round.v          verilog
+lib axi_aes_v1_00_a table.v          verilog
+
+lib axi_aes_v1_00_a axi_async_fifo.vhd vhdl

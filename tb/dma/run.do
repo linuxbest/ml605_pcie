@@ -7,6 +7,7 @@ sccom -work axi_master_lite_sc_v2_00_a  ../../tb/dma/axi_dma.c
 sccom -work axi_master_lite_sc_v2_00_a  -link
 
 vlog -novopt -incr -work axi_aes_v1_00_a /home/hugang/project/ml605_pcie/pcores/axi_aes_v1_00_a/hdl/verilog/*.v
+vcom -novopt -93   -work axi_aes_v1_00_a /home/hugang/project/ml605_pcie/pcores/axi_aes_v1_00_a/hdl/vhdl/*.vhd
 
 do dma_tb_setup.do
 
