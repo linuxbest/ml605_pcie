@@ -52,7 +52,7 @@ ml605_pcie_tb.RP.tx_usrapp.TSK_TX_MEMORY_WRITE_32(
 	ml605_pcie_tb.RP.tx_usrapp.DEFAULT_TAG,
 	ml605_pcie_tb.RP.tx_usrapp.DEFAULT_TC, 
 	10'd1,
-	ml605_pcie_tb.RP.tx_usrapp.BAR_INIT_P_BAR[0][31:0]+32'h1_0000,
+	ml605_pcie_tb.RP.tx_usrapp.BAR_INIT_P_BAR[0][31:0]+32'h1000,
 	4'h0,
 	4'hF,
 	1'b0);

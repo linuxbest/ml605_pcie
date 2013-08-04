@@ -45,25 +45,26 @@
 // Code:
 module axi_aes (/*AUTOARG*/
    // Outputs
-   s_axi_lite_awready, s_axi_lite_wready, s_axi_lite_bresp,
-   s_axi_lite_bvalid, s_axi_lite_arready, s_axi_lite_rvalid,
-   s_axi_lite_rdata, s_axi_lite_rresp, m_axis_mm2s_tready,
+   s_axi_lite_wready, s_axi_lite_rvalid, s_axi_lite_rresp,
+   s_axi_lite_rdata, s_axi_lite_bvalid, s_axi_lite_bresp,
+   s_axi_lite_awready, s_axi_lite_arready, m_axis_mm2s_tready,
    m_axis_mm2s_cntrl_tready, s_axis_s2mm_tdata, s_axis_s2mm_tkeep,
    s_axis_s2mm_tvalid, s_axis_s2mm_tlast, s_axis_s2mm_tuser,
    s_axis_s2mm_tid, s_axis_s2mm_tdest, s_axis_s2mm_sts_tdata,
    s_axis_s2mm_sts_tkeep, s_axis_s2mm_sts_tvalid,
    s_axis_s2mm_sts_tlast,
    // Inputs
-   s_axi_lite_aclk, m_axi_mm2s_aclk, m_axi_s2mm_aclk, axi_resetn,
-   s_axi_lite_awvalid, s_axi_lite_awaddr, s_axi_lite_wvalid,
-   s_axi_lite_wdata, s_axi_lite_bready, s_axi_lite_arvalid,
-   s_axi_lite_araddr, s_axi_lite_rready, mm2s_prmry_reset_out_n,
-   m_axis_mm2s_tdata, m_axis_mm2s_tkeep, m_axis_mm2s_tvalid,
-   m_axis_mm2s_tlast, m_axis_mm2s_tuser, m_axis_mm2s_tid,
-   m_axis_mm2s_tdest, mm2s_cntrl_reset_out_n, m_axis_mm2s_cntrl_tdata,
-   m_axis_mm2s_cntrl_tkeep, m_axis_mm2s_cntrl_tvalid,
-   m_axis_mm2s_cntrl_tlast, s2mm_prmry_reset_out_n,
-   s_axis_s2mm_tready, s2mm_sts_reset_out_n, s_axis_s2mm_sts_tready
+   s_axi_lite_wvalid, s_axi_lite_wdata, s_axi_lite_rready,
+   s_axi_lite_bready, s_axi_lite_awvalid, s_axi_lite_awaddr,
+   s_axi_lite_arvalid, s_axi_lite_araddr, s_axi_lite_aclk,
+   m_axi_mm2s_aclk, m_axi_s2mm_aclk, axi_resetn,
+   mm2s_prmry_reset_out_n, m_axis_mm2s_tdata, m_axis_mm2s_tkeep,
+   m_axis_mm2s_tvalid, m_axis_mm2s_tlast, m_axis_mm2s_tuser,
+   m_axis_mm2s_tid, m_axis_mm2s_tdest, mm2s_cntrl_reset_out_n,
+   m_axis_mm2s_cntrl_tdata, m_axis_mm2s_cntrl_tkeep,
+   m_axis_mm2s_cntrl_tvalid, m_axis_mm2s_cntrl_tlast,
+   s2mm_prmry_reset_out_n, s_axis_s2mm_tready, s2mm_sts_reset_out_n,
+   s_axis_s2mm_sts_tready
    );
    parameter C_FAMILY = "virtex6";
    parameter C_INSTANCE = "axi_aes_0";
@@ -76,33 +77,36 @@ module axi_aes (/*AUTOARG*/
    
    parameter C_S_AXIS_S2MM_STS_TDATA_WIDTH = 32;
    parameter C_S_AXIS_S2MM_TDATA_WIDTH = 128;
-   
+
+   /*AUTOINPUT*/
+   // Beginning of automatic inputs (from unused autoinst inputs)
+   input [C_S_AXI_LITE_ADDR_WIDTH-1:0] s_axi_lite_araddr;// To axi_lite_slave of axi_lite_slave.v
+   input		s_axi_lite_arvalid;	// To axi_lite_slave of axi_lite_slave.v
+   input [C_S_AXI_LITE_ADDR_WIDTH-1:0] s_axi_lite_awaddr;// To axi_lite_slave of axi_lite_slave.v
+   input		s_axi_lite_awvalid;	// To axi_lite_slave of axi_lite_slave.v
+   input		s_axi_lite_bready;	// To axi_lite_slave of axi_lite_slave.v
+   input		s_axi_lite_rready;	// To axi_lite_slave of axi_lite_slave.v
+   input [C_S_AXI_LITE_DATA_WIDTH-1:0] s_axi_lite_wdata;// To axi_lite_slave of axi_lite_slave.v
+   input		s_axi_lite_wvalid;	// To axi_lite_slave of axi_lite_slave.v
+   // End of automatics
+
+   /*AUTOOUTPUT*/
+   // Beginning of automatic outputs (from unused autoinst outputs)
+   output		s_axi_lite_arready;	// From axi_lite_slave of axi_lite_slave.v
+   output		s_axi_lite_awready;	// From axi_lite_slave of axi_lite_slave.v
+   output [1:0]		s_axi_lite_bresp;	// From axi_lite_slave of axi_lite_slave.v
+   output		s_axi_lite_bvalid;	// From axi_lite_slave of axi_lite_slave.v
+   output [C_S_AXI_LITE_DATA_WIDTH-1:0] s_axi_lite_rdata;// From axi_lite_slave of axi_lite_slave.v
+   output [1:0]		s_axi_lite_rresp;	// From axi_lite_slave of axi_lite_slave.v
+   output		s_axi_lite_rvalid;	// From axi_lite_slave of axi_lite_slave.v
+   output		s_axi_lite_wready;	// From axi_lite_slave of axi_lite_slave.v
+   // End of automatics
+
    input s_axi_lite_aclk;
    input m_axi_mm2s_aclk;
    input m_axi_s2mm_aclk;
    input axi_resetn;
-   
-   input s_axi_lite_awvalid;
-   output s_axi_lite_awready;
-   input [C_S_AXI_LITE_ADDR_WIDTH-1:0] s_axi_lite_awaddr;
-   
-   input 			       s_axi_lite_wvalid;
-   output 			       s_axi_lite_wready;
-   input [C_S_AXI_LITE_DATA_WIDTH-1:0] s_axi_lite_wdata;
-   
-   output [1:0] 		       s_axi_lite_bresp;
-   output 			       s_axi_lite_bvalid;
-   input 			       s_axi_lite_bready;
-   
-   input 			       s_axi_lite_arvalid;
-   output 			       s_axi_lite_arready;
-   input [C_S_AXI_LITE_ADDR_WIDTH-1:0] s_axi_lite_araddr;
-   
-   output 			       s_axi_lite_rvalid;
-   input 			       s_axi_lite_rready;
-   output [C_S_AXI_LITE_DATA_WIDTH-1:0] s_axi_lite_rdata;
-   output [1:0] 			s_axi_lite_rresp;
-   
+
    input 				mm2s_prmry_reset_out_n;
    input [C_M_AXIS_MM2S_TDATA_WIDTH-1:0] m_axis_mm2s_tdata;
    input [(C_M_AXIS_MM2S_TDATA_WIDTH/8)-1:0] m_axis_mm2s_tkeep;
@@ -142,6 +146,29 @@ module axi_aes (/*AUTOARG*/
    /*AUTOREG*/
 
 
+   axi_lite_slave
+     axi_lite_slave (/*AUTOINST*/
+		     // Outputs
+		     .s_axi_lite_awready(s_axi_lite_awready),
+		     .s_axi_lite_wready	(s_axi_lite_wready),
+		     .s_axi_lite_bresp	(s_axi_lite_bresp[1:0]),
+		     .s_axi_lite_bvalid	(s_axi_lite_bvalid),
+		     .s_axi_lite_arready(s_axi_lite_arready),
+		     .s_axi_lite_rvalid	(s_axi_lite_rvalid),
+		     .s_axi_lite_rdata	(s_axi_lite_rdata[C_S_AXI_LITE_DATA_WIDTH-1:0]),
+		     .s_axi_lite_rresp	(s_axi_lite_rresp[1:0]),
+		     // Inputs
+		     .s_axi_lite_aclk	(s_axi_lite_aclk),
+		     .axi_resetn	(axi_resetn),
+		     .s_axi_lite_awvalid(s_axi_lite_awvalid),
+		     .s_axi_lite_awaddr	(s_axi_lite_awaddr[C_S_AXI_LITE_ADDR_WIDTH-1:0]),
+		     .s_axi_lite_wvalid	(s_axi_lite_wvalid),
+		     .s_axi_lite_wdata	(s_axi_lite_wdata[C_S_AXI_LITE_DATA_WIDTH-1:0]),
+		     .s_axi_lite_bready	(s_axi_lite_bready),
+		     .s_axi_lite_arvalid(s_axi_lite_arvalid),
+		     .s_axi_lite_araddr	(s_axi_lite_araddr[C_S_AXI_LITE_ADDR_WIDTH-1:0]),
+		     .s_axi_lite_rready	(s_axi_lite_rready));
+
    /***************************************************************************/
    assign m_axis_mm2s_cntrl_tready = 0;
    assign m_axis_mm2s_tready = 0;
@@ -150,15 +177,6 @@ module axi_aes (/*AUTOARG*/
    assign s_axis_s2mm_tuser = 0;
    assign s_axis_s2mm_tvalid = 0;
    assign s_axis_s2mm_tid = 0;
-   
-   assign s_axi_lite_arready = 0;
-   assign s_axi_lite_awready = 0;
-   assign s_axi_lite_rdata = 0;
-   assign s_axi_lite_rresp = 0;
-   assign s_axi_lite_rvalid = 0;
-   assign s_axi_lite_wready = 0;
-   assign s_axi_lite_bresp = 0;
-   assign s_axi_lite_bvalid = 0;
    
    assign s_axis_s2mm_sts_tdata = 0;
    assign s_axis_s2mm_sts_tkeep = 0;

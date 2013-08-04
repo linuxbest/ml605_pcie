@@ -26,7 +26,8 @@ module ml605_pcie_tb
 
   real CLK_P_PERIOD = 5000.000000;
   real CLK_N_PERIOD = 5000.000000;
-  real RESET_LENGTH = 80000;
+  real PCIe_Diff_Clk_P_PERIOD = 10000.000000;
+  real RESET_LENGTH = 160000;
 
   // Internal signals
 
@@ -73,6 +74,15 @@ module ml605_pcie_tb
         CLK_N = ~CLK_N;
     end
 
+  // Clock generator for PCIe_Diff_Clk_P
+
+  initial
+    begin
+      PCIe_Diff_Clk_P = 1'b0;
+      forever #(PCIe_Diff_Clk_P_PERIOD/2.00)
+        PCIe_Diff_Clk_P = ~PCIe_Diff_Clk_P;
+    end
+
   // Reset Generator for RESET
 
   initial
@@ -92,20 +102,7 @@ module ml605_pcie_tb
      begin
 	PCI_Express_pci_exp_rxn = PCI_Express_pci_exp_rxn_wire;
 	PCI_Express_pci_exp_rxp = PCI_Express_pci_exp_rxp_wire;	
-     end
-
-   initial
-     begin
-	PCIe_Diff_Clk_P = 1'b0;
-	forever #(CLK_P_PERIOD/2.00)
-	  PCIe_Diff_Clk_P = ~PCIe_Diff_Clk_P;
-     end
-
-   initial
-     begin
-	PCIe_Diff_Clk_N = 1'b1;
-	forever #(CLK_N_PERIOD/2.00)
-	  PCIe_Diff_Clk_N = ~PCIe_Diff_Clk_N;
+	PCIe_Diff_Clk_N = ~PCIe_Diff_Clk_P;
      end
 
   initial
@@ -133,7 +130,7 @@ module ml605_pcie_tb
 	.VC0_TOTAL_CREDITS_CD(308),
 	.USER_CLK_FREQ(1))
    RP (// SYS Inteface
-       .sys_clk    (CLK_P),
+       .sys_clk    (PCIe_Diff_Clk_P),
        .sys_reset_n(~RESET),
        
        // PCI-Express Interface
