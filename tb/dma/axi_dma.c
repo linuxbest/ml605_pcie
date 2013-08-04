@@ -11,6 +11,7 @@ unsigned char *base0;
 int osChip_init(uint32_t base)
 {
 	uint32_t val;
+	int i;
 
 	printf("Calling osChip_init\n");
 
@@ -18,12 +19,18 @@ int osChip_init(uint32_t base)
 	if (base0 == NULL) 
 		return -1;
 
-	val = osChipRegRead(base);
-	printf("osChipRegRead %08x\n", val);
-
-	osChipRegWrite(base + 0x00, 0x4);   /* Reset */
-	osChipRegWrite(base + 0x08, 0x1000);/* Cur Desc */
-	osChipRegWrite(base + 0x00, 0x1);   /* RUN */	
+	/* Reset DMA */
+	osChipRegWrite(base + 0x00, 0x4);
+	/* wait for Reset done */
+	for (i = 0; i < 100; i ++) {
+		osChipRegRead(base);
+	}
+	/* write cur desc */
+	osChipRegWrite(base + 0x08, 0x1000);
+	/* start dma */
+	osChipRegWrite(base + 0x00, 0x1);
+	/* write tail desc */
+	osChipRegWrite(base + 0x10, 0x1020);
 
 	return 0;
 }
