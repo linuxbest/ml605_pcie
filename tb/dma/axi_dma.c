@@ -9,7 +9,7 @@ int osChip_init(uint32_t base)
 	printf("Calling osChip_init\n");
 
 	val = osChipRegRead(base);
-	printf("osChipRegRead %08x\n", base);
+	printf("osChipRegRead %08x\n", val);
 
 	return 0;
 }
