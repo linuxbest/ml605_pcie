@@ -322,7 +322,6 @@ module axi_aes (/*AUTOARG*/
 	     .full     (),
 	     .empty    (sts_rd_empty),
 	     .prog_full(sts_rd_full));
-   assign s_axis_s2mm_sts_tready = ~sts_rd_full;
    assign s_axis_s2mm_sts_tvalid = ~sts_rd_empty;
    assign s_axis_s2mm_sts_tkeep  = 4'hf;   
    /***************************************************************************/
