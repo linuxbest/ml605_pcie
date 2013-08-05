@@ -102,3 +102,38 @@ if { ![info exists aespath] } { set aespath "/dma_tb_tb${ps}dut/axi_aes_0/axi_ae
  eval add wave -noupdate $hexopt $aespath${ps}sts_cnt
  eval add wave -noupdate $binopt $aespath${ps}sts_wr_en
  eval add wave -noupdate $hexopt $aespath${ps}sts_wr_din
+ 
+if { ![info exists dmapath] } { set dmapath "/dma_tb_tb${ps}dut/axi_dma_0/axi_dma_0" }
+eval add wave -noupdate -divider {"axi dma data move"}
+eval add wave -noupdate $binopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}m_axi_mm2s_aclk
+eval add wave -noupdate $binopt $dmapath${ps}s_axis_s2mm_cmd_tvalid_split
+eval add wave -noupdate $binopt $dmapath${ps}s_axis_s2mm_cmd_tvalid 
+eval add wave -noupdate $binopt $dmapath${ps}I_S2MM_DMA_MNGR${ps}s_axis_s2mm_cmd_tvalid
+eval add wave -noupdate $binopt $dmapath${ps}I_S2MM_DMA_MNGR${ps}s2mm_cmnd_wr
+eval add wave -noupdate $binopt $dmapath${ps}I_S2MM_DMA_MNGR${ps}s2mm_cmnd_data
+
+#eval add wave -noupdate $binopt $dmapath${ps}I_S2MM_DMA_MNGR${ps}I_S2MM_SM${ps}s2mm_cs
+
+eval add wave -noupdate -divider {"axi dma data move mm2s user command "}
+eval add wave -noupdate $binopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}s_axis_mm2s_cmd_tvalid
+eval add wave -noupdate $binopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}s_axis_mm2s_cmd_tready
+eval add wave -noupdate $hexopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}s_axis_mm2s_cmd_tdata
+
+eval add wave -noupdate -divider {"axi dma data move mm2s user sts"}
+eval add wave -noupdate $binopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}m_axis_mm2s_sts_tvalid
+eval add wave -noupdate $binopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}m_axis_mm2s_sts_tready
+eval add wave -noupdate $hexopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}m_axis_mm2s_sts_tdata
+eval add wave -noupdate $hexopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}m_axis_mm2s_sts_tkeep
+eval add wave -noupdate $binopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}m_axis_mm2s_sts_tlast
+
+eval add wave -noupdate -divider {"axi dma data move s2mm user command "}
+eval add wave -noupdate $binopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}s_axis_s2mm_cmd_tvalid
+eval add wave -noupdate $binopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}s_axis_s2mm_cmd_tready
+eval add wave -noupdate $hexopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}s_axis_s2mm_cmd_tdata
+
+eval add wave -noupdate -divider {"axi dma data move s2mm user sts"}
+eval add wave -noupdate $binopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}m_axis_s2mm_sts_tvalid
+eval add wave -noupdate $binopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}m_axis_s2mm_sts_tready
+eval add wave -noupdate $hexopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}m_axis_s2mm_sts_tdata
+eval add wave -noupdate $hexopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}m_axis_s2mm_sts_tkeep
+eval add wave -noupdate $binopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}m_axis_s2mm_sts_tlast

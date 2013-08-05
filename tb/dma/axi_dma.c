@@ -44,7 +44,7 @@ int osChip_init(uint32_t base)
 	memset(dsg, 0, 0x40);
 	dsg->nextdesc = 0x2040;
 	dsg->buffer   = 0x200000;
-	dsg->ctrl     = 4096;       /* LEN */
+	dsg->ctrl     = 512;       /* LEN */
 	dsg->ctrl    |= 0x08000000; /* SOF */
 	dsg->ctrl    |= 0x04000000; /* EOF */
 
@@ -56,7 +56,7 @@ int osChip_init(uint32_t base)
 	memset(rsg, 0, 0x40);
 	rsg->nextdesc = 0x1040;
 	rsg->buffer   = 0x100000;
-	rsg->ctrl     = 4096;       /* LEN */
+	rsg->ctrl     = 512;       /* LEN */
 	rsg->ctrl    |= 0x08000000; /* SOF */
 	rsg->ctrl    |= 0x04000000; /* EOF */
 
