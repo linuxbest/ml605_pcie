@@ -117,7 +117,7 @@ BEGIN axi_bram_ctrl
  PORT S_AXI_ACLK = clk_100_0000MHzMMCM0
 END
 
-BEGIN axi_master_lite_sc 
+BEGIN axi_master_lite_sc
  PARAMETER INSTANCE = axi_master_lite_sc_0
  PARAMETER HW_VER = 2.00.a
  BUS_INTERFACE M_AXI_LITE = axi4lite_0
