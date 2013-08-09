@@ -104,7 +104,7 @@ BEGIN axi_pcie
  PARAMETER C_DEVICE_ID = 0x0505
  PARAMETER C_VENDOR_ID = 0x10EE
  PARAMETER C_CLASS_CODE = 0x058000
- PARAMETER C_REV_ID = 0x1
+ PARAMETER C_REV_ID = 0x2
  PARAMETER C_REF_CLK_FREQ = 0
  PARAMETER C_PCIE_CAP_SLOT_IMPLEMENTED = 0
  PARAMETER C_INTERRUPT_PIN = 1
@@ -140,6 +140,7 @@ BEGIN axi_pcie
  PORT axi_ctl_aclk_out = axi_ctl_aclk_out
  PORT REFCLK = PCIe_Diff_Clk
  PORT mmcm_lock = PCIe_MMCM_Lock
+ PORT INTX_MSI_Request = axi_aes_intr_0
 END
 
 BEGIN axi_dma
@@ -171,6 +172,8 @@ BEGIN axi_dma
  PORT mm2s_cntrl_reset_out_n = mm2s_cntrl_reset_out_n_0
  PORT s2mm_prmry_reset_out_n = s2mm_prmry_reset_out_n_0
  PORT s2mm_sts_reset_out_n = s2mm_sts_reset_out_n_0
+ PORT mm2s_introut = mm2s_intr_0
+ PORT s2mm_introut = s2mm_intr_0
 END
 
 BEGIN axi_aes
@@ -192,5 +195,8 @@ BEGIN axi_aes
  PORT mm2s_cntrl_reset_out_n = mm2s_cntrl_reset_out_n_0
  PORT s2mm_prmry_reset_out_n = s2mm_prmry_reset_out_n_0
  PORT s2mm_sts_reset_out_n = s2mm_sts_reset_out_n_0
+ PORT mm2s_intr = mm2s_intr_0
+ PORT s2mm_intr = s2mm_intr_0
+ PORT axi_intr = axi_aes_intr_0
 END
 

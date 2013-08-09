@@ -13,7 +13,8 @@
 
  PORT RESET = RESET, DIR = I, SIGIS = RST, RST_POLARITY = 1
  PORT CLK = CLK, DIR = I, SIGIS = CLK, CLK_FREQ = 200000000
-
+ PORT s2mm_introut = s2mm_introut, DIR = O
+ PORT mm2s_introut = mm2s_introut, DIR = O
 
 BEGIN proc_sys_reset
  PARAMETER INSTANCE = proc_sys_reset_0
@@ -82,6 +83,8 @@ BEGIN axi_dma
  PORT mm2s_cntrl_reset_out_n = mm2s_cntrl_reset_out_n_0
  PORT s2mm_prmry_reset_out_n = s2mm_prmry_reset_out_n_0
  PORT s2mm_sts_reset_out_n = s2mm_sts_reset_out_n_0
+ PORT mm2s_introut = mm2s_introut
+ PORT s2mm_introut = s2mm_introut
 END
 
 BEGIN axi_aes
