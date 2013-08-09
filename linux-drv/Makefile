@@ -1,4 +1,4 @@
-GITVERSION="git-$(shell git describe --dirty --always)-`date "+%Y %D %H:%M:%S"`"
+GITVERSION="git-$(shell git describe --dirty --always) `date "+%Y %D %H:%M:%S"`"
 EXTRA_CFLAGS += -DGITVERSION=\"${GITVERSION}\"
 #EXTRA_CFLAGS += -DDEBUG -g
 

@@ -75,6 +75,9 @@ static struct pci_driver aes_driver = {
 
 static int __init aes_init(void)
 {
+	pr_debug(DRIVER_NAME ": Linux DMA Driver 0.1 %s\n", 
+			git_version);
+
 	spin_lock_init(&tx_lock);
 	spin_lock_init(&rx_lock);
 
@@ -95,3 +98,4 @@ module_exit(aes_exit);
 MODULE_DESCRIPTION("AES10G HBA Linux driver");
 MODULE_AUTHOR("Hu Gang");
 MODULE_LICENSE("GPL");
+MODULE_VERSION(GITVERSION);
