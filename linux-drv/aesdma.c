@@ -22,9 +22,11 @@
 #include "xaxidma.h"
 #include "xaxidma_bdring.h"
 #include "xaxidma.h"
+#include "xaxidma_hw.h"
 #include "xdebug.h"
 
 #define DRIVER_NAME "AES10G"
+
 
 static char *git_version = GITVERSION;
 
@@ -40,13 +42,13 @@ static DEFINE_PCI_DEVICE_TABLE(aes_pci_table) = {
 };
 MODULE_DEVICE_TABLE(pci, aes_pci_table);
 
-struct aes_local {
+struct aes_dev {
 	struct device *dev;
 	struct pci_dev *pdev;
 
 	u32 base;
-	u32 base_len;
-	void __iomem *reg_base;
+	u32 blen;
+	void __iomem *reg;
 
 	XAxiDma AxiDma;
 
@@ -54,16 +56,93 @@ struct aes_local {
 	spinlock_t hw_lock;
 };
 
+static void AxiDma_Stop(void __iomem *base)
+{
+	uint32_t reg;
+
+	reg = XAxiDma_ReadReg(base, XAXIDMA_TX_OFFSET + XAXIDMA_CR_OFFSET);
+	reg &= ~XAXIDMA_CR_RUNSTOP_MASK;
+	XAxiDma_WriteReg(base, XAXIDMA_TX_OFFSET + XAXIDMA_CR_OFFSET, reg);
+
+	reg = XAxiDma_ReadReg(base, XAXIDMA_RX_OFFSET + XAXIDMA_CR_OFFSET);
+	reg &= ~XAXIDMA_CR_RUNSTOP_MASK;
+	XAxiDma_WriteReg(base, XAXIDMA_RX_OFFSET + XAXIDMA_CR_OFFSET, reg);
+}
+
 static int aes_probe(struct pci_dev *pdev, 
 		const struct pci_device_id *id)
 {
-	/* TODO */
+	int err;
+	struct aes_dev *dma;
+
+	err = pci_enable_device(pdev);
+	if (err) {
+		dev_err(&pdev->dev, "PCI device enable failed, err=%d\n",
+				err);
+		return err;
+	}
+
+	err = pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
+	if (!err) {
+		err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
+	} else {
+		err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
+		if (!err) 
+			err = pci_set_consistent_dma_mask(pdev,
+					DMA_BIT_MASK(32));
+	}
+	if (err) {
+		dev_err(&pdev->dev, "No usable DMA configration.\n");
+		goto err_dma_mask;
+	}
+
+	err = pci_request_regions(pdev, DRIVER_NAME);
+	if (err) {
+		dev_err(&pdev->dev, "PCI device get region failed, err=%d\n",
+				err);
+		goto err_request_regions;
+	}
+	pci_set_master(pdev);
+
+	dma = devm_kzalloc(&pdev->dev, sizeof(*dma), GFP_KERNEL);
+	if (!dma) {
+		dev_err(&pdev->dev, "Could not alloc dma device.\n");
+		goto err_alloc_dmadev;
+	}
+	pci_set_drvdata(pdev, dma);
+	dma->pdev = pdev;
+	dma->dev  = &pdev->dev;
+
+	dma->base = pci_resource_start(pdev, 0);
+	dma->blen = pci_resource_len(pdev, 0);
+	dma->reg  = ioremap_nocache(dma->base, dma->blen);
+	if (!dma->reg) {
+		dev_err(&pdev->dev, "ioremap reg base error.\n");
+		goto err_ioremap;
+	}
+	dev_info(&pdev->dev, "Base 0x%08x, size 0x%x, mmr %p, irq %d\n",
+			dma->base, dma->blen, dma->reg,
+			dma->pdev->irq);
+
+err_ioremap:
+	kfree(dma);
+err_alloc_dmadev:
+	pci_release_regions(pdev);
+err_request_regions:
+err_dma_mask:
+	pci_disable_device(pdev);
 	return 0;
 }
 
 static void aes_remove(struct pci_dev *pdev)
 {
-	/* TODO */
+	struct aes_dev *dma = dev_get_drvdata(&pdev->dev);
+
+	AxiDma_Stop(dma->reg);
+	iounmap(dma->reg);
+	pci_release_regions(pdev);
+	pci_set_drvdata(pdev, NULL);
+	pci_disable_device(pdev);
 }
 
 static struct pci_driver aes_driver = {
