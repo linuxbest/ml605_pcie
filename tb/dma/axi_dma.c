@@ -61,8 +61,8 @@ int osChip_init(uint32_t base)
 	rsg->ctrl    |= 0x04000000; /* EOF */
 
 	/* Reset DMA */
-	osChipRegWrite(base + 0x00, 0x4);
-	osChipRegWrite(base + 0x30, 0x4);
+	osChipRegWrite(base + 0x00, 0x4 | (1<<12) | (1<<13) | (1<<14));
+	osChipRegWrite(base + 0x30, 0x4 | (1<<12) | (1<<13) | (1<<14));
 
 	/* wait for Reset done */
 	for (i = 0; i < 100; i ++) {
@@ -71,14 +71,14 @@ int osChip_init(uint32_t base)
 	/* write cur desc */
 	osChipRegWrite(base + 0x38, 0x2000);
 	/* start dma */
-	osChipRegWrite(base + 0x30, 0x1);
+	osChipRegWrite(base + 0x30, 0x1 | (1<<12) | (1<<13) | (1<<14));
 	/* write tail desc */
 	osChipRegWrite(base + 0x40, 0x2000);
 
 	/* write cur desc */
 	osChipRegWrite(base + 0x08, 0x1000);
 	/* start dma */
-	osChipRegWrite(base + 0x00, 0x1);
+	osChipRegWrite(base + 0x00, 0x1 | (1<<12) | (1<<13) | (1<<14));
 	/* write tail desc */
 	osChipRegWrite(base + 0x10, 0x1000);
 
