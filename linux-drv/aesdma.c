@@ -120,9 +120,11 @@ static int aes_probe(struct pci_dev *pdev,
 		dev_err(&pdev->dev, "ioremap reg base error.\n");
 		goto err_ioremap;
 	}
-	dev_info(&pdev->dev, "Base 0x%08x, size 0x%x, mmr %p, irq %d\n",
+	dev_info(&pdev->dev, "Base 0x%08x, size 0x%x, mmr 0x%p, irq %d\n",
 			dma->base, dma->blen, dma->reg,
 			dma->pdev->irq);
+
+	return 0;
 
 err_ioremap:
 	kfree(dma);
@@ -131,7 +133,7 @@ err_alloc_dmadev:
 err_request_regions:
 err_dma_mask:
 	pci_disable_device(pdev);
-	return 0;
+	return err;
 }
 
 static void aes_remove(struct pci_dev *pdev)
