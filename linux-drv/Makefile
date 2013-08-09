@@ -4,8 +4,8 @@ EXTRA_CFLAGS += -DGITVERSION=\"${GITVERSION}\"
 
 KERNELDIR ?= /lib/modules/`uname -r`/build
 
-obj-m := eth10g.o
-eth10g-objs := xaxidma_bd.o xaxidma_bdring.o xaxidma.o xio.o
+obj-m := aes10g.o
+aes10g-objs := aesdma.o xaxidma_bd.o xaxidma_bdring.o xaxidma.o xio.o
 
 default:
 	        $(MAKE) -C $(KERNELDIR) SUBDIRS=$(PWD) modules
