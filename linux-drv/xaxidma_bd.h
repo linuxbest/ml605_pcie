@@ -120,12 +120,15 @@ extern "C" {
 #include "xaxidma_hw.h"
 #include "xstatus.h"
 #include "xdebug.h"
-#include "xil_cache.h"
+
+#define Xil_DCacheFlushRange(x, l)      {}
+#define Xil_DCacheInvalidateRange(x, l) {}
+#define DATA_SYNC                       {}
 
 #ifdef __MICROBLAZE__
 #include "xenv.h"
 #else
-#include <string.h>
+#include <linux/string.h>
 #endif
 
 /************************** Constant Definitions *****************************/

@@ -79,6 +79,8 @@
 /***************************** Include Files *********************************/
 
 #include "xaxidma_bdring.h"
+#include "xdebug.h"
+#include <linux/kernel.h>
 
 /************************** Constant Definitions *****************************/
 /* Use 100 milliseconds for 100 MHz
@@ -107,6 +109,10 @@
  *****************************************************************************/
 #define XAXIDMA_VIRT_TO_PHYS(BdPtr) \
 	((u32)(BdPtr) + (RingPtr->FirstBdPhysAddr - RingPtr->FirstBdAddr))
+
+
+#define XAXIDMA_PHYS_TO_VIRT(BdPtr)	\
+	((u32)(BdPtr) + (RingPtr->FirstBdAddr) - (RingPtr->FirstBdPhysAddr))
 
 /******************************************************************************
  * Move the BdPtr argument ahead an arbitrary number of BDs wrapping around
@@ -170,9 +176,9 @@
     }
 
 /************************** Function Prototypes ******************************/
-#if (!defined(DEBUG))
-extern int xil_printf(const char *format, ...);
-#endif
+//#if (!defined(DEBUG))
+//extern int printk(KERN_ALERT const char *format, ...);
+//#endif
 
 /************************** Variable Definitions *****************************/
 
@@ -196,7 +202,7 @@ int XAxiDma_UpdateBdRingCDesc(XAxiDma_BdRing* RingPtr, int RingIndex)
 {
 	u32 RegBase;
 	XAxiDma_Bd *BdPtr;
-
+	XAxiDma_Bd *BdPtrPhy;
 
 	/* BD list has yet to be created for this channel */
 	if (RingPtr->AllCnt == 0) {
@@ -205,7 +211,6 @@ int XAxiDma_UpdateBdRingCDesc(XAxiDma_BdRing* RingPtr, int RingIndex)
 
 		return XST_DMA_SG_NO_LIST;
 	}
-
 	/* Do nothing if already started */
 	if (RingPtr->RunState == AXIDMA_CHANNEL_NOT_HALTED) {
 		/* Need to update tail pointer if needed (Engine is not
@@ -213,8 +218,7 @@ int XAxiDma_UpdateBdRingCDesc(XAxiDma_BdRing* RingPtr, int RingIndex)
 		 */
 		return XST_SUCCESS;
 	}
-
-	if (!XAxiDma_BdRingHwIsStarted(RingPtr)) {
+	if (!XAxiDma_mBdRingHwIsStarted(RingPtr)) {
 		/* If hardware is not running, then we need to put a valid current
 	 	 * BD pointer to the current BD register before start the hardware
 	 	 */
@@ -223,56 +227,56 @@ int XAxiDma_UpdateBdRingCDesc(XAxiDma_BdRing* RingPtr, int RingIndex)
 		/* Put a valid BD pointer in the current BD pointer register
 	 	 * So, the hardware is ready to go when tail BD pointer is updated
 	 	 */
-		BdPtr = (XAxiDma_Bd *)RingPtr->BdaRestart;
-
+		BdPtrPhy = (XAxiDma_Bd *)RingPtr->BdaRestart;
+		BdPtr = (XAxiDma_Bd *)XAXIDMA_PHYS_TO_VIRT(RingPtr->BdaRestart);
 		if (!XAxiDma_BdHwCompleted(BdPtr)) {
 			if (RingPtr->IsRxChannel) {
 				if (!RingIndex) {
 					XAxiDma_WriteReg(RegBase,
-					XAXIDMA_CDESC_OFFSET, (u32)BdPtr);
+					XAXIDMA_CDESC_OFFSET, (u32)BdPtrPhy);
 				}
 				else {
 					XAxiDma_WriteReg(RegBase, 
 					(XAXIDMA_RX_CDESC0_OFFSET +
 					(RingIndex - 1) * XAXIDMA_RX_NDESC_OFFSET),
-					(u32)BdPtr);
+					(u32)BdPtrPhy);
 				}
 			}
 			else {
 				XAxiDma_WriteReg(RegBase, XAXIDMA_CDESC_OFFSET,
-				(u32)BdPtr);
+				(u32)BdPtrPhy);
 			}
 		}
 		else {
 			/* Look for an uncompleted BD
 		 	*/
 			while (XAxiDma_BdHwCompleted(BdPtr)) {
-				BdPtr = XAxiDma_BdRingNext(RingPtr, BdPtr);
+				BdPtr = XAxiDma_mBdRingNext(RingPtr, BdPtr);
+				BdPtrPhy = (XAxiDma_Bd *)XAXIDMA_VIRT_TO_PHYS(BdPtr);
 
-				if ((u32)BdPtr == (u32) RingPtr->BdaRestart) {
+				if ((u32)BdPtrPhy == (u32) RingPtr->BdaRestart) {
 					xdbg_printf(XDBG_DEBUG_ERROR,
 					"StartBdRingHw: Cannot find valid cdesc\r\n");
 
 					return XST_DMA_ERROR;
 				}
-
 				if (!XAxiDma_BdHwCompleted(BdPtr)) {
 					if (RingPtr->IsRxChannel) {
 						if (!RingIndex) {
 							XAxiDma_WriteReg(RegBase,
-						 	XAXIDMA_CDESC_OFFSET, (u32)BdPtr);
+						 	XAXIDMA_CDESC_OFFSET, (u32)BdPtrPhy);
 						}
 						else {
 							XAxiDma_WriteReg(RegBase,
 							(XAXIDMA_RX_CDESC0_OFFSET +
 							(RingIndex - 1) *
 							XAXIDMA_RX_NDESC_OFFSET),
-							(u32)BdPtr);
+							(u32)BdPtrPhy);
 						}
 					}
 					else {
 						XAxiDma_WriteReg(RegBase, 
-						XAXIDMA_CDESC_OFFSET, (u32)BdPtr);
+						XAXIDMA_CDESC_OFFSET, (u32)BdPtrPhy);
 					}
 					break;
 				}
@@ -554,7 +558,7 @@ int XAxiDma_StartBdRingHw(XAxiDma_BdRing * RingPtr, int RingIndex)
 {
 	u32 RegBase;
 
-	if (!XAxiDma_BdRingHwIsStarted(RingPtr)) {
+	if (!XAxiDma_mBdRingHwIsStarted(RingPtr)) {
 		/* Start the hardware
 	 	*/
 		RegBase = RingPtr->ChanBase;
@@ -563,7 +567,7 @@ int XAxiDma_StartBdRingHw(XAxiDma_BdRing * RingPtr, int RingIndex)
 			| XAXIDMA_CR_RUNSTOP_MASK);
 	}
 
-	if (XAxiDma_BdRingHwIsStarted(RingPtr)) {
+	if (XAxiDma_mBdRingHwIsStarted(RingPtr)) {
 		/* Note as started */
 		RingPtr->RunState = AXIDMA_CHANNEL_NOT_HALTED;
 
@@ -813,7 +817,7 @@ int XAxiDma_BdRingAlloc(XAxiDma_BdRing * RingPtr, int NumBd,
 {
 	if (NumBd <= 0) {
 
-		xdbg_printf(XDBG_DEBUG_ERROR, "BdRingAlloc: negative BD "
+		printk("BdRingAlloc: negative BD "
 				"number %d\r\n", NumBd);
 
 		return XST_INVALID_PARAM;
@@ -821,8 +825,7 @@ int XAxiDma_BdRingAlloc(XAxiDma_BdRing * RingPtr, int NumBd,
 
 	/* Enough free BDs available for the request? */
 	if (RingPtr->FreeCnt < NumBd) {
-		xdbg_printf(XDBG_DEBUG_ERROR,
-		"Not enough BDs to alloc %d/%d\r\n", NumBd, RingPtr->FreeCnt);
+		printk("Not enough BDs to alloc %d/%d\r\n", NumBd, RingPtr->FreeCnt);
 
 		return XST_FAILURE;
 	}
@@ -1038,7 +1041,7 @@ int XAxiDma_BdRingToHw(XAxiDma_BdRing * RingPtr, int NumBd,
 		/* Flush the current BD so DMA core could see the updates */
 		XAXIDMA_CACHE_FLUSH(CurBdPtr);
 
-		CurBdPtr = XAxiDma_BdRingNext(RingPtr, CurBdPtr);
+		CurBdPtr = XAxiDma_mBdRingNext(RingPtr, CurBdPtr);
 		BdCr = XAxiDma_BdRead(CurBdPtr, XAXIDMA_BD_CTRL_LEN_OFFSET);
 		BdSts = XAxiDma_BdRead(CurBdPtr, XAXIDMA_BD_STS_OFFSET);
 	}
@@ -1249,7 +1252,7 @@ int XAxiDma_BdRingFromHw(XAxiDma_BdRing * RingPtr, int BdLimit,
 		}
 
 		/* Move on to the next BD in work group */
-		CurBdPtr = XAxiDma_BdRingNext(RingPtr, CurBdPtr);
+		CurBdPtr = XAxiDma_mBdRingNext(RingPtr, CurBdPtr);
 	}
 
 	/* Subtract off any partial packet BDs found */
@@ -1518,28 +1521,28 @@ int XAxiDma_BdRingCheck(XAxiDma_BdRing * RingPtr)
 void XAxiDma_BdRingDumpRegs(XAxiDma_BdRing *RingPtr, int RingIndex) {
 	u32 RegBase = RingPtr->ChanBase;
 
-	xil_printf("Dump registers %x:\r\n", (unsigned int)RegBase);
-	xil_printf("Control REG: %08x\r\n",
+	printk(KERN_ALERT "Dump registers %x:\r\n", (unsigned int)RegBase);
+	printk(KERN_ALERT "Control REG: %08x\r\n",
 		(unsigned int)XAxiDma_ReadReg(RegBase, XAXIDMA_CR_OFFSET));
-	xil_printf("Status REG: %08x\r\n",
+	printk(KERN_ALERT "Status REG: %08x\r\n",
 		(unsigned int)XAxiDma_ReadReg(RegBase, XAXIDMA_SR_OFFSET));
 
 	if (RingIndex) {
-	xil_printf("Cur BD REG: %08x\r\n",
+	printk(KERN_ALERT "Cur BD REG: %08x\r\n",
 		(unsigned int)XAxiDma_ReadReg(RegBase, 
 		XAXIDMA_RX_CDESC0_OFFSET + ((RingIndex - 1) * 
 		XAXIDMA_RX_NDESC_OFFSET)));
-	xil_printf("Tail BD REG: %08x\r\n",
+	printk(KERN_ALERT "Tail BD REG: %08x\r\n",
 		(unsigned int)XAxiDma_ReadReg(RegBase, 
 		XAXIDMA_RX_TDESC0_OFFSET + ((RingIndex - 1) * 
 		XAXIDMA_RX_NDESC_OFFSET)));
 	}
 	else {
-	xil_printf("Cur BD REG: %08x\r\n",
+	printk(KERN_ALERT "Cur BD REG: %08x\r\n",
 		(unsigned int)XAxiDma_ReadReg(RegBase, XAXIDMA_CDESC_OFFSET));
-	xil_printf("Tail BD REG: %08x\r\n",
+	printk(KERN_ALERT "Tail BD REG: %08x\r\n",
 		(unsigned int)XAxiDma_ReadReg(RegBase, XAXIDMA_TDESC_OFFSET));
 	}
 	
-	xil_printf("\r\n");
+	printk(KERN_ALERT "\r\n");
 }

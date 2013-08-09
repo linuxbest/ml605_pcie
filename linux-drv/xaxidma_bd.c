@@ -66,11 +66,10 @@
  *****************************************************************************/
 
 #include "xaxidma_bd.h"
+#include <linux/kernel.h>
 
 /************************** Function Prototypes ******************************/
-#if (!defined(DEBUG))
-extern int xil_printf(const char *format, ...);
-#endif
+#define xil_printf(fmt, arg...) printk(KERN_ALERT fmt, ##arg)
 
 /*****************************************************************************/
 /**

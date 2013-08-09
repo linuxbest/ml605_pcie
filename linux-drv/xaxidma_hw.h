@@ -69,7 +69,7 @@ extern "C" {
 #endif
 
 #include "xil_types.h"
-#include "xil_io.h"
+#include "xio.h"
 
 /************************** Constant Definitions *****************************/
 
@@ -282,8 +282,8 @@ extern "C" {
 
 /***************** Macros (Inline Functions) Definitions *********************/
 
-#define XAxiDma_In32	Xil_In32
-#define XAxiDma_Out32	Xil_Out32
+#define XAxiDma_In32	XIo_In32
+#define XAxiDma_Out32	XIo_Out32
 
 /*****************************************************************************/
 /**

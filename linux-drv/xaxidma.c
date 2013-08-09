@@ -270,12 +270,12 @@ void XAxiDma_Reset(XAxiDma * InstancePtr)
 	 * before the reset so later we can resume the rings smoothly.
 	 */
 	if(XAxiDma_HasSg(InstancePtr)){
-		XAxiDma_BdRingSnapShotCurrBd(TxRingPtr, 0);
+		XAxiDma_mBdRingSnapShotCurrBd(TxRingPtr, 0);
 		
 		for (RingIndex = 0; RingIndex < InstancePtr->RxNumChannels;
 						RingIndex++) {
 			RxRingPtr = XAxiDma_GetRxRing(InstancePtr, RingIndex);
-			XAxiDma_BdRingSnapShotCurrBd(RxRingPtr, RingIndex);
+			XAxiDma_mBdRingSnapShotCurrBd(RxRingPtr, RingIndex);
 		}
 	}
 
@@ -635,7 +635,7 @@ static int XAxiDma_Started(XAxiDma * InstancePtr, int RingIndex)
 	if (InstancePtr->HasMm2S) {
 		TxRingPtr = XAxiDma_GetTxRing(InstancePtr);
 
-		if (!XAxiDma_BdRingHwIsStarted(TxRingPtr)) {
+		if (!XAxiDma_mBdRingHwIsStarted(TxRingPtr)) {
 			xdbg_printf(XDBG_DEBUG_ERROR,
 				"Started: tx ring not started\r\n");
 
@@ -646,7 +646,7 @@ static int XAxiDma_Started(XAxiDma * InstancePtr, int RingIndex)
 	if (InstancePtr->HasS2Mm) {
 		RxRingPtr = XAxiDma_GetRxRing(InstancePtr, RingIndex);
 
-		if (!XAxiDma_BdRingHwIsStarted(RxRingPtr)) {
+		if (!XAxiDma_mBdRingHwIsStarted(RxRingPtr)) {
 			xdbg_printf(XDBG_DEBUG_ERROR,
 				"Started: rx ring not started\r\n");
 

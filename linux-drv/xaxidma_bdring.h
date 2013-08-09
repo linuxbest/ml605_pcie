@@ -160,7 +160,7 @@ typedef struct {
 *		This function is used only when system is configured as SG mode
 *
 ******************************************************************************/
-#define XAxiDma_BdRingCntCalc(Alignment, Bytes)                           \
+#define XAxiDma_mBdRingCntCalc(Alignment, Bytes)                           \
 	(int)((Bytes)/((sizeof(XAxiDma_Bd)+((Alignment)-1))&~((Alignment)-1)))
 
 /*****************************************************************************/
@@ -183,7 +183,7 @@ typedef struct {
 *		This function is used only when system is configured as SG mode
 *
 ******************************************************************************/
-#define XAxiDma_BdRingMemCalc(Alignment, NumBd)			\
+#define XAxiDma_mBdRingMemCalc(Alignment, NumBd)			\
 	(int)((sizeof(XAxiDma_Bd)+((Alignment)-1)) & ~((Alignment)-1))*(NumBd)
 
 /****************************************************************************/
@@ -201,7 +201,7 @@ typedef struct {
 *		This function is used only when system is configured as SG mode
 *
 *****************************************************************************/
-#define XAxiDma_BdRingGetCnt(RingPtr) ((RingPtr)->AllCnt)
+#define XAxiDma_mBdRingGetCnt(RingPtr) ((RingPtr)->AllCnt)
 
 /****************************************************************************/
 /**
@@ -218,7 +218,7 @@ typedef struct {
 *		This function is used only when system is configured as SG mode
 *
 *****************************************************************************/
-#define XAxiDma_BdRingGetFreeCnt(RingPtr)  ((RingPtr)->FreeCnt)
+#define XAxiDma_mBdRingGetFreeCnt(RingPtr)  ((RingPtr)->FreeCnt)
 
 
 /****************************************************************************/
@@ -235,7 +235,7 @@ typedef struct {
 *		This function is used only when system is configured as SG mode
 *
 *****************************************************************************/
-#define XAxiDma_BdRingSnapShotCurrBd(RingPtr, RingIndex)		  \
+#define XAxiDma_mBdRingSnapShotCurrBd(RingPtr, RingIndex)		  \
 	{								  \
 		if (!RingPtr->IsRxChannel) {				  \
 			(RingPtr)->BdaRestart = 			  \
@@ -271,7 +271,7 @@ typedef struct {
 *		This function is used only when system is configured as SG mode
 *
 *****************************************************************************/
-#define XAxiDma_BdRingGetCurrBd(RingPtr)               \
+#define XAxiDma_mBdRingGetCurrBd(RingPtr)               \
 	(XAxiDma_Bd *)XAxiDma_ReadReg((RingPtr)->ChanBase, \
 					XAXIDMA_CDESC_OFFSET)              \
 
@@ -291,7 +291,7 @@ typedef struct {
 *		This function is used only when system is configured as SG mode
 *
 *****************************************************************************/
-#define XAxiDma_BdRingNext(RingPtr, BdPtr)			\
+#define XAxiDma_mBdRingNext(RingPtr, BdPtr)			\
 		(((u32)(BdPtr) >= (RingPtr)->LastBdAddr) ?	\
 			(XAxiDma_Bd*)(RingPtr)->FirstBdAddr :	\
 			(XAxiDma_Bd*)((u32)(BdPtr) + (RingPtr)->Separation))
@@ -312,7 +312,7 @@ typedef struct {
 *		This function is used only when system is configured as SG mode
 *
 *****************************************************************************/
-#define XAxiDma_BdRingPrev(RingPtr, BdPtr)				\
+#define XAxiDma_mBdRingPrev(RingPtr, BdPtr)				\
 		(((u32)(BdPtr) <= (RingPtr)->FirstBdAddr) ?		\
 			(XAxiDma_Bd*)(RingPtr)->LastBdAddr :		\
 			(XAxiDma_Bd*)((u32)(BdPtr) - (RingPtr)->Separation))
@@ -331,7 +331,7 @@ typedef struct {
 *		This function is used only when system is configured as SG mode
 *
 *****************************************************************************/
-#define XAxiDma_BdRingGetSr(RingPtr)				\
+#define XAxiDma_mBdRingGetSr(RingPtr)				\
 		XAxiDma_ReadReg((RingPtr)->ChanBase, XAXIDMA_SR_OFFSET)
 
 /****************************************************************************/
@@ -349,7 +349,7 @@ typedef struct {
 *		This function is used only when system is configured as SG mode
 *
 *****************************************************************************/
-#define XAxiDma_BdRingGetError(RingPtr)				\
+#define XAxiDma_mBdRingGetError(RingPtr)				\
 		(XAxiDma_ReadReg((RingPtr)->ChanBase, XAXIDMA_SR_OFFSET) \
 			& XAXIDMA_ERR_ALL_MASK)
 
@@ -368,7 +368,7 @@ typedef struct {
 *		int XAxiDma_BdRingHwIsStarted(XAxiDma_BdRing* RingPtr)
 *
 *****************************************************************************/
-#define XAxiDma_BdRingHwIsStarted(RingPtr)				\
+#define XAxiDma_mBdRingHwIsStarted(RingPtr)				\
 		((XAxiDma_ReadReg((RingPtr)->ChanBase, XAXIDMA_SR_OFFSET) \
 			& XAXIDMA_HALTED_MASK) ? FALSE : TRUE)
 
@@ -388,7 +388,7 @@ typedef struct {
 *		This function is used only when system is configured as SG mode
 *
 *****************************************************************************/
-#define XAxiDma_BdRingBusy(RingPtr)					 \
+#define XAxiDma_mBdRingBusy(RingPtr)					 \
 		(XAxiDma_BdRingHwIsStarted(RingPtr) &&		\
 		((XAxiDma_ReadReg((RingPtr)->ChanBase, XAXIDMA_SR_OFFSET) \
 			& XAXIDMA_IDLE_MASK) ? FALSE : TRUE))
@@ -408,7 +408,7 @@ typedef struct {
 *		This function is used only when system is configured as SG mode
 *
 *****************************************************************************/
-#define XAxiDma_BdRingIntEnable(RingPtr, Mask)			\
+#define XAxiDma_mBdRingIntEnable(RingPtr, Mask)			\
 		(XAxiDma_WriteReg((RingPtr)->ChanBase, XAXIDMA_CR_OFFSET, \
 		XAxiDma_ReadReg((RingPtr)->ChanBase, XAXIDMA_CR_OFFSET) \
 			| ((Mask) & XAXIDMA_IRQ_ALL_MASK)))
@@ -427,7 +427,7 @@ typedef struct {
 *		This function is used only when system is configured as SG mode
 *
 *****************************************************************************/
-#define XAxiDma_BdRingIntGetEnabled(RingPtr)				\
+#define XAxiDma_mBdRingIntGetEnabled(RingPtr)				\
 	(XAxiDma_ReadReg((RingPtr)->ChanBase, XAXIDMA_CR_OFFSET) \
 		& XAXIDMA_IRQ_ALL_MASK)
 
@@ -447,7 +447,7 @@ typedef struct {
 *		This function is used only when system is configured as SG mode
 *
 *****************************************************************************/
-#define XAxiDma_BdRingIntDisable(RingPtr, Mask)				\
+#define XAxiDma_mBdRingIntDisable(RingPtr, Mask)				\
 		(XAxiDma_WriteReg((RingPtr)->ChanBase, XAXIDMA_CR_OFFSET, \
 		XAxiDma_ReadReg((RingPtr)->ChanBase, XAXIDMA_CR_OFFSET) & \
 			~((Mask) & XAXIDMA_IRQ_ALL_MASK)))
@@ -469,7 +469,7 @@ typedef struct {
 *		This function is used only when system is configured as SG mode
 *
 *****************************************************************************/
-#define XAxiDma_BdRingGetIrq(RingPtr)				\
+#define XAxiDma_mBdRingGetIrq(RingPtr)				\
 		(XAxiDma_ReadReg((RingPtr)->ChanBase, XAXIDMA_SR_OFFSET) \
 			& XAXIDMA_IRQ_ALL_MASK)
 
@@ -487,7 +487,7 @@ typedef struct {
 *		This function is used only when system is configured as SG mode
 *
 *****************************************************************************/
-#define XAxiDma_BdRingAckIrq(RingPtr, Mask)				\
+#define XAxiDma_mBdRingAckIrq(RingPtr, Mask)				\
 		XAxiDma_WriteReg((RingPtr)->ChanBase, XAXIDMA_SR_OFFSET,\
 			(Mask) & XAXIDMA_IRQ_ALL_MASK)
 
