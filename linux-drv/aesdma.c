@@ -291,8 +291,48 @@ static struct aes_desc *aes_alloc_desc(struct aes_dev *dev)
 	return sw;
 }
 
+static int aes_desc_to_hw(struct aes_dev *dma, struct aes_desc *sw,
+		XAxiDma_BdRing *ring)
+{
+	XAxiDma_Bd *first_bd_ptr;
+	XAxiDma_Bd *last_bd_ptr;
+	XAxiDma_Bd *bd_ptr;
+
+	int len;
+	dma_addr_t addr = 0;
+	u32 sts = XAXIDMA_BD_CTRL_TXSOF_MASK;
+
+	/* TODO */
+
+	return 0;
+}
+
 static int aes_self_test(struct aes_dev *dma)
 {
+	struct page *src_page, dst_page;
+	dma_addr_t src_dma, dst_dma;
+	struct aes_desc *sw;
+	int res;
+
+	/* alloc desc */
+	sw = aes_alloc_desc(dma);
+	dev_trace(&dma->pdev->dev, "dev %p, sw %p, src %p, dst %p\n",
+			dma, sw, src_page, dst_page);
+
+	/* dma_buf_addr_init tx/rx */
+	dma_buf_addr_init(&sw->src_buf, src_dma, PAGE_SIZE);
+	dma_buf_addr_init(&sw->dst_buf, dst_dma, PAGE_SIZE);
+
+	/* aes_desc_to_hw rx/tx */
+	res = aes_desc_to_hw(dma, &sw->dst_buf,
+			XAxiDma_GetRxRing(&dma->AxiDma, 0));
+	if (res != 0)
+		return res;
+	res = aes_desc_to_hw(dma, &sw->src_buf,
+			XAxiDma_GetTxRing(&dma->AxiDma));
+	if (res != 0)
+		return res;
+
 	return 0;
 }
 
