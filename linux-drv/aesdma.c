@@ -291,25 +291,42 @@ static struct aes_desc *aes_alloc_desc(struct aes_dev *dev)
 	return sw;
 }
 
-static int aes_desc_to_hw(struct aes_dev *dma, struct aes_desc *sw,
-		XAxiDma_BdRing *ring)
+static int aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
+	XAxiDma_Bd *bd, XAxiDma_BdRing *ring)
 {
 	XAxiDma_Bd *first_bd_ptr;
 	XAxiDma_Bd *last_bd_ptr;
 	XAxiDma_Bd *bd_ptr;
 
-	int len;
+	int len, res, tcnt = 0;
 	dma_addr_t addr = 0;
 	u32 sts = XAXIDMA_BD_CTRL_TXSOF_MASK;
 
-	/* TODO */
+	bd_ptr = last_bd_ptr = first_bd_ptr = bd;
+	len = dma_buf_first(dbuf, &addr);
+	do {
+		last_bd_ptr = bd_ptr;
+		XAxiDma_BdSetBufAddr(bd_ptr, addr);
+		XAxiDma_BdSetLength(bd_ptr, len, 128*1024);
+		XAxiDma_BdSetCtrl(bd_ptr, 0);
 
-	return 0;
+		tcnt ++;
+		len = dma_buf_next(dbuf, &addr);
+		bd_ptr = XAxiDma_mBdRingNext(ring, bd_ptr);
+	} while (len > 0);
+
+	if (first_bd_ptr == last_bd_ptr) 
+		sts |= XAXIDMA_BD_CTRL_TXEOF_MASK;
+	else
+		XAxiDma_BdSetCtrl(last_bd_ptr, XAXIDMA_BD_CTRL_TXEOF_MASK);
+	XAxiDma_BdSetCtrl(first_bd_ptr, sts);
+
+	return XAxiDma_BdRingToHw(ring, tcnt, first_bd_ptr, 0);
 }
 
 static int aes_self_test(struct aes_dev *dma)
 {
-	struct page *src_page, dst_page;
+	struct page *src_page, *dst_page;
 	dma_addr_t src_dma, dst_dma;
 	struct aes_desc *sw;
 	int res;
@@ -324,11 +341,11 @@ static int aes_self_test(struct aes_dev *dma)
 	dma_buf_addr_init(&sw->dst_buf, dst_dma, PAGE_SIZE);
 
 	/* aes_desc_to_hw rx/tx */
-	res = aes_desc_to_hw(dma, &sw->dst_buf,
+	res = aes_desc_to_hw(dma, &sw->dst_buf, sw->rx_BdPtr,
 			XAxiDma_GetRxRing(&dma->AxiDma, 0));
 	if (res != 0)
 		return res;
-	res = aes_desc_to_hw(dma, &sw->src_buf,
+	res = aes_desc_to_hw(dma, &sw->src_buf, sw->tx_BdPtr,
 			XAxiDma_GetTxRing(&dma->AxiDma));
 	if (res != 0)
 		return res;
@@ -405,6 +422,45 @@ static int aes_desc_init(struct aes_dev *dma)
 	return 0;
 }
 
+static int aes_tx_isr(struct aes_dev *dma, u32 sts)
+{
+	/* TODO */
+	return 0;
+}
+
+static int aes_rx_isr(struct aes_dev *dma, u32 sts)
+{
+	/* TODO */
+	return 0;
+}
+
+
+static irqreturn_t aes_isr(int irq, void *dev_id)
+{
+	struct aes_dev *dma = (struct aes_dev *)dev_id;
+	XAxiDma_BdRing *RxRing, *TxRing;
+	u32 IrqStsTx, IrqStsRx;
+	irqreturn_t res = IRQ_NONE;
+
+	RxRing = XAxiDma_GetRxRing(&dma->AxiDma, 0);
+	TxRing = XAxiDma_GetTxRing(&dma->AxiDma);
+	IrqStsTx = XAxiDma_ReadReg(TxRing->ChanBase, XAXIDMA_SR_OFFSET);
+	IrqStsRx = XAxiDma_ReadReg(RxRing->ChanBase, XAXIDMA_SR_OFFSET);
+
+	pr_debug("IrqSts: %08x/%08x.\n",IrqStsTx, IrqStsRx);
+	if (((IrqStsTx | IrqStsRx) & XAXIDMA_IRQ_ALL_MASK) == 0) 
+		goto out;
+
+	if (IrqStsTx & XAXIDMA_IRQ_ALL_MASK) 
+		res = aes_tx_isr(dma, IrqStsTx);
+
+	if (IrqStsRx & XAXIDMA_IRQ_ALL_MASK) 
+		res = aes_rx_isr(dma, IrqStsRx);
+
+out:
+	return res;
+}
+
 static int aes_probe(struct pci_dev *pdev, 
 		const struct pci_device_id *id)
 {
@@ -463,6 +519,13 @@ static int aes_probe(struct pci_dev *pdev,
 	if (err != 0) 
 		goto err_ioremap;
 
+	err = request_irq(dma->pdev->irq, aes_isr, IRQF_SHARED, DRIVER_NAME,
+			dma);
+	if (err) {
+		dev_err(&pdev->dev, "request irq failed %d\n", err);
+		goto err_ioremap;
+	}
+
 	aes_self_test(dma);
 
 	return 0;
@@ -506,12 +569,17 @@ static int __init aes_init(void)
 	INIT_LIST_HEAD(&tx_head);
 	INIT_LIST_HEAD(&rx_head);
 
+	aes_desc_cache = kmem_cache_create("aes_desc_cache",
+			sizeof(struct aes_desc),
+			0, 0, NULL);
+
 	return pci_register_driver(&aes_driver);
 }
 
 static void __exit aes_exit(void)
 {
 	pci_unregister_driver(&aes_driver);
+	kmem_cache_destroy(aes_desc_cache);
 }
 
 module_init(aes_init);
