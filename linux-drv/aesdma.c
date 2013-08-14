@@ -379,6 +379,16 @@ static int aes_self_test(struct aes_dev *dma)
 	if (res != 0)
 		return res;
 
+	msleep(1000);
+
+	dma_unmap_single(&dma->pdev->dev, src_dma, PAGE_SIZE, DMA_TO_DEVICE);
+	dma_unmap_single(&dma->pdev->dev, dst_dma, PAGE_SIZE, DMA_FROM_DEVICE);
+
+	print_hex_dump(KERN_DEBUG, "TX ", DUMP_PREFIX_ADDRESS, 16, 1,
+			src, 256, 1);
+	print_hex_dump(KERN_DEBUG, "RX ", DUMP_PREFIX_ADDRESS, 16, 1,
+			dst, 256, 1);
+
 	return 0;
 }
 
@@ -454,9 +464,13 @@ static int aes_desc_init(struct aes_dev *dma)
 static int aes_tx_isr(struct aes_dev *dma, u32 sts)
 {
 	XAxiDma_BdRing *ring = XAxiDma_GetTxRing(&dma->AxiDma);
-
+	
 	/* clear ring irq */
 	XAxiDma_mBdRingAckIrq(ring, sts);
+	if (sts & XAXIDMA_ERR_ALL_MASK) {
+		dev_err(&dma->pdev->dev, "TXIRQ error sts %08x\n", sts);
+		/* TODO */
+	}
 
 	return 0;
 }
@@ -467,10 +481,13 @@ static int aes_rx_isr(struct aes_dev *dma, u32 sts)
 	
 	/* clear ring irq */
 	XAxiDma_mBdRingAckIrq(ring, sts);
+	if (sts & XAXIDMA_ERR_ALL_MASK) {
+		dev_err(&dma->pdev->dev, "RXIRQ error sts %08x\n", sts);
+		/* TODO */
+	}
 
 	return 0;
 }
-
 
 static irqreturn_t aes_isr(int irq, void *dev_id)
 {
