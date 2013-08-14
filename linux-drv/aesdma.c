@@ -3,7 +3,7 @@
  
  Hu Gang <linuxbest@gmail.com> 
 *******************************************************************************/
-
+#define DEBUG 1
 #include <linux/hardirq.h>
 #include <linux/interrupt.h>
 #include <linux/module.h>
@@ -291,23 +291,35 @@ static struct aes_desc *aes_alloc_desc(struct aes_dev *dev)
 	return sw;
 }
 
-static int aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
-	XAxiDma_Bd *bd, XAxiDma_BdRing *ring)
+static int _aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
+	XAxiDma_Bd **bd, XAxiDma_BdRing *ring)
 {
 	XAxiDma_Bd *first_bd_ptr;
 	XAxiDma_Bd *last_bd_ptr;
 	XAxiDma_Bd *bd_ptr;
 
-	int len, res, tcnt = 0;
+	int len, res, tcnt = 0, cnt = 0;
 	dma_addr_t addr = 0;
 	u32 sts = XAXIDMA_BD_CTRL_TXSOF_MASK;
 
-	bd_ptr = last_bd_ptr = first_bd_ptr = bd;
+	cnt = dma_buf_cnt(dbuf);
+	res = XAxiDma_BdRingAlloc(ring, cnt, bd);
+	if (res != XST_SUCCESS) {
+		dev_err(&dma->pdev->dev, "XAxiDma: BdRingAlloc unsuccessful (%d,%d)\n",
+				cnt, res);
+		return res;
+	}
+	dev_trace(&dma->pdev->dev, "dev %p, bd %p, cnt %d, ring %p\n",
+			dma, *bd, cnt, ring);
+
+	bd_ptr = last_bd_ptr = first_bd_ptr = *bd;
 	len = dma_buf_first(dbuf, &addr);
 	do {
 		last_bd_ptr = bd_ptr;
+		dev_trace(&dma->pdev->dev, "dev %p, bd %p, addr %d, len %d\n",
+				dma, *bd, (u32)addr, len);
 		XAxiDma_BdSetBufAddr(bd_ptr, addr);
-		XAxiDma_BdSetLength(bd_ptr, len, 128*1024);
+		XAxiDma_BdSetLength(bd_ptr, len, ring->MaxTransferLen);
 		XAxiDma_BdSetCtrl(bd_ptr, 0);
 
 		tcnt ++;
@@ -326,27 +338,44 @@ static int aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
 
 static int aes_self_test(struct aes_dev *dma)
 {
-	struct page *src_page, *dst_page;
+	char *src, *dst;
 	dma_addr_t src_dma, dst_dma;
 	struct aes_desc *sw;
-	int res;
+	int res, i;
+	unsigned long flags;
+
+	/* alloc test memory */
+	src = kzalloc(PAGE_SIZE, GFP_KERNEL);
+	dst = kzalloc(PAGE_SIZE, GFP_KERNEL);
+	if (src == NULL || dst == NULL) 
+		return -ENOMEM;
+	for (i = 0; i < PAGE_SIZE; i ++) 
+		src[i] = i;
+
+	src_dma = dma_map_single(&dma->pdev->dev, src, PAGE_SIZE, DMA_TO_DEVICE);
+	dst_dma = dma_map_single(&dma->pdev->dev, dst, PAGE_SIZE, DMA_FROM_DEVICE);
 
 	/* alloc desc */
 	sw = aes_alloc_desc(dma);
-	dev_trace(&dma->pdev->dev, "dev %p, sw %p, src %p, dst %p\n",
-			dma, sw, src_page, dst_page);
+	dev_trace(&dma->pdev->dev, "dev %p, sw %p, src %p/%x, dst %p/%x\n",
+			dma, sw, src, (u32)src_dma, dst, (u32)dst_dma);
 
 	/* dma_buf_addr_init tx/rx */
 	dma_buf_addr_init(&sw->src_buf, src_dma, PAGE_SIZE);
 	dma_buf_addr_init(&sw->dst_buf, dst_dma, PAGE_SIZE);
-
+	
 	/* aes_desc_to_hw rx/tx */
-	res = aes_desc_to_hw(dma, &sw->dst_buf, sw->rx_BdPtr,
+	spin_lock_irqsave(&rx_lock, flags);
+	res = _aes_desc_to_hw(dma, &sw->dst_buf, &sw->rx_BdPtr,
 			XAxiDma_GetRxRing(&dma->AxiDma, 0));
+	spin_unlock_irqrestore(&rx_lock, flags);
 	if (res != 0)
 		return res;
-	res = aes_desc_to_hw(dma, &sw->src_buf, sw->tx_BdPtr,
+
+	spin_lock_irqsave(&tx_lock, flags);
+	res = _aes_desc_to_hw(dma, &sw->src_buf, &sw->tx_BdPtr,
 			XAxiDma_GetTxRing(&dma->AxiDma));
+	spin_unlock_irqrestore(&tx_lock, flags);
 	if (res != 0)
 		return res;
 
@@ -466,6 +495,7 @@ static int aes_probe(struct pci_dev *pdev,
 {
 	int err;
 	struct aes_dev *dma;
+	XAxiDma_Config Config;
 
 	err = pci_enable_device(pdev);
 	if (err) {
@@ -515,6 +545,25 @@ static int aes_probe(struct pci_dev *pdev,
 			dma->base, dma->blen, dma->reg,
 			dma->pdev->irq);
 
+	Config.BaseAddr   = dma->reg;
+	Config.DeviceId   = 0xe001;
+	Config.HasMm2S    = 1;
+	Config.HasMm2SDRE = 0;
+	Config.HasS2Mm    = 1;
+	Config.HasS2MmDRE = 0;
+	Config.HasSg      = 1;
+	Config.HasStsCntrlStrm = 1;
+	Config.Mm2SDataWidth   = 128;
+	Config.Mm2sNumChannels = 1;
+	Config.S2MmDataWidth   = 128;
+	Config.S2MmNumChannels = 1;
+
+	err = XAxiDma_CfgInitialize(&dma->AxiDma, &Config);
+	if (err != XST_SUCCESS) {
+		dev_err(&pdev->dev, "Cfg initialize failed %d\n", err);
+		goto err_ioremap;
+	}
+
 	err = aes_desc_init(dma);
 	if (err != 0) 
 		goto err_ioremap;
@@ -545,6 +594,7 @@ static void aes_remove(struct pci_dev *pdev)
 	struct aes_dev *dma = dev_get_drvdata(&pdev->dev);
 
 	AxiDma_Stop(dma->reg);
+	free_irq(pdev->irq, dma);
 	iounmap(dma->reg);
 	pci_release_regions(pdev);
 	pci_set_drvdata(pdev, NULL);
