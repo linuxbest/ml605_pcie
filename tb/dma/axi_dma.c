@@ -82,6 +82,10 @@ int osChip_init(uint32_t base)
 	/* write tail desc */
 	osChipRegWrite(base + 0x10, 0x1000);
 
+	for (;;) {
+		val = osChipRegRead(base + 0x34);
+	}
+
 	return 0;
 }
 

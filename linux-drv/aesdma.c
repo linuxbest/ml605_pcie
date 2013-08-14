@@ -316,7 +316,7 @@ static int _aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
 	len = dma_buf_first(dbuf, &addr);
 	do {
 		last_bd_ptr = bd_ptr;
-		dev_trace(&dma->pdev->dev, "dev %p, bd %p, addr %d, len %d\n",
+		dev_trace(&dma->pdev->dev, "dev %p, bd %p, addr %x, len %x\n",
 				dma, *bd, (u32)addr, len);
 		XAxiDma_BdSetBufAddr(bd_ptr, addr);
 		XAxiDma_BdSetLength(bd_ptr, len, ring->MaxTransferLen);
@@ -361,7 +361,7 @@ static int aes_self_test(struct aes_dev *dma)
 			dma, sw, src, (u32)src_dma, dst, (u32)dst_dma);
 
 	/* dma_buf_addr_init tx/rx */
-	dma_buf_addr_init(&sw->src_buf, src_dma, PAGE_SIZE);
+	dma_buf_addr_init(&sw->src_buf, src_dma, 512);
 	dma_buf_addr_init(&sw->dst_buf, dst_dma, PAGE_SIZE);
 	
 	/* aes_desc_to_hw rx/tx */
