@@ -265,7 +265,7 @@ module axi_aes (/*AUTOARG*/
    assign m_axis_mm2s_tready = ~aes_rd_full;
    assign s_axis_s2mm_tvalid = ~aes_rd_empty;
    /***************************************************************************/
-   localparam C_STS_CNT = 4'h6;
+   localparam C_STS_CNT = 4'h5;
    reg [3:0] 				sts_cnt;
    reg 					sts_wr_en;
    reg 					sts_wr_last;
@@ -299,7 +299,7 @@ module axi_aes (/*AUTOARG*/
    always @(posedge m_axi_mm2s_aclk)
      begin
 	sts_wr_en   <= #1 sts_cnt != 0;
-	sts_wr_last <= #1 sts_cnt == 0;
+	sts_wr_last <= #1 sts_cnt == 1;
      end
    wire sts_rd_fifo;
    wire sts_rd_empty;
