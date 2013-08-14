@@ -586,6 +586,17 @@ static int aes_probe(struct pci_dev *pdev,
 
 	XAxiDma_mBdRingIntEnable(XAxiDma_GetRxRing(&dma->AxiDma, 0), XAXIDMA_IRQ_ALL_MASK);
 	XAxiDma_mBdRingIntEnable(XAxiDma_GetTxRing(&dma->AxiDma), XAXIDMA_IRQ_ALL_MASK);
+	err = XAxiDma_BdRingStart(XAxiDma_GetRxRing(&dma->AxiDma, 0), 0);
+	if (err != XST_SUCCESS) {
+		dev_err(&pdev->dev, "start rx ring failed %d\n", err);
+		goto err_ioremap;
+	}
+
+	err = XAxiDma_BdRingStart(XAxiDma_GetTxRing(&dma->AxiDma), 0);
+	if (err != XST_SUCCESS) {
+		dev_err(&pdev->dev, "start tx ring failed %d\n", err);
+		goto err_ioremap;
+	}
 
 	aes_self_test(dma);
 
