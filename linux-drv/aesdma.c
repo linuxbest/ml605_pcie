@@ -453,13 +453,21 @@ static int aes_desc_init(struct aes_dev *dma)
 
 static int aes_tx_isr(struct aes_dev *dma, u32 sts)
 {
-	/* TODO */
+	XAxiDma_BdRing *ring = XAxiDma_GetTxRing(&dma->AxiDma);
+
+	/* clear ring irq */
+	XAxiDma_mBdRingAckIrq(ring, sts);
+
 	return 0;
 }
 
 static int aes_rx_isr(struct aes_dev *dma, u32 sts)
 {
-	/* TODO */
+	XAxiDma_BdRing *ring = XAxiDma_GetRxRing(&dma->AxiDma, 0);
+	
+	/* clear ring irq */
+	XAxiDma_mBdRingAckIrq(ring, sts);
+
 	return 0;
 }
 
@@ -476,7 +484,7 @@ static irqreturn_t aes_isr(int irq, void *dev_id)
 	IrqStsTx = XAxiDma_ReadReg(TxRing->ChanBase, XAXIDMA_SR_OFFSET);
 	IrqStsRx = XAxiDma_ReadReg(RxRing->ChanBase, XAXIDMA_SR_OFFSET);
 
-	pr_debug("IrqSts: %08x/%08x.\n",IrqStsTx, IrqStsRx);
+	dev_trace(&dma->pdev->dev, "IrqSts: %08x/%08x.\n",IrqStsTx, IrqStsRx);
 	if (((IrqStsTx | IrqStsRx) & XAXIDMA_IRQ_ALL_MASK) == 0) 
 		goto out;
 
@@ -575,6 +583,10 @@ static int aes_probe(struct pci_dev *pdev,
 		goto err_ioremap;
 	}
 
+
+	XAxiDma_mBdRingIntEnable(XAxiDma_GetRxRing(&dma->AxiDma, 0), XAXIDMA_IRQ_ALL_MASK);
+	XAxiDma_mBdRingIntEnable(XAxiDma_GetTxRing(&dma->AxiDma), XAXIDMA_IRQ_ALL_MASK);
+
 	aes_self_test(dma);
 
 	return 0;
@@ -592,6 +604,9 @@ err_dma_mask:
 static void aes_remove(struct pci_dev *pdev)
 {
 	struct aes_dev *dma = dev_get_drvdata(&pdev->dev);
+
+	XAxiDma_mBdRingIntDisable(XAxiDma_GetTxRing(&dma->AxiDma), XAXIDMA_IRQ_ALL_MASK);
+	XAxiDma_mBdRingIntDisable(XAxiDma_GetRxRing(&dma->AxiDma, 0), XAXIDMA_IRQ_ALL_MASK);
 
 	AxiDma_Stop(dma->reg);
 	free_irq(pdev->irq, dma);
