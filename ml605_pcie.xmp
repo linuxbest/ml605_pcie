@@ -21,6 +21,6 @@ HdlLang: Verilog
 SimModel: BEHAVIORAL
 ExternalMemSim: 0
 UcfFile: data/ml605_pcie.ucf
-EnableParTimingError: 1
+EnableParTimingError: 0
 ShowLicenseDialog: 1
 BInfo: 
