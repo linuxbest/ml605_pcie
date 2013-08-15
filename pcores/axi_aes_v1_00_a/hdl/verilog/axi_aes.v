@@ -238,7 +238,7 @@ module axi_aes (/*AUTOARG*/
 	lfifo_o <= #1  lfifo_r[C_SNUM];
      end
 
-   wire aes_rd_fifo;
+   wire aes_rd_full;
    wire aes_rd_empty;
    wire [C_S_AXIS_S2MM_TDATA_WIDTH-1:0] s_axis_s2mm_tdata;
    wire 				s_axis_s2mm_tlast;   
@@ -301,7 +301,6 @@ module axi_aes (/*AUTOARG*/
 	sts_wr_en   <= #1 sts_cnt != 0;
 	sts_wr_last <= #1 sts_cnt == 1;
      end
-   wire sts_rd_fifo;
    wire sts_rd_empty;
 
    wire [C_S_AXIS_S2MM_STS_TDATA_WIDTH-1:0] s_axis_s2mm_sts_tdata;
@@ -325,7 +324,7 @@ module axi_aes (/*AUTOARG*/
 	     .dout     ({s_axis_s2mm_sts_tlast, s_axis_s2mm_sts_tdata}),
 	     .full     (),
 	     .empty    (sts_rd_empty),
-	     .prog_full(sts_rd_full));
+	     .prog_full());
    assign s_axis_s2mm_sts_tvalid = ~sts_rd_empty;
    assign s_axis_s2mm_sts_tkeep  = 4'hf;   
    /***************************************************************************/
