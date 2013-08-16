@@ -44,9 +44,18 @@ int osChip_init(uint32_t base)
 	memset(dsg, 0, 0x40);
 	dsg->nextdesc = 0x2040;
 	dsg->buffer   = 0x200000;
-	dsg->ctrl     = 512;       /* LEN */
+	dsg->ctrl     = 4096;       /* LEN */
 	dsg->ctrl    |= 0x08000000; /* SOF */
 	dsg->ctrl    |= 0x04000000; /* EOF */
+
+	dsg = (struct sg *)(base0 + 0x2040);
+	memset(dsg, 0, 0x40);
+	dsg->nextdesc = 0x2080;
+	dsg->buffer   = 0x300000;
+	dsg->ctrl     = 4096;       /* LEN */
+	dsg->ctrl    |= 0x08000000; /* SOF */
+	dsg->ctrl    |= 0x04000000; /* EOF */
+
 
 	uint32_t *src = (uint32_t *)(base0 + 0x100000);
 	for (i = 0; i < 1024; i ++) {
@@ -55,6 +64,14 @@ int osChip_init(uint32_t base)
 	struct sg *rsg = (struct sg *)(base0 + 0x1000);
 	memset(rsg, 0, 0x40);
 	rsg->nextdesc = 0x1040;
+	rsg->buffer   = 0x100000;
+	rsg->ctrl     = 4096;       /* LEN */
+	rsg->ctrl    |= 0x08000000; /* SOF */
+	rsg->ctrl    |= 0x04000000; /* EOF */
+
+	rsg = (struct sg *)(base0 + 0x1040);
+	memset(rsg, 0, 0x40);
+	rsg->nextdesc = 0x1080;
 	rsg->buffer   = 0x100000;
 	rsg->ctrl     = 512;       /* LEN */
 	rsg->ctrl    |= 0x08000000; /* SOF */
@@ -73,14 +90,14 @@ int osChip_init(uint32_t base)
 	/* start dma */
 	osChipRegWrite(base + 0x30, 0x1 | (1<<12) | (1<<13) | (1<<14));
 	/* write tail desc */
-	osChipRegWrite(base + 0x40, 0x2000);
+	osChipRegWrite(base + 0x40, 0x2040);
 
 	/* write cur desc */
 	osChipRegWrite(base + 0x08, 0x1000);
 	/* start dma */
 	osChipRegWrite(base + 0x00, 0x1 | (1<<12) | (1<<13) | (1<<14));
 	/* write tail desc */
-	osChipRegWrite(base + 0x10, 0x1000);
+	osChipRegWrite(base + 0x10, 0x1040);
 
 	for (;;) {
 		val = osChipRegRead(base + 0x34);

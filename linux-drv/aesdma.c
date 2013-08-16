@@ -29,8 +29,8 @@
 	if (dev) pr_debug("%s:%d " fmt, __func__, __LINE__, ##arg)
 
 #define DRIVER_NAME "AES10G"
-#define TX_BD_NUM 16384
-#define RX_BD_NUM 16384
+#define TX_BD_NUM 16
+#define RX_BD_NUM 16
 
 static char *git_version = GITVERSION;
 
@@ -291,8 +291,10 @@ static struct aes_desc *aes_alloc_desc(struct aes_dev *dev)
 	return sw;
 }
 
+static void ring_dump(XAxiDma_BdRing *bd_ring, char *prefix);
+
 static int _aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
-	XAxiDma_Bd **bd, XAxiDma_BdRing *ring)
+	XAxiDma_Bd **bd, XAxiDma_BdRing *ring, char *name)
 {
 	XAxiDma_Bd *first_bd_ptr;
 	XAxiDma_Bd *last_bd_ptr;
@@ -317,7 +319,7 @@ static int _aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
 	do {
 		last_bd_ptr = bd_ptr;
 		dev_trace(&dma->pdev->dev, "dev %p, bd %p, addr %x, len %x\n",
-				dma, *bd, (u32)addr, len);
+				dma, bd_ptr, (u32)addr, len);
 		XAxiDma_BdSetBufAddr(bd_ptr, addr);
 		XAxiDma_BdSetLength(bd_ptr, len, ring->MaxTransferLen);
 		XAxiDma_BdSetCtrl(bd_ptr, 0);
@@ -332,6 +334,8 @@ static int _aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
 	else
 		XAxiDma_BdSetCtrl(last_bd_ptr, XAXIDMA_BD_CTRL_TXEOF_MASK);
 	XAxiDma_BdSetCtrl(first_bd_ptr, sts);
+		
+	ring_dump(ring, name);
 
 	return XAxiDma_BdRingToHw(ring, tcnt, first_bd_ptr, 0);
 }
@@ -367,20 +371,20 @@ static int aes_self_test(struct aes_dev *dma)
 	/* aes_desc_to_hw rx/tx */
 	spin_lock_irqsave(&rx_lock, flags);
 	res = _aes_desc_to_hw(dma, &sw->dst_buf, &sw->rx_BdPtr,
-			XAxiDma_GetRxRing(&dma->AxiDma, 0));
+			XAxiDma_GetRxRing(&dma->AxiDma, 0), "RX");
 	spin_unlock_irqrestore(&rx_lock, flags);
 	if (res != 0)
 		return res;
 
 	spin_lock_irqsave(&tx_lock, flags);
 	res = _aes_desc_to_hw(dma, &sw->src_buf, &sw->tx_BdPtr,
-			XAxiDma_GetTxRing(&dma->AxiDma));
+			XAxiDma_GetTxRing(&dma->AxiDma), "TX");
 	spin_unlock_irqrestore(&tx_lock, flags);
 	if (res != 0)
 		return res;
 
 	msleep(1000);
-
+	
 	dma_unmap_single(&dma->pdev->dev, src_dma, PAGE_SIZE, DMA_TO_DEVICE);
 	dma_unmap_single(&dma->pdev->dev, dst_dma, PAGE_SIZE, DMA_FROM_DEVICE);
 
@@ -388,6 +392,8 @@ static int aes_self_test(struct aes_dev *dma)
 			src, 256, 1);
 	print_hex_dump(KERN_DEBUG, "RX ", DUMP_PREFIX_ADDRESS, 16, 1,
 			dst, 256, 1);
+	ring_dump(XAxiDma_GetRxRing(&dma->AxiDma, 0), "RX");
+	ring_dump(XAxiDma_GetTxRing(&dma->AxiDma), "TX");
 
 	return 0;
 }
@@ -438,9 +444,9 @@ static int aes_desc_init(struct aes_dev *dma)
 			&dma->rx_bd_p, GFP_KERNEL);
 	dma->rx_bd_size = recvsize;
 
-	dev_dbg(&dma->pdev->dev, "Tx:phy: 0x%llx, virt: %p, size: 0x%x\n"
-			"Rx:phy: 0x%llx, virt: %p, size 0x%x\n",
-			(uint64_t)dma->tx_bd_p, dma->tx_bd_v, dma->tx_bd_size,
+	dev_dbg(&dma->pdev->dev, "Tx:phy: 0x%llx, virt: %p, size: 0x%x\n",
+			(uint64_t)dma->tx_bd_p, dma->tx_bd_v, dma->tx_bd_size);
+	dev_dbg(&dma->pdev->dev, "Rx:phy: 0x%llx, virt: %p, size: 0x%x\n",
 			(uint64_t)dma->rx_bd_p, dma->rx_bd_v, dma->rx_bd_size);
 	if (dma->tx_bd_v == NULL || dma->rx_bd_v == NULL) {
 		/* TODO */
@@ -461,7 +467,7 @@ static int aes_desc_init(struct aes_dev *dma)
 	return 0;
 }
 
-static void ring_dump(XAxiDma_BdRing *bd_ring)
+static void ring_dump(XAxiDma_BdRing *bd_ring, char *prefix)
 {
 	unsigned long flags;
 	int num_bds = bd_ring->AllCnt;
@@ -469,7 +475,7 @@ static void ring_dump(XAxiDma_BdRing *bd_ring)
 	int idx;
 	
 	/*spin_lock_irqsave(&ETH_spinlock, flags);*/
-	printk("ChanBase       : %p\n", (void *) bd_ring->ChanBase);
+	printk("%s  ChanBase   : %p\n", prefix, (void *) bd_ring->ChanBase);
 	printk("FirstBdPhysAddr: %p\n", (void *) bd_ring->FirstBdPhysAddr);
 	printk("FirstBdAddr    : %p\n", (void *) bd_ring->FirstBdAddr);
 	printk("LastBdAddr     : %p\n", (void *) bd_ring->LastBdAddr);
@@ -533,31 +539,35 @@ static void ring_dump(XAxiDma_BdRing *bd_ring)
 static int aes_tx_isr(struct aes_dev *dma, u32 sts)
 {
 	XAxiDma_BdRing *ring = XAxiDma_GetTxRing(&dma->AxiDma);
+	XAxiDma_BdRing *rx_ring = XAxiDma_GetRxRing(&dma->AxiDma, 0);
 	
 	/* clear ring irq */
 	XAxiDma_mBdRingAckIrq(ring, sts);
 	if (sts & XAXIDMA_ERR_ALL_MASK) {
 		dev_err(&dma->pdev->dev, "TXIRQ error sts %08x\n", sts);
-		ring_dump(ring);
+		ring_dump(rx_ring, "RX");
+		ring_dump(ring,    "TX");
 		/* TODO */
 	}
 
-	return 0;
+	return IRQ_HANDLED;
 }
 
 static int aes_rx_isr(struct aes_dev *dma, u32 sts)
 {
 	XAxiDma_BdRing *ring = XAxiDma_GetRxRing(&dma->AxiDma, 0);
+	XAxiDma_BdRing *tx_ring = XAxiDma_GetTxRing(&dma->AxiDma);
 	
 	/* clear ring irq */
 	XAxiDma_mBdRingAckIrq(ring, sts);
 	if (sts & XAXIDMA_ERR_ALL_MASK) {
 		dev_err(&dma->pdev->dev, "RXIRQ error sts %08x\n", sts);
-		ring_dump(ring);
+		ring_dump(ring,    "RX");
+		ring_dump(tx_ring, "TX");
 		/* TODO */
 	}
 
-	return 0;
+	return IRQ_HANDLED;
 }
 
 static irqreturn_t aes_isr(int irq, void *dev_id)
@@ -653,6 +663,9 @@ static int aes_probe(struct pci_dev *pdev,
 	Config.Mm2sNumChannels = 1;
 	Config.S2MmDataWidth   = 128;
 	Config.S2MmNumChannels = 1;
+
+	XAxiDma_WriteReg(dma->reg, XAXIDMA_TX_OFFSET + XAXIDMA_CR_OFFSET, XAXIDMA_CR_RESET_MASK);
+	XAxiDma_WriteReg(dma->reg, XAXIDMA_RX_OFFSET + XAXIDMA_CR_OFFSET, XAXIDMA_CR_RESET_MASK);
 
 	err = XAxiDma_CfgInitialize(&dma->AxiDma, &Config);
 	if (err != XST_SUCCESS) {
