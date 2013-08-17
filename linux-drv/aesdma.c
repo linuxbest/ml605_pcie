@@ -34,8 +34,8 @@
 
 static char *git_version = GITVERSION;
 
-static spinlock_t tx_lock;
-static spinlock_t rx_lock;
+static spinlock_t tx_lock, tx_bh_lock;
+static spinlock_t rx_lock, tx_bh_lock;
 static LIST_HEAD(rx_head);
 static LIST_HEAD(tx_head);
 
@@ -540,7 +540,50 @@ static void ring_dump(XAxiDma_BdRing *bd_ring, char *prefix)
 
 static void tx_handle_bh(unsigned long p)
 {
-	/* TODO */
+	struct aes_dev *dma;
+	XAxiDma_Bd *BdPtr, *BdCurPtr;
+	XAxiDma_BdRing *ring;
+	unsigned long flags;
+	int bd_processed, bd_processed_save, res;
+
+	while (1) {
+		spin_lock_irqsave(&tx_bh_lock, flags);
+		if (list_empty(&tx_head)) {
+			spin_unlock_irqrestore(&tx_bh_lock, flags);
+			break;
+		}
+
+		dma = list_entry(tx_head.next, struct aes_dma, tx_entry);
+		ring = XAxiDma_GetTxRing(&dma->AxiDma);
+
+		list_del_init(&dma->tx_entry);
+		spin_unlock_irqrestore(&tx_bh_lock, flags);
+		
+		spin_lock_irqsave(&tx_lock, flags);
+		bd_processed_save = 0;
+		while ((bd_processed = XAxiDma_BdRingFromHw(ring, TX_BD_NUM, &BdPtr)) > 0) {
+			dev_trace(&dma->pdev->dev, "bd_processed %d, %p\n", bd_procssed, BdPtr);
+
+			bd_processed_save = bd_procssed;
+			BdCurPtr = BdPtr;
+			do {
+				_aes_tx_clean_bh(dma, BdCurPtr);
+
+				XAxiDma_BdSetId(BdCurPtr, NULL);
+				BdCurPtr = XAxiDma_mBdRingNext(RingPtr, BdCurPtr);
+				bd_processed = 0;
+			} while (bd_processed > 0);
+		}
+
+		res = XAxiDma_BdRingFree(ring, bd_processed_save, BdPtr);
+		if (res != XST_SUCESS) {
+			dev_err(&dma->pdev->dev, "XAxiDma: BdRingFree err %d\n", res);
+			/* TODO */
+		}
+
+		XAxiDma_mBdRingIntEnable(ring, XAXIDMA_IRQ_ALL_MASK);
+		spin_unlock_irqrestore(&tx_lock, flags);
+	}
 }
 
 static void rx_handle_bh(unsigned long p)
@@ -570,7 +613,7 @@ static int aes_tx_isr(struct aes_dev *dma, u32 sts)
 		unsigned long flags;
 		struct list_head *cur_dma;
 
-		spin_lock_irqsave(&tx_lock, flags);
+		spin_lock_irqsave(&tx_bh_lock, flags);
 		list_for_each(cur_dma, &tx_head) {
 			if (cur_dma == &(dma->tx_entry))
 				break;
@@ -581,7 +624,7 @@ static int aes_tx_isr(struct aes_dev *dma, u32 sts)
 			tasklet_schedule(&tx_bh);
 		}
 		
-		spin_unlock_irqrestore(&tx_lock, flags);
+		spin_unlock_irqrestore(&tx_bh_lock, flags);
 	}
 
 	return IRQ_HANDLED;
@@ -606,7 +649,7 @@ static int aes_rx_isr(struct aes_dev *dma, u32 sts)
 		unsigned long flags;
 		struct list_head *cur_dma;
 
-		spin_lock_irqsave(&rx_lock, flags);
+		spin_lock_irqsave(&rx_bh_lock, flags);
 		list_for_each(cur_dma, &rx_head) {
 			if (cur_dma == &(dma->rx_entry))
 				break;
@@ -617,7 +660,7 @@ static int aes_rx_isr(struct aes_dev *dma, u32 sts)
 			tasklet_schedule(&rx_bh);
 		}
 		
-		spin_unlock_irqrestore(&rx_lock, flags);
+		spin_unlock_irqrestore(&rx_bh_lock, flags);
 	}
 
 	return IRQ_HANDLED;
@@ -795,6 +838,8 @@ static int __init aes_init(void)
 
 	spin_lock_init(&tx_lock);
 	spin_lock_init(&rx_lock);
+	spin_lock_init(&tx_bh_lock);
+	spin_lock_init(&rx_bh_lock);
 
 	INIT_LIST_HEAD(&tx_head);
 	INIT_LIST_HEAD(&rx_head);
