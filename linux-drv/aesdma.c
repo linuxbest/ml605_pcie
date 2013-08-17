@@ -253,6 +253,8 @@ struct aes_desc {
 	struct kref kref;
 	dma_buf_t src_buf;
 	dma_buf_t dst_buf;
+	void *priv;
+	void (*cb)(void *priv);
 };
 
 static void AxiDma_Stop(u32 base)
@@ -301,13 +303,19 @@ static void aes_free_desc(struct kref *kref)
 	struct aes_dev *dma = sw->dma;
 	unsigned long flags;
 
+	dev_trace(&dma->pdev->dev, "dev %p, sw %p, %d\n", 
+			dma, sw, dma->desc_free);
+
+	if (sw->cb) {
+		sw->cb(sw->priv);
+		sw->cb = NULL;
+	}
+
 	spin_lock_irqsave(&dma->hw_lock, flags);
 	list_add_tail(&sw->desc_entry, &dma->desc_head);
 	dma->desc_free ++;
 	spin_unlock_irqrestore(&dma->hw_lock, flags);
 	
-	dev_trace(&dma->pdev->dev, "dev %p, sw %p, %d\n",
-			dma, sw, dma->desc_free);
 }
 
 static void ring_dump(XAxiDma_BdRing *bd_ring, char *prefix);
@@ -337,14 +345,15 @@ static int _aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
 	len = dma_buf_first(dbuf, &addr);
 	do {
 		last_bd_ptr = bd_ptr;
-		dev_trace(&dma->pdev->dev, "dev %p, bd %p, addr %x, len %x\n",
-				dma, bd_ptr, (u32)addr, len);
+		dev_trace(&dma->pdev->dev, "dev %p, bd %p, addr %x, len %x, sw %p\n",
+				dma, bd_ptr, (u32)addr, len, sw);
 		XAxiDma_BdSetBufAddr(bd_ptr, addr);
 		XAxiDma_BdSetLength(bd_ptr, len, ring->MaxTransferLen);
 		XAxiDma_BdSetCtrl(bd_ptr, 0);
 		XAxiDma_BdSetId(bd_ptr, (u32)sw);
 
 		tcnt ++;
+		kref_get(&sw->kref);
 		len = dma_buf_next(dbuf, &addr);
 		bd_ptr = XAxiDma_mBdRingNext(ring, bd_ptr);
 	} while (len > 0);
@@ -355,9 +364,13 @@ static int _aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
 		XAxiDma_BdSetCtrl(last_bd_ptr, XAXIDMA_BD_CTRL_TXEOF_MASK);
 	XAxiDma_BdSetCtrl(first_bd_ptr, sts);
 		
-	ring_dump(ring, name);
-
 	return XAxiDma_BdRingToHw(ring, tcnt, first_bd_ptr, 0);
+}
+
+static void aes_self_cb(void *priv)
+{
+	struct completion *done = priv;
+	complete(done);
 }
 
 static int aes_self_test(struct aes_dev *dma)
@@ -367,6 +380,7 @@ static int aes_self_test(struct aes_dev *dma)
 	struct aes_desc *sw;
 	int res, i;
 	unsigned long flags;
+	struct completion done;
 
 	/* alloc test memory */
 	src = kzalloc(PAGE_SIZE, GFP_KERNEL);
@@ -384,10 +398,14 @@ static int aes_self_test(struct aes_dev *dma)
 	dev_trace(&dma->pdev->dev, "dev %p, sw %p, src %p/%x, dst %p/%x\n",
 			dma, sw, src, (u32)src_dma, dst, (u32)dst_dma);
 
+	init_completion(&done);
+	sw->cb = aes_self_cb;
+	sw->priv = (void *)&done;
+
 	/* dma_buf_addr_init tx/rx */
 	dma_buf_addr_init(&sw->src_buf, src_dma, 512);
 	dma_buf_addr_init(&sw->dst_buf, dst_dma, PAGE_SIZE);
-	
+
 	/* aes_desc_to_hw rx/tx */
 	spin_lock_irqsave(&rx_lock, flags);
 	res = _aes_desc_to_hw(dma, &sw->dst_buf, &sw->rx_BdPtr,
@@ -403,8 +421,9 @@ static int aes_self_test(struct aes_dev *dma)
 	if (res != 0)
 		return res;
 
-	msleep(1000);
-	
+	kref_put(&sw->kref, aes_free_desc);
+	wait_for_completion(&done);
+
 	dma_unmap_single(&dma->pdev->dev, src_dma, PAGE_SIZE, DMA_TO_DEVICE);
 	dma_unmap_single(&dma->pdev->dev, dst_dma, PAGE_SIZE, DMA_FROM_DEVICE);
 
@@ -605,12 +624,12 @@ static void tx_handle_bh(unsigned long p)
 				BdCurPtr = XAxiDma_mBdRingNext(ring, BdCurPtr);
 				bd_processed = 0;
 			} while (bd_processed > 0);
-		}
 
-		res = XAxiDma_BdRingFree(ring, bd_processed_save, BdPtr);
-		if (res != XST_SUCCESS) {
-			dev_err(&dma->pdev->dev, "XAxiDma: BdRingFree err %d\n", res);
-			/* TODO */
+			res = XAxiDma_BdRingFree(ring, bd_processed_save, BdPtr);
+			if (res != XST_SUCCESS) {
+				dev_err(&dma->pdev->dev, "XAxiDma: BdRingFree err %d\n", res);
+				/* TODO */
+			}
 		}
 
 		XAxiDma_mBdRingIntEnable(ring, XAXIDMA_IRQ_ALL_MASK);
@@ -653,12 +672,12 @@ static void rx_handle_bh(unsigned long p)
 				BdCurPtr = XAxiDma_mBdRingNext(ring, BdCurPtr);
 				bd_processed = 0;
 			} while (bd_processed > 0);
-		}
 
-		res = XAxiDma_BdRingFree(ring, bd_processed_save, BdPtr);
-		if (res != XST_SUCCESS) {
-			dev_err(&dma->pdev->dev, "XAxiDma: BdRingFree err %d\n", res);
-			/* TODO */
+			res = XAxiDma_BdRingFree(ring, bd_processed_save, BdPtr);
+			if (res != XST_SUCCESS) {
+				dev_err(&dma->pdev->dev, "XAxiDma: BdRingFree err %d\n", res);
+				/* TODO */
+			}
 		}
 
 		XAxiDma_mBdRingIntEnable(ring, XAXIDMA_IRQ_ALL_MASK);
