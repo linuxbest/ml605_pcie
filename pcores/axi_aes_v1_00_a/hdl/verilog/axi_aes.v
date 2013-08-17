@@ -192,7 +192,7 @@ module axi_aes (/*AUTOARG*/
    reg [255:0] 					   aes_key;
    always @(posedge m_axi_mm2s_aclk)
      begin
-	aes_key <= #1 256'h010203;
+	aes_key <= #1 256'h00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000;
      end
 
    wire mm2s_handshake;
@@ -215,15 +215,23 @@ module axi_aes (/*AUTOARG*/
      end
 
    wire [127:0] aes_out_i;
+   wire [127:0] aes_out_w;
    reg [127:0] 	aes_out;
    always @(posedge m_axi_mm2s_aclk)
      begin
-	aes_out <= #1 aes_out_i;
+	aes_out <= #1 aes_out_w;
      end
    aes_256 aes_256(.clk  (m_axi_mm2s_aclk),
 		   .state(aes_din),
 		   .key  (aes_key),
 		   .out  (aes_out_i));
+   genvar i;
+   generate
+      for (i = 0; i < 128; i = i + 8) begin: swap_aes_out
+	 assign aes_out_w[127-i:120-i] = aes_out_i[i+7:i];
+      end
+   endgenerate
+   
    localparam C_SNUM = 29;
    reg [C_SNUM:0] sfifo_r;
    reg [C_SNUM:0] lfifo_r;

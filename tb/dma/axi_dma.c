@@ -6,6 +6,18 @@
 
 #include "osChip.h"
 
+typedef unsigned char byte;
+typedef unsigned int word;
+
+void encrypt_128_key_expand_inline_no_branch(word state[], word key[]);
+void encrypt_192_key_expand_inline_no_branch(word state[], word key[]);
+void encrypt_256_key_expand_inline_no_branch(word state[], word key[]);
+
+word rand_word();
+void rand_word_array(word w[], int bit_num);
+void print_verilog_hex(word w[], int bit_num);
+
+
 size_t mem_size = 32 * 1024 * 1024;
 unsigned char *base0;
 
@@ -58,8 +70,8 @@ int osChip_init(uint32_t base)
 
 
 	uint32_t *src = (uint32_t *)(base0 + 0x100000);
-	for (i = 0; i < 1024; i ++) {
-		src[i] = i;
+	for (i = 0; i < 4096; i ++) {
+		src[i] = 0;
 	}
 	struct sg *rsg = (struct sg *)(base0 + 0x1000);
 	memset(rsg, 0, 0x40);
@@ -90,17 +102,30 @@ int osChip_init(uint32_t base)
 	/* start dma */
 	osChipRegWrite(base + 0x30, 0x1 | (1<<12) | (1<<13) | (1<<14));
 	/* write tail desc */
-	osChipRegWrite(base + 0x40, 0x2040);
+	osChipRegWrite(base + 0x40, 0x2000);
 
 	/* write cur desc */
 	osChipRegWrite(base + 0x08, 0x1000);
 	/* start dma */
 	osChipRegWrite(base + 0x00, 0x1 | (1<<12) | (1<<13) | (1<<14));
 	/* write tail desc */
-	osChipRegWrite(base + 0x10, 0x1040);
+	osChipRegWrite(base + 0x10, 0x1000);
 
 	for (;;) {
 		val = osChipRegRead(base + 0x34);
+		if (val & (1<<12))
+			break;
+	}
+
+	uint32_t dst_good[4096];
+	uint32_t key[8] = {0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		           0x00000000, 0x00000000, 0x00000000, 0x00000000};
+	
+	memcpy((char *)dst_good, (char *)src, 4096);
+	encrypt_256_key_expand_inline_no_branch(dst_good, key);
+	
+	for (i = 0; i < 8; i ++) {
+		printf("%04x: %08x, %08x\n", i, dst[i], dst_good[i]);
 	}
 
 	return 0;
