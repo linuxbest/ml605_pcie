@@ -35,7 +35,7 @@
 static char *git_version = GITVERSION;
 
 static spinlock_t tx_lock, tx_bh_lock;
-static spinlock_t rx_lock, tx_bh_lock;
+static spinlock_t rx_lock, rx_bh_lock;
 static LIST_HEAD(rx_head);
 static LIST_HEAD(tx_head);
 
@@ -246,6 +246,7 @@ dma_buf_next(dma_buf_t *buf, dma_addr_t *addr)
 }
 
 struct aes_desc {
+	struct aes_dev *dma;
 	struct list_head desc_entry;
 	XAxiDma_Bd *tx_BdPtr;
 	XAxiDma_Bd *rx_BdPtr;
@@ -289,14 +290,30 @@ static struct aes_desc *aes_alloc_desc(struct aes_dev *dev)
 			dev, sw, dev->desc_free, reused);
 	memset(sw, 0, sizeof(*sw));
 	kref_init(&sw->kref);
+	sw->dma = dev;
 
 	return sw;
+}
+
+static void aes_free_desc(struct kref *kref)
+{
+	struct aes_desc *sw = container_of(kref, struct aes_desc, kref);
+	struct aes_dev *dma = sw->dma;
+	unsigned long flags;
+
+	spin_lock_irqsave(&dma->hw_lock, flags);
+	list_add_tail(&sw->desc_entry, &dma->desc_head);
+	dma->desc_free ++;
+	spin_unlock_irqrestore(&dma->hw_lock, flags);
+	
+	dev_trace(&dma->pdev->dev, "dev %p, sw %p, %d\n",
+			dma, sw, dma->desc_free);
 }
 
 static void ring_dump(XAxiDma_BdRing *bd_ring, char *prefix);
 
 static int _aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
-	XAxiDma_Bd **bd, XAxiDma_BdRing *ring, char *name)
+	XAxiDma_Bd **bd, XAxiDma_BdRing *ring, char *name, struct aes_desc *sw)
 {
 	XAxiDma_Bd *first_bd_ptr;
 	XAxiDma_Bd *last_bd_ptr;
@@ -325,6 +342,7 @@ static int _aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
 		XAxiDma_BdSetBufAddr(bd_ptr, addr);
 		XAxiDma_BdSetLength(bd_ptr, len, ring->MaxTransferLen);
 		XAxiDma_BdSetCtrl(bd_ptr, 0);
+		XAxiDma_BdSetId(bd_ptr, (u32)sw);
 
 		tcnt ++;
 		len = dma_buf_next(dbuf, &addr);
@@ -373,14 +391,14 @@ static int aes_self_test(struct aes_dev *dma)
 	/* aes_desc_to_hw rx/tx */
 	spin_lock_irqsave(&rx_lock, flags);
 	res = _aes_desc_to_hw(dma, &sw->dst_buf, &sw->rx_BdPtr,
-			XAxiDma_GetRxRing(&dma->AxiDma, 0), "RX");
+			XAxiDma_GetRxRing(&dma->AxiDma, 0), "RX", sw);
 	spin_unlock_irqrestore(&rx_lock, flags);
 	if (res != 0)
 		return res;
 
 	spin_lock_irqsave(&tx_lock, flags);
 	res = _aes_desc_to_hw(dma, &sw->src_buf, &sw->tx_BdPtr,
-			XAxiDma_GetTxRing(&dma->AxiDma), "TX");
+			XAxiDma_GetTxRing(&dma->AxiDma), "TX", sw);
 	spin_unlock_irqrestore(&tx_lock, flags);
 	if (res != 0)
 		return res;
@@ -538,6 +556,20 @@ static void ring_dump(XAxiDma_BdRing *bd_ring, char *prefix)
 	/*spin_unlock_irqrestore(&ETH_spinlock, flags);*/
 }
 
+static void _aes_tx_clean_bh(struct aes_dev *dma, XAxiDma_Bd *bd)
+{
+	struct aes_desc *sw = (struct aes_desc *)XAxiDma_BdGetId(bd);
+	dev_trace(&dma->pdev->dev, "dma %p, bd %p, sw %p\n", dma, bd, sw);
+	kref_put(&sw->kref, aes_free_desc);
+}
+
+static void _aes_rx_clean_bh(struct aes_dev *dma, XAxiDma_Bd *bd)
+{
+	struct aes_desc *sw = (struct aes_desc *)XAxiDma_BdGetId(bd);
+	dev_trace(&dma->pdev->dev, "dma %p, bd %p, sw %p\n", dma, bd, sw);
+	kref_put(&sw->kref, aes_free_desc);
+}
+
 static void tx_handle_bh(unsigned long p)
 {
 	struct aes_dev *dma;
@@ -553,7 +585,7 @@ static void tx_handle_bh(unsigned long p)
 			break;
 		}
 
-		dma = list_entry(tx_head.next, struct aes_dma, tx_entry);
+		dma = list_entry(tx_head.next, struct aes_dev, tx_entry);
 		ring = XAxiDma_GetTxRing(&dma->AxiDma);
 
 		list_del_init(&dma->tx_entry);
@@ -562,21 +594,21 @@ static void tx_handle_bh(unsigned long p)
 		spin_lock_irqsave(&tx_lock, flags);
 		bd_processed_save = 0;
 		while ((bd_processed = XAxiDma_BdRingFromHw(ring, TX_BD_NUM, &BdPtr)) > 0) {
-			dev_trace(&dma->pdev->dev, "bd_processed %d, %p\n", bd_procssed, BdPtr);
+			dev_trace(&dma->pdev->dev, "bd_processed %d, %p\n", bd_processed, BdPtr);
 
-			bd_processed_save = bd_procssed;
+			bd_processed_save = bd_processed;
 			BdCurPtr = BdPtr;
 			do {
 				_aes_tx_clean_bh(dma, BdCurPtr);
 
 				XAxiDma_BdSetId(BdCurPtr, NULL);
-				BdCurPtr = XAxiDma_mBdRingNext(RingPtr, BdCurPtr);
+				BdCurPtr = XAxiDma_mBdRingNext(ring, BdCurPtr);
 				bd_processed = 0;
 			} while (bd_processed > 0);
 		}
 
 		res = XAxiDma_BdRingFree(ring, bd_processed_save, BdPtr);
-		if (res != XST_SUCESS) {
+		if (res != XST_SUCCESS) {
 			dev_err(&dma->pdev->dev, "XAxiDma: BdRingFree err %d\n", res);
 			/* TODO */
 		}
@@ -588,7 +620,50 @@ static void tx_handle_bh(unsigned long p)
 
 static void rx_handle_bh(unsigned long p)
 {
-	/* TODO */
+	struct aes_dev *dma;
+	XAxiDma_Bd *BdPtr, *BdCurPtr;
+	XAxiDma_BdRing *ring;
+	unsigned long flags;
+	int bd_processed, bd_processed_save, res;
+
+	while (1) {
+		spin_lock_irqsave(&rx_bh_lock, flags);
+		if (list_empty(&rx_head)) {
+			spin_unlock_irqrestore(&rx_bh_lock, flags);
+			break;
+		}
+
+		dma = list_entry(rx_head.next, struct aes_dev, rx_entry);
+		ring = XAxiDma_GetRxRing(&dma->AxiDma, 0);
+
+		list_del_init(&dma->rx_entry);
+		spin_unlock_irqrestore(&rx_bh_lock, flags);
+		
+		spin_lock_irqsave(&rx_lock, flags);
+		bd_processed_save = 0;
+		while ((bd_processed = XAxiDma_BdRingFromHw(ring, RX_BD_NUM, &BdPtr)) > 0) {
+			dev_trace(&dma->pdev->dev, "bd_processed %d, %p\n", bd_processed, BdPtr);
+
+			bd_processed_save = bd_processed;
+			BdCurPtr = BdPtr;
+			do {
+				_aes_rx_clean_bh(dma, BdCurPtr);
+
+				XAxiDma_BdSetId(BdCurPtr, NULL);
+				BdCurPtr = XAxiDma_mBdRingNext(ring, BdCurPtr);
+				bd_processed = 0;
+			} while (bd_processed > 0);
+		}
+
+		res = XAxiDma_BdRingFree(ring, bd_processed_save, BdPtr);
+		if (res != XST_SUCCESS) {
+			dev_err(&dma->pdev->dev, "XAxiDma: BdRingFree err %d\n", res);
+			/* TODO */
+		}
+
+		XAxiDma_mBdRingIntEnable(ring, XAXIDMA_IRQ_ALL_MASK);
+		spin_unlock_irqrestore(&rx_lock, flags);
+	}
 }
 
 DECLARE_TASKLET(tx_bh, tx_handle_bh, 0);
