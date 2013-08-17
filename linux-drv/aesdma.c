@@ -59,11 +59,13 @@ struct aes_dev {
 	XAxiDma_Bd *tx_bd_v;
 	dma_addr_t tx_bd_p;
 	u32 tx_bd_size;
-	
+	struct list_head tx_entry;
+
 	/* rx desc */
 	XAxiDma_Bd *rx_bd_v;
 	dma_addr_t rx_bd_p;
 	u32 rx_bd_size;
+	struct list_head rx_entry;
 
 	spinlock_t hw_lock;
 
@@ -536,6 +538,19 @@ static void ring_dump(XAxiDma_BdRing *bd_ring, char *prefix)
 	/*spin_unlock_irqrestore(&ETH_spinlock, flags);*/
 }
 
+static void tx_handle_bh(unsigned long p)
+{
+	/* TODO */
+}
+
+static void rx_handle_bh(unsigned long p)
+{
+	/* TODO */
+}
+
+DECLARE_TASKLET(tx_bh, tx_handle_bh, 0);
+DECLARE_TASKLET(rx_bh, rx_handle_bh, 0);
+
 static int aes_tx_isr(struct aes_dev *dma, u32 sts)
 {
 	XAxiDma_BdRing *ring = XAxiDma_GetTxRing(&dma->AxiDma);
@@ -548,6 +563,25 @@ static int aes_tx_isr(struct aes_dev *dma, u32 sts)
 		ring_dump(rx_ring, "RX");
 		ring_dump(ring,    "TX");
 		/* TODO */
+		return IRQ_HANDLED;
+	}
+
+	if (sts & (XAXIDMA_IRQ_DELAY_MASK | XAXIDMA_IRQ_IOC_MASK)) {
+		unsigned long flags;
+		struct list_head *cur_dma;
+
+		spin_lock_irqsave(&tx_lock, flags);
+		list_for_each(cur_dma, &tx_head) {
+			if (cur_dma == &(dma->tx_entry))
+				break;
+		}
+		if (cur_dma != &(dma->tx_entry)) {
+			list_add_tail(&dma->tx_entry, &tx_head);
+			XAxiDma_mBdRingIntDisable(ring, XAXIDMA_IRQ_ALL_MASK);
+			tasklet_schedule(&tx_bh);
+		}
+		
+		spin_unlock_irqrestore(&tx_lock, flags);
 	}
 
 	return IRQ_HANDLED;
@@ -565,6 +599,25 @@ static int aes_rx_isr(struct aes_dev *dma, u32 sts)
 		ring_dump(ring,    "RX");
 		ring_dump(tx_ring, "TX");
 		/* TODO */
+		return IRQ_HANDLED;
+	}
+
+	if (sts & (XAXIDMA_IRQ_DELAY_MASK | XAXIDMA_IRQ_IOC_MASK)) {
+		unsigned long flags;
+		struct list_head *cur_dma;
+
+		spin_lock_irqsave(&rx_lock, flags);
+		list_for_each(cur_dma, &rx_head) {
+			if (cur_dma == &(dma->rx_entry))
+				break;
+		}
+		if (cur_dma != &(dma->rx_entry)) {
+			list_add_tail(&dma->rx_entry, &rx_head);
+			XAxiDma_mBdRingIntDisable(ring, XAXIDMA_IRQ_ALL_MASK);
+			tasklet_schedule(&rx_bh);
+		}
+		
+		spin_unlock_irqrestore(&rx_lock, flags);
 	}
 
 	return IRQ_HANDLED;
