@@ -199,16 +199,3 @@ BEGIN axi_aes
  PORT s2mm_intr = s2mm_intr_0
  PORT axi_intr = axi_aes_intr_0
 END
-
-BEGIN chipscope_axi_monitor
- PARAMETER INSTANCE = chipscope_axi_monitor_0
- PARAMETER HW_VER = 3.05.a
- PORT CHIPSCOPE_ICON_CONTROL = control0
- BUS_INTERFACE MON_AXI = PCI_Express.S_AXI
-END
-
-BEGIN chipscope_icon
- PARAMETER INSTANCE = chipscope_icon_0
- PARAMETER HW_VER = 1.06.a
- PORT control0 = control0
-END
