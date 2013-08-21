@@ -1,9 +1,9 @@
 /*
  *  include/scst_user.h
  *
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin <vst@vlnb.net>
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin <vst@vlnb.net>
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  Contains constants and data structures for scst_user module.
  *  See http://scst.sourceforge.net/doc/scst_user_spec.txt or
@@ -33,7 +33,7 @@
 #define DEV_USER_PATH			"/dev/"
 #define DEV_USER_VERSION_NAME		SCST_VERSION_NAME
 #define DEV_USER_VERSION		\
-	DEV_USER_VERSION_NAME "$Revision: 4021 $" SCST_CONST_VERSION
+	DEV_USER_VERSION_NAME "$Revision: 4767 $" SCST_CONST_VERSION
 
 #define SCST_USER_PARSE_STANDARD	0
 #define SCST_USER_PARSE_CALL		1
@@ -56,8 +56,12 @@
 #define SCST_USER_MAX_PARTIAL_TRANSFERS_OPT		\
 		SCST_USER_PARTIAL_TRANSFERS_SUPPORTED
 
-#ifndef aligned_u64
+#ifndef __KERNEL__
 #define aligned_u64 uint64_t __attribute__((aligned(8)))
+#endif
+
+#ifndef aligned_i64
+#define aligned_i64 int64_t __attribute__((aligned(8)))
 #endif
 
 /*************************************************************
@@ -70,7 +74,8 @@
 #define UCMD_STATE_ON_FREEING		4
 #define UCMD_STATE_ON_FREE_SKIPPED	5
 #define UCMD_STATE_ON_CACHE_FREEING	6
-#define UCMD_STATE_TM_EXECING		7
+#define UCMD_STATE_TM_RECEIVED_EXECING	7
+#define UCMD_STATE_TM_DONE_EXECING	8
 
 #define UCMD_STATE_ATTACH_SESS		0x20
 #define UCMD_STATE_DETACH_SESS		0x21
@@ -124,9 +129,12 @@ struct scst_user_scsi_cmd_parse {
 	uint8_t cdb[SCST_MAX_CDB_SIZE];
 	uint16_t cdb_len;
 
-	int32_t timeout;
+	aligned_i64 lba;
+
+	aligned_i64 data_len;
 	int32_t bufflen;
 	int32_t out_bufflen;
+	int32_t timeout;
 
 	uint32_t op_flags;
 
@@ -161,7 +169,9 @@ struct scst_user_scsi_cmd_exec {
 	uint8_t cdb[SCST_MAX_CDB_SIZE];
 	uint16_t cdb_len;
 
-	int32_t data_len;
+	aligned_i64 lba;
+
+	aligned_i64 data_len;
 	int32_t bufflen;
 	int32_t alloc_len;
 	aligned_u64 pbuf;
@@ -224,9 +234,10 @@ struct scst_user_scsi_cmd_reply_parse {
 			uint8_t queue_type;
 			uint8_t data_direction;
 			uint16_t cdb_len;
-			uint32_t op_flags;
-			int32_t data_len;
+			aligned_i64 lba;
+			aligned_i64 data_len;
 			int32_t bufflen;
+			uint32_t op_flags;
 			int32_t out_bufflen;
 		};
 		struct {
@@ -318,7 +329,9 @@ union scst_user_prealloc_buffer {
 #define SCST_USER_ON_CACHED_MEM_FREE            \
 	_IOR('s', UCMD_STATE_ON_CACHE_FREEING,  \
 	struct scst_user_on_cached_mem_free)
-#define SCST_USER_TASK_MGMT		\
-	_IOWR('s', UCMD_STATE_TM_EXECING, struct scst_user_tm)
+#define SCST_USER_TASK_MGMT_RECEIVED		\
+	_IOWR('s', UCMD_STATE_TM_RECEIVED_EXECING, struct scst_user_tm)
+#define SCST_USER_TASK_MGMT_DONE		\
+	_IOWR('s', UCMD_STATE_TM_DONE_EXECING, struct scst_user_tm)
 
 #endif /* __SCST_USER_H */

@@ -1,10 +1,10 @@
 #
 #  SCSI target mid-level makefile
 #  
-#  Copyright (C) 2004 - 2011 Vladislav Bolkhovitin <vst@vlnb.net>
+#  Copyright (C) 2004 - 2013 Vladislav Bolkhovitin <vst@vlnb.net>
 #  Copyright (C) 2004 - 2005 Leonid Stoljar
 #  Copyright (C) 2007 - 2010 ID7 Ltd.
-#  Copyright (C) 2010 - 2011 SCST Ltd.
+#  Copyright (C) 2010 - 2013 SCST Ltd.
 #  
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -27,6 +27,10 @@
 # Notes :
 #    - install and uninstall must be made as root
 #
+
+ifndef PREFIX
+        PREFIX=/usr/local
+endif
 
 SHELL=/bin/bash
 
@@ -118,7 +122,7 @@ INSTALL_DIR := $(DESTDIR)/lib/modules/$(shell uname -r)/extra
 else
 INSTALL_DIR := $(DESTDIR)/lib/modules/$(KVER)/extra
 endif
-INSTALL_DIR_H := $(DESTDIR)/usr/local/include/scst
+INSTALL_DIR_H := $(DESTDIR)$(PREFIX)/include/scst
 
 enable-Wextra = $(shell uname_r="$$(uname -r)"; if [ "$${uname_r%.el5}" = "$${uname_r}" ]; then echo "$(1)"; fi)
 
@@ -138,16 +142,14 @@ EXTRA_CFLAGS += -DCONFIG_SCST_EXTRACHECKS
 #EXTRA_CFLAGS += -DCONFIG_SCST_TRACING
 
 EXTRA_CFLAGS += -DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions
-#EXTRA_CFLAGS += -DCONFIG_SCST_DEBUG_TM -DCONFIG_SCST_TM_DBG_GO_OFFLINE
 #EXTRA_CFLAGS += -DCONFIG_SCST_DEBUG_RETRY
 #EXTRA_CFLAGS += -DCONFIG_SCST_DEBUG_OOM
 #EXTRA_CFLAGS += -DCONFIG_SCST_DEBUG_SN
+#EXTRA_CFLAGS += -DCONFIG_SCST_DEBUG_SYSFS_EAGAIN
 
-#EXTRA_CFLAGS += -DCONFIG_SCST_MEASURE_LATENCY
-
-# If defined, makes SCST zero allocated data buffers. 
-# Undefining it considerably improves performance and eases CPU load, 
-# but could create a security hole (information leakage), so 
+# If defined, makes SCST zero allocated data buffers.
+# Undefining it considerably improves performance and eases CPU load,
+# but could create a security hole (information leakage), so
 # enable it if you have strict security requirements.
 #EXTRA_CFLAGS += -DSCST_STRICT_SECURITY
 
@@ -161,60 +163,54 @@ extraclean: clean
 	cd $(DEV_HANDLERS_DIR) && $(MAKE) $@
 	rm -f *.orig *.rej
 
-debug2release:
-	sed -i.aa s/"^EXTRA_CFLAGS += \-DCONFIG_SCST_EXTRACHECKS"/"#EXTRA_CFLAGS += \-DCONFIG_SCST_EXTRACHECKS"/ Makefile
-	@cmp Makefile Makefile.aa >/dev/null; if [[ $$? = 0 ]]; then rm Makefile.aa; echo "sed failed: wrong original state?"; false; fi
-	sed -i.aa s/"#EXTRA_CFLAGS += \-DCONFIG_SCST_TRACING"/"EXTRA_CFLAGS += \-DCONFIG_SCST_TRACING"/ Makefile
-	@cmp Makefile Makefile.aa >/dev/null; if [[ $$? = 0 ]]; then rm Makefile.aa; echo "sed failed: wrong original state?"; false; fi
-	sed -i.aa s/"^EXTRA_CFLAGS += \-DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions"/"#EXTRA_CFLAGS += \-DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions"/ Makefile
-	@cmp Makefile Makefile.aa >/dev/null; if [[ $$? = 0 ]]; then rm Makefile.aa; echo "sed failed: wrong original state?"; false; fi
+2release:
+	sed -i.aa s/"^E\?XTRA_CFLAGS += \-DCONFIG_SCST_EXTRACHECKS"/"#EXTRA_CFLAGS += \-DCONFIG_SCST_EXTRACHECKS"/ Makefile
+	grep "^#EXTRA_CFLAGS += \-DCONFIG_SCST_EXTRACHECKS" Makefile >/dev/null
+	sed -i.aa s/"^#\?EXTRA_CFLAGS += \-DCONFIG_SCST_TRACING"/"EXTRA_CFLAGS += \-DCONFIG_SCST_TRACING"/ Makefile
+	grep "^EXTRA_CFLAGS += \-DCONFIG_SCST_TRACING" Makefile >/dev/null
+	sed -i.aa s/"^E\?XTRA_CFLAGS += \-DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions"/"#EXTRA_CFLAGS += \-DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions"/ Makefile
+	grep "^#EXTRA_CFLAGS += \-DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions" Makefile >/dev/null
 	rm Makefile.aa
 	cd $(DEV_HANDLERS_DIR) && $(MAKE) $@
 
-release2debug:
-	sed -i.aa s/"#EXTRA_CFLAGS += \-DCONFIG_SCST_EXTRACHECKS"/"EXTRA_CFLAGS += \-DCONFIG_SCST_EXTRACHECKS"/ Makefile
-	@cmp Makefile Makefile.aa >/dev/null; if [[ $$? = 0 ]]; then rm Makefile.aa; echo "sed failed: wrong original state?"; false; fi
-	sed -i.aa s/"^EXTRA_CFLAGS += \-DCONFIG_SCST_TRACING"/"#EXTRA_CFLAGS += \-DCONFIG_SCST_TRACING"/ Makefile
-	@cmp Makefile Makefile.aa >/dev/null; if [[ $$? = 0 ]]; then rm Makefile.aa; echo "sed failed: wrong original state?"; false; fi
-	sed -i.aa s/"#EXTRA_CFLAGS += \-DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions"/"EXTRA_CFLAGS += \-DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions"/ Makefile
-	@cmp Makefile Makefile.aa >/dev/null; if [[ $$? = 0 ]]; then rm Makefile.aa; echo "sed failed: wrong original state?"; false; fi
+2debug:
+	sed -i.aa s/"^#\?EXTRA_CFLAGS += \-DCONFIG_SCST_EXTRACHECKS"/"EXTRA_CFLAGS += \-DCONFIG_SCST_EXTRACHECKS"/ Makefile
+	grep "^EXTRA_CFLAGS += \-DCONFIG_SCST_EXTRACHECKS" Makefile >/dev/null
+	sed -i.aa s/"^E\?XTRA_CFLAGS += \-DCONFIG_SCST_TRACING"/"#EXTRA_CFLAGS += \-DCONFIG_SCST_TRACING"/ Makefile
+	grep "^#EXTRA_CFLAGS += \-DCONFIG_SCST_TRACING" Makefile >/dev/null
+	sed -i.aa s/"^#\?EXTRA_CFLAGS += \-DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions"/"EXTRA_CFLAGS += \-DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions"/ Makefile
+	grep "^EXTRA_CFLAGS += \-DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions" Makefile >/dev/null
 	rm Makefile.aa
 	cd $(DEV_HANDLERS_DIR) && $(MAKE) $@
 
-debug2perf:
-	sed -i.aa s/"^EXTRA_CFLAGS += \-DCONFIG_SCST_EXTRACHECKS"/"#EXTRA_CFLAGS += \-DCONFIG_SCST_EXTRACHECKS"/ Makefile
-	@cmp Makefile Makefile.aa >/dev/null; if [[ $$? = 0 ]]; then rm Makefile.aa; echo "sed failed: wrong original state?"; false; fi
-	sed -i.aa s/"^EXTRA_CFLAGS += \-DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions"/"#EXTRA_CFLAGS += \-DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions"/ Makefile
-	@cmp Makefile Makefile.aa >/dev/null; if [[ $$? = 0 ]]; then rm Makefile.aa; echo "sed failed: wrong original state?"; false; fi
-	rm Makefile.aa
-	cd $(DEV_HANDLERS_DIR) && $(MAKE) $@
-
-perf2debug:
-	sed -i.aa s/"#EXTRA_CFLAGS += \-DCONFIG_SCST_EXTRACHECKS"/"EXTRA_CFLAGS += \-DCONFIG_SCST_EXTRACHECKS"/ Makefile
-	@cmp Makefile Makefile.aa >/dev/null; if [[ $$? = 0 ]]; then rm Makefile.aa; echo "sed failed: wrong original state?"; false; fi
-	sed -i.aa s/"#EXTRA_CFLAGS += \-DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions"/"EXTRA_CFLAGS += \-DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions"/ Makefile
-	@cmp Makefile Makefile.aa >/dev/null; if [[ $$? = 0 ]]; then rm Makefile.aa; echo "sed failed: wrong original state?"; false; fi
+2perf:
+	sed -i.aa s/"^E\?XTRA_CFLAGS += \-DCONFIG_SCST_EXTRACHECKS"/"#EXTRA_CFLAGS += \-DCONFIG_SCST_EXTRACHECKS"/ Makefile
+	grep "^#EXTRA_CFLAGS += \-DCONFIG_SCST_EXTRACHECKS" Makefile >/dev/null
+	sed -i.aa s/"^E\?XTRA_CFLAGS += \-DCONFIG_SCST_TRACING"/"#EXTRA_CFLAGS += \-DCONFIG_SCST_TRACING"/ Makefile
+	grep "^#EXTRA_CFLAGS += \-DCONFIG_SCST_TRACING" Makefile >/dev/null
+	sed -i.aa s/"^E\?XTRA_CFLAGS += \-DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions"/"#EXTRA_CFLAGS += \-DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions"/ Makefile
+	grep "^#EXTRA_CFLAGS += \-DCONFIG_SCST_DEBUG -g -fno-inline -fno-inline-functions" Makefile >/dev/null
 	rm Makefile.aa
 	cd $(DEV_HANDLERS_DIR) && $(MAKE) $@
 
 disable_proc:
-	sed -i.aa s/"^#define CONFIG_SCST_PROC"/"\/* #define CONFIG_SCST_PROC *\/"/ ../include/scst.h
-	@cmp ../include/scst.h ../include/scst.h.aa >/dev/null; if [[ $$? = 0 ]]; then rm ../include/scst.h.aa; echo "sed failed: wrong original state?"; false; fi
+	sed -i.aa s/"^#\?define CONFIG_SCST_PROC"/"\/* #define CONFIG_SCST_PROC *\/"/ ../include/scst.h
+	grep "^\/\* #define CONFIG_SCST_PROC \*\/" ../include/scst.h >/dev/null
 	rm ../include/scst.h.aa
-	sed -i.aa s/"^scst-y        += scst_proc.o"/"#scst\-y        += scst_proc.o"/ Makefile
-	@cmp Makefile Makefile.aa >/dev/null; if [[ $$? = 0 ]]; then rm Makefile.aa; echo "sed failed: wrong original state?"; false; fi
-	sed -i.aa s/"#scst\-y        += scst_sysfs.o"/"scst\-y        += scst_sysfs.o"/ Makefile
-	@cmp Makefile Makefile.aa >/dev/null; if [[ $$? = 0 ]]; then rm Makefile.aa; echo "sed failed: wrong original state?"; false; fi
+	sed -i.aa s/"^s\?cst-y        += scst_proc.o"/"#scst\-y        += scst_proc.o"/ Makefile
+	grep "^#scst\-y        += scst_proc.o" Makefile >/dev/null
+	sed -i.aa s/"^#\?scst\-y        += scst_sysfs.o"/"scst\-y        += scst_sysfs.o"/ Makefile
+	grep "^scst\-y        += scst_sysfs.o" Makefile >/dev/null
 	rm Makefile.aa
 
 enable_proc:
-	sed -i.aa s/"\/\* #define CONFIG_SCST_PROC \*\/"/"#define CONFIG_SCST_PROC"/ ../include/scst.h
-	@cmp ../include/scst.h ../include/scst.h.aa >/dev/null; if [[ $$? = 0 ]]; then rm ../include/scst.h.aa; echo "sed failed: wrong original state?"; false; fi
+	sed -i.aa s/"^\/\?\* #define CONFIG_SCST_PROC \*\/"/"#define CONFIG_SCST_PROC"/ ../include/scst.h
+	grep "^#define CONFIG_SCST_PROC" ../include/scst.h >/dev/null
 	rm ../include/scst.h.aa
-	sed -i.aa s/"#scst\-y        += scst_proc.o"/"scst\-y        += scst_proc.o"/ Makefile
-	@cmp Makefile Makefile.aa >/dev/null; if [[ $$? = 0 ]]; then rm Makefile.aa; echo "sed failed: wrong original state?"; false; fi
-	sed -i.aa s/"^scst\-y        += scst_sysfs.o"/"#scst\-y        += scst_sysfs.o"/ Makefile
-	@cmp Makefile Makefile.aa >/dev/null; if [[ $$? = 0 ]]; then rm Makefile.aa; echo "sed failed: wrong original state?"; false; fi
+	sed -i.aa s/"^#\?scst\-y        += scst_proc.o"/"scst\-y        += scst_proc.o"/ Makefile
+	grep "^scst\-y        += scst_proc.o" Makefile >/dev/null
+	sed -i.aa s/"^s\?cst\-y        += scst_sysfs.o"/"#scst\-y        += scst_sysfs.o"/ Makefile
+	grep "^#scst\-y        += scst_sysfs.o" Makefile >/dev/null
 	rm Makefile.aa
 
-.PHONY: all install uninstall clean extraclean debug2release release2debug debug2perf perf2debug disable_proc enable_proc
+.PHONY: all install uninstall clean extraclean 2release 2debug 2perf disable_proc enable_proc

@@ -1,8 +1,8 @@
 /*
  *  Copyright (C) 2002 - 2003 Ardis Technolgies <roman@ardistech.com>
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -51,7 +51,12 @@ static struct kmem_cache *iscsi_cmnd_cache;
 static DEFINE_MUTEX(iscsi_threads_pool_mutex);
 static LIST_HEAD(iscsi_thread_pools_list);
 
+static struct kmem_cache *iscsi_thread_pool_cache;
+
 static struct iscsi_thread_pool *iscsi_main_thread_pool;
+
+struct kmem_cache *iscsi_conn_cache;
+struct kmem_cache *iscsi_sess_cache;
 
 static struct page *dummy_page;
 static struct scatterlist dummy_sg;
@@ -478,7 +483,7 @@ void cmnd_done(struct iscsi_cmnd *cmnd)
 		if (cmnd->own_sg) {
 			TRACE_DBG("own_sg for req %p", cmnd);
 			if (cmnd->sg != &dummy_sg)
-				scst_free(cmnd->sg, cmnd->sg_cnt);
+				scst_free_sg(cmnd->sg, cmnd->sg_cnt);
 #ifdef CONFIG_SCST_DEBUG
 			cmnd->own_sg = 0;
 			cmnd->sg = NULL;
@@ -501,7 +506,7 @@ void cmnd_done(struct iscsi_cmnd *cmnd)
 		if (cmnd->own_sg) {
 			TRACE_DBG("own_sg for rsp %p", cmnd);
 			if ((cmnd->sg != &dummy_sg) && (cmnd->sg != cmnd->rsp_sg))
-				scst_free(cmnd->sg, cmnd->sg_cnt);
+				scst_free_sg(cmnd->sg, cmnd->sg_cnt);
 #ifdef CONFIG_SCST_DEBUG
 			cmnd->own_sg = 0;
 			cmnd->sg = NULL;
@@ -542,7 +547,30 @@ void req_cmnd_release_force(struct iscsi_cmnd *req)
 
 	TRACE_ENTRY();
 
-	TRACE_MGMT_DBG("req %p", req);
+	if (req->force_release_done) {
+		/*
+		 * There are some scenarios when this function can be called
+		 * more, than once, for the same req. For instance, dropped
+		 * command in iscsi_push_cmnd() and then for it
+		 * iscsi_fail_data_waiting_cmnd() during closing (aborting) this
+		 * connection or from iscsi_check_tm_data_wait_timeouts().
+		 */
+		TRACE_MGMT_DBG("Double force release for req %p", req);
+
+		EXTRACHECKS_BUG_ON(!req->release_called);
+		sBUG_ON(req->hashed);
+		sBUG_ON(req->cmd_req);
+		sBUG_ON(req->main_rsp != NULL);
+		sBUG_ON(!list_empty(&req->rx_ddigest_cmd_list));
+		sBUG_ON(!list_empty(&req->rsp_cmd_list));
+		sBUG_ON(req->pending);
+
+		cmnd_put(req);
+		goto out;
+	} else
+		TRACE_MGMT_DBG("req %p", req);
+
+	req->force_release_done = 1;
 
 	sBUG_ON(req == conn->read_cmnd);
 
@@ -601,6 +629,7 @@ void req_cmnd_release_force(struct iscsi_cmnd *req)
 
 	req_cmnd_release(req);
 
+out:
 	TRACE_EXIT();
 	return;
 }
@@ -734,7 +763,7 @@ static inline struct iscsi_cmnd *iscsi_alloc_main_rsp(struct iscsi_cmnd *parent)
 
 static void iscsi_cmnds_init_write(struct list_head *send, int flags)
 {
-	struct iscsi_cmnd *rsp = list_entry(send->next, struct iscsi_cmnd,
+	struct iscsi_cmnd *rsp = list_first_entry(send, struct iscsi_cmnd,
 						write_list_entry);
 	struct iscsi_conn *conn = rsp->conn;
 	struct list_head *pos, *next;
@@ -979,7 +1008,7 @@ static void iscsi_init_status_rsp(struct iscsi_cmnd *rsp,
 	rsp_hdr->cmd_status = status;
 	rsp_hdr->itt = cmnd_hdr(req)->itt;
 
-	if (SCST_SENSE_VALID(sense_buf)) {
+	if (scst_sense_valid(sense_buf)) {
 		TRACE_DBG("%s", "SENSE VALID");
 
 		sg = rsp->sg = rsp->rsp_sg;
@@ -1047,7 +1076,7 @@ static int iscsi_set_prelim_r2t_len_to_receive(struct iscsi_cmnd *req)
 		/*
 		 * We have to close connection, because otherwise a data
 		 * corruption is possible if we allow to receive data
-		 * for this request in another request with dublicated ITT.
+		 * for this request in another request with duplicated ITT.
 		 */
 		mark_conn_closed(req->conn);
 		goto out;
@@ -1713,7 +1742,7 @@ static int nop_out_start(struct iscsi_cmnd *cmnd)
 		if (cmnd->pdu.bhs.itt != ISCSI_RESERVED_TAG) {
 			struct scatterlist *sg;
 
-			cmnd->sg = sg = scst_alloc(size, GFP_KERNEL,
+			cmnd->sg = sg = scst_alloc_sg(size, GFP_KERNEL,
 						&cmnd->sg_cnt);
 			if (sg == NULL) {
 				TRACE(TRACE_OUT_OF_MEM, "Allocation of buffer "
@@ -1846,7 +1875,7 @@ int cmnd_rx_continue(struct iscsi_cmnd *req)
 			/*
 			 * We have to close connection, because otherwise a data
 			 * corruption is possible if we allow to receive data
-			 * for this request in another request with dublicated
+			 * for this request in another request with duplicated
 			 * ITT.
 			 */
 			goto out_close;
@@ -1985,7 +2014,7 @@ static int scsi_cmnd_start(struct iscsi_cmnd *req)
 		scst_cmd_set_queue_type(scst_cmd, SCST_CMD_QUEUE_UNTAGGED);
 		break;
 	default:
-		PRINT_ERROR("Unknown task code %x, use ORDERED instead",
+		PRINT_WARNING("Unknown task code %x, use ORDERED instead",
 			req_hdr->flags & ISCSI_CMD_ATTR_MASK);
 		scst_cmd_set_queue_type(scst_cmd, SCST_CMD_QUEUE_ORDERED);
 		break;
@@ -2531,7 +2560,8 @@ static void execute_task_management(struct iscsi_cmnd *req)
 	} else
 		spin_unlock(&sess->sn_lock);
 
-	memset(&params, 0, sizeof(params));
+	scst_rx_mgmt_params_init(&params);
+
 	params.atomic = SCST_NON_ATOMIC;
 	params.tgt_priv = req;
 
@@ -2958,7 +2988,7 @@ static void iscsi_push_cmnd(struct iscsi_cmnd *cmnd)
 
 			if (list_empty(&session->pending_list))
 				break;
-			cmnd = list_entry(session->pending_list.next,
+			cmnd = list_first_entry(&session->pending_list,
 					  struct iscsi_cmnd,
 					  pending_list_entry);
 			if (cmnd->pdu.bhs.sn != cmd_sn)
@@ -3268,7 +3298,7 @@ static int iscsi_xmit_response(struct scst_cmd *scst_cmd)
 
 	EXTRACHECKS_BUG_ON(req->scst_state != ISCSI_CMD_STATE_RESTARTED);
 
-	if (unlikely(scst_cmd_aborted(scst_cmd)))
+	if (unlikely(scst_cmd_aborted_on_xmit(scst_cmd)))
 		set_bit(ISCSI_CMD_ABORTED, &req->prelim_compl_flags);
 
 	if (unlikely(req->prelim_compl_flags != 0)) {
@@ -3362,9 +3392,9 @@ static int iscsi_xmit_response(struct scst_cmd *scst_cmd)
 	 * There's no need for protection, since we are not going to
 	 * dereference them.
 	 */
-	wr_rsp = list_entry(conn->write_list.next, struct iscsi_cmnd,
+	wr_rsp = list_first_entry(&conn->write_list, struct iscsi_cmnd,
 			write_list_entry);
-	our_rsp = list_entry(req->rsp_cmd_list.next, struct iscsi_cmnd,
+	our_rsp = list_first_entry(&req->rsp_cmd_list, struct iscsi_cmnd,
 			rsp_cmd_list_entry);
 	if (wr_rsp == our_rsp) {
 		/*
@@ -3549,8 +3579,12 @@ static void iscsi_task_mgmt_fn_done(struct scst_mgmt_cmd *scst_mcmd)
 
 	switch (fn) {
 	case SCST_NEXUS_LOSS_SESS:
+		/* Internal */
+		break;
 	case SCST_ABORT_ALL_TASKS_SESS:
-		/* They are internal */
+	case SCST_ABORT_ALL_TASKS:
+	case SCST_NEXUS_LOSS:
+		sBUG_ON(1);
 		break;
 	default:
 		iscsi_send_task_mgmt_resp(req, status);
@@ -3591,14 +3625,14 @@ static int iscsi_scsi_aen(struct scst_aen *aen)
 	}
 	if (!found) {
 		TRACE_MGMT_DBG("Unable to find alive conn for sess %p", sess);
-		goto out_err;
+		goto out_err_unlock;
 	}
 
 	/* Create a fake request */
 	fake_req = cmnd_alloc(conn, NULL);
 	if (fake_req == NULL) {
 		PRINT_ERROR("%s", "Unable to alloc fake AEN request");
-		goto out_err;
+		goto out_err_unlock;
 	}
 
 	mutex_unlock(&sess->target->target_mutex);
@@ -3617,7 +3651,7 @@ static int iscsi_scsi_aen(struct scst_aen *aen)
 	rsp_hdr->opcode = ISCSI_OP_ASYNC_MSG;
 	rsp_hdr->flags = ISCSI_FLG_FINAL;
 	rsp_hdr->lun = lun; /* it's already in SCSI form */
-	rsp_hdr->ffffffff = __constant_cpu_to_be32(0xffffffff);
+	rsp_hdr->ffffffff = cpu_to_be32(0xffffffff);
 	rsp_hdr->async_event = ISCSI_ASYNC_SCSI;
 
 	sg = rsp->sg = rsp->rsp_sg;
@@ -3640,9 +3674,12 @@ out:
 
 out_err_free_req:
 	req_cmnd_release(fake_req);
+	goto out_set_res;
 
-out_err:
+out_err_unlock:
 	mutex_unlock(&sess->target->target_mutex);
+
+out_set_res:
 	res = SCST_AEN_RES_FAILED;
 	goto out;
 }
@@ -3729,8 +3766,7 @@ static int iscsi_get_initiator_port_transport_id(struct scst_tgt *tgt,
 	tr_id[0] = 0x40 | SCSI_TRANSPORTID_PROTOCOLID_ISCSI;
 	sprintf(&tr_id[4], "%s,i,0x%llx", sess->initiator_name, sid.id64);
 
-	put_unaligned(cpu_to_be16(tr_id_size - 4),
-		(__be16 *)&tr_id[2]);
+	put_unaligned_be16(tr_id_size - 4, &tr_id[2]);
 
 	*transport_id = tr_id;
 
@@ -3786,6 +3822,26 @@ out_err:
 	return;
 }
 
+#ifndef CONFIG_SCST_PROC
+static int iscsi_close_sess(struct scst_session *scst_sess)
+{
+	struct iscsi_session *sess = scst_sess_get_tgt_priv(scst_sess);
+	struct iscsi_target *target = sess->target;
+	int res;
+
+	res = mutex_lock_interruptible(&target->target_mutex);
+	if (res)
+		goto out;
+	iscsi_sess_force_close(sess);
+	mutex_unlock(&target->target_mutex);
+
+	res = 0;
+
+out:
+	return res;
+}
+#endif
+
 static int iscsi_target_detect(struct scst_tgt_template *templ)
 {
 	/* Nothing to do */
@@ -3833,6 +3889,7 @@ struct scst_tgt_template iscsi_template = {
 	.add_target = iscsi_sysfs_add_target,
 	.del_target = iscsi_sysfs_del_target,
 	.mgmt_cmd = iscsi_sysfs_mgmt_cmd,
+	.close_session = iscsi_close_sess,
 	.tgtt_optional_attributes = "IncomingUser, OutgoingUser",
 	.tgt_optional_attributes = "IncomingUser, OutgoingUser, allowed_portal",
 #endif
@@ -3849,7 +3906,7 @@ struct scst_tgt_template iscsi_template = {
 	.release = iscsi_target_release,
 	.xmit_response = iscsi_xmit_response,
 #if !defined(CONFIG_TCP_ZERO_COPY_TRANSFER_COMPLETION_NOTIFICATION)
-	.alloc_data_buf = iscsi_alloc_data_buf,
+	.tgt_alloc_data_buf = iscsi_alloc_data_buf,
 #endif
 	.preprocessing_done = iscsi_preprocessing_done,
 	.pre_exec = iscsi_pre_exec,
@@ -3861,12 +3918,54 @@ struct scst_tgt_template iscsi_template = {
 	.get_scsi_transport_version = iscsi_get_scsi_transport_version,
 };
 
+static void __iscsi_threads_pool_put(struct iscsi_thread_pool *p)
+{
+	struct iscsi_thread *t, *tt;
+
+	TRACE_ENTRY();
+
+	p->thread_pool_ref--;
+	if (p->thread_pool_ref > 0) {
+		TRACE_DBG("iSCSI thread pool %p still has %d references)",
+			p, p->thread_pool_ref);
+		goto out;
+	}
+
+	TRACE_DBG("Freeing iSCSI thread pool %p", p);
+
+	list_for_each_entry_safe(t, tt, &p->threads_list, threads_list_entry) {
+		kthread_stop(t->thr);
+		list_del(&t->threads_list_entry);
+		kfree(t);
+	}
+
+	list_del(&p->thread_pools_list_entry);
+
+	kmem_cache_free(iscsi_thread_pool_cache, p);
+
+out:
+	TRACE_EXIT();
+	return;
+}
+
+void iscsi_threads_pool_put(struct iscsi_thread_pool *p)
+{
+	TRACE_ENTRY();
+
+	mutex_lock(&iscsi_threads_pool_mutex);
+	__iscsi_threads_pool_put(p);
+	mutex_unlock(&iscsi_threads_pool_mutex);
+
+	TRACE_EXIT();
+	return;
+}
+
 int iscsi_threads_pool_get(const cpumask_t *cpu_mask,
 	struct iscsi_thread_pool **out_pool)
 {
 	int res;
 	struct iscsi_thread_pool *p;
-	struct iscsi_thread *t, *tt;
+	struct iscsi_thread *t;
 	int i, j, count;
 
 	TRACE_ENTRY();
@@ -3887,7 +3986,7 @@ int iscsi_threads_pool_get(const cpumask_t *cpu_mask,
 
 	TRACE_DBG("%s", "Creating new iSCSI thread pool");
 
-	p = kzalloc(sizeof(*p), GFP_KERNEL);
+	p = kmem_cache_zalloc(iscsi_thread_pool_cache, GFP_KERNEL);
 	if (p == NULL) {
 		PRINT_ERROR("Unable to allocate iSCSI thread pool (size %zd)",
 			sizeof(*p));
@@ -3895,7 +3994,7 @@ int iscsi_threads_pool_get(const cpumask_t *cpu_mask,
 		if (!list_empty(&iscsi_thread_pools_list)) {
 			PRINT_WARNING("%s", "Using global iSCSI thread pool "
 				"instead");
-			p = list_entry(iscsi_thread_pools_list.next,
+			p = list_first_entry(&iscsi_thread_pools_list,
 				struct iscsi_thread_pool,
 				thread_pools_list_entry);
 		} else
@@ -3920,12 +4019,14 @@ int iscsi_threads_pool_get(const cpumask_t *cpu_mask,
 	INIT_LIST_HEAD(&p->threads_list);
 
 	if (cpu_mask == NULL)
-		count = max((int)num_online_cpus(), 2);
+		count = max_t(int, num_online_cpus(), 2);
 	else {
 		count = 0;
 		for_each_cpu(i, cpu_mask)
 			count++;
 	}
+
+	list_add_tail(&p->thread_pools_list_entry, &iscsi_thread_pools_list);
 
 	for (j = 0; j < 2; j++) {
 		int (*fn)(void *);
@@ -3973,7 +4074,6 @@ int iscsi_threads_pool_get(const cpumask_t *cpu_mask,
 		}
 	}
 
-	list_add_tail(&p->thread_pools_list_entry, &iscsi_thread_pools_list);
 	res = 0;
 
 	TRACE_DBG("Created iSCSI thread pool %p", p);
@@ -3981,53 +4081,15 @@ int iscsi_threads_pool_get(const cpumask_t *cpu_mask,
 out_unlock:
 	mutex_unlock(&iscsi_threads_pool_mutex);
 
-	if (out_pool != NULL)
-		*out_pool = p;
+	*out_pool = p;
 
 	TRACE_EXIT_RES(res);
 	return res;
 
 out_free:
-	list_for_each_entry_safe(t, tt, &p->threads_list, threads_list_entry) {
-		kthread_stop(t->thr);
-		list_del(&t->threads_list_entry);
-		kfree(t);
-	}
+	__iscsi_threads_pool_put(p);
+	p = NULL;
 	goto out_unlock;
-}
-
-void iscsi_threads_pool_put(struct iscsi_thread_pool *p)
-{
-	struct iscsi_thread *t, *tt;
-
-	TRACE_ENTRY();
-
-	mutex_lock(&iscsi_threads_pool_mutex);
-
-	p->thread_pool_ref--;
-	if (p->thread_pool_ref > 0) {
-		TRACE_DBG("iSCSI thread pool %p still has %d references)",
-			p, p->thread_pool_ref);
-		goto out_unlock;
-	}
-
-	TRACE_DBG("Freeing iSCSI thread pool %p", p);
-
-	list_for_each_entry_safe(t, tt, &p->threads_list, threads_list_entry) {
-		kthread_stop(t->thr);
-		list_del(&t->threads_list_entry);
-		kfree(t);
-	}
-
-	list_del(&p->thread_pools_list_entry);
-
-	kfree(p);
-
-out_unlock:
-	mutex_unlock(&iscsi_threads_pool_mutex);
-
-	TRACE_EXIT();
-	return;
 }
 
 static int __init iscsi_init(void)
@@ -4056,7 +4118,7 @@ static int __init iscsi_init(void)
 	err = net_set_get_put_page_callbacks(iscsi_get_page_callback,
 			iscsi_put_page_callback);
 	if (err != 0) {
-		PRINT_INFO("Unable to set page callbackes: %d", err);
+		PRINT_INFO("Unable to set page callbacks: %d", err);
 		goto out_destroy_mempool;
 	}
 #else
@@ -4080,10 +4142,30 @@ static int __init iscsi_init(void)
 	if (err < 0)
 		goto out_reg;
 
-	iscsi_cmnd_cache = KMEM_CACHE(iscsi_cmnd, SCST_SLAB_FLAGS);
+	iscsi_cmnd_cache = KMEM_CACHE(iscsi_cmnd, SCST_SLAB_FLAGS|SLAB_HWCACHE_ALIGN);
 	if (!iscsi_cmnd_cache) {
 		err = -ENOMEM;
 		goto out_event;
+	}
+
+	iscsi_thread_pool_cache = KMEM_CACHE(iscsi_thread_pool,
+					SCST_SLAB_FLAGS|SLAB_HWCACHE_ALIGN);
+	if (!iscsi_thread_pool_cache) {
+		err = -ENOMEM;
+		goto out_kmem_cmd;
+	}
+
+	iscsi_conn_cache = KMEM_CACHE(iscsi_conn, SCST_SLAB_FLAGS|SLAB_HWCACHE_ALIGN);
+	if (!iscsi_conn_cache) {
+		err = -ENOMEM;
+		goto out_kmem_tp;
+	}
+
+	iscsi_sess_cache = KMEM_CACHE(iscsi_session,
+				SCST_SLAB_FLAGS|SLAB_HWCACHE_ALIGN);
+	if (!iscsi_sess_cache) {
+		err = -ENOMEM;
+		goto out_kmem_conn;
 	}
 
 	err = scst_register_target_template(&iscsi_template);
@@ -4116,6 +4198,15 @@ out_reg_tmpl:
 	scst_unregister_target_template(&iscsi_template);
 
 out_kmem:
+	kmem_cache_destroy(iscsi_sess_cache);
+
+out_kmem_conn:
+	kmem_cache_destroy(iscsi_conn_cache);
+
+out_kmem_tp:
+	kmem_cache_destroy(iscsi_thread_pool_cache);
+
+out_kmem_cmd:
 	kmem_cache_destroy(iscsi_cmnd_cache);
 
 out_event:
@@ -4129,8 +4220,8 @@ out_callb:
 	net_set_get_put_page_callbacks(NULL, NULL);
 
 out_destroy_mempool:
-	mempool_destroy(iscsi_cmnd_abort_mempool);
 #endif
+	mempool_destroy(iscsi_cmnd_abort_mempool);
 
 out_free_dummy:
 	__free_pages(dummy_page, 0);
@@ -4150,6 +4241,9 @@ static void __exit iscsi_exit(void)
 #endif
 	event_exit();
 
+	kmem_cache_destroy(iscsi_sess_cache);
+	kmem_cache_destroy(iscsi_conn_cache);
+	kmem_cache_destroy(iscsi_thread_pool_cache);
 	kmem_cache_destroy(iscsi_cmnd_cache);
 
 	scst_unregister_target_template(&iscsi_template);

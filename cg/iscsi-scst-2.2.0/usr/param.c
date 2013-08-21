@@ -1,8 +1,8 @@
 /*
  *  Copyright (C) 2005 FUJITA Tomonori <tomof@acm.org>
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -370,7 +370,7 @@ struct iscsi_key session_keys[] = {
 	{"MaxRecvDataSegmentLength", 8192, -1, 512, -1, 1, &minimum_ops},
 	{"MaxXmitDataSegmentLength", 8192, -1, 512, -1, 1, &minimum_ops},
 	{"MaxBurstLength", 262144, -1, 512, -1, 1, &minimum_ops},
-	{"FirstBurstLength", 65536, -1, 512, -1, 1, &minimum_ops},
+	{"FirstBurstLength", 65536, 65536, 512, -1, 1, &minimum_ops},
 	{"DefaultTime2Wait", 2, 0, 0, 0, 0, &maximum_ops},
 	{"DefaultTime2Retain", 20, 0, 0, 0, 0, &minimum_ops},
 	{"MaxOutstandingR2T", 1, 32, 1, 65535, 1, &minimum_ops},

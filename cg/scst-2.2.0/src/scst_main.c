@@ -1,10 +1,10 @@
 /*
  *  scst_main.c
  *
- *  Copyright (C) 2004 - 2011 Vladislav Bolkhovitin <vst@vlnb.net>
+ *  Copyright (C) 2004 - 2013 Vladislav Bolkhovitin <vst@vlnb.net>
  *  Copyright (C) 2004 - 2005 Leonid Stoljar
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -80,9 +80,10 @@ struct mutex scst_mutex;
 EXPORT_SYMBOL_GPL(scst_mutex);
 
 /*
- * Secondary level main mutex, inner for scst_mutex. Needed for
+ * Second level main mutex, inner to scst_mutex and dev_pr_mutex. Needed for
  * __scst_pr_register_all_tg_pt(), since we can't use scst_mutex there,
- * because of the circular locking dependency with dev_pr_mutex.
+ * because its caller already holds dev_pr_mutex, hence circular locking
+ * dependency is possible.
  */
 struct mutex scst_mutex2;
 
@@ -106,6 +107,8 @@ static struct kmem_cache *scst_sense_cachep;
 mempool_t *scst_sense_mempool;
 static struct kmem_cache *scst_aen_cachep;
 mempool_t *scst_aen_mempool;
+struct kmem_cache *scst_tgt_cachep;
+struct kmem_cache *scst_dev_cachep;
 struct kmem_cache *scst_tgtd_cachep;
 struct kmem_cache *scst_sess_cachep;
 struct kmem_cache *scst_acgd_cachep;
@@ -148,15 +151,8 @@ struct list_head scst_sess_shut_list;
 
 wait_queue_head_t scst_dev_cmd_waitQ;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 29)
-#ifdef CONFIG_LOCKDEP
-static struct lock_class_key scst_suspend_key;
-struct lockdep_map scst_suspend_dep_map =
-	STATIC_LOCKDEP_MAP_INIT("scst_suspend_activity", &scst_suspend_key);
-#endif
-#endif
-static struct mutex scst_suspend_mutex;
-/* protected by scst_suspend_mutex */
+static struct mutex scst_cmd_threads_mutex;
+/* protected by scst_cmd_threads_mutex */
 static struct list_head scst_cmd_threads_list;
 
 int scst_threads;
@@ -164,6 +160,20 @@ static struct task_struct *scst_init_cmd_thread;
 static struct task_struct *scst_mgmt_thread;
 static struct task_struct *scst_mgmt_cmd_thread;
 
+/*
+ * Protects global suspending and resuming from being initiated from
+ * several threads simultaneously.
+ */
+static struct mutex scst_suspend_mutex;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 29)
+#ifdef CONFIG_LOCKDEP
+static struct lock_class_key scst_suspend_key;
+struct lockdep_map scst_suspend_dep_map =
+	STATIC_LOCKDEP_MAP_INIT("scst_suspend_activity", &scst_suspend_key);
+#endif
+#endif
+
+/* Protected by scst_suspend_mutex */
 static int suspend_count;
 
 static int scst_virt_dev_last_id; /* protected by scst_mutex */
@@ -282,7 +292,6 @@ int __scst_register_target_template(struct scst_tgt_template *vtt,
 		if (strcmp(t->name, vtt->name) == 0) {
 			PRINT_ERROR("Target driver %s already registered",
 				vtt->name);
-			mutex_unlock(&scst_mutex);
 			goto out_unlock;
 		}
 	}
@@ -436,12 +445,12 @@ void scst_unregister_target_template(struct scst_tgt_template *vtt)
 	}
 #endif
 
-restart:
-	list_for_each_entry(tgt, &vtt->tgt_list, tgt_list_entry) {
+	while (!list_empty(&vtt->tgt_list)) {
+		tgt = list_first_entry(&vtt->tgt_list, typeof(*tgt),
+				       tgt_list_entry);
 		mutex_unlock(&scst_mutex);
 		scst_unregister_target(tgt);
 		mutex_lock(&scst_mutex);
-		goto restart;
 	}
 
 	mutex_unlock(&scst_mutex);
@@ -556,7 +565,7 @@ struct scst_tgt *scst_register_target(struct scst_tgt_template *vtt,
 	mutex_unlock(&scst_mutex);
 
 #ifdef CONFIG_SCST_PROC
-	PRINT_INFO("Target %s (rel ID %d) for template %s registered "
+	PRINT_INFO("Target %s (relative target id %d) for template %s registered "
 		"successfully", tgt->tgt_name, tgt->rel_tgt_id, vtt->name);
 #else
 	PRINT_INFO("Target %s for template %s registered successfully",
@@ -591,7 +600,7 @@ static inline int test_sess_list(struct scst_tgt *tgt)
 {
 	int res;
 	mutex_lock(&scst_mutex);
-	res = list_empty(&tgt->sess_list);
+	res = list_empty(&tgt->sysfs_sess_list);
 	mutex_unlock(&scst_mutex);
 	return res;
 }
@@ -611,6 +620,17 @@ void scst_unregister_target(struct scst_tgt *tgt)
 #endif
 
 	TRACE_ENTRY();
+
+	/*
+	 * Remove the sysfs attributes of a target before invoking
+	 * tgt->tgtt->release(tgt) such that the "enabled" attribute can't be
+	 * accessed during or after the tgt->tgtt->release(tgt) call.
+	 */
+#ifdef CONFIG_SCST_PROC
+	scst_cleanup_proc_target_entries(tgt);
+#else
+	scst_tgt_sysfs_del(tgt);
+#endif
 
 	TRACE_DBG("%s", "Calling target driver's release()");
 	tgt->tgtt->release(tgt);
@@ -636,7 +656,7 @@ again:
 	wait_event(tgt->unreg_waitQ, test_sess_list(tgt));
 	TRACE_DBG("%s", "wait_event() returned");
 
-	scst_suspend_activity(false);
+	scst_suspend_activity(SCST_SUSPEND_TIMEOUT_UNLIMITED);
 	mutex_lock(&scst_mutex);
 
 	mutex_lock(&scst_mutex2);
@@ -647,9 +667,7 @@ again:
 
 	scst_tg_tgt_remove_by_tgt(tgt);
 
-#ifdef CONFIG_SCST_PROC
-	scst_cleanup_proc_target_entries(tgt);
-#else
+#ifndef CONFIG_SCST_PROC
 	scst_del_free_acg(tgt->default_acg);
 
 	list_for_each_entry_safe(acg, acg_tmp, &tgt->tgt_acg_list,
@@ -662,7 +680,7 @@ again:
 	scst_resume_activity();
 
 #ifndef CONFIG_SCST_PROC
-	scst_tgt_sysfs_del(tgt);
+	scst_tgt_sysfs_put(tgt);
 #endif
 
 	PRINT_INFO("Target %s for template %s unregistered successfully",
@@ -685,21 +703,18 @@ int scst_get_cmd_counter(void)
 	return res;
 }
 
-static int scst_susp_wait(bool interruptible)
+static int scst_susp_wait(unsigned long timeout)
 {
 	int res = 0;
 
 	TRACE_ENTRY();
 
-	if (interruptible) {
+	if (timeout != SCST_SUSPEND_TIMEOUT_UNLIMITED) {
 		res = wait_event_interruptible_timeout(scst_dev_cmd_waitQ,
-			(scst_get_cmd_counter() == 0),
-			SCST_SUSPENDING_TIMEOUT);
-		if (res <= 0) {
-			__scst_resume_activity();
-			if (res == 0)
-				res = -EBUSY;
-		} else
+			(scst_get_cmd_counter() == 0), timeout);
+		if (res == 0)
+			res = -EBUSY;
+		else if (res > 0)
 			res = 0;
 	} else
 		wait_event(scst_dev_cmd_waitQ, scst_get_cmd_counter() == 0);
@@ -715,18 +730,20 @@ static int scst_susp_wait(bool interruptible)
  *
  * Description:
  *    Globally suspends any activity and doesn't return, until there are any
- *    active commands (state after SCST_CMD_STATE_INIT). If "interruptible"
- *    is true, it returns after SCST_SUSPENDING_TIMEOUT or if it was interrupted
- *    by a signal with the corresponding error status < 0. If "interruptible"
- *    is false, it will wait virtually forever. On success returns 0.
+ *    active commands (state after SCST_CMD_STATE_INIT). Timeout parameter sets
+ *    max time this function will wait for suspending or interrupted by a
+ *    signal with the corresponding error status < 0. If timeout is
+ *    SCST_SUSPEND_TIMEOUT_UNLIMITED, then it will wait virtually forever.
+ *    On success returns 0.
  *
  *    New arriving commands stay in the suspended state until
  *    scst_resume_activity() is called.
  */
-int scst_suspend_activity(bool interruptible)
+int scst_suspend_activity(unsigned long timeout)
 {
 	int res = 0;
 	bool rep = false;
+	unsigned long cur_time = jiffies, wait_time;
 
 	TRACE_ENTRY();
 
@@ -734,11 +751,10 @@ int scst_suspend_activity(bool interruptible)
 	rwlock_acquire_read(&scst_suspend_dep_map, 0, 0, _RET_IP_);
 #endif
 
-	if (interruptible) {
-		if (mutex_lock_interruptible(&scst_suspend_mutex) != 0) {
-			res = -EINTR;
+	if (timeout != SCST_SUSPEND_TIMEOUT_UNLIMITED) {
+		res = mutex_lock_interruptible(&scst_suspend_mutex);
+		if (res != 0)
 			goto out;
-		}
 	} else
 		mutex_lock(&scst_suspend_mutex);
 
@@ -782,7 +798,7 @@ int scst_suspend_activity(bool interruptible)
 #endif
 	}
 
-	res = scst_susp_wait(interruptible);
+	res = scst_susp_wait(timeout);
 	if (res != 0)
 		goto out_clear;
 
@@ -790,12 +806,24 @@ int scst_suspend_activity(bool interruptible)
 	/* See comment about smp_mb() above */
 	smp_mb__after_clear_bit();
 
-	TRACE_MGMT_DBG("Waiting for %d active commands finally to complete",
-		scst_get_cmd_counter());
+	if (scst_get_cmd_counter() != 0)
+		TRACE_MGMT_DBG("Waiting for %d active commands finally to "
+			"complete", scst_get_cmd_counter());
 
-	res = scst_susp_wait(interruptible);
+	if (timeout != SCST_SUSPEND_TIMEOUT_UNLIMITED) {
+		wait_time = jiffies - cur_time;
+		/* just in case */
+		if (wait_time >= timeout) {
+			res = -EBUSY;
+			goto out_resume;
+		}
+		wait_time = timeout - wait_time;
+	} else
+		wait_time = SCST_SUSPEND_TIMEOUT_UNLIMITED;
+
+	res = scst_susp_wait(wait_time);
 	if (res != 0)
-		goto out_clear;
+		goto out_resume;
 
 	if (rep)
 		PRINT_INFO("%s", "All active commands completed");
@@ -818,10 +846,15 @@ out_clear:
 	clear_bit(SCST_FLAG_SUSPENDING, &scst_flags);
 	/* See comment about smp_mb() above */
 	smp_mb__after_clear_bit();
+
+out_resume:
+	__scst_resume_activity();
+	EXTRACHECKS_BUG_ON(suspend_count != 0);
 	goto out_up;
 }
 EXPORT_SYMBOL_GPL(scst_suspend_activity);
 
+/* scst_suspend_mutex supposed to be locked */
 static void __scst_resume_activity(void)
 {
 	struct scst_cmd_threads *l;
@@ -840,15 +873,17 @@ static void __scst_resume_activity(void)
 	 */
 	smp_mb__after_clear_bit();
 
+	mutex_lock(&scst_cmd_threads_mutex);
 	list_for_each_entry(l, &scst_cmd_threads_list, lists_list_entry) {
 		wake_up_all(&l->cmd_list_waitQ);
 	}
+	mutex_unlock(&scst_cmd_threads_mutex);
 	wake_up_all(&scst_init_cmd_list_waitQ);
 
 	spin_lock_irq(&scst_mcmd_lock);
 	if (!list_empty(&scst_delayed_mgmt_cmd_list)) {
 		struct scst_mgmt_cmd *m;
-		m = list_entry(scst_delayed_mgmt_cmd_list.next, typeof(*m),
+		m = list_first_entry(&scst_delayed_mgmt_cmd_list, typeof(*m),
 				mgmt_cmd_list_entry);
 		TRACE_MGMT_DBG("Moving delayed mgmt cmd %p to head of active "
 			"mgmt cmd list", m);
@@ -895,7 +930,7 @@ static int scst_register_device(struct scsi_device *scsidp)
 	TRACE_ENTRY();
 
 #ifdef CONFIG_SCST_PROC
-	res = scst_suspend_activity(true);
+	res = scst_suspend_activity(SCST_SUSPEND_TIMEOUT_USER);
 	if (res != 0)
 		goto out;
 #endif
@@ -944,7 +979,7 @@ static int scst_register_device(struct scsi_device *scsidp)
 		if (dt->type == scsidp->type) {
 			res = scst_assign_dev_handler(dev, dt);
 			if (res != 0)
-				goto out_del;
+				goto out_del_locked;
 			break;
 		}
 	}
@@ -956,7 +991,7 @@ static int scst_register_device(struct scsi_device *scsidp)
 
 	res = scst_dev_sysfs_create(dev);
 	if (res != 0)
-		goto out_del;
+		goto out_del_unlocked;
 #endif
 
 	PRINT_INFO("Attached to scsi%d, channel %d, id %d, lun %d, "
@@ -967,8 +1002,17 @@ out:
 	TRACE_EXIT_RES(res);
 	return res;
 
-out_del:
+#ifndef CONFIG_SCST_PROC
+out_del_unlocked:
+	mutex_lock(&scst_mutex);
 	list_del(&dev->dev_list_entry);
+	mutex_unlock(&scst_mutex);
+	scst_free_device(dev);
+	goto out;
+#else
+out_del_locked:
+	list_del(&dev->dev_list_entry);
+#endif
 
 out_free_dev:
 	scst_free_device(dev);
@@ -982,23 +1026,44 @@ out_resume:
 	goto out;
 }
 
+static struct scst_device *__scst_lookup_device(struct scsi_device *scsidp)
+{
+	struct scst_device *d;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 32)
+	lockdep_assert_held(&scst_mutex);
+#endif
+
+	list_for_each_entry(d, &scst_dev_list, dev_list_entry)
+		if (d->scsi_dev == scsidp)
+			return d;
+
+	return NULL;
+}
+
 static void scst_unregister_device(struct scsi_device *scsidp)
 {
-	struct scst_device *d, *dev = NULL;
+	struct scst_device *dev;
 	struct scst_acg_dev *acg_dev, *aa;
+	bool activity_suspended = false;
 
 	TRACE_ENTRY();
 
-	scst_suspend_activity(false);
 	mutex_lock(&scst_mutex);
 
-	list_for_each_entry(d, &scst_dev_list, dev_list_entry) {
-		if (d->scsi_dev == scsidp) {
-			dev = d;
-			TRACE_DBG("Device %p found", dev);
-			break;
-		}
+	dev = __scst_lookup_device(scsidp);
+
+	if (dev &&
+	    (!list_empty(&dev->dev_tgt_dev_list) ||
+	     !list_empty(&dev->dev_acg_dev_list))) {
+		mutex_unlock(&scst_mutex);
+
+		scst_suspend_activity(SCST_SUSPEND_TIMEOUT_UNLIMITED);
+		activity_suspended = true;
+		mutex_lock(&scst_mutex);
+		dev = __scst_lookup_device(scsidp);
 	}
+
 	if (dev == NULL) {
 		PRINT_ERROR("SCST device for SCSI device %d:%d:%d:%d not found",
 			scsidp->host->host_no, scsidp->channel, scsidp->id,
@@ -1021,7 +1086,8 @@ static void scst_unregister_device(struct scsi_device *scsidp)
 
 	mutex_unlock(&scst_mutex);
 
-	scst_resume_activity();
+	if (activity_suspended)
+		scst_resume_activity();
 
 	scst_dev_sysfs_del(dev);
 
@@ -1037,7 +1103,8 @@ out:
 
 out_unlock:
 	mutex_unlock(&scst_mutex);
-	scst_resume_activity();
+	if (activity_suspended)
+		scst_resume_activity();
 	goto out;
 }
 
@@ -1065,8 +1132,8 @@ static int scst_dev_handler_check(struct scst_dev_type *dev_handler)
 	}
 #endif
 
-	if (dev_handler->alloc_data_buf == NULL)
-		dev_handler->alloc_data_buf_atomic = 1;
+	if (dev_handler->dev_alloc_data_buf == NULL)
+		dev_handler->dev_alloc_data_buf_atomic = 1;
 
 	if (dev_handler->dev_done == NULL)
 		dev_handler->dev_done_atomic = 1;
@@ -1129,7 +1196,7 @@ int scst_register_virtual_device(struct scst_dev_type *dev_handler,
 	if (res != 0)
 		goto out;
 
-	res = scst_suspend_activity(true);
+	res = scst_suspend_activity(SCST_SUSPEND_TIMEOUT_USER);
 	if (res != 0)
 		goto out;
 
@@ -1157,8 +1224,6 @@ int scst_register_virtual_device(struct scst_dev_type *dev_handler,
 			break;
 		scst_virt_dev_last_id = 1;
 	}
-
-	res = dev->virt_id;
 
 	res = scst_pr_init_dev(dev);
 	if (res != 0)
@@ -1241,7 +1306,7 @@ void scst_unregister_virtual_device(int id)
 
 	TRACE_ENTRY();
 
-	scst_suspend_activity(false);
+	scst_suspend_activity(SCST_SUSPEND_TIMEOUT_UNLIMITED);
 	mutex_lock(&scst_mutex);
 
 	list_for_each_entry(d, &scst_dev_list, dev_list_entry) {
@@ -1347,7 +1412,7 @@ int __scst_register_dev_driver(struct scst_dev_type *dev_type,
 #endif /* !defined(SCSI_EXEC_REQ_FIFO_DEFINED) */
 
 #ifdef CONFIG_SCST_PROC
-	res = scst_suspend_activity(true);
+	res = scst_suspend_activity(SCST_SUSPEND_TIMEOUT_USER);
 	if (res != 0)
 		goto out;
 #endif
@@ -1430,7 +1495,7 @@ void scst_unregister_dev_driver(struct scst_dev_type *dev_type)
 
 	TRACE_ENTRY();
 
-	scst_suspend_activity(false);
+	scst_suspend_activity(SCST_SUSPEND_TIMEOUT_UNLIMITED);
 	mutex_lock(&scst_mutex);
 
 	list_for_each_entry(dt, &scst_dev_type_list, dev_type_list_entry) {
@@ -1696,21 +1761,12 @@ void scst_del_threads(struct scst_cmd_threads *cmd_threads, int num)
 	list_for_each_entry_safe_reverse(ct, tmp, &cmd_threads->threads_list,
 				thread_list_entry) {
 		int rc;
-		struct scst_device *dev;
 
 		rc = kthread_stop(ct->cmd_thread);
 		if (rc != 0 && rc != -EINTR)
 			TRACE_MGMT_DBG("kthread_stop() failed: %d", rc);
 
 		list_del(&ct->thread_list_entry);
-
-		list_for_each_entry(dev, &scst_dev_list, dev_list_entry) {
-			struct scst_tgt_dev *tgt_dev;
-			list_for_each_entry(tgt_dev, &dev->dev_tgt_dev_list,
-					dev_tgt_dev_list_entry) {
-				scst_del_thr_data(tgt_dev, ct->cmd_thread);
-			}
-		}
 
 		kfree(ct);
 
@@ -1858,7 +1914,7 @@ assign:
 			if (res != 0) {
 				PRINT_ERROR("Device handler's %s attach_tgt() "
 				    "failed: %d", handler->name, res);
-				goto out_err_remove_sysfs;
+				goto out_err_detach_tgt;
 			}
 			list_add_tail(&tgt_dev->extra_tgt_dev_list_entry,
 				&attached_tgt_devs);
@@ -1884,7 +1940,6 @@ out_err_detach_tgt:
 		}
 	}
 
-out_err_remove_sysfs:
 	scst_devt_dev_sysfs_del(dev);
 
 out_detach:
@@ -1915,10 +1970,10 @@ void scst_init_threads(struct scst_cmd_threads *cmd_threads)
 	INIT_LIST_HEAD(&cmd_threads->threads_list);
 	mutex_init(&cmd_threads->io_context_mutex);
 
-	mutex_lock(&scst_suspend_mutex);
+	mutex_lock(&scst_cmd_threads_mutex);
 	list_add_tail(&cmd_threads->lists_list_entry,
 		&scst_cmd_threads_list);
-	mutex_unlock(&scst_suspend_mutex);
+	mutex_unlock(&scst_cmd_threads_mutex);
 
 	TRACE_EXIT();
 	return;
@@ -1934,9 +1989,9 @@ void scst_deinit_threads(struct scst_cmd_threads *cmd_threads)
 {
 	TRACE_ENTRY();
 
-	mutex_lock(&scst_suspend_mutex);
+	mutex_lock(&scst_cmd_threads_mutex);
 	list_del(&cmd_threads->lists_list_entry);
-	mutex_unlock(&scst_suspend_mutex);
+	mutex_unlock(&scst_cmd_threads_mutex);
 
 	sBUG_ON(cmd_threads->io_context);
 
@@ -2197,6 +2252,7 @@ static int __init init_scst(void)
 	INIT_LIST_HEAD(&scst_sess_shut_list);
 	init_waitqueue_head(&scst_dev_cmd_waitQ);
 	mutex_init(&scst_suspend_mutex);
+	mutex_init(&scst_cmd_threads_mutex);
 	INIT_LIST_HEAD(&scst_cmd_threads_list);
 	cpus_setall(default_cpu_mask);
 
@@ -2218,8 +2274,20 @@ static int __init init_scst(void)
 		scst_threads = scst_num_cpus;
 	}
 
+/* Used for rarely used or read-mostly on fast path structures */
 #define INIT_CACHEP(p, s, o) do {					\
 		p = KMEM_CACHE(s, SCST_SLAB_FLAGS);			\
+		TRACE_MEM("Slab create: %s at %p size %zd", #s, p,	\
+			  sizeof(struct s));				\
+		if (p == NULL) {					\
+			res = -ENOMEM;					\
+			goto o;						\
+		}							\
+	} while (0)
+
+/* Used for structures with fast path write access */
+#define INIT_CACHEP_ALIGN(p, s, o) do {					\
+		p = KMEM_CACHE(s, SCST_SLAB_FLAGS|SLAB_HWCACHE_ALIGN);	\
 		TRACE_MEM("Slab create: %s at %p size %zd", #s, p,	\
 			  sizeof(struct s));				\
 		if (p == NULL) {					\
@@ -2238,11 +2306,24 @@ static int __init init_scst(void)
 		INIT_CACHEP(scst_sense_cachep, scst_sense,
 			    out_destroy_ua_cache);
 	}
-	INIT_CACHEP(scst_aen_cachep, scst_aen, out_destroy_sense_cache);
-	INIT_CACHEP(scst_cmd_cachep, scst_cmd, out_destroy_aen_cache);
+	INIT_CACHEP(scst_aen_cachep, scst_aen, out_destroy_sense_cache); /* read-mostly */
+	INIT_CACHEP_ALIGN(scst_cmd_cachep, scst_cmd, out_destroy_aen_cache);
+#ifdef CONFIG_SCST_MEASURE_LATENCY
+	INIT_CACHEP_ALIGN(scst_sess_cachep, scst_session,
+			  out_destroy_cmd_cache);
+#else
+	/* Big enough with read-mostly head and tail */
 	INIT_CACHEP(scst_sess_cachep, scst_session, out_destroy_cmd_cache);
-	INIT_CACHEP(scst_tgtd_cachep, scst_tgt_dev, out_destroy_sess_cache);
-	INIT_CACHEP(scst_acgd_cachep, scst_acg_dev, out_destroy_tgt_cache);
+#endif
+	INIT_CACHEP(scst_dev_cachep, scst_device, out_destroy_sess_cache); /* big enough */
+	INIT_CACHEP(scst_tgt_cachep, scst_tgt, out_destroy_dev_cache); /* read-mostly */
+#ifdef CONFIG_SCST_MEASURE_LATENCY
+	INIT_CACHEP_ALIGN(scst_tgtd_cachep, scst_tgt_dev, out_destroy_tgt_cache); /* big enough */
+#else
+	/* Big enough with read-mostly head and tail */
+	INIT_CACHEP(scst_tgtd_cachep, scst_tgt_dev, out_destroy_tgt_cache); /* big enough */
+#endif
+	INIT_CACHEP(scst_acgd_cachep, scst_acg_dev, out_destroy_tgtd_cache); /* read-mostly */
 
 	scst_mgmt_mempool = mempool_create(64, mempool_alloc_slab,
 		mempool_free_slab, scst_mgmt_cachep);
@@ -2402,8 +2483,14 @@ out_destroy_mgmt_mempool:
 out_destroy_acg_cache:
 	kmem_cache_destroy(scst_acgd_cachep);
 
-out_destroy_tgt_cache:
+out_destroy_tgtd_cache:
 	kmem_cache_destroy(scst_tgtd_cachep);
+
+out_destroy_tgt_cache:
+	kmem_cache_destroy(scst_tgt_cachep);
+
+out_destroy_dev_cache:
+	kmem_cache_destroy(scst_dev_cachep);
 
 out_destroy_sess_cache:
 	kmem_cache_destroy(scst_sess_cachep);
@@ -2478,6 +2565,8 @@ static void __exit exit_scst(void)
 	DEINIT_CACHEP(scst_cmd_cachep);
 	DEINIT_CACHEP(scst_sess_cachep);
 	DEINIT_CACHEP(scst_tgtd_cachep);
+	DEINIT_CACHEP(scst_dev_cachep);
+	DEINIT_CACHEP(scst_tgt_cachep);
 	DEINIT_CACHEP(scst_acgd_cachep);
 
 	scst_lib_exit();

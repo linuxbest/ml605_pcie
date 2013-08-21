@@ -2,9 +2,9 @@
  *  Event notification code.
  *
  *  Copyright (C) 2005 FUJITA Tomonori <tomof@acm.org>
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -18,7 +18,6 @@
  */
 
 #include <linux/module.h>
-#include <net/tcp.h>
 #ifdef INSIDE_KERNEL_TREE
 #include <scst/iscsi_scst.h>
 #else
@@ -33,7 +32,11 @@ static int event_recv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 {
 	u32 pid;
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 7, 0))
 	pid = NETLINK_CB(skb).pid;
+#else
+	pid = NETLINK_CB(skb).portid;
+#endif
 	WARN_ON(pid == 0);
 
 	iscsid_pid = pid;
@@ -177,14 +180,25 @@ int __init event_init(void)
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 22))
 	nl = netlink_kernel_create(NETLINK_ISCSI_SCST, 1, event_recv,
 		THIS_MODULE);
-#else
-#  if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24))
+#elif (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24))
 	nl = netlink_kernel_create(NETLINK_ISCSI_SCST, 1, event_recv, NULL,
 				   THIS_MODULE);
-#  else
+#elif (LINUX_VERSION_CODE < KERNEL_VERSION(3, 6, 0))
 	nl = netlink_kernel_create(&init_net, NETLINK_ISCSI_SCST, 1,
 				   event_recv_skb, NULL, THIS_MODULE);
-#  endif
+#else
+	{
+		struct netlink_kernel_cfg cfg = {
+			.input = event_recv_skb,
+			.groups = 1,
+		};
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 7, 0))
+		nl = netlink_kernel_create(&init_net, NETLINK_ISCSI_SCST,
+				   THIS_MODULE, &cfg);
+#else
+		nl = netlink_kernel_create(&init_net, NETLINK_ISCSI_SCST, &cfg);
+#endif
+	}
 #endif
 	if (!nl) {
 		PRINT_ERROR("%s", "netlink_kernel_create() failed");

@@ -2,9 +2,9 @@
  *  scst_sysfs.c
  *
  *  Copyright (C) 2009 Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
- *  Copyright (C) 2009 - 2011 Vladislav Bolkhovitin <vst@vlnb.net>
+ *  Copyright (C) 2009 - 2013 Vladislav Bolkhovitin <vst@vlnb.net>
  *  Copyright (C) 2009 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -89,13 +89,11 @@ static struct scst_trace_log scst_trace_tbl[] = {
 static struct scst_trace_log scst_local_trace_tbl[] = {
 	{ TRACE_RTRY,			"retry"			},
 	{ TRACE_SCSI_SERIALIZING,	"scsi_serializing"	},
-	{ TRACE_RCV_BOT,		"recv_bot"		},
-	{ TRACE_SND_BOT,		"send_bot"		},
-	{ TRACE_RCV_TOP,		"recv_top"		},
-	{ TRACE_SND_TOP,		"send_top"		},
+	{ TRACE_DATA_SEND,              "data_send"		},
+	{ TRACE_DATA_RECEIVED,          "data_received"		},
+	{ TRACE_BLOCKING,		"block"			},
 	{ 0,				NULL			}
 };
-
 
 static void scst_read_trace_tbl(const struct scst_trace_log *tbl, char *buf,
 	unsigned long log_level, int *pos)
@@ -138,7 +136,7 @@ static ssize_t scst_trace_level_show(const struct scst_trace_log *local_tbl,
 		"		       special, scsi, mgmt, minor,\n"
 		"		       mgmt_dbg, scsi_serializing,\n"
 		"		       retry, recv_bot, send_bot, recv_top, pr,\n"
-		"		       send_top%s]\n", help != NULL ? help : "");
+		"		       block, send_top%s]\n", help != NULL ? help : "");
 
 	return pos;
 }
@@ -147,10 +145,10 @@ static int scst_write_trace(const char *buf, size_t length,
 	unsigned long *log_level, unsigned long default_level,
 	const char *name, const struct scst_trace_log *tbl)
 {
-	int res = length;
+	int res;
 	int action;
 	unsigned long level = 0, oldlevel;
-	char *buffer, *p, *e;
+	char *buffer, *p, *pp;
 	const struct scst_trace_log *t;
 	enum {
 		SCST_TRACE_ACTION_ALL	  = 1,
@@ -178,40 +176,27 @@ static int scst_write_trace(const char *buf, size_t length,
 
 	TRACE_DBG("buffer %s", buffer);
 
-	p = buffer;
-	if (!strncasecmp("all", p, 3)) {
+	pp = buffer;
+	p = scst_get_next_lexem(&pp);
+	if (strcasecmp("all", p) == 0) {
 		action = SCST_TRACE_ACTION_ALL;
-	} else if (!strncasecmp("none", p, 4) || !strncasecmp("null", p, 4)) {
+	} else if (strcasecmp("none", p) == 0 || strcasecmp("null", p) == 0) {
 		action = SCST_TRACE_ACTION_NONE;
-	} else if (!strncasecmp("default", p, 7)) {
+	} else if (strcasecmp("default", p) == 0) {
 		action = SCST_TRACE_ACTION_DEFAULT;
-	} else if (!strncasecmp("add", p, 3)) {
-		p += 3;
+	} else if (strcasecmp("add", p) == 0) {
 		action = SCST_TRACE_ACTION_ADD;
-	} else if (!strncasecmp("del", p, 3)) {
-		p += 3;
+	} else if (strcasecmp("del", p) == 0) {
 		action = SCST_TRACE_ACTION_DEL;
-	} else if (!strncasecmp("value", p, 5)) {
-		p += 5;
+	} else if (strcasecmp("value", p) == 0) {
 		action = SCST_TRACE_ACTION_VALUE;
 	} else {
-		if (p[strlen(p) - 1] == '\n')
-			p[strlen(p) - 1] = '\0';
 		PRINT_ERROR("Unknown action \"%s\"", p);
 		res = -EINVAL;
 		goto out_free;
 	}
 
-	switch (action) {
-	case SCST_TRACE_ACTION_ADD:
-	case SCST_TRACE_ACTION_DEL:
-	case SCST_TRACE_ACTION_VALUE:
-		if (!isspace(*p)) {
-			PRINT_ERROR("%s", "Syntax error");
-			res = -EINVAL;
-			goto out_free;
-		}
-	}
+	p = scst_get_next_lexem(&pp);
 
 	switch (action) {
 	case SCST_TRACE_ACTION_ALL:
@@ -225,12 +210,6 @@ static int scst_write_trace(const char *buf, size_t length,
 		break;
 	case SCST_TRACE_ACTION_ADD:
 	case SCST_TRACE_ACTION_DEL:
-		while (isspace(*p) && *p != '\0')
-			p++;
-		e = p;
-		while (!isspace(*e) && *e != '\0')
-			e++;
-		*e = 0;
 		if (tbl) {
 			t = tbl;
 			while (t->token) {
@@ -258,9 +237,11 @@ static int scst_write_trace(const char *buf, size_t length,
 		}
 		break;
 	case SCST_TRACE_ACTION_VALUE:
-		while (isspace(*p) && *p != '\0')
-			p++;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
+		res = kstrtoul(p, 0, &level);
+#else
 		res = strict_strtoul(p, 0, &level);
+#endif
 		if (res != 0) {
 			PRINT_ERROR("Invalid trace value \"%s\"", p);
 			res = -EINVAL;
@@ -285,6 +266,8 @@ static int scst_write_trace(const char *buf, size_t length,
 
 	PRINT_INFO("Changed trace level for \"%s\": old 0x%08lx, new 0x%08lx",
 		name, oldlevel, *log_level);
+
+	res = length;
 
 out_free:
 	kfree(buffer);
@@ -422,7 +405,7 @@ static void scst_process_sysfs_works(void)
 	TRACE_ENTRY();
 
 	while (!list_empty(&sysfs_work_list)) {
-		work = list_entry(sysfs_work_list.next,
+		work = list_first_entry(&sysfs_work_list,
 			struct scst_sysfs_work_item, sysfs_work_list_entry);
 		list_del(&work->sysfs_work_list_entry);
 		spin_unlock(&sysfs_work_lock);
@@ -469,26 +452,10 @@ static int sysfs_work_thread_fn(void *arg)
 
 	spin_lock(&sysfs_work_lock);
 	while (!kthread_should_stop()) {
-		wait_queue_t wait;
-		init_waitqueue_entry(&wait, current);
-
 		if (one_time_only && !test_sysfs_work_list())
 			break;
-
-		if (!test_sysfs_work_list()) {
-			add_wait_queue_exclusive(&sysfs_work_waitQ, &wait);
-			for (;;) {
-				set_current_state(TASK_INTERRUPTIBLE);
-				if (test_sysfs_work_list())
-					break;
-				spin_unlock(&sysfs_work_lock);
-				schedule();
-				spin_lock(&sysfs_work_lock);
-			}
-			set_current_state(TASK_RUNNING);
-			remove_wait_queue(&sysfs_work_waitQ, &wait);
-		}
-
+		wait_event_locked(sysfs_work_waitQ, test_sysfs_work_list(),
+				  lock, sysfs_work_lock);
 		scst_process_sysfs_works();
 	}
 	spin_unlock(&sysfs_work_lock);
@@ -556,6 +523,23 @@ int scst_sysfs_queue_wait_work(struct scst_sysfs_work_item *work)
 		PRINT_ERROR("kthread_run() for user interface thread %d "
 			"failed: %d", atomic_read(&uid_thread_name),
 			(int)PTR_ERR(t));
+
+#ifdef CONFIG_SCST_DEBUG_SYSFS_EAGAIN
+	{
+		static int cnt;
+
+		if (!work->read_only_action || cnt++ % 4 < 3) {
+			/*
+			 * Helps testing user space code that writes to or
+			 * reads from SCST sysfs variables.
+			 */
+			timeout = 0;
+			rc = 0;
+			res = -EAGAIN;
+			goto out_put;
+		}
+	}
+#endif
 
 	while (1) {
 		rc = wait_for_completion_interruptible_timeout(
@@ -908,9 +892,6 @@ static int scst_process_tgtt_mgmt_store(char *buffer,
 		goto out;
 
 	pp = buffer;
-	if (pp[strlen(pp) - 1] == '\n')
-		pp[strlen(pp) - 1] = '\0';
-
 	p = scst_get_next_lexem(&pp);
 
 	if (strcasecmp("add_target", p) == 0) {
@@ -1002,6 +983,26 @@ out_free:
 static struct kobj_attribute scst_tgtt_mgmt =
 	__ATTR(mgmt, S_IRUGO | S_IWUSR, scst_tgtt_mgmt_show,
 	       scst_tgtt_mgmt_store);
+
+/*
+ * Creates an attribute entry for target driver.
+ */
+int scst_create_tgtt_attr(struct scst_tgt_template *tgtt,
+	struct kobj_attribute *attribute)
+{
+	int res;
+
+	res = sysfs_create_file(&tgtt->tgtt_kobj, &attribute->attr);
+	if (res != 0) {
+		PRINT_ERROR("Can't add attribute %s for target driver %s",
+			attribute->attr.name, tgtt->name);
+		goto out;
+	}
+
+out:
+	return res;
+}
+EXPORT_SYMBOL(scst_create_tgtt_attr);
 
 int scst_tgtt_sysfs_create(struct scst_tgt_template *tgtt)
 {
@@ -1114,8 +1115,8 @@ static int __scst_process_luns_mgmt_store(char *buffer,
 	struct scst_tgt *tgt, struct scst_acg *acg, bool tgt_kobj)
 {
 	int res, read_only = 0, action;
-	char *p, *e = NULL;
-	unsigned int virt_lun;
+	char *p, *pp, *e;
+	unsigned long virt_lun;
 	struct scst_acg_dev *acg_dev = NULL, *acg_dev_tmp;
 	struct scst_device *d, *dev = NULL;
 	enum {
@@ -1129,20 +1130,15 @@ static int __scst_process_luns_mgmt_store(char *buffer,
 
 	TRACE_DBG("buffer %s", buffer);
 
-	p = buffer;
-	if (p[strlen(p) - 1] == '\n')
-		p[strlen(p) - 1] = '\0';
-	if (strncasecmp("add", p, 3) == 0) {
-		p += 3;
+	pp = buffer;
+	p = scst_get_next_lexem(&pp);
+	if (strcasecmp("add", p) == 0) {
 		action = SCST_LUN_ACTION_ADD;
-	} else if (strncasecmp("del", p, 3) == 0) {
-		p += 3;
+	} else if (strcasecmp("del", p) == 0) {
 		action = SCST_LUN_ACTION_DEL;
-	} else if (!strncasecmp("replace", p, 7)) {
-		p += 7;
+	} else if (strcasecmp("replace", p) == 0) {
 		action = SCST_LUN_ACTION_REPLACE;
-	} else if (!strncasecmp("clear", p, 5)) {
-		p += 5;
+	} else if (strcasecmp("clear", p) == 0) {
 		action = SCST_LUN_ACTION_CLEAR;
 	} else {
 		PRINT_ERROR("Unknown action \"%s\"", p);
@@ -1150,7 +1146,7 @@ static int __scst_process_luns_mgmt_store(char *buffer,
 		goto out;
 	}
 
-	res = scst_suspend_activity(true);
+	res = scst_suspend_activity(SCST_SUSPEND_TIMEOUT_USER);
 	if (res != 0)
 		goto out;
 
@@ -1164,19 +1160,7 @@ static int __scst_process_luns_mgmt_store(char *buffer,
 
 	if ((action != SCST_LUN_ACTION_CLEAR) &&
 	    (action != SCST_LUN_ACTION_DEL)) {
-		if (!isspace(*p)) {
-			PRINT_ERROR("%s", "Syntax error");
-			res = -EINVAL;
-			goto out_unlock;
-		}
-
-		while (isspace(*p) && *p != '\0')
-			p++;
-		e = p; /* save p */
-		while (!isspace(*e) && *e != '\0')
-			e++;
-		*e = '\0';
-
+		p = scst_get_next_lexem(&pp);
 		list_for_each_entry(d, &scst_dev_list, dev_list_entry) {
 			if (!strcmp(d->virt_name, p)) {
 				dev = d;
@@ -1197,25 +1181,25 @@ static int __scst_process_luns_mgmt_store(char *buffer,
 	{
 		bool dev_replaced = false;
 
-		e++;
-		while (isspace(*e) && *e != '\0')
-			e++;
-
-		virt_lun = simple_strtoul(e, &e, 0);
-		if (virt_lun > SCST_MAX_LUN) {
-			PRINT_ERROR("Too big LUN %d (max %d)", virt_lun,
-				SCST_MAX_LUN);
-			res = -EINVAL;
+		e = scst_get_next_lexem(&pp);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
+		res = kstrtoul(e, 0, &virt_lun);
+#else
+		res = strict_strtoul(e, 0, &virt_lun);
+#endif
+		if (res != 0) {
+			PRINT_ERROR("Valid LUN required for dev %s (res %d)", p, res);
+			goto out_unlock;
+		} else if (virt_lun > SCST_MAX_LUN) {
+			PRINT_ERROR("Too big LUN %ld (max %d)", virt_lun, SCST_MAX_LUN);
 			goto out_unlock;
 		}
 
-		while (isspace(*e) && *e != '\0')
-			e++;
-
 		while (1) {
-			char *pp;
 			unsigned long val;
-			char *param = scst_get_next_token_str(&e);
+			char *param = scst_get_next_token_str(&pp);
+			char *pp;
+
 			if (param == NULL)
 				break;
 
@@ -1242,7 +1226,11 @@ static int __scst_process_luns_mgmt_store(char *buffer,
 				goto out_unlock;
 			}
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
+			res = kstrtoul(pp, 0, &val);
+#else
 			res = strict_strtoul(pp, 0, &val);
+#endif
 			if (res != 0) {
 				PRINT_ERROR("strict_strtoul() for %s failed: %d "
 					"(device %s)", pp, res, dev->virt_name);
@@ -1271,7 +1259,7 @@ static int __scst_process_luns_mgmt_store(char *buffer,
 
 		if (acg_dev != NULL) {
 			if (action == SCST_LUN_ACTION_ADD) {
-				PRINT_ERROR("virt lun %d already exists in "
+				PRINT_ERROR("virt lun %ld already exists in "
 					"group %s", virt_lun, acg->acg_name);
 				res = -EEXIST;
 				goto out_unlock;
@@ -1302,7 +1290,7 @@ static int __scst_process_luns_mgmt_store(char *buffer,
 					TRACE_MGMT_DBG("INQUIRY DATA HAS CHANGED"
 						" on tgt_dev %p", tgt_dev);
 					scst_gen_aen_or_ua(tgt_dev,
-						SCST_LOAD_SENSE(scst_sense_inquery_data_changed));
+						SCST_LOAD_SENSE(scst_sense_inquiry_data_changed));
 				}
 			}
 		}
@@ -1310,15 +1298,32 @@ static int __scst_process_luns_mgmt_store(char *buffer,
 		break;
 	}
 	case SCST_LUN_ACTION_DEL:
-		while (isspace(*p) && *p != '\0')
-			p++;
-		virt_lun = simple_strtoul(p, &p, 0);
+		p = scst_get_next_lexem(&pp);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
+		res = kstrtoul(p, 0, &virt_lun);
+#else
+		res = strict_strtoul(p, 0, &virt_lun);
+#endif
+		if (res != 0)
+			goto out_unlock;
+
+		if (scst_get_next_lexem(&pp)[0] != '\0') {
+			PRINT_ERROR("Too many parameters for del LUN %ld: %s",
+				    virt_lun, p);
+			res = -EINVAL;
+			goto out_unlock;
+		}
 
 		res = scst_acg_del_lun(acg, virt_lun, true);
 		if (res != 0)
 			goto out_unlock;
 		break;
 	case SCST_LUN_ACTION_CLEAR:
+		if (scst_get_next_lexem(&pp)[0] != '\0') {
+			PRINT_ERROR("Too many parameters for clear: %s", p);
+			res = -EINVAL;
+			goto out_unlock;
+		}
 		PRINT_INFO("Removed all devices from group %s",
 			acg->acg_name);
 		list_for_each_entry_safe(acg_dev, acg_dev_tmp,
@@ -1402,7 +1407,7 @@ static ssize_t scst_luns_mgmt_show(struct kobject *kobj,
 				   char *buf)
 {
 	static const char help[] =
-		"Usage: echo \"add|del H:C:I:L lun [parameters]\" >mgmt\n"
+		"Usage: echo \"add H:C:I:L lun [parameters]\" >mgmt\n"
 		"       echo \"add VNAME lun [parameters]\" >mgmt\n"
 		"       echo \"del lun\" >mgmt\n"
 		"       echo \"replace H:C:I:L lun [parameters]\" >mgmt\n"
@@ -1550,7 +1555,7 @@ static int __scst_acg_process_io_grouping_type_store(struct scst_tgt *tgt,
 	TRACE_DBG("tgt %p, acg %p, io_grouping_type %d", tgt, acg,
 		io_grouping_type);
 
-	res = scst_suspend_activity(true);
+	res = scst_suspend_activity(SCST_SUSPEND_TIMEOUT_USER);
 	if (res != 0)
 		goto out;
 
@@ -1608,7 +1613,11 @@ static ssize_t __scst_acg_io_grouping_type_store(struct scst_acg *acg,
 			min_t(int, strlen(SCST_IO_GROUPING_NEVER_STR), count)) == 0)
 		io_grouping_type = SCST_IO_GROUPING_NEVER;
 	else {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
+		res = kstrtol(buf, 0, &io_grouping_type);
+#else
 		res = strict_strtol(buf, 0, &io_grouping_type);
+#endif
 		if ((res != 0) || (io_grouping_type <= 0)) {
 			PRINT_ERROR("Unknown or not allowed I/O grouping type "
 				"%s", buf);
@@ -1858,8 +1867,8 @@ static int scst_process_ini_group_mgmt_store(char *buffer,
 	struct scst_tgt *tgt)
 {
 	int res, action;
-	char *p, *e = NULL;
-	struct scst_acg *a, *acg = NULL;
+	char *p, *pp;
+	struct scst_acg *acg;
 	enum {
 		SCST_INI_GROUP_ACTION_CREATE = 1,
 		SCST_INI_GROUP_ACTION_DEL    = 2,
@@ -1869,14 +1878,11 @@ static int scst_process_ini_group_mgmt_store(char *buffer,
 
 	TRACE_DBG("tgt %p, buffer %s", tgt, buffer);
 
-	p = buffer;
-	if (p[strlen(p) - 1] == '\n')
-		p[strlen(p) - 1] = '\0';
-	if (strncasecmp("create ", p, 7) == 0) {
-		p += 7;
+	pp = buffer;
+	p = scst_get_next_lexem(&pp);
+	if (strcasecmp("create", p) == 0) {
 		action = SCST_INI_GROUP_ACTION_CREATE;
-	} else if (strncasecmp("del ", p, 4) == 0) {
-		p += 4;
+	} else if (strcasecmp("del", p) == 0) {
 		action = SCST_INI_GROUP_ACTION_DEL;
 	} else {
 		PRINT_ERROR("Unknown action \"%s\"", p);
@@ -1884,7 +1890,7 @@ static int scst_process_ini_group_mgmt_store(char *buffer,
 		goto out;
 	}
 
-	res = scst_suspend_activity(true);
+	res = scst_suspend_activity(SCST_SUSPEND_TIMEOUT_USER);
 	if (res != 0)
 		goto out;
 
@@ -1896,27 +1902,14 @@ static int scst_process_ini_group_mgmt_store(char *buffer,
 	if (scst_check_tgt_acg_ptrs(tgt, NULL) != 0)
 		goto out_unlock;
 
-	while (isspace(*p) && *p != '\0')
-		p++;
-	e = p;
-	while (!isspace(*e) && *e != '\0')
-		e++;
-	*e = '\0';
-
+	p = scst_get_next_lexem(&pp);
 	if (p[0] == '\0') {
 		PRINT_ERROR("%s", "Group name required");
 		res = -EINVAL;
 		goto out_unlock;
 	}
 
-	list_for_each_entry(a, &tgt->tgt_acg_list, acg_list_entry) {
-		if (strcmp(a->acg_name, p) == 0) {
-			TRACE_DBG("group (acg) %p %s found",
-				  a, a->acg_name);
-			acg = a;
-			break;
-		}
-	}
+	acg = scst_tgt_find_acg(tgt, p);
 
 	switch (action) {
 	case SCST_INI_GROUP_ACTION_CREATE:
@@ -2041,13 +2034,13 @@ static int scst_process_tgt_enable_store(struct scst_tgt *tgt, bool enable)
 			res = gen_relative_target_port_id(&tgt->rel_tgt_id);
 			if (res != 0)
 				goto out_put;
-			PRINT_INFO("Using autogenerated rel ID %d for target "
-				"%s", tgt->rel_tgt_id, tgt->tgt_name);
+			PRINT_INFO("Using autogenerated relative target id %d "
+				"for target %s", tgt->rel_tgt_id, tgt->tgt_name);
 		} else {
 			if (!scst_is_relative_target_port_id_unique(
 					    tgt->rel_tgt_id, tgt)) {
-				PRINT_ERROR("Relative port id %d is not unique",
-					tgt->rel_tgt_id);
+				PRINT_ERROR("Relative target id %d is not "
+					"unique", tgt->rel_tgt_id);
 				res = -EBADSLT;
 				goto out_put;
 			}
@@ -2204,7 +2197,11 @@ static ssize_t scst_rel_tgt_id_store(struct kobject *kobj,
 
 	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
+	res = kstrtoul(buf, 0, &rel_tgt_id);
+#else
 	res = strict_strtoul(buf, 0, &rel_tgt_id);
+#endif
 	if (res != 0) {
 		PRINT_ERROR("%s", "Wrong rel_tgt_id");
 		res = -EINVAL;
@@ -2307,6 +2304,25 @@ out:
 static struct kobj_attribute scst_tgt_comment =
 	__ATTR(comment, S_IRUGO | S_IWUSR, scst_tgt_comment_show,
 	       scst_tgt_comment_store);
+/*
+ * Creates an attribute entry for one target. Allows for target driver to
+ * create an attribute that is not for every target.
+ */
+int scst_create_tgt_attr(struct scst_tgt *tgt, struct kobj_attribute *attribute)
+{
+	int res;
+
+	res = sysfs_create_file(&tgt->tgt_kobj, &attribute->attr);
+	if (res != 0) {
+		PRINT_ERROR("Can't add attribute %s for tgt %s",
+			attribute->attr.name, tgt->tgt_name);
+		goto out;
+	}
+
+out:
+	return res;
+}
+EXPORT_SYMBOL(scst_create_tgt_attr);
 
 /*
  * Supposed to be called under scst_mutex. In case of error will drop,
@@ -2440,12 +2456,7 @@ out_err:
  */
 void scst_tgt_sysfs_del(struct scst_tgt *tgt)
 {
-	int rc;
-	DECLARE_COMPLETION_ONSTACK(c);
-
 	TRACE_ENTRY();
-
-	tgt->tgt_kobj_release_cmpl = &c;
 
 	kobject_del(tgt->tgt_sess_kobj);
 	kobject_del(tgt->tgt_luns_kobj);
@@ -2455,6 +2466,20 @@ void scst_tgt_sysfs_del(struct scst_tgt *tgt)
 	kobject_put(tgt->tgt_sess_kobj);
 	kobject_put(tgt->tgt_luns_kobj);
 	kobject_put(tgt->tgt_ini_grp_kobj);
+
+	TRACE_EXIT();
+	return;
+}
+
+void scst_tgt_sysfs_put(struct scst_tgt *tgt)
+{
+	int rc;
+	DECLARE_COMPLETION_ONSTACK(c);
+
+	TRACE_ENTRY();
+
+	tgt->tgt_kobj_release_cmpl = &c;
+
 	kobject_put(&tgt->tgt_kobj);
 
 	rc = wait_for_completion_timeout(tgt->tgt_kobj_release_cmpl, HZ);
@@ -2484,7 +2509,7 @@ static ssize_t scst_dev_sysfs_type_show(struct kobject *kobj,
 
 	dev = container_of(kobj, struct scst_device, dev_kobj);
 
-	pos = sprintf(buf, "%d - %s\n", dev->type,
+	pos = scnprintf(buf, SCST_SYSFS_BLOCK_SIZE, "%d - %s\n", dev->type,
 		(unsigned)dev->type >= ARRAY_SIZE(scst_dev_handler_types) ?
 		      "unknown" : scst_dev_handler_types[dev->type]);
 
@@ -2529,7 +2554,7 @@ static int scst_process_dev_sysfs_threads_data_store(
 	TRACE_DBG("dev %p, threads_num %d, threads_pool_type %d", dev,
 		threads_num, threads_pool_type);
 
-	res = scst_suspend_activity(true);
+	res = scst_suspend_activity(SCST_SUSPEND_TIMEOUT_USER);
 	if (res != 0)
 		goto out;
 
@@ -2633,7 +2658,11 @@ static ssize_t scst_dev_sysfs_threads_num_store(struct kobject *kobj,
 
 	dev = container_of(kobj, struct scst_device, dev_kobj);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
+	res = kstrtol(buf, 0, &newtn);
+#else
 	res = strict_strtol(buf, 0, &newtn);
+#endif
 	if (res != 0) {
 		PRINT_ERROR("strict_strtol() for %s failed: %d ", buf, res);
 		goto out;
@@ -2781,6 +2810,27 @@ static void scst_sysfs_dev_release(struct kobject *kobj)
 	TRACE_EXIT();
 	return;
 }
+
+/*
+ * Creates an attribute entry for one SCST device. Allows for dev handlers to
+ * create an attribute that is not for every device.
+ */
+int scst_create_dev_attr(struct scst_device *dev,
+	struct kobj_attribute *attribute)
+{
+	int res;
+
+	res = sysfs_create_file(&dev->dev_kobj, &attribute->attr);
+	if (res != 0) {
+		PRINT_ERROR("Can't add attribute %s for dev %s",
+			attribute->attr.name, dev->virt_name);
+		goto out;
+	}
+
+out:
+	return res;
+}
+EXPORT_SYMBOL(scst_create_dev_attr);
 
 int scst_devt_dev_sysfs_create(struct scst_device *dev)
 {
@@ -2994,9 +3044,9 @@ static ssize_t scst_tgt_dev_latency_show(struct kobject *kobj,
 
 	for (i = 0; i < SCST_LATENCY_STATS_NUM; i++) {
 		uint64_t scst_time_wr, tgt_time_wr, dev_time_wr;
-		unsigned int processed_cmds_wr;
+		uint64_t processed_cmds_wr;
 		uint64_t scst_time_rd, tgt_time_rd, dev_time_rd;
-		unsigned int processed_cmds_rd;
+		uint64_t processed_cmds_rd;
 		struct scst_ext_latency_stat *latency_stat;
 
 		latency_stat = &tgt_dev->dev_latency_stat[i];
@@ -3010,70 +3060,66 @@ static ssize_t scst_tgt_dev_latency_show(struct kobject *kobj,
 		processed_cmds_rd = latency_stat->processed_cmds_rd;
 
 		res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-			 "%-5s %-9s %-15lu ", "Write", scst_io_size_names[i],
-			(unsigned long)processed_cmds_wr);
-		if (processed_cmds_wr == 0)
-			processed_cmds_wr = 1;
+			 "%-5s %-9s %-15llu ", "Write", scst_io_size_names[i],
+			processed_cmds_wr);
 
-		do_div(scst_time_wr, processed_cmds_wr);
+		scst_time_per_cmd(scst_time_wr, processed_cmds_wr);
 		snprintf(buf, sizeof(buf), "%lu/%lu/%lu/%lu",
 			(unsigned long)latency_stat->min_scst_time_wr,
 			(unsigned long)scst_time_wr,
 			(unsigned long)latency_stat->max_scst_time_wr,
 			(unsigned long)latency_stat->scst_time_wr);
 		res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-			"%-47s", buf);
+			"%-46s ", buf);
 
-		do_div(tgt_time_wr, processed_cmds_wr);
+		scst_time_per_cmd(tgt_time_wr, processed_cmds_wr);
 		snprintf(buf, sizeof(buf), "%lu/%lu/%lu/%lu",
 			(unsigned long)latency_stat->min_tgt_time_wr,
 			(unsigned long)tgt_time_wr,
 			(unsigned long)latency_stat->max_tgt_time_wr,
 			(unsigned long)latency_stat->tgt_time_wr);
 		res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-			"%-47s", buf);
+			"%-46s ", buf);
 
-		do_div(dev_time_wr, processed_cmds_wr);
+		scst_time_per_cmd(dev_time_wr, processed_cmds_wr);
 		snprintf(buf, sizeof(buf), "%lu/%lu/%lu/%lu",
 			(unsigned long)latency_stat->min_dev_time_wr,
 			(unsigned long)dev_time_wr,
 			(unsigned long)latency_stat->max_dev_time_wr,
 			(unsigned long)latency_stat->dev_time_wr);
 		res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-			"%-47s\n", buf);
+			"%-46s\n", buf);
 
 		res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-			"%-5s %-9s %-15lu ", "Read", scst_io_size_names[i],
-			(unsigned long)processed_cmds_rd);
-		if (processed_cmds_rd == 0)
-			processed_cmds_rd = 1;
+			"%-5s %-9s %-15llu ", "Read", scst_io_size_names[i],
+			processed_cmds_rd);
 
-		do_div(scst_time_rd, processed_cmds_rd);
+		scst_time_per_cmd(scst_time_rd, processed_cmds_rd);
 		snprintf(buf, sizeof(buf), "%lu/%lu/%lu/%lu",
 			(unsigned long)latency_stat->min_scst_time_rd,
 			(unsigned long)scst_time_rd,
 			(unsigned long)latency_stat->max_scst_time_rd,
 			(unsigned long)latency_stat->scst_time_rd);
 		res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-			"%-47s", buf);
+			"%-46s ", buf);
 
-		do_div(tgt_time_rd, processed_cmds_rd);
+		scst_time_per_cmd(tgt_time_rd, processed_cmds_rd);
 		snprintf(buf, sizeof(buf), "%lu/%lu/%lu/%lu",
 			(unsigned long)latency_stat->min_tgt_time_rd,
 			(unsigned long)tgt_time_rd,
 			(unsigned long)latency_stat->max_tgt_time_rd,
 			(unsigned long)latency_stat->tgt_time_rd);
 		res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-			"%-47s", buf);
+			"%-46s ", buf);
 
-		do_div(dev_time_rd, processed_cmds_rd);
+		scst_time_per_cmd(dev_time_rd, processed_cmds_rd);
 		snprintf(buf, sizeof(buf), "%lu/%lu/%lu/%lu",
 			(unsigned long)latency_stat->min_dev_time_rd,
 			(unsigned long)dev_time_rd,
 			(unsigned long)latency_stat->max_dev_time_rd,
 			(unsigned long)latency_stat->dev_time_rd);
 		res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-			"%-47s\n", buf);
+			"%-46s\n", buf);
 	}
 
 	TRACE_EXIT_RES(res);
@@ -3200,7 +3246,7 @@ static ssize_t scst_sess_latency_show(struct kobject *kobj,
 	int i;
 	char buf[50];
 	uint64_t scst_time, tgt_time, dev_time;
-	unsigned int processed_cmds;
+	uint64_t processed_cmds;
 
 	TRACE_ENTRY();
 
@@ -3209,15 +3255,15 @@ static ssize_t scst_sess_latency_show(struct kobject *kobj,
 	res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
 		"%-15s %-15s %-46s %-46s %-46s\n",
 		"T-L names", "Total commands", "SCST latency",
-		"Target latency", "Dev latency (min/avg/max/all ns)");
+		"Target latency", "Dev latency (min/avg/max/all us)");
 
 	spin_lock_bh(&sess->lat_lock);
 
-	for (i = 0; i < SCST_LATENCY_STATS_NUM ; i++) {
+	for (i = 0; i < SCST_LATENCY_STATS_NUM; i++) {
 		uint64_t scst_time_wr, tgt_time_wr, dev_time_wr;
-		unsigned int processed_cmds_wr;
+		uint64_t processed_cmds_wr;
 		uint64_t scst_time_rd, tgt_time_rd, dev_time_rd;
-		unsigned int processed_cmds_rd;
+		uint64_t processed_cmds_rd;
 		struct scst_ext_latency_stat *latency_stat;
 
 		latency_stat = &sess->sess_latency_stat[i];
@@ -3231,72 +3277,68 @@ static ssize_t scst_sess_latency_show(struct kobject *kobj,
 		processed_cmds_rd = latency_stat->processed_cmds_rd;
 
 		res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-			"%-5s %-9s %-15lu ",
+			"%-5s %-9s %-15llu ",
 			"Write", scst_io_size_names[i],
-			(unsigned long)processed_cmds_wr);
-		if (processed_cmds_wr == 0)
-			processed_cmds_wr = 1;
+			processed_cmds_wr);
 
-		do_div(scst_time_wr, processed_cmds_wr);
+		scst_time_per_cmd(scst_time_wr, processed_cmds_wr);
 		snprintf(buf, sizeof(buf), "%lu/%lu/%lu/%lu",
 			(unsigned long)latency_stat->min_scst_time_wr,
 			(unsigned long)scst_time_wr,
 			(unsigned long)latency_stat->max_scst_time_wr,
 			(unsigned long)latency_stat->scst_time_wr);
 		res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-			"%-47s", buf);
+			"%-46s ", buf);
 
-		do_div(tgt_time_wr, processed_cmds_wr);
+		scst_time_per_cmd(tgt_time_wr, processed_cmds_wr);
 		snprintf(buf, sizeof(buf), "%lu/%lu/%lu/%lu",
 			(unsigned long)latency_stat->min_tgt_time_wr,
 			(unsigned long)tgt_time_wr,
 			(unsigned long)latency_stat->max_tgt_time_wr,
 			(unsigned long)latency_stat->tgt_time_wr);
 		res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-			"%-47s", buf);
+			"%-46s ", buf);
 
-		do_div(dev_time_wr, processed_cmds_wr);
+		scst_time_per_cmd(dev_time_wr, processed_cmds_wr);
 		snprintf(buf, sizeof(buf), "%lu/%lu/%lu/%lu",
 			(unsigned long)latency_stat->min_dev_time_wr,
 			(unsigned long)dev_time_wr,
 			(unsigned long)latency_stat->max_dev_time_wr,
 			(unsigned long)latency_stat->dev_time_wr);
 		res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-			"%-47s\n", buf);
+			"%-46s\n", buf);
 
 		res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-			"%-5s %-9s %-15lu ",
+			"%-5s %-9s %-15llu ",
 			"Read", scst_io_size_names[i],
-			(unsigned long)processed_cmds_rd);
-		if (processed_cmds_rd == 0)
-			processed_cmds_rd = 1;
+			processed_cmds_rd);
 
-		do_div(scst_time_rd, processed_cmds_rd);
+		scst_time_per_cmd(scst_time_rd, processed_cmds_rd);
 		snprintf(buf, sizeof(buf), "%lu/%lu/%lu/%lu",
 			(unsigned long)latency_stat->min_scst_time_rd,
 			(unsigned long)scst_time_rd,
 			(unsigned long)latency_stat->max_scst_time_rd,
 			(unsigned long)latency_stat->scst_time_rd);
 		res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-			"%-47s", buf);
+			"%-46s ", buf);
 
-		do_div(tgt_time_rd, processed_cmds_rd);
+		scst_time_per_cmd(tgt_time_rd, processed_cmds_rd);
 		snprintf(buf, sizeof(buf), "%lu/%lu/%lu/%lu",
 			(unsigned long)latency_stat->min_tgt_time_rd,
 			(unsigned long)tgt_time_rd,
 			(unsigned long)latency_stat->max_tgt_time_rd,
 			(unsigned long)latency_stat->tgt_time_rd);
 		res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-			"%-47s", buf);
+			"%-46s ", buf);
 
-		do_div(dev_time_rd, processed_cmds_rd);
+		scst_time_per_cmd(dev_time_rd, processed_cmds_rd);
 		snprintf(buf, sizeof(buf), "%lu/%lu/%lu/%lu",
 			(unsigned long)latency_stat->min_dev_time_rd,
 			(unsigned long)dev_time_rd,
 			(unsigned long)latency_stat->max_dev_time_rd,
 			(unsigned long)latency_stat->dev_time_rd);
 		res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-			"%-47s\n", buf);
+			"%-46s\n", buf);
 	}
 
 	scst_time = sess->scst_time;
@@ -3305,37 +3347,34 @@ static ssize_t scst_sess_latency_show(struct kobject *kobj,
 	processed_cmds = sess->processed_cmds;
 
 	res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-		"\n%-15s %-16d", "Overall ", processed_cmds);
+		"\n%-15s %-16llu", "Overall ", processed_cmds);
 
-	if (processed_cmds == 0)
-		processed_cmds = 1;
-
-	do_div(scst_time, processed_cmds);
+	scst_time_per_cmd(scst_time, processed_cmds);
 	snprintf(buf, sizeof(buf), "%lu/%lu/%lu/%lu",
 		(unsigned long)sess->min_scst_time,
 		(unsigned long)scst_time,
 		(unsigned long)sess->max_scst_time,
 		(unsigned long)sess->scst_time);
 	res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-		"%-47s", buf);
+		"%-46s ", buf);
 
-	do_div(tgt_time, processed_cmds);
+	scst_time_per_cmd(tgt_time, processed_cmds);
 	snprintf(buf, sizeof(buf), "%lu/%lu/%lu/%lu",
 		(unsigned long)sess->min_tgt_time,
 		(unsigned long)tgt_time,
 		(unsigned long)sess->max_tgt_time,
 		(unsigned long)sess->tgt_time);
 	res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-		"%-47s", buf);
+		"%-46s ", buf);
 
-	do_div(dev_time, processed_cmds);
+	scst_time_per_cmd(dev_time, processed_cmds);
 	snprintf(buf, sizeof(buf), "%lu/%lu/%lu/%lu",
 		(unsigned long)sess->min_dev_time,
 		(unsigned long)dev_time,
 		(unsigned long)sess->max_dev_time,
 		(unsigned long)sess->dev_time);
 	res += scnprintf(&buffer[res], SCST_SYSFS_BLOCK_SIZE - res,
-		"%-47s\n\n", buf);
+		"%-46s\n\n", buf);
 
 	spin_unlock_bh(&sess->lat_lock);
 
@@ -3574,6 +3613,28 @@ SCST_SESS_SYSFS_STAT_ATTR(cmd_count, bidi_cmd_count, SCST_DATA_BIDI, 0);
 SCST_SESS_SYSFS_STAT_ATTR(io_byte_count, bidi_io_count_kb, SCST_DATA_BIDI, 1);
 SCST_SESS_SYSFS_STAT_ATTR(cmd_count, none_cmd_count, SCST_DATA_NONE, 0);
 
+
+static ssize_t scst_sess_force_close_store(struct kobject *kobj,
+					   struct kobj_attribute *attr,
+					   const char *buf, size_t count)
+{
+	struct scst_session *sess = container_of(kobj, struct scst_session,
+						 sess_kobj);
+	int res;
+
+	res = sess->tgt->tgtt->close_session(sess);
+	if (res < 0)
+		goto out;
+	res = count;
+
+out:
+	return res;
+}
+
+static struct kobj_attribute session_force_close_attr =
+	__ATTR(force_close, S_IWUSR, NULL, scst_sess_force_close_store);
+
+
 static struct attribute *scst_session_attrs[] = {
 	&session_commands_attr.attr,
 	&session_active_commands_attr.attr,
@@ -3645,69 +3706,56 @@ int scst_recreate_sess_luns_link(struct scst_session *sess)
 int scst_sess_sysfs_create(struct scst_session *sess)
 {
 	int res = 0;
-	struct scst_session *s;
-	char *name = (char *)sess->initiator_name;
-	int len = strlen(name) + 1, n = 1;
+	const char *name;
 
 	TRACE_ENTRY();
 
-restart:
-	list_for_each_entry(s, &sess->tgt->sess_list, sess_list_entry) {
-		if (!s->sess_kobj_ready)
-			continue;
-
-		if (strcmp(name, kobject_name(&s->sess_kobj)) == 0) {
-			if (s == sess)
-				continue;
-
-			TRACE_DBG("Duplicated session from the same initiator "
-				"%s found", name);
-
-			if (name == sess->initiator_name) {
-				len = strlen(sess->initiator_name);
-				len += 20;
-				name = kmalloc(len, GFP_KERNEL);
-				if (name == NULL) {
-					PRINT_ERROR("Unable to allocate a "
-						"replacement name (size %d)",
-						len);
-				}
-			}
-
-			snprintf(name, len, "%s_%d", sess->initiator_name, n);
-			n++;
-			goto restart;
-		}
-	}
-
+	name = sess->sess_name;
 	TRACE_DBG("Adding session %s to sysfs", name);
 
 	res = kobject_init_and_add(&sess->sess_kobj, &scst_session_ktype,
 			      sess->tgt->tgt_sess_kobj, name);
 	if (res != 0) {
 		PRINT_ERROR("Can't add session %s to sysfs", name);
-		goto out_free;
+		goto out;
 	}
 
 	sess->sess_kobj_ready = 1;
+
+	if (sess->tgt->tgtt->close_session) {
+		res = sysfs_create_file(&sess->sess_kobj,
+					&session_force_close_attr.attr);
+		if (res != 0) {
+			PRINT_ERROR("Adding force_close sysfs attribute to session %s failed (%d)",
+				    name, res);
+			goto out_del;
+		}
+	}
 
 	if (sess->tgt->tgtt->sess_attrs) {
 		res = sysfs_create_files(&sess->sess_kobj,
 					 sess->tgt->tgtt->sess_attrs);
 		if (res != 0) {
 			PRINT_ERROR("Can't add attributes for session %s", name);
-			goto out_free;
+			goto out_del;
 		}
 	}
 
 	res = scst_create_sess_luns_link(sess);
+	if (res != 0) {
+		PRINT_ERROR("Can't add LUN links for session %s", name);
+		goto out_del;
+	}
 
-out_free:
-	if (name != sess->initiator_name)
-		kfree(name);
-
+out:
 	TRACE_EXIT_RES(res);
 	return res;
+
+out_del:
+	kobject_del(&sess->sess_kobj);
+	kobject_put(&sess->sess_kobj);
+	sess->sess_kobj_ready = 0;
+	goto out;
 }
 
 /*
@@ -3774,7 +3822,7 @@ static ssize_t scst_lun_rd_only_show(struct kobject *kobj,
 
 	acg_dev = container_of(kobj, struct scst_acg_dev, acg_dev_kobj);
 
-	if (acg_dev->rd_only || acg_dev->dev->rd_only)
+	if (acg_dev->acg_dev_rd_only || acg_dev->dev->dev_rd_only)
 		return sprintf(buf, "%d\n%s\n", 1, SCST_SYSFS_KEY_MARK);
 	else
 		return sprintf(buf, "%d\n", 0);
@@ -3915,8 +3963,7 @@ static int scst_process_acg_ini_mgmt_store(char *buffer,
 	struct scst_tgt *tgt, struct scst_acg *acg)
 {
 	int res, action;
-	char *p, *e = NULL;
-	char *name = NULL, *group = NULL;
+	char *p, *pp, *name, *group;
 	struct scst_acg *acg_dest = NULL;
 	struct scst_acn *acn = NULL, *acn_tmp;
 	enum {
@@ -3930,21 +3977,15 @@ static int scst_process_acg_ini_mgmt_store(char *buffer,
 
 	TRACE_DBG("tgt %p, acg %p, buffer %s", tgt, acg, buffer);
 
-	p = buffer;
-	if (p[strlen(p) - 1] == '\n')
-		p[strlen(p) - 1] = '\0';
-
-	if (strncasecmp("add", p, 3) == 0) {
-		p += 3;
+	pp = buffer;
+	p = scst_get_next_lexem(&pp);
+	if (strcasecmp("add", p) == 0) {
 		action = SCST_ACG_ACTION_INI_ADD;
-	} else if (strncasecmp("del", p, 3) == 0) {
-		p += 3;
+	} else if (strcasecmp("del", p) == 0) {
 		action = SCST_ACG_ACTION_INI_DEL;
-	} else if (strncasecmp("clear", p, 5) == 0) {
-		p += 5;
+	} else if (strcasecmp("clear", p) == 0) {
 		action = SCST_ACG_ACTION_INI_CLEAR;
-	} else if (strncasecmp("move", p, 4) == 0) {
-		p += 4;
+	} else if (strcasecmp("move", p) == 0) {
 		action = SCST_ACG_ACTION_INI_MOVE;
 	} else {
 		PRINT_ERROR("Unknown action \"%s\"", p);
@@ -3952,14 +3993,7 @@ static int scst_process_acg_ini_mgmt_store(char *buffer,
 		goto out;
 	}
 
-	if (action != SCST_ACG_ACTION_INI_CLEAR)
-		if (!isspace(*p)) {
-			PRINT_ERROR("%s", "Syntax error");
-			res = -EINVAL;
-			goto out;
-		}
-
-	res = scst_suspend_activity(true);
+	res = scst_suspend_activity(SCST_SUSPEND_TIMEOUT_USER);
 	if (res != 0)
 		goto out;
 
@@ -3971,18 +4005,9 @@ static int scst_process_acg_ini_mgmt_store(char *buffer,
 	if (scst_check_tgt_acg_ptrs(tgt, acg) != 0)
 		goto out_unlock;
 
-	if (action != SCST_ACG_ACTION_INI_CLEAR)
-		while (isspace(*p) && *p != '\0')
-			p++;
-
 	switch (action) {
 	case SCST_ACG_ACTION_INI_ADD:
-		e = p;
-		while (!isspace(*e) && *e != '\0')
-			e++;
-		*e = '\0';
-		name = p;
-
+		name = scst_get_next_lexem(&pp);
 		if (name[0] == '\0') {
 			PRINT_ERROR("%s", "Invalid initiator name");
 			res = -EINVAL;
@@ -3994,12 +4019,7 @@ static int scst_process_acg_ini_mgmt_store(char *buffer,
 			goto out_unlock;
 		break;
 	case SCST_ACG_ACTION_INI_DEL:
-		e = p;
-		while (!isspace(*e) && *e != '\0')
-			e++;
-		*e = '\0';
-		name = p;
-
+		name = scst_get_next_lexem(&pp);
 		if (name[0] == '\0') {
 			PRINT_ERROR("%s", "Invalid initiator name");
 			res = -EINVAL;
@@ -4024,30 +4044,14 @@ static int scst_process_acg_ini_mgmt_store(char *buffer,
 		scst_check_reassign_sessions();
 		break;
 	case SCST_ACG_ACTION_INI_MOVE:
-		e = p;
-		while (!isspace(*e) && *e != '\0')
-			e++;
-		if (*e == '\0') {
-			PRINT_ERROR("%s", "Too few parameters");
-			res = -EINVAL;
-			goto out_unlock;
-		}
-		*e = '\0';
-		name = p;
-
+		name = scst_get_next_lexem(&pp);
 		if (name[0] == '\0') {
 			PRINT_ERROR("%s", "Invalid initiator name");
 			res = -EINVAL;
 			goto out_unlock;
 		}
 
-		e++;
-		p = e;
-		while (!isspace(*e) && *e != '\0')
-			e++;
-		*e = '\0';
-		group = p;
-
+		group = scst_get_next_lexem(&pp);
 		if (group[0] == '\0') {
 			PRINT_ERROR("%s", "Invalid group name");
 			res = -EINVAL;
@@ -4585,9 +4589,6 @@ static int scst_process_devt_mgmt_store(char *buffer,
 	TRACE_DBG("devt %p, buffer %s", devt, buffer);
 
 	pp = buffer;
-	if (pp[strlen(pp) - 1] == '\n')
-		pp[strlen(pp) - 1] = '\0';
-
 	p = scst_get_next_lexem(&pp);
 
 	if (strcasecmp("add_device", p) == 0) {
@@ -4701,8 +4702,8 @@ static int scst_process_devt_pass_through_mgmt_store(char *buffer,
 	struct scst_dev_type *devt)
 {
 	int res = 0;
-	char *p, *pp, *action;
-	unsigned long host, channel, id, lun;
+	char *pp, *action, *devstr;
+	unsigned int host, channel, id, lun;
 	struct scst_device *d, *dev = NULL;
 
 	TRACE_ENTRY();
@@ -4710,12 +4711,9 @@ static int scst_process_devt_pass_through_mgmt_store(char *buffer,
 	TRACE_DBG("devt %p, buffer %s", devt, buffer);
 
 	pp = buffer;
-	if (pp[strlen(pp) - 1] == '\n')
-		pp[strlen(pp) - 1] = '\0';
-
 	action = scst_get_next_lexem(&pp);
-	p = scst_get_next_lexem(&pp);
-	if (*p == '\0') {
+	devstr = scst_get_next_lexem(&pp);
+	if (*devstr == '\0') {
 		PRINT_ERROR("%s", "Device required");
 		res = -EINVAL;
 		goto out;
@@ -4727,23 +4725,10 @@ static int scst_process_devt_pass_through_mgmt_store(char *buffer,
 		goto out_syntax_err;
 	}
 
-	host = simple_strtoul(p, &p, 0);
-	if ((host == ULONG_MAX) || (*p != ':'))
-		goto out_syntax_err;
-	p++;
-	channel = simple_strtoul(p, &p, 0);
-	if ((channel == ULONG_MAX) || (*p != ':'))
-		goto out_syntax_err;
-	p++;
-	id = simple_strtoul(p, &p, 0);
-	if ((channel == ULONG_MAX) || (*p != ':'))
-		goto out_syntax_err;
-	p++;
-	lun = simple_strtoul(p, &p, 0);
-	if (lun == ULONG_MAX)
+	if (sscanf(devstr, "%u:%u:%u:%u", &host, &channel, &id, &lun) != 4)
 		goto out_syntax_err;
 
-	TRACE_DBG("Dev %ld:%ld:%ld:%ld", host, channel, id, lun);
+	TRACE_DBG("Dev %d:%d:%d:%d", host, channel, id, lun);
 
 	res = mutex_lock_interruptible(&scst_mutex);
 	if (res != 0)
@@ -4760,13 +4745,13 @@ static int scst_process_devt_pass_through_mgmt_store(char *buffer,
 		    d->scsi_dev->id == id &&
 		    d->scsi_dev->lun == lun) {
 			dev = d;
-			TRACE_DBG("Dev %p (%ld:%ld:%ld:%ld) found",
+			TRACE_DBG("Dev %p (%d:%d:%d:%d) found",
 				  dev, host, channel, id, lun);
 			break;
 		}
 	}
 	if (dev == NULL) {
-		PRINT_ERROR("Device %ld:%ld:%ld:%ld not found",
+		PRINT_ERROR("Device %d:%d:%d:%d not found",
 			       host, channel, id, lun);
 		res = -EINVAL;
 		goto out_unlock;
@@ -4810,7 +4795,7 @@ out:
 	return res;
 
 out_syntax_err:
-	PRINT_ERROR("Syntax error on \"%s\"", p);
+	PRINT_ERROR("Syntax error on \"%s\"", buffer);
 	res = -EINVAL;
 	goto out;
 }
@@ -4831,6 +4816,26 @@ static ssize_t scst_devt_pass_through_mgmt_store(struct kobject *kobj,
 static struct kobj_attribute scst_devt_pass_through_mgmt =
 	__ATTR(mgmt, S_IRUGO | S_IWUSR, scst_devt_pass_through_mgmt_show,
 	       scst_devt_pass_through_mgmt_store);
+
+/*
+ * Creates an attribute entry for dev handler.
+ */
+int scst_create_devt_attr(struct scst_dev_type *devt,
+	struct kobj_attribute *attribute)
+{
+	int res;
+
+	res = sysfs_create_file(&devt->devt_kobj, &attribute->attr);
+	if (res != 0) {
+		PRINT_ERROR("Can't add attribute %s for dev handler %s",
+			attribute->attr.name, devt->name);
+		goto out;
+	}
+
+out:
+	return res;
+}
+EXPORT_SYMBOL(scst_create_devt_attr);
 
 int scst_devt_sysfs_create(struct scst_dev_type *devt)
 {
@@ -5013,14 +5018,16 @@ static ssize_t scst_dg_devs_mgmt_store(struct kobject *kobj,
 	if (res)
 		goto out;
 
-	work->buf = cmd;
+	swap(work->buf, cmd);
 	work->kobj = kobj;
 	kobject_get(kobj);
 	res = scst_sysfs_queue_wait_work(work);
+	if (res)
+		goto out;
+	res = count;
 
 out:
-	if (res == 0)
-		res = count;
+	kfree(cmd);
 	TRACE_EXIT_RES(res);
 	return res;
 }
@@ -5061,7 +5068,11 @@ static ssize_t scst_tg_tgt_rel_tgt_id_store(struct kobject *kobj,
 	TRACE_ENTRY();
 	tg_tgt = container_of(kobj, struct scst_tg_tgt, kobj);
 	snprintf(ch, sizeof(ch), "%.*s", min_t(int, count, sizeof(ch)-1), buf);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
+	res = kstrtoul(ch, 0, &rel_tgt_id);
+#else
 	res = strict_strtoul(ch, 0, &rel_tgt_id);
+#endif
 	if (res)
 		goto out;
 	res = -EINVAL;
@@ -5151,7 +5162,11 @@ static ssize_t scst_tg_group_id_store(struct kobject *kobj,
 	TRACE_ENTRY();
 	tg = container_of(kobj, struct scst_target_group, kobj);
 	snprintf(ch, sizeof(ch), "%.*s", min_t(int, count, sizeof(ch)-1), buf);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
+	res = kstrtoul(ch, 0, &group_id);
+#else
 	res = strict_strtoul(ch, 0, &group_id);
+#endif
 	if (res)
 		goto out;
 	res = -EINVAL;
@@ -5179,28 +5194,62 @@ static ssize_t scst_tg_preferred_show(struct kobject *kobj,
 			 tg->preferred, SCST_SYSFS_KEY_MARK "\n");
 }
 
-static ssize_t scst_tg_preferred_store(struct kobject *kobj,
-				       struct kobj_attribute *attr,
-				       const char *buf, size_t count)
+static int scst_tg_preferred_store_work_fn(struct scst_sysfs_work_item *w)
 {
 	struct scst_target_group *tg;
 	unsigned long preferred;
-	char ch[8];
+	char *cmd;
 	int res;
 
 	TRACE_ENTRY();
-	tg = container_of(kobj, struct scst_target_group, kobj);
-	snprintf(ch, sizeof(ch), "%.*s", min_t(int, count, sizeof(ch)-1), buf);
-	res = strict_strtoul(ch, 0, &preferred);
+	cmd = w->buf;
+	tg = container_of(w->kobj, struct scst_target_group, kobj);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
+	res = kstrtoul(cmd, 0, &preferred);
+#else
+	res = strict_strtoul(cmd, 0, &preferred);
+#endif
 	if (res)
 		goto out;
 	res = -EINVAL;
 	if (preferred != 0 && preferred != 1)
 		goto out;
-	tg->preferred = preferred;
-	res = count;
+	res = scst_tg_set_preferred(tg, preferred);
+
 out:
+	kobject_put(w->kobj);
 	TRACE_EXIT_RES(res);
+	return res;
+}
+
+static ssize_t scst_tg_preferred_store(struct kobject *kobj,
+				       struct kobj_attribute *attr,
+				       const char *buf, size_t count)
+{
+	char *cmd;
+	struct scst_sysfs_work_item *work;
+	int res;
+
+	res = -ENOMEM;
+	cmd = kasprintf(GFP_KERNEL, "%.*s", (int)count, buf);
+	if (!cmd)
+		goto out;
+
+	res = scst_alloc_sysfs_work(scst_tg_preferred_store_work_fn, false,
+				    &work);
+	if (res)
+		goto out;
+
+	swap(work->buf, cmd);
+	work->kobj = kobj;
+	kobject_get(kobj);
+	res = scst_sysfs_queue_wait_work(work);
+	if (res)
+		goto out;
+	res = count;
+
+out:
+	kfree(cmd);
 	return res;
 }
 
@@ -5208,36 +5257,26 @@ static struct kobj_attribute scst_tg_preferred =
 	__ATTR(preferred, S_IRUGO | S_IWUSR, scst_tg_preferred_show,
 	       scst_tg_preferred_store);
 
-static struct { enum scst_tg_state s; const char *n; } scst_tg_state_names[] = {
-	{ SCST_TG_STATE_OPTIMIZED,	"active"	},
-	{ SCST_TG_STATE_NONOPTIMIZED,	"nonoptimized"	},
-	{ SCST_TG_STATE_STANDBY,	"standby"	},
-	{ SCST_TG_STATE_UNAVAILABLE,	"unavailable"	},
-	{ SCST_TG_STATE_OFFLINE,	"offline"	},
-	{ SCST_TG_STATE_TRANSITIONING,	"transitioning"	},
-};
-
 static ssize_t scst_tg_state_show(struct kobject *kobj,
 				  struct kobj_attribute *attr,
 				  char *buf)
 {
 	struct scst_target_group *tg;
-	int i;
+	const char *n;
 
 	tg = container_of(kobj, struct scst_target_group, kobj);
-	for (i = ARRAY_SIZE(scst_tg_state_names) - 1; i >= 0; i--)
-		if (scst_tg_state_names[i].s == tg->state)
-			break;
+	n = scst_alua_state_name(tg->state);
 
 	return scnprintf(buf, PAGE_SIZE, "%s\n" SCST_SYSFS_KEY_MARK "\n",
-			 i >= 0 ? scst_tg_state_names[i].n : "???");
+			 n ? n : "???");
 }
 
 static int scst_tg_state_store_work_fn(struct scst_sysfs_work_item *w)
 {
 	struct scst_target_group *tg;
 	char *cmd, *p;
-	int i, res;
+	int res;
+	enum scst_tg_state s;
 
 	TRACE_ENTRY();
 
@@ -5248,14 +5287,13 @@ static int scst_tg_state_store_work_fn(struct scst_sysfs_work_item *w)
 	if (p)
 		*p = '\0';
 
-	for (i = ARRAY_SIZE(scst_tg_state_names) - 1; i >= 0; i--)
-		if (strcmp(scst_tg_state_names[i].n, cmd) == 0)
-			break;
+	s = scst_alua_name_to_state(cmd);
 
 	res = -EINVAL;
-	if (i < 0)
+	if (s == SCST_TG_STATE_UNDEFINED)
 		goto out;
-	res = scst_tg_set_state(tg, scst_tg_state_names[i].s);
+	res = scst_tg_set_state(tg, s);
+
 out:
 	kobject_put(w->kobj);
 	TRACE_EXIT_RES(res);
@@ -5282,14 +5320,16 @@ static ssize_t scst_tg_state_store(struct kobject *kobj,
 	if (res)
 		goto out;
 
-	work->buf = cmd;
+	swap(work->buf, cmd);
 	work->kobj = kobj;
 	kobject_get(kobj);
 	res = scst_sysfs_queue_wait_work(work);
+	if (res)
+		goto out;
+	res = count;
 
 out:
-	if (res == 0)
-		res = count;
+	kfree(cmd);
 	TRACE_EXIT_RES(res);
 	return res;
 }
@@ -5364,14 +5404,16 @@ static ssize_t scst_tg_mgmt_store(struct kobject *kobj,
 	if (res)
 		goto out;
 
-	work->buf = cmd;
+	swap(work->buf, cmd);
 	work->kobj = kobj;
 	kobject_get(kobj);
 	res = scst_sysfs_queue_wait_work(work);
+	if (res)
+		goto out;
+	res = count;
 
 out:
-	if (res == 0)
-		res = count;
+	kfree(cmd);
 	TRACE_EXIT_RES(res);
 	return res;
 }
@@ -5485,14 +5527,16 @@ static ssize_t scst_dg_tgs_mgmt_store(struct kobject *kobj,
 	if (res)
 		goto out;
 
-	work->buf = cmd;
+	swap(work->buf, cmd);
 	work->kobj = kobj;
 	kobject_get(kobj);
 	res = scst_sysfs_queue_wait_work(work);
+	if (res)
+		goto out;
+	res = count;
 
 out:
-	if (res == 0)
-		res = count;
+	kfree(cmd);
 	TRACE_EXIT_RES(res);
 	return res;
 }
@@ -5679,7 +5723,11 @@ static ssize_t scst_threads_store(struct kobject *kobj,
 
 	TRACE_ENTRY();
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
+	res = kstrtol(buf, 0, &newtn);
+#else
 	res = strict_strtol(buf, 0, &newtn);
+#endif
 	if (res != 0) {
 		PRINT_ERROR("strict_strtol() for %s failed: %d ", buf, res);
 		goto out;
@@ -5731,7 +5779,11 @@ static ssize_t scst_setup_id_store(struct kobject *kobj,
 
 	TRACE_ENTRY();
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
+	res = kstrtoul(buf, 0, &val);
+#else
 	res = strict_strtoul(buf, 0, &val);
+#endif
 	if (res != 0) {
 		PRINT_ERROR("strict_strtoul() for %s failed: %d ", buf, res);
 		goto out;
@@ -5774,7 +5826,11 @@ static ssize_t scst_max_tasklet_cmd_store(struct kobject *kobj,
 
 	TRACE_ENTRY();
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
+	res = kstrtoul(buf, 0, &val);
+#else
 	res = strict_strtoul(buf, 0, &val);
+#endif
 	if (res != 0) {
 		PRINT_ERROR("strict_strtoul() for %s failed: %d ", buf, res);
 		goto out;

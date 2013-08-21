@@ -1,8 +1,8 @@
 /*
  *  Copyright (C) 2004 - 2005 FUJITA Tomonori <tomof@acm.org>
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -614,7 +614,7 @@ static int mgmt_cmd_callback(void __user *ptr)
 	case E_GET_ATTR_VALUE:
 		info->data = kstrdup(cinfo.value, GFP_KERNEL);
 		if (info->data == NULL) {
-			PRINT_ERROR("Can't dublicate value %s", cinfo.value);
+			PRINT_ERROR("Can't duplicate value %s", cinfo.value);
 			info->info_status = -ENOMEM;
 			goto out_complete;
 		}
@@ -1057,7 +1057,17 @@ static int iscsi_register(void __user *arg)
 
 	memset(&reg, 0, sizeof(reg));
 	reg.max_data_seg_len = ISCSI_CONN_IOV_MAX << PAGE_SHIFT;
+
+	/*
+	 * In iSCSI all LUs in a session share queue depth, so let's not
+	 * limit it too much for thousands of LUs VMware and other similar
+	 * systems cases.
+	 */
+#if 0
 	reg.max_queued_cmds = scst_get_max_lun_commands(NULL, NO_SUCH_LUN);
+#else
+	reg.max_queued_cmds = MAX_NR_QUEUED_CMNDS;
+#endif
 
 	res = 0;
 
@@ -1213,26 +1223,26 @@ static void iscsi_dump_char(int ch, unsigned char *text, int *pos)
 
 	if (ch < 0) {
 		while ((i % 16) != 0) {
-			printk(KERN_CONT "   ");
+			pr_cont("   ");
 			text[i] = ' ';
 			i++;
 			if ((i % 16) == 0)
-				printk(KERN_CONT " | %.16s |\n", text);
+				pr_cont(" | %.16s |\n", text);
 			else if ((i % 4) == 0)
-				printk(KERN_CONT " |");
+				pr_cont(" |");
 		}
 		i = 0;
 		goto out;
 	}
 
 	text[i] = (ch < 0x20 || (ch >= 0x80 && ch <= 0xa0)) ? ' ' : ch;
-	printk(KERN_CONT " %02x", ch);
+	pr_cont(" %02x", ch);
 	i++;
 	if ((i % 16) == 0) {
-		printk(KERN_CONT " | %.16s |\n", text);
+		pr_cont(" | %.16s |\n", text);
 		i = 0;
 	} else if ((i % 4) == 0)
-		printk(KERN_CONT " |");
+		pr_cont(" |");
 
 out:
 	*pos = i;

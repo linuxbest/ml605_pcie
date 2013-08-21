@@ -1,8 +1,8 @@
 /*
  *  Copyright (C) 2005 FUJITA Tomonori <tomof@acm.org>
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -194,8 +195,6 @@ int iscsi_attr_replace(struct __qelem *attrs_list, const char *sysfs_name,
 
 	a = iscsi_attr_lookup_by_key(attrs_list, key);
 
-	list_add_tail(attr, attrs_list);
-
 	if ((a != NULL) && (a != attr)) {
 		log_error("Attr %s (sysfs_name %s) already exists\n", key,
 			a->sysfs_name);
@@ -215,6 +214,7 @@ int iscsi_attr_replace(struct __qelem *attrs_list, const char *sysfs_name,
 		if (new_val == NULL) {
 			log_error("Unable to duplicate attr_value %s", val);
 			res = -ENOMEM;
+			free(new_key);
 			goto out;
 		}
 	} else
@@ -617,11 +617,11 @@ static int netmask_match_v4(struct sockaddr *sa1, struct sockaddr *sa2, uint32_t
 
 static int netmask_match(struct sockaddr *sa1, struct sockaddr *sa2, char *buf)
 {
-	int32_t mbit;
+	unsigned long mbit;
 	uint8_t family = sa1->sa_family;
 
 	mbit = strtoul(buf, NULL, 0);
-	if (mbit < 0 ||
+	if (mbit == ULONG_MAX ||
 	    (family == AF_INET && mbit > 31) ||
 	    (family == AF_INET6 && mbit > 127))
 		return 0;

@@ -3,9 +3,9 @@
  *
  *  Copyright (C) 2004 Xiranet Communications GmbH <arne.redlich@xiranet.com>
  *  Copyright (C) 2002 - 2003 Ardis Technolgies <roman@ardistech.com>,
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  and code taken from UNH iSCSI software:
  *  Copyright (C) 2001-2003 InterOperability Lab (IOL)
@@ -28,6 +28,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include "sha1.h"
 #include "md5.h"
 
@@ -332,6 +334,22 @@ static inline void chap_calc_digest_sha1(char chap_id, const char *secret, int s
 	sha1_final(&ctx, digest);
 }
 
+/*
+ * To generate challenge for CHAP, use stronger random number generator as
+ * opposed to simple rand().
+ */
+static int chap_rand(void)
+{
+    int fd;
+    int r;
+
+    fd = open("/dev/urandom", O_RDONLY);
+    assert(fd != -1);
+    (void)read(fd, &r, sizeof(r));
+    close(fd);
+    return r;
+}
+
 static int chap_initiator_auth_create_challenge(struct connection *conn)
 {
 	char *value, *p;
@@ -366,7 +384,7 @@ static int chap_initiator_auth_create_challenge(struct connection *conn)
 	 * wise, or should we rather always use the max. allowed length of
 	 * 1024 for the (unencoded) challenge?
 	 */
-	conn->auth.chap.challenge_size = (rand() % (CHAP_CHALLENGE_MAX / 2)) + CHAP_CHALLENGE_MAX / 2;
+	conn->auth.chap.challenge_size = (chap_rand() % (CHAP_CHALLENGE_MAX / 2)) + CHAP_CHALLENGE_MAX / 2;
 
 	conn->auth.chap.challenge = malloc(conn->auth.chap.challenge_size);
 	if (!conn->auth.chap.challenge)
@@ -376,7 +394,7 @@ static int chap_initiator_auth_create_challenge(struct connection *conn)
 	strcpy(p, "0x");
 	p += 2;
 	for (i = 0; i < conn->auth.chap.challenge_size; i++) {
-		conn->auth.chap.challenge[i] = rand();
+		conn->auth.chap.challenge[i] = chap_rand();
 		sprintf(p, "%.2hhx", conn->auth.chap.challenge[i]);
 		p += 2;
 	}

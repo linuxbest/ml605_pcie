@@ -1,7 +1,7 @@
 /*
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -105,5 +105,8 @@ static inline int list_length_is_one(const struct __qelem *head)
 #ifndef IPV6_V6ONLY
 #define IPV6_V6ONLY	26
 #endif
+
+extern void set_non_blocking(int fd);
+extern void sock_set_keepalive(int sock, int timeout);
 
 #endif

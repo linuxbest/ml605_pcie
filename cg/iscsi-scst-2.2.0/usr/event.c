@@ -2,9 +2,9 @@
  *  Event notification code.
  *
  *  Copyright (C) 2005 FUJITA Tomonori <tomof@acm.org>
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -36,6 +36,8 @@
 #include "iscsid.h"
 
 #define ISCSI_ISNS_SYSFS_ACCESS_CONTROL_ENABLED	"AccessControl"
+
+#define STATIC_ASSERT(e) ((void)sizeof(int[1-2*!(e)]))
 
 static struct sockaddr_nl src_addr, dest_addr;
 
@@ -158,7 +160,8 @@ static int handle_e_add_target(int fd, const struct iscsi_kern_event *event)
 
 	/* Params are not 0-terminated */
 
-	size = strlen("Target ") + event->param1_size + 2 + event->param2_size + 1;
+	size = strlen("Target ") + event->param1_size + 2 + event->param2_size +
+		1 + NLMSG_ALIGNTO - 1;
 
 	buf = malloc(size);
 	if (buf == NULL) {
@@ -397,7 +400,7 @@ static int handle_e_mgmt_cmd(int fd, const struct iscsi_kern_event *event)
 
 	/* Params are not 0-terminated */
 
-	size = event->param1_size + 1;
+	size = NLMSG_ALIGN(event->param1_size + 1);
 
 	buf = malloc(size);
 	if (buf == NULL) {
@@ -486,7 +489,7 @@ static int handle_e_get_attr_value(int fd, const struct iscsi_kern_event *event)
 
 	/* Params are not 0-terminated */
 
-	size = event->param1_size + 1;
+	size = NLMSG_ALIGN(event->param1_size + 1);
 
 	buf = malloc(size);
 	if (buf == NULL) {
@@ -620,7 +623,15 @@ static int handle_e_get_attr_value(int fd, const struct iscsi_kern_event *event)
 			add_key_mark(res_str, sizeof(res_str), 0);
 		} else
 			snprintf(res_str, sizeof(res_str), "%s\n", "");
-	} else {
+	} else if (strcasecmp(ISCSI_ISNS_ENTITY_ATTR_NAME, pp) == 0)	{
+		if (target != NULL) {
+			log_error("Not NULL target %s for global attribute %s",
+				target->name, pp);
+			res = -EINVAL;
+			goto out_free;
+		}
+		snprintf(res_str, sizeof(res_str), "%s", isns_entity_target_name);
+	} else	{
 		log_error("Unknown attribute %s", pp);
 		res = -EINVAL;
 		goto out_free;
@@ -749,7 +760,8 @@ static int handle_e_set_attr_value(int fd, const struct iscsi_kern_event *event)
 	}
 
 	/* Params are not 0-terminated */
-	size = event->param1_size + 1 + 1 + event->param2_size + 1;
+	size = event->param1_size + 1 + 1 + event->param2_size + 1 +
+		NLMSG_ALIGNTO - 1;
 
 	buf = malloc(size);
 	if (buf == NULL) {
@@ -959,7 +971,7 @@ static int handle_e_set_attr_value(int fd, const struct iscsi_kern_event *event)
 		isns_access_control = 0;
 		isns_server = strdup(pp);
 		if (isns_server == NULL) {
-			log_error("Unable to dublicate iSNS server name %s", pp);
+			log_error("Unable to duplicate iSNS server name %s", pp);
 			res = -ENOMEM;
 			goto out_free;
 		}
@@ -996,7 +1008,10 @@ static int handle_e_set_attr_value(int fd, const struct iscsi_kern_event *event)
 			}
 		} else
 			goto out_free_server;
-	} else {
+	} else if (strcasecmp(ISCSI_ISNS_ENTITY_ATTR_NAME, pp) == 0) {
+		pp = config_sep_string(&p);
+		strlcpy(isns_entity_target_name, pp, sizeof(isns_entity_target_name));
+	} else	{
 		log_error("Unknown attribute %s", pp);
 		res = -EINVAL;
 		goto out_free;
@@ -1036,6 +1051,8 @@ int handle_iscsi_events(int fd, bool wait)
 	 * The way of handling errors by exit() is one of the worst possible,
 	 * but IET developers thought it's OK. ToDo: fix somewhen.
 	 */
+
+	STATIC_ASSERT(sizeof(event) % NLMSG_ALIGNTO == 0);
 
 retry:
 	if ((rc = nl_read(fd, &event, sizeof(event), wait)) < 0) {

@@ -1,7 +1,7 @@
 /*
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -22,4 +22,4 @@
 #define ISCSI_VERSION_STRING_SUFFIX
 #endif
 
-#define ISCSI_VERSION_STRING	"2.2.0" ISCSI_VERSION_STRING_SUFFIX
+#define ISCSI_VERSION_STRING	"3.0.0-pre2" ISCSI_VERSION_STRING_SUFFIX

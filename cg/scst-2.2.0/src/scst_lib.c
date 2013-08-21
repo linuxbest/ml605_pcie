@@ -1,10 +1,10 @@
 /*
  *  scst_lib.c
  *
- *  Copyright (C) 2004 - 2011 Vladislav Bolkhovitin <vst@vlnb.net>
+ *  Copyright (C) 2004 - 2013 Vladislav Bolkhovitin <vst@vlnb.net>
  *  Copyright (C) 2004 - 2005 Leonid Stoljar
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -33,6 +33,16 @@
 #include <linux/vmalloc.h>
 #include <asm/kmap_types.h>
 #include <asm/unaligned.h>
+#include <linux/namei.h>
+#include <linux/mount.h>
+
+#ifndef INSIDE_KERNEL_TREE
+#include <linux/version.h>
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
+#include <linux/writeback.h>
+#endif
 
 #ifdef INSIDE_KERNEL_TREE
 #include <scst/scst.h>
@@ -67,27 +77,84 @@ static int strncasecmp(const char *s1, const char *s2, size_t n)
 }
 #endif
 
-/* get_trans_len_x extract x bytes from cdb as length starting from off */
-static int get_trans_len_1(struct scst_cmd *cmd, uint8_t off);
-static int get_trans_len_1_256(struct scst_cmd *cmd, uint8_t off);
-static int get_trans_len_2(struct scst_cmd *cmd, uint8_t off);
-static int get_trans_len_3(struct scst_cmd *cmd, uint8_t off);
-static int get_trans_len_4(struct scst_cmd *cmd, uint8_t off);
+#if !((LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 30)) && defined(SCSI_EXEC_REQ_FIFO_DEFINED)) && !defined(HAVE_SG_COPY)
+static int sg_copy(struct scatterlist *dst_sg, struct scatterlist *src_sg,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 4, 0)
+	    int nents_to_copy, size_t copy_len,
+	    enum km_type d_km_type, enum km_type s_km_type);
+#else
+	    int nents_to_copy, size_t copy_len);
+#endif
+#endif
 
-static int get_bidi_trans_len_2(struct scst_cmd *cmd, uint8_t off);
+static void scst_free_descriptors(struct scst_cmd *cmd);
 
-/* for special commands */
-static int get_trans_len_block_limit(struct scst_cmd *cmd, uint8_t off);
-static int get_trans_len_read_capacity(struct scst_cmd *cmd, uint8_t off);
-static int get_trans_len_serv_act_in(struct scst_cmd *cmd, uint8_t off);
-static int get_trans_len_single(struct scst_cmd *cmd, uint8_t off);
-static int get_trans_len_none(struct scst_cmd *cmd, uint8_t off);
-static int get_trans_len_read_pos(struct scst_cmd *cmd, uint8_t off);
-static int get_trans_cdb_len_10(struct scst_cmd *cmd, uint8_t off);
-static int get_trans_len_prevent_allow_medium_removal(struct scst_cmd *cmd,
-	uint8_t off);
-static int get_trans_len_3_read_elem_stat(struct scst_cmd *cmd, uint8_t off);
-static int get_trans_len_start_stop(struct scst_cmd *cmd, uint8_t off);
+struct scst_sdbops;
+
+static int get_cdb_info_len_10(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_block_limit(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_read_capacity(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_serv_act_in(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_single(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_read_pos(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_prevent_allow_medium_removal(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_start_stop(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_len_3_read_elem_stat(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_len_2(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_fmt(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+	static int get_cdb_info_verify6(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_verify10(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_verify12(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_verify16(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_len_1(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_lba_2_len_1_256(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_bidi_lba_4_len_2(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_len_3(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_len_4(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_none(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_lba_2_none(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_lba_4_len_2(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_lba_4_none(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_lba_4_len_2(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_lba_4_len_4(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_lba_8_len_4(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_lba_8_none(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_write_same10(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_write_same16(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_apt(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
+static int get_cdb_info_min(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops);
 
 /*
 +=====================================-============-======-
@@ -130,551 +197,1109 @@ struct scst_sdbops {
 				 * type_reserv    devkey[E]
 				 * type_reserv    devkey[F]
 				 */
-	const char *op_name;	/* SCSI-2 op codes full name */
-	uint8_t direction;	/* init   --> target: SCST_DATA_WRITE
-				 * target --> init:   SCST_DATA_READ
-				 */
-	uint32_t flags;		/* opcode --  various flags */
-	uint8_t off;		/* length offset in cdb */
-	int (*get_trans_len)(struct scst_cmd *cmd, uint8_t off);
+	uint8_t info_lba_off;	/* LBA offset in cdb */
+	uint8_t info_lba_len;	/* LBA length in cdb */
+	uint8_t info_len_off;	/* length offset in cdb */
+	uint8_t info_len_len;	/* length length in cdb */
+	uint8_t info_data_direction; /* init --> target: SCST_DATA_WRITE
+				   * target --> init: SCST_DATA_READ
+				   * target <--> init: SCST_DATA_READ|SCST_DATA_WRITE
+				   */
+	uint32_t info_op_flags;	/* various flags of this opcode */
+	const char *info_op_name;/* op code SCSI full name */
+	int (*get_cdb_info)(struct scst_cmd *cmd, const struct scst_sdbops *sdbops);
 };
 
 static int scst_scsi_op_list[256];
 
 #define FLAG_NONE 0
 
+/* See also http://www.t10.org/lists/op-num.htm */
 static const struct scst_sdbops scst_scsi_op_table[] = {
 	/*
-	 *      +-------------------> TYPE_IS_DISK      (0)
-	 *      |
-	 *      |+------------------> TYPE_IS_TAPE      (1)
-	 *      ||
-	 *      || +----------------> TYPE_IS_PROCESSOR (3)
-	 *      || |
-	 *      || | +--------------> TYPE_IS_CDROM     (5)
-	 *      || | |
-	 *      || | | +------------> TYPE_IS_MOD       (7)
-	 *      || | | |
-	 *      || | | |+-----------> TYPE_IS_CHANGER   (8)
-	 *      || | | ||
-	 *      || | | ||   +-------> TYPE_IS_RAID      (C)
-	 *      || | | ||   |
-	 *      || | | ||   |
-	 *      0123456789ABCDEF ---> TYPE_IS_????     */
+	 *                       +-------------------> TYPE_DISK      (0)
+	 *                       |
+	 *                       |+------------------> TYPE_TAPE      (1)
+	 *                       ||
+	 *                       ||+-----------------> TYPE_PRINTER   (2)
+	 *                       |||
+	 *                       |||+----------------> TYPE_PROCESSOR (3)
+	 *                       ||||
+	 *                       ||||+---------------> TYPE_WORM      (4)
+	 *                       |||||
+	 *                       |||||+--------------> TYPE_CDROM     (5)
+	 *                       ||||||
+	 *                       ||||||+-------------> TYPE_SCANNER   (6)
+	 *                       |||||||
+	 *                       |||||||+------------> TYPE_MOD       (7)
+	 *                       ||||||||
+	 *                       ||||||||+-----------> TYPE_CHANGER   (8)
+	 *                       |||||||||
+	 *                       |||||||||+----------> TYPE_COMM      (9)
+	 *                       ||||||||||
+	 *                       ||||||||||  +-------> TYPE_RAID      (C)
+	 *                       ||||||||||  |
+	 *                       ||||||||||  |+------> TYPE_ENCLOSURE (D)
+	 *                       ||||||||||  ||
+	 *                       ||||||||||  ||+-----> TYPE_RBC       (E)
+	 *                       ||||||||||  |||
+	 *                       ||||||||||  |||+----> Optical card   (F)
+	 *                       ||||||||||  ||||
+	 *                       ||||||||||  ||||
+	 *                       0123456789ABCDEF -> TYPE_????     */
 
 	/* 6-bytes length CDB */
-	{0x00, "MMMMMMMMMMMMMMMM", "TEST UNIT READY",
-	 /* let's be HQ to don't look dead under high load */
-	 SCST_DATA_NONE, SCST_SMALL_TIMEOUT|SCST_IMPLICIT_HQ|
-			 SCST_REG_RESERVE_ALLOWED|
-			 SCST_WRITE_EXCL_ALLOWED|
+	{.ops = 0x00, .devkey = "MMMMMMMMMMMMMMMM",
+	 .info_op_name = "TEST UNIT READY",
+	 .info_data_direction = SCST_DATA_NONE,
+	 /* Let's be HQ to don't look dead under high load */
+	 .info_op_flags = SCST_SMALL_TIMEOUT|SCST_IMPLICIT_HQ|
+			 SCST_REG_RESERVE_ALLOWED|SCST_WRITE_EXCL_ALLOWED|
 #ifdef CONFIG_SCST_TEST_IO_IN_SIRQ
 			 SCST_TEST_IO_IN_SIRQ_ALLOWED|
 #endif
 			 SCST_EXCL_ACCESS_ALLOWED,
-	 0, get_trans_len_none},
-	{0x01, " M              ", "REWIND",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT|SCST_WRITE_EXCL_ALLOWED,
-	 0, get_trans_len_none},
-	{0x01, "O V OO OO       ", "REZERO UNIT",
-	 SCST_DATA_NONE, SCST_WRITE_EXCL_ALLOWED,
-	 0, get_trans_len_none},
-	{0x02, "VVVVVV  V       ", "REQUEST BLOCK ADDR",
-	 SCST_DATA_NONE, SCST_SMALL_TIMEOUT, 0, get_trans_len_none},
-	{0x03, "MMMMMMMMMMMMMMMM", "REQUEST SENSE",
-	 SCST_DATA_READ, SCST_SMALL_TIMEOUT|SCST_SKIP_UA|SCST_LOCAL_CMD|
-			 SCST_REG_RESERVE_ALLOWED|
-			 SCST_WRITE_EXCL_ALLOWED|
-			 SCST_EXCL_ACCESS_ALLOWED,
-	 4, get_trans_len_1},
-	{0x04, "M    O O        ", "FORMAT UNIT",
-	 SCST_DATA_WRITE, SCST_LONG_TIMEOUT|SCST_UNKNOWN_LENGTH|SCST_WRITE_MEDIUM,
-	 0, get_trans_len_none},
-	{0x04, "  O             ", "FORMAT",
-	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-	{0x05, "VMVVVV  V       ", "READ BLOCK LIMITS",
-	 SCST_DATA_READ, SCST_SMALL_TIMEOUT|
-			 SCST_REG_RESERVE_ALLOWED|
-			 SCST_WRITE_EXCL_ALLOWED|
-			 SCST_EXCL_ACCESS_ALLOWED,
-	 0, get_trans_len_block_limit},
-	{0x07, "        O       ", "INITIALIZE ELEMENT STATUS",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-	{0x07, "OVV O  OV       ", "REASSIGN BLOCKS",
-	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-	{0x08, "O               ", "READ(6)",
-	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED|
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x01, .devkey = " M              ",
+	 .info_op_name = "REWIND",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT|SCST_WRITE_EXCL_ALLOWED,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x03, .devkey = "MMMMMMMMMMMMMMMM",
+	 .info_op_name = "REQUEST SENSE",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_SMALL_TIMEOUT|SCST_SKIP_UA|SCST_LOCAL_CMD|
+		 SCST_REG_RESERVE_ALLOWED|SCST_WRITE_EXCL_ALLOWED|
+		 SCST_EXCL_ACCESS_ALLOWED,
+	 .info_len_off = 4, .info_len_len = 1,
+	 .get_cdb_info = get_cdb_info_len_1},
+	{.ops = 0x04, .devkey = "M    O O        ",
+	 .info_op_name = "FORMAT UNIT",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT|SCST_WRITE_MEDIUM,
+	 .get_cdb_info = get_cdb_info_fmt},
+	{.ops = 0x04, .devkey = "  O             ",
+	 .info_op_name = "FORMAT",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_WRITE_MEDIUM,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x05, .devkey = "VMVVVV  V       ",
+	 .info_op_name = "READ BLOCK LIMITS",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_SMALL_TIMEOUT|SCST_REG_RESERVE_ALLOWED|
+		SCST_WRITE_EXCL_ALLOWED|SCST_EXCL_ACCESS_ALLOWED,
+	 .get_cdb_info = get_cdb_info_block_limit},
+	{.ops = 0x07, .devkey = "        O       ",
+	 .info_op_name = "INITIALIZE ELEMENT STATUS",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x07, .devkey = "OVV O  OV       ",
+	 .info_op_name = "REASSIGN BLOCKS",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_WRITE_MEDIUM,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x08, .devkey = "O               ",
+	 .info_op_name = "READ(6)",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|
 #ifdef CONFIG_SCST_TEST_IO_IN_SIRQ
 			 SCST_TEST_IO_IN_SIRQ_ALLOWED|
 #endif
 			 SCST_WRITE_EXCL_ALLOWED,
-	 4, get_trans_len_1_256},
-	{0x08, " MV OO OV       ", "READ(6)",
-	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED|
+	 .info_lba_off = 2, .info_lba_len = 2,
+	 .info_len_off = 4, .info_len_len = 1,
+	 .get_cdb_info = get_cdb_info_lba_2_len_1_256},
+	{.ops = 0x08, .devkey = " MV OO OV       ",
+	 .info_op_name = "READ(6)",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|
 			 SCST_WRITE_EXCL_ALLOWED,
-	 2, get_trans_len_3},
-	{0x08, "         M      ", "GET MESSAGE(6)",
-	 SCST_DATA_READ, FLAG_NONE, 2, get_trans_len_3},
-	{0x08, "    O           ", "RECEIVE",
-	 SCST_DATA_READ, FLAG_NONE, 2, get_trans_len_3},
-	{0x0A, "O               ", "WRITE(6)",
-	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|
+	 .info_len_off = 2, .info_len_len = 3,
+	 .get_cdb_info = get_cdb_info_len_3},
+	{.ops = 0x08, .devkey = "         M      ",
+	 .info_op_name = "GET MESSAGE(6)",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 2, .info_len_len = 3,
+	 .get_cdb_info = get_cdb_info_len_3},
+	{.ops = 0x08, .devkey = "    O           ",
+	 .info_op_name = "RECEIVE",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 2, .info_len_len = 3,
+	 .get_cdb_info = get_cdb_info_len_3},
+	{.ops = 0x0A, .devkey = "O               ",
+	 .info_op_name = "WRITE(6)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|
 #ifdef CONFIG_SCST_TEST_IO_IN_SIRQ
 			  SCST_TEST_IO_IN_SIRQ_ALLOWED|
 #endif
 			  SCST_WRITE_MEDIUM,
-	 4, get_trans_len_1_256},
-	{0x0A, " M  O  OV       ", "WRITE(6)",
-	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
-	 2, get_trans_len_3},
-	{0x0A, "  M             ", "PRINT",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x0A, "         M      ", "SEND MESSAGE(6)",
-	 SCST_DATA_WRITE, FLAG_NONE, 2, get_trans_len_3},
-	{0x0A, "    M           ", "SEND(6)",
-	 SCST_DATA_WRITE, FLAG_NONE, 2, get_trans_len_3},
-	{0x0B, "O   OO OV       ", "SEEK(6)",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x0B, "                ", "TRACK SELECT",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x0B, "  O             ", "SLEW AND PRINT",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x0C, "VVVVVV  V       ", "SEEK BLOCK",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-	{0x0D, "VVVVVV  V       ", "PARTITION",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT|SCST_WRITE_MEDIUM,
-	 0, get_trans_len_none},
-	{0x0F, "VOVVVV  V       ", "READ REVERSE",
-	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED|
+	 .info_lba_off = 2, .info_lba_len = 2,
+	 .info_len_off = 4, .info_len_len = 1,
+	 .get_cdb_info = get_cdb_info_lba_2_len_1_256},
+	{.ops = 0x0A, .devkey = " M  O  OV       ",
+	 .info_op_name = "WRITE(6)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
+	 .info_len_off = 2, .info_len_len = 3,
+	 .get_cdb_info = get_cdb_info_len_3},
+	{.ops = 0x0A, .devkey = "  M             ",
+	 .info_op_name = "PRINT",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x0A, .devkey = "         M      ",
+	 .info_op_name = "SEND MESSAGE(6)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 2, .info_len_len = 3,
+	 .get_cdb_info = get_cdb_info_len_3},
+	{.ops = 0x0A, .devkey = "    M           ",
+	 .info_op_name = "SEND(6)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 2, .info_len_len = 3,
+	 .get_cdb_info = get_cdb_info_len_3},
+	{.ops = 0x0B, .devkey = "O   OO OV       ",
+	 .info_op_name = "SEEK(6)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_lba_off = 2, .info_lba_len = 2,
+	 .get_cdb_info = get_cdb_info_lba_2_none},
+	{.ops = 0x0B, .devkey = "  O             ",
+	 .info_op_name = "SLEW AND PRINT",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x0C, .devkey = " VVVVV  V       ",
+	 .info_op_name = "SEEK BLOCK",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x0D, .devkey = " VVVVV  V       ",
+	 .info_op_name = "PARTITION",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT|SCST_WRITE_MEDIUM,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x0F, .devkey = " OVVVV  V       ",
+	 .info_op_name = "READ REVERSE",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|
 			 SCST_WRITE_EXCL_ALLOWED,
-	 2, get_trans_len_3},
-	{0x10, "VM V V          ", "WRITE FILEMARKS",
-	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-	{0x10, "  O O           ", "SYNCHRONIZE BUFFER",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x11, "VMVVVV          ", "SPACE",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT|
+	 .info_len_off = 12, .info_len_len = 3,
+	 .get_cdb_info = get_cdb_info_len_3},
+	{.ops = 0x10, .devkey = " M V V          ",
+	 .info_op_name = "WRITE FILEMARKS(6)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_WRITE_MEDIUM,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x10, .devkey = "  O O           ",
+	 .info_op_name = "SYNCHRONIZE BUFFER",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x11, .devkey = "VMVVVV          ",
+	 .info_op_name = "SPACE",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT|
 			 SCST_WRITE_EXCL_ALLOWED,
-	 0, get_trans_len_none},
-	{0x12, "MMMMMMMMMMMMMMMM", "INQUIRY",
-	 SCST_DATA_READ, SCST_SMALL_TIMEOUT|SCST_IMPLICIT_HQ|SCST_SKIP_UA|
-			 SCST_REG_RESERVE_ALLOWED|
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x12, .devkey = "MMMMMMMMMMMMMMMM",
+	 .info_op_name = "INQUIRY",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_SMALL_TIMEOUT|SCST_IMPLICIT_HQ|SCST_SKIP_UA|
+		SCST_REG_RESERVE_ALLOWED|SCST_WRITE_EXCL_ALLOWED|
+		SCST_EXCL_ACCESS_ALLOWED,
+	 .info_len_off = 3, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x13, .devkey = " O              ",
+	 .info_op_name = "VERIFY(6)",
+	 .info_data_direction = SCST_DATA_UNKNOWN,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_EXCL_ALLOWED,
+	 .info_len_off = 2, .info_len_len = 3,
+	 .get_cdb_info = get_cdb_info_verify6},
+	{.ops = 0x14, .devkey = " OOVVV          ",
+	 .info_op_name = "RECOVER BUFFERED DATA",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_EXCL_ALLOWED,
+	 .info_len_off = 2, .info_len_len = 3,
+	 .get_cdb_info = get_cdb_info_len_3},
+	{.ops = 0x15, .devkey = "OMOOOOOOOOOOOOOO",
+	 .info_op_name = "MODE SELECT(6)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_STRICTLY_SERIALIZED,
+	 .info_len_off = 4, .info_len_len = 1,
+	 .get_cdb_info = get_cdb_info_len_1},
+	{.ops = 0x16, .devkey = "MMMMMMMMMMMMMMMM",
+	 .info_op_name = "RESERVE",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_SMALL_TIMEOUT|SCST_LOCAL_CMD|SCST_SERIALIZED|
 			 SCST_WRITE_EXCL_ALLOWED|SCST_EXCL_ACCESS_ALLOWED,
-	 3, get_trans_len_2},
-	{0x13, "VOVVVV          ", "VERIFY(6)",
-	 SCST_DATA_NONE, SCST_TRANSFER_LEN_TYPE_FIXED|
-			 SCST_VERIFY_BYTCHK_MISMATCH_ALLOWED|
-			 SCST_WRITE_EXCL_ALLOWED,
-	 2, get_trans_len_3},
-	{0x14, "VOOVVV          ", "RECOVER BUFFERED DATA",
-	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED|
-			 SCST_WRITE_EXCL_ALLOWED,
-	 2, get_trans_len_3},
-	{0x15, "OMOOOOOOOOOOOOOO", "MODE SELECT(6)",
-	 SCST_DATA_WRITE, SCST_STRICTLY_SERIALIZED, 4, get_trans_len_1},
-	{0x16, "MMMMMMMMMMMMMMMM", "RESERVE",
-	 SCST_DATA_NONE, SCST_SMALL_TIMEOUT|SCST_LOCAL_CMD|SCST_SERIALIZED|
-			 SCST_WRITE_EXCL_ALLOWED|SCST_EXCL_ACCESS_ALLOWED,
-	 0, get_trans_len_none},
-	{0x17, "MMMMMMMMMMMMMMMM", "RELEASE",
-	 SCST_DATA_NONE, SCST_SMALL_TIMEOUT|SCST_LOCAL_CMD|SCST_SERIALIZED|
-			 SCST_REG_RESERVE_ALLOWED|
-			 SCST_WRITE_EXCL_ALLOWED|SCST_EXCL_ACCESS_ALLOWED,
-	 0, get_trans_len_none},
-	{0x18, "OOOOOOOO        ", "COPY",
-	 SCST_DATA_WRITE, SCST_LONG_TIMEOUT, 2, get_trans_len_3},
-	{0x19, "VMVVVV          ", "ERASE",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT|SCST_WRITE_MEDIUM,
-	 0, get_trans_len_none},
-	{0x1A, "OMOOOOOOOOOOOOOO", "MODE SENSE(6)",
-	 SCST_DATA_READ, SCST_SMALL_TIMEOUT, 4, get_trans_len_1},
-	{0x1B, "      O         ", "SCAN",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x1B, " O              ", "LOAD UNLOAD",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-	{0x1B, "  O             ", "STOP PRINT",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x1B, "O   OO O    O   ", "START STOP UNIT",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_start_stop},
-	{0x1C, "OOOOOOOOOOOOOOOO", "RECEIVE DIAGNOSTIC RESULTS",
-	 SCST_DATA_READ, FLAG_NONE, 3, get_trans_len_2},
-	{0x1D, "MMMMMMMMMMMMMMMM", "SEND DIAGNOSTIC",
-	 SCST_DATA_WRITE, FLAG_NONE, 4, get_trans_len_1},
-	{0x1E, "OOOOOOOOOOOOOOOO", "PREVENT ALLOW MEDIUM REMOVAL",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0,
-	 get_trans_len_prevent_allow_medium_removal},
-	{0x1F, "            O   ", "PORT STATUS",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x17, .devkey = "MMMMMMMMMMMMMMMM",
+	 .info_op_name = "RELEASE",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_SMALL_TIMEOUT|SCST_LOCAL_CMD|SCST_SERIALIZED|
+		SCST_REG_RESERVE_ALLOWED|SCST_WRITE_EXCL_ALLOWED|
+		SCST_EXCL_ACCESS_ALLOWED,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x19, .devkey = " MVVVV          ",
+	 .info_op_name = "ERASE",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT|SCST_WRITE_MEDIUM,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x1A, .devkey = "OMOOOOOOOOOOOOOO",
+	 .info_op_name = "MODE SENSE(6)",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_SMALL_TIMEOUT |
+		 SCST_WRITE_EXCL_ALLOWED,
+	 .info_len_off = 4, .info_len_len = 1,
+	 .get_cdb_info = get_cdb_info_len_1},
+	{.ops = 0x1B, .devkey = "      O         ",
+	 .info_op_name = "SCAN",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x1B, .devkey = " O              ",
+	 .info_op_name = "LOAD UNLOAD",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x1B, .devkey = "  O             ",
+	 .info_op_name = "STOP PRINT",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x1B, .devkey = "O   OO O    O   ",
+	 .info_op_name = "START STOP UNIT",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT,
+	 .get_cdb_info = get_cdb_info_start_stop},
+	{.ops = 0x1C, .devkey = "OOOOOOOOOOOOOOOO",
+	 .info_op_name = "RECEIVE DIAGNOSTIC RESULTS",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_WRITE_EXCL_ALLOWED,
+	 .info_len_off = 3, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x1D, .devkey = "MMMMMMMMMMMMMMMM",
+	 .info_op_name = "SEND DIAGNOSTIC",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 3, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x1E, .devkey = "OOOOOOOOOOOOOOOO",
+	 .info_op_name = "PREVENT ALLOW MEDIUM REMOVAL",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT,
+	 .get_cdb_info = get_cdb_info_prevent_allow_medium_removal},
+	{.ops = 0x1F, .devkey = "            O   ",
+	 .info_op_name = "PORT STATUS",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
 
 	 /* 10-bytes length CDB */
-	{0x23, "V   VV V        ", "READ FORMAT CAPACITY",
-	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-	{0x24, "V   VVM         ", "SET WINDOW",
-	 SCST_DATA_WRITE, FLAG_NONE, 6, get_trans_len_3},
-	{0x25, "M   MM M        ", "READ CAPACITY",
-	 SCST_DATA_READ, SCST_IMPLICIT_HQ|
-			 SCST_REG_RESERVE_ALLOWED|
-			 SCST_WRITE_EXCL_ALLOWED|
-			 SCST_EXCL_ACCESS_ALLOWED,
-	 0, get_trans_len_read_capacity},
-	{0x25, "      O         ", "GET WINDOW",
-	 SCST_DATA_READ, FLAG_NONE, 6, get_trans_len_3},
-	{0x28, "M   MMMM        ", "READ(10)",
-	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED|
+	{.ops = 0x23, .devkey = "V   VV V        ",
+	 .info_op_name = "READ FORMAT CAPACITY",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x24, .devkey = "    VVM         ",
+	 .info_op_name = "SET WINDOW",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 6, .info_len_len = 3,
+	 .get_cdb_info = get_cdb_info_len_3},
+	{.ops = 0x25, .devkey = "M   MM M        ",
+	 .info_op_name = "READ CAPACITY",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_IMPLICIT_HQ|SCST_REG_RESERVE_ALLOWED|
+		SCST_WRITE_EXCL_ALLOWED|SCST_EXCL_ACCESS_ALLOWED,
+	 .get_cdb_info = get_cdb_info_read_capacity},
+	{.ops = 0x25, .devkey = "      O         ",
+	 .info_op_name = "GET WINDOW",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 6, .info_len_len = 3,
+	 .get_cdb_info = get_cdb_info_len_3},
+	{.ops = 0x28, .devkey = "M   MMMM        ",
+	 .info_op_name = "READ(10)",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|
 #ifdef CONFIG_SCST_TEST_IO_IN_SIRQ
 			 SCST_TEST_IO_IN_SIRQ_ALLOWED|
 #endif
 			 SCST_WRITE_EXCL_ALLOWED,
-	 7, get_trans_len_2},
-	{0x28, "         O      ", "GET MESSAGE(10)",
-	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-	{0x29, "V   VV O        ", "READ GENERATION",
-	 SCST_DATA_READ, FLAG_NONE, 8, get_trans_len_1},
-	{0x2A, "O   MO M        ", "WRITE(10)",
-	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|
+	 .info_lba_off = 2, .info_lba_len = 4,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_lba_4_len_2},
+	{.ops = 0x28, .devkey = "         O      ",
+	 .info_op_name = "GET MESSAGE(10)",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x29, .devkey = "V   VV O        ",
+	 .info_op_name = "READ GENERATION",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 8, .info_len_len = 1,
+	 .get_cdb_info = get_cdb_info_len_1},
+	{.ops = 0x2A, .devkey = "O   MO M        ",
+	 .info_op_name = "WRITE(10)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|
 #ifdef CONFIG_SCST_TEST_IO_IN_SIRQ
 			  SCST_TEST_IO_IN_SIRQ_ALLOWED|
 #endif
 			  SCST_WRITE_MEDIUM,
-	 7, get_trans_len_2},
-	{0x2A, "         O      ", "SEND MESSAGE(10)",
-	 SCST_DATA_WRITE, FLAG_NONE, 7, get_trans_len_2},
-	{0x2A, "      O         ", "SEND(10)",
-	 SCST_DATA_WRITE, FLAG_NONE, 7, get_trans_len_2},
-	{0x2B, " O              ", "LOCATE",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT|
-			 SCST_WRITE_EXCL_ALLOWED,
-	 0, get_trans_len_none},
-	{0x2B, "        O       ", "POSITION TO ELEMENT",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-	{0x2B, "O   OO O        ", "SEEK(10)",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x2C, "V    O O        ", "ERASE(10)",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT|SCST_WRITE_MEDIUM,
-	 0, get_trans_len_none},
-	{0x2D, "V   O  O        ", "READ UPDATED BLOCK",
-	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED, 0, get_trans_len_single},
-	{0x2E, "O   OO O        ", "WRITE AND VERIFY(10)",
-	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
-	 7, get_trans_len_2},
-	{0x2F, "O   OO O        ", "VERIFY(10)",
-	 SCST_DATA_NONE, SCST_TRANSFER_LEN_TYPE_FIXED|
-			 SCST_VERIFY_BYTCHK_MISMATCH_ALLOWED|
-			 SCST_WRITE_EXCL_ALLOWED,
-	 7, get_trans_len_2},
-	{0x33, "O   OO O        ", "SET LIMITS(10)",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x34, " O              ", "READ POSITION",
-	 SCST_DATA_READ, SCST_SMALL_TIMEOUT|
-			 SCST_WRITE_EXCL_ALLOWED,
-	 7, get_trans_len_read_pos},
-	{0x34, "      O         ", "GET DATA BUFFER STATUS",
-	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-	{0x34, "O   OO O        ", "PRE-FETCH",
-	 SCST_DATA_NONE, SCST_WRITE_EXCL_ALLOWED,
-	 0, get_trans_len_none},
-	{0x35, "O   OO O        ", "SYNCHRONIZE CACHE",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x36, "O   OO O        ", "LOCK UNLOCK CACHE",
-	 SCST_DATA_NONE, SCST_WRITE_EXCL_ALLOWED,
-	 0, get_trans_len_none},
-	{0x37, "O      O        ", "READ DEFECT DATA(10)",
-	 SCST_DATA_READ, SCST_WRITE_EXCL_ALLOWED,
-	 8, get_trans_len_1},
-	{0x37, "        O       ", "INIT ELEMENT STATUS WRANGE",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-	{0x38, "    O  O        ", "MEDIUM SCAN",
-	 SCST_DATA_READ, FLAG_NONE, 8, get_trans_len_1},
-	{0x39, "OOOOOOOO        ", "COMPARE",
-	 SCST_DATA_WRITE, FLAG_NONE, 3, get_trans_len_3},
-	{0x3A, "OOOOOOOO        ", "COPY AND VERIFY",
-	 SCST_DATA_WRITE, FLAG_NONE, 3, get_trans_len_3},
-	{0x3B, "OOOOOOOOOOOOOOOO", "WRITE BUFFER",
-	 SCST_DATA_WRITE, SCST_SMALL_TIMEOUT, 6, get_trans_len_3},
-	{0x3C, "OOOOOOOOOOOOOOOO", "READ BUFFER",
-	 SCST_DATA_READ, SCST_SMALL_TIMEOUT, 6, get_trans_len_3},
-	{0x3D, "    O  O        ", "UPDATE BLOCK",
-	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED,
-	 0, get_trans_len_single},
-	{0x3E, "O   OO O        ", "READ LONG",
-	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-	{0x3F, "O   O  O        ", "WRITE LONG",
-	 SCST_DATA_WRITE, SCST_WRITE_MEDIUM, 7, get_trans_len_2},
-	{0x40, "OOOOOOOOOO      ", "CHANGE DEFINITION",
-	 SCST_DATA_WRITE, SCST_SMALL_TIMEOUT, 8, get_trans_len_1},
-	{0x41, "O    O          ", "WRITE SAME",
-	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
-	 0, get_trans_len_single},
-	{0x42, "     O          ", "READ SUB-CHANNEL",
-	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-	{0x42, "O               ", "UNMAP",
-	 SCST_DATA_WRITE, SCST_WRITE_MEDIUM, 7, get_trans_len_2},
-	{0x43, "     O          ", "READ TOC/PMA/ATIP",
-	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-	{0x44, " M              ", "REPORT DENSITY SUPPORT",
-	 SCST_DATA_READ, SCST_REG_RESERVE_ALLOWED|
-			 SCST_WRITE_EXCL_ALLOWED|
-			 SCST_EXCL_ACCESS_ALLOWED,
-	 7, get_trans_len_2},
-	{0x44, "     O          ", "READ HEADER",
-	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-	{0x45, "     O          ", "PLAY AUDIO(10)",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x46, "     O          ", "GET CONFIGURATION",
-	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-	{0x47, "     O          ", "PLAY AUDIO MSF",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x48, "     O          ", "PLAY AUDIO TRACK INDEX",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x49, "     O          ", "PLAY TRACK RELATIVE(10)",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x4A, "     O          ", "GET EVENT STATUS NOTIFICATION",
-	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-	{0x4B, "     O          ", "PAUSE/RESUME",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x4C, "OOOOOOOOOOOOOOOO", "LOG SELECT",
-	 SCST_DATA_WRITE, SCST_STRICTLY_SERIALIZED, 7, get_trans_len_2},
-	{0x4D, "OOOOOOOOOOOOOOOO", "LOG SENSE",
-	 SCST_DATA_READ, SCST_SMALL_TIMEOUT|
-			 SCST_REG_RESERVE_ALLOWED|
-			 SCST_WRITE_EXCL_ALLOWED|
-			 SCST_EXCL_ACCESS_ALLOWED,
-	 7, get_trans_len_2},
-	{0x4E, "     O          ", "STOP PLAY/SCAN",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x50, "                ", "XDWRITE",
-	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-	{0x51, "     O          ", "READ DISC INFORMATION",
-	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-	{0x51, "                ", "XPWRITE",
-	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-	{0x52, "     O          ", "READ TRACK INFORMATION",
-	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-	{0x53, "O               ", "XDWRITEREAD(10)",
-	 SCST_DATA_READ|SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|
-					 SCST_WRITE_MEDIUM,
-	 7, get_bidi_trans_len_2},
-	{0x53, "     O          ", "RESERVE TRACK",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x54, "     O          ", "SEND OPC INFORMATION",
-	 SCST_DATA_WRITE, FLAG_NONE, 7, get_trans_len_2},
-	{0x55, "OOOOOOOOOOOOOOOO", "MODE SELECT(10)",
-	 SCST_DATA_WRITE, SCST_STRICTLY_SERIALIZED, 7, get_trans_len_2},
-	{0x56, "OOOOOOOOOOOOOOOO", "RESERVE(10)",
-	 SCST_DATA_NONE, SCST_SMALL_TIMEOUT|SCST_LOCAL_CMD|SCST_SERIALIZED|
-			 SCST_WRITE_EXCL_ALLOWED|SCST_EXCL_ACCESS_ALLOWED,
-	 0, get_trans_len_none},
-	{0x57, "OOOOOOOOOOOOOOOO", "RELEASE(10)",
-	 SCST_DATA_NONE, SCST_SMALL_TIMEOUT|SCST_LOCAL_CMD|SCST_SERIALIZED|
-			 SCST_REG_RESERVE_ALLOWED|
-			 SCST_WRITE_EXCL_ALLOWED|SCST_EXCL_ACCESS_ALLOWED,
-	 0, get_trans_len_none},
-	{0x58, "     O          ", "REPAIR TRACK",
-	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-	{0x5A, "OOOOOOOOOOOOOOOO", "MODE SENSE(10)",
-	 SCST_DATA_READ, SCST_SMALL_TIMEOUT, 7, get_trans_len_2},
-	{0x5B, "     O          ", "CLOSE TRACK/SESSION",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x5C, "     O          ", "READ BUFFER CAPACITY",
-	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-	{0x5D, "     O          ", "SEND CUE SHEET",
-	 SCST_DATA_WRITE, FLAG_NONE, 6, get_trans_len_3},
-	{0x5E, "OOOOO OOOO      ", "PERSISTENT RESERVE IN",
-	 SCST_DATA_READ, SCST_SMALL_TIMEOUT|
-			 SCST_LOCAL_CMD|SCST_SERIALIZED|
-			 SCST_WRITE_EXCL_ALLOWED|
-			 SCST_EXCL_ACCESS_ALLOWED,
-	 5, get_trans_len_4},
-	{0x5F, "OOOOO OOOO      ", "PERSISTENT RESERVE OUT",
-	 SCST_DATA_WRITE, SCST_SMALL_TIMEOUT|
-			 SCST_LOCAL_CMD|SCST_SERIALIZED|
-			 SCST_WRITE_EXCL_ALLOWED|
-			 SCST_EXCL_ACCESS_ALLOWED,
-	 5, get_trans_len_4},
+	 .info_lba_off = 2, .info_lba_len = 4,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_lba_4_len_2},
+	{.ops = 0x2A, .devkey = "         O      ",
+	 .info_op_name = "SEND MESSAGE(10)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x2A, .devkey = "      O         ",
+	 .info_op_name = "SEND(10)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x2B, .devkey = " O              ",
+	 .info_op_name = "LOCATE",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT|SCST_WRITE_EXCL_ALLOWED,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x2B, .devkey = "        O       ",
+	 .info_op_name = "POSITION TO ELEMENT",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x2B, .devkey = "O   OO O        ",
+	 .info_op_name = "SEEK(10)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_lba_off = 2, .info_lba_len = 4,
+	 .get_cdb_info = get_cdb_info_lba_4_none},
+	{.ops = 0x2C, .devkey = "V    O O        ",
+	 .info_op_name = "ERASE(10)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT|SCST_WRITE_MEDIUM,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x2D, .devkey = "V   O  O        ",
+	 .info_op_name = "READ UPDATED BLOCK",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED,
+	 .get_cdb_info = get_cdb_info_single},
+	{.ops = 0x2E, .devkey = "O   OO O        ",
+	 .info_op_name = "WRITE AND VERIFY(10)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
+	 .info_lba_off = 2, .info_lba_len = 4,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_lba_4_len_2},
+	{.ops = 0x2F, .devkey = "O   OO O        ",
+	 .info_op_name = "VERIFY(10)",
+	 .info_data_direction = SCST_DATA_UNKNOWN,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_EXCL_ALLOWED,
+	 .info_lba_off = 2, .info_lba_len = 4,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_verify10},
+	{.ops = 0x33, .devkey = "    OO O        ",
+	 .info_op_name = "SET LIMITS(10)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x34, .devkey = " O              ",
+	 .info_op_name = "READ POSITION",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_SMALL_TIMEOUT|SCST_WRITE_EXCL_ALLOWED,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_read_pos},
+	{.ops = 0x34, .devkey = "      O         ",
+	 .info_op_name = "GET DATA BUFFER STATUS",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x34, .devkey = "O   OO O        ",
+	 .info_op_name = "PRE-FETCH",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_WRITE_EXCL_ALLOWED,
+	 .info_lba_off = 2, .info_lba_len = 4,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_lba_4_none},
+	{.ops = 0x35, .devkey = "O   OO O        ",
+	 .info_op_name = "SYNCHRONIZE CACHE(10)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_lba_off = 2, .info_lba_len = 4,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_lba_4_none},
+	{.ops = 0x36, .devkey = "O   OO O        ",
+	 .info_op_name = "LOCK UNLOCK CACHE",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_WRITE_EXCL_ALLOWED,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x37, .devkey = "O      O        ",
+	 .info_op_name = "READ DEFECT DATA(10)",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_WRITE_EXCL_ALLOWED,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x37, .devkey = "        O       ",
+	 .info_op_name = "INIT ELEMENT STATUS WRANGE",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x38, .devkey = "    O  O        ",
+	 .info_op_name = "MEDIUM SCAN",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 8, .info_len_len = 1,
+	 .get_cdb_info = get_cdb_info_len_1},
+	{.ops = 0x3B, .devkey = "OOOOOOOOOOOOOOOO",
+	 .info_op_name = "WRITE BUFFER",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_SMALL_TIMEOUT,
+	 .info_len_off = 5, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x3C, .devkey = "OOOOOOOOOOOOOOOO",
+	 .info_op_name = "READ BUFFER",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_SMALL_TIMEOUT |
+		 SCST_WRITE_EXCL_ALLOWED,
+	 .info_len_off = 5, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x3D, .devkey = "    O  O        ",
+	 .info_op_name = "UPDATE BLOCK",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED,
+	 .get_cdb_info = get_cdb_info_single},
+	{.ops = 0x3E, .devkey = "O   OO O        ",
+	 .info_op_name = "READ LONG",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_lba_off = 2, .info_lba_len = 4,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_lba_4_len_2},
+	{.ops = 0x3F, .devkey = "O   O  O        ",
+	 .info_op_name = "WRITE LONG",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_WRITE_MEDIUM,
+	 .info_lba_off = 2, .info_lba_len = 4,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_lba_4_len_2},
+	{.ops = 0x40, .devkey = "OOOOOOOOOO      ",
+	 .info_op_name = "CHANGE DEFINITION",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_SMALL_TIMEOUT,
+	 .info_len_off = 8, .info_len_len = 1,
+	 .get_cdb_info = get_cdb_info_len_1},
+	{.ops = 0x41, .devkey = "O               ",
+	 .info_op_name = "WRITE SAME(10)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
+	 .info_lba_off = 2, .info_lba_len = 4,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_write_same10},
+	{.ops = 0x42, .devkey = "     O          ",
+	 .info_op_name = "READ SUB-CHANNEL",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x42, .devkey = "O               ",
+	 .info_op_name = "UNMAP",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_WRITE_MEDIUM|SCST_DESCRIPTORS_BASED,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x43, .devkey = "     O          ",
+	 .info_op_name = "READ TOC/PMA/ATIP",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x44, .devkey = " M              ",
+	 .info_op_name = "REPORT DENSITY SUPPORT",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_REG_RESERVE_ALLOWED|SCST_WRITE_EXCL_ALLOWED|
+			SCST_EXCL_ACCESS_ALLOWED,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x44, .devkey = "     O          ",
+	 .info_op_name = "READ HEADER",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x45, .devkey = "     O          ",
+	 .info_op_name = "PLAY AUDIO(10)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x46, .devkey = "     O          ",
+	 .info_op_name = "GET CONFIGURATION",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x47, .devkey = "     O          ",
+	 .info_op_name = "PLAY AUDIO MSF",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x48, .devkey = "     O          ",
+	 .info_op_name = "PLAY AUDIO TRACK INDEX",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x49, .devkey = "     O          ",
+	 .info_op_name = "PLAY TRACK RELATIVE(10)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x4A, .devkey = "     O          ",
+	 .info_op_name = "GET EVENT STATUS NOTIFICATION",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x4B, .devkey = "     O          ",
+	 .info_op_name = "PAUSE/RESUME",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x4C, .devkey = "OOOOOOOOOOOOOOOO",
+	 .info_op_name = "LOG SELECT",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_STRICTLY_SERIALIZED,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x4D, .devkey = "OOOOOOOOOOOOOOOO",
+	 .info_op_name = "LOG SENSE",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_SMALL_TIMEOUT|SCST_REG_RESERVE_ALLOWED|
+			SCST_WRITE_EXCL_ALLOWED|SCST_EXCL_ACCESS_ALLOWED,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x4E, .devkey = "     O          ",
+	 .info_op_name = "STOP PLAY/SCAN",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x50, .devkey = "O               ",
+	 .info_op_name = "XDWRITE(10)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_WRITE_MEDIUM,
+	 .info_lba_off = 2, .info_lba_len = 4,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_lba_4_len_2},
+	{.ops = 0x51, .devkey = "     O          ",
+	 .info_op_name = "READ DISC INFORMATION",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x51, .devkey = "O               ",
+	 .info_op_name = "XPWRITE",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_WRITE_MEDIUM,
+	 .info_lba_off = 2, .info_lba_len = 4,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_lba_4_len_2},
+	{.ops = 0x52, .devkey = "     O          ",
+	 .info_op_name = "READ TRACK INFORMATION",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x53, .devkey = "O               ",
+	 .info_op_name = "XDWRITEREAD(10)",
+	 .info_data_direction = SCST_DATA_BIDI,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
+	 .info_lba_off = 2, .info_lba_len = 4,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_bidi_lba_4_len_2},
+	{.ops = 0x53, .devkey = "     O          ",
+	 .info_op_name = "RESERVE TRACK",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x54, .devkey = "     O          ",
+	 .info_op_name = "SEND OPC INFORMATION",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x55, .devkey = "OOOOOOOOOOOOOOOO",
+	 .info_op_name = "MODE SELECT(10)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_STRICTLY_SERIALIZED,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x56, .devkey = "OOOOOOOOOOOOOOOO",
+	 .info_op_name = "RESERVE(10)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_SMALL_TIMEOUT|SCST_LOCAL_CMD|SCST_SERIALIZED|
+			SCST_WRITE_EXCL_ALLOWED|SCST_EXCL_ACCESS_ALLOWED,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x57, .devkey = "OOOOOOOOOOOOOOOO",
+	 .info_op_name = "RELEASE(10)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_SMALL_TIMEOUT|SCST_LOCAL_CMD|SCST_SERIALIZED|
+			SCST_REG_RESERVE_ALLOWED|SCST_WRITE_EXCL_ALLOWED|
+			SCST_EXCL_ACCESS_ALLOWED,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x58, .devkey = "     O          ",
+	 .info_op_name = "REPAIR TRACK",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_WRITE_MEDIUM,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x5A, .devkey = "OOOOOOOOOOOOOOOO",
+	 .info_op_name = "MODE SENSE(10)",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_SMALL_TIMEOUT |
+		 SCST_WRITE_EXCL_ALLOWED,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x5B, .devkey = "     O          ",
+	 .info_op_name = "CLOSE TRACK/SESSION",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x5C, .devkey = "     O          ",
+	 .info_op_name = "READ BUFFER CAPACITY",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 7, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0x5D, .devkey = "     O          ",
+	 .info_op_name = "SEND CUE SHEET",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 6, .info_len_len = 3,
+	 .get_cdb_info = get_cdb_info_len_3},
+	{.ops = 0x5E, .devkey = "OOOOO OOOO      ",
+	 .info_op_name = "PERSISTENT RESERVE IN",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_SMALL_TIMEOUT|SCST_LOCAL_CMD|SCST_SERIALIZED|
+			SCST_WRITE_EXCL_ALLOWED|SCST_EXCL_ACCESS_ALLOWED,
+	 .info_len_off = 5, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0x5F, .devkey = "OOOOO OOOO      ",
+	 .info_op_name = "PERSISTENT RESERVE OUT",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_SMALL_TIMEOUT|SCST_LOCAL_CMD|SCST_SERIALIZED|
+			SCST_WRITE_EXCL_ALLOWED|SCST_EXCL_ACCESS_ALLOWED,
+	 .info_len_off = 5, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
 
 	/* 16-bytes length CDB */
-	{0x80, "O   OO O        ", "XDWRITE EXTENDED",
-	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-	{0x80, " M              ", "WRITE FILEMARKS",
-	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-	{0x81, "O   OO O        ", "REBUILD",
-	 SCST_DATA_WRITE, SCST_WRITE_MEDIUM, 10, get_trans_len_4},
-	{0x82, "O   OO O        ", "REGENERATE",
-	 SCST_DATA_WRITE, SCST_WRITE_MEDIUM, 10, get_trans_len_4},
-	{0x83, "OOOOOOOOOOOOOOOO", "EXTENDED COPY",
-	 SCST_DATA_WRITE, SCST_WRITE_MEDIUM, 10, get_trans_len_4},
-	{0x84, "OOOOOOOOOOOOOOOO", "RECEIVE COPY RESULT",
-	 SCST_DATA_WRITE, FLAG_NONE, 10, get_trans_len_4},
-	{0x86, "OOOOOOOOOO      ", "ACCESS CONTROL IN",
-	 SCST_DATA_NONE, SCST_REG_RESERVE_ALLOWED|
-			 SCST_WRITE_EXCL_ALLOWED|
-			 SCST_EXCL_ACCESS_ALLOWED,
-	 0, get_trans_len_none},
-	{0x87, "OOOOOOOOOO      ", "ACCESS CONTROL OUT",
-	 SCST_DATA_NONE, SCST_REG_RESERVE_ALLOWED|
-			 SCST_WRITE_EXCL_ALLOWED|
-			 SCST_EXCL_ACCESS_ALLOWED,
-	 0, get_trans_len_none},
-	{0x88, "M   MMMM        ", "READ(16)",
-	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED|
+	{.ops = 0x80, .devkey = " O              ",
+	 .info_op_name = "WRITE FILEMARKS(16)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_WRITE_MEDIUM,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x81, .devkey = "O   OO O        ",
+	 .info_op_name = "REBUILD",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_WRITE_MEDIUM,
+	 .info_len_off = 10, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0x82, .devkey = "O   OO O        ",
+	 .info_op_name = "REGENERATE",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_WRITE_MEDIUM,
+	 .info_len_off = 10, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0x83, .devkey = "OOOOOOOOOOOOOOOO",
+	 .info_op_name = "EXTENDED COPY",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_WRITE_MEDIUM,
+	 .info_len_off = 10, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0x84, .devkey = "OOOOOOOOOOOOOOOO",
+	 .info_op_name = "RECEIVE COPY RESULT",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_WRITE_EXCL_ALLOWED|SCST_EXCL_ACCESS_ALLOWED,
+	 .info_len_off = 10, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0x85, .devkey = "O    O        O ",
+	 .info_op_name = "ATA PASS-THROUGH(16)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_lba_off = 7, .info_lba_len = 6,
+	 .get_cdb_info = get_cdb_info_apt},
+	{.ops = 0x86, .devkey = "OOOOOOOOOO      ",
+	 .info_op_name = "ACCESS CONTROL IN",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_REG_RESERVE_ALLOWED|SCST_WRITE_EXCL_ALLOWED|
+				SCST_EXCL_ACCESS_ALLOWED,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x87, .devkey = "OOOOOOOOOO      ",
+	 .info_op_name = "ACCESS CONTROL OUT",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_REG_RESERVE_ALLOWED|SCST_WRITE_EXCL_ALLOWED|
+				SCST_EXCL_ACCESS_ALLOWED,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x88, .devkey = "M   MMMM        ",
+	 .info_op_name = "READ(16)",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|
 #ifdef CONFIG_SCST_TEST_IO_IN_SIRQ
 			 SCST_TEST_IO_IN_SIRQ_ALLOWED|
 #endif
 			 SCST_WRITE_EXCL_ALLOWED,
-	 10, get_trans_len_4},
-	{0x8A, "O   OO O        ", "WRITE(16)",
-	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|
+	 .info_lba_off = 2, .info_lba_len = 8,
+	 .info_len_off = 10, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_lba_8_len_4},
+	{.ops = 0x8A, .devkey = "O   OO O        ",
+	 .info_op_name = "WRITE(16)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|
 #ifdef CONFIG_SCST_TEST_IO_IN_SIRQ
 			  SCST_TEST_IO_IN_SIRQ_ALLOWED|
 #endif
 			  SCST_WRITE_MEDIUM,
-	 10, get_trans_len_4},
-	{0x8C, "OOOOOOOOOO      ", "READ ATTRIBUTE",
-	 SCST_DATA_READ, FLAG_NONE, 10, get_trans_len_4},
-	{0x8D, "OOOOOOOOOO      ", "WRITE ATTRIBUTE",
-	 SCST_DATA_WRITE, SCST_WRITE_MEDIUM, 10, get_trans_len_4},
-	{0x8E, "O   OO O        ", "WRITE AND VERIFY(16)",
-	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
-	 10, get_trans_len_4},
-	{0x8F, "O   OO O        ", "VERIFY(16)",
-	 SCST_DATA_NONE, SCST_TRANSFER_LEN_TYPE_FIXED|
-			 SCST_VERIFY_BYTCHK_MISMATCH_ALLOWED|
-			 SCST_WRITE_EXCL_ALLOWED,
-	 10, get_trans_len_4},
-	{0x90, "O   OO O        ", "PRE-FETCH(16)",
-	 SCST_DATA_NONE, SCST_WRITE_EXCL_ALLOWED,
-	 0, get_trans_len_none},
-	{0x91, "O   OO O        ", "SYNCHRONIZE CACHE(16)",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x91, " M              ", "SPACE(16)",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT|
-			 SCST_WRITE_EXCL_ALLOWED,
-	 0, get_trans_len_none},
-	{0x92, "O   OO O        ", "LOCK UNLOCK CACHE(16)",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0x92, " O              ", "LOCATE(16)",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT|
-			 SCST_WRITE_EXCL_ALLOWED,
-	 0, get_trans_len_none},
-	{0x93, "O    O          ", "WRITE SAME(16)",
-	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
-	 10, get_trans_len_4},
-	{0x93, " M              ", "ERASE(16)",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT|SCST_WRITE_MEDIUM,
-	 0, get_trans_len_none},
-	{0x9E, "O               ", "SERVICE ACTION IN",
-	 SCST_DATA_READ, FLAG_NONE, 0, get_trans_len_serv_act_in},
+	 .info_lba_off = 2, .info_lba_len = 8,
+	 .info_len_off = 10, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_lba_8_len_4},
+	{.ops = 0x8C, .devkey = " OOOOOOOOO      ",
+	 .info_op_name = "READ ATTRIBUTE",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_WRITE_EXCL_ALLOWED,
+	 .info_len_off = 10, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0x8D, .devkey = " OOOOOOOOO      ",
+	 .info_op_name = "WRITE ATTRIBUTE",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_WRITE_MEDIUM,
+	 .info_len_off = 10, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0x8E, .devkey = "O   OO O        ",
+	 .info_op_name = "WRITE AND VERIFY(16)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
+	 .info_lba_off = 2, .info_lba_len = 8,
+	 .info_len_off = 10, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_lba_8_len_4},
+	{.ops = 0x8F, .devkey = "O   OO O        ",
+	 .info_op_name = "VERIFY(16)",
+	 .info_data_direction = SCST_DATA_UNKNOWN,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_EXCL_ALLOWED,
+	 .info_lba_off = 2, .info_lba_len = 8,
+	 .info_len_off = 10, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_verify16},
+	{.ops = 0x90, .devkey = "O   OO O        ",
+	 .info_op_name = "PRE-FETCH(16)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_WRITE_EXCL_ALLOWED,
+	 .info_lba_off = 2, .info_lba_len = 8,
+	 .get_cdb_info = get_cdb_info_lba_8_none},
+	{.ops = 0x91, .devkey = "O   OO O        ",
+	 .info_op_name = "SYNCHRONIZE CACHE(16)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_lba_off = 2, .info_lba_len = 8,
+	 .info_len_off = 10, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_lba_8_none},
+	{.ops = 0x91, .devkey = " M              ",
+	 .info_op_name = "SPACE(16)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT|SCST_WRITE_EXCL_ALLOWED,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x92, .devkey = "O   OO O        ",
+	 .info_op_name = "LOCK UNLOCK CACHE(16)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x92, .devkey = " O              ",
+	 .info_op_name = "LOCATE(16)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT|SCST_WRITE_EXCL_ALLOWED,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x93, .devkey = "O               ",
+	 .info_op_name = "WRITE SAME(16)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
+	 .info_lba_off = 2, .info_lba_len = 8,
+	 .info_len_off = 10, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_write_same16},
+	{.ops = 0x93, .devkey = " M              ",
+	 .info_op_name = "ERASE(16)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT|SCST_WRITE_MEDIUM,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0x9E, .devkey = "O               ",
+	 .info_op_name = "SERVICE ACTION IN",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_serv_act_in},
 
 	/* 12-bytes length CDB */
-	{0xA0, "VVVVVVVVVV  M   ", "REPORT LUNS",
-	 SCST_DATA_READ, SCST_SMALL_TIMEOUT|SCST_IMPLICIT_HQ|SCST_SKIP_UA|
+	{.ops = 0xA0, .devkey = "VVVVVVVVVV  M   ",
+	 .info_op_name = "REPORT LUNS",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_SMALL_TIMEOUT|SCST_IMPLICIT_HQ|SCST_SKIP_UA|
 			 SCST_FULLY_LOCAL_CMD|SCST_LOCAL_CMD|
 			 SCST_REG_RESERVE_ALLOWED|
 			 SCST_WRITE_EXCL_ALLOWED|SCST_EXCL_ACCESS_ALLOWED,
-	 6, get_trans_len_4},
-	{0xA1, "     O          ", "BLANK",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-	{0xA3, "     O          ", "SEND KEY",
-	 SCST_DATA_WRITE, FLAG_NONE, 8, get_trans_len_2},
-	{0xA3, "OOOOO OOOO      ", "REPORT DEVICE IDENTIDIER",
-	 SCST_DATA_READ, SCST_REG_RESERVE_ALLOWED|
-			 SCST_WRITE_EXCL_ALLOWED|SCST_EXCL_ACCESS_ALLOWED,
-	 6, get_trans_len_4},
-	{0xA3, "            M   ", "MAINTENANCE(IN)",
-	 SCST_DATA_READ, FLAG_NONE, 6, get_trans_len_4},
-	{0xA4, "     O          ", "REPORT KEY",
-	 SCST_DATA_READ, FLAG_NONE, 8, get_trans_len_2},
-	{0xA4, "            O   ", "MAINTENANCE(OUT)",
-	 SCST_DATA_WRITE, FLAG_NONE, 6, get_trans_len_4},
-	{0xA5, "        M       ", "MOVE MEDIUM",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-	{0xA5, "     O          ", "PLAY AUDIO(12)",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0xA6, "     O  O       ", "EXCHANGE/LOAD/UNLOAD MEDIUM",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-	{0xA7, "     O          ", "SET READ AHEAD",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0xA8, "         O      ", "GET MESSAGE(12)",
-	 SCST_DATA_READ, FLAG_NONE, 6, get_trans_len_4},
-	{0xA8, "O   OO O        ", "READ(12)",
-	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED|
+	 .info_len_off = 6, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0xA1, .devkey = "O    O        O ",
+	 .info_op_name = "ATA PASS-THROUGH(12)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_lba_off = 5, .info_lba_len = 3,
+	 .get_cdb_info = get_cdb_info_apt},
+	{.ops = 0xA1, .devkey = "     O          ",
+	 .info_op_name = "BLANK",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0xA2, .devkey = "OO   O          ",
+	 .info_op_name = "SECURITY PROTOCOL IN",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_REG_RESERVE_ALLOWED|SCST_WRITE_EXCL_ALLOWED,
+	 .info_len_off = 6, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0xA3, .devkey = "     O          ",
+	 .info_op_name = "SEND KEY",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 8, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0xA3, .devkey = "OOO O OOOO  MO O",
+	 .info_op_name = "MAINTENANCE(IN)",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 6, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_min},
+	{.ops = 0xA4, .devkey = "     O          ",
+	 .info_op_name = "REPORT KEY",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 8, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0xA4, .devkey = "            O   ",
+	 .info_op_name = "MAINTENANCE(OUT)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 6, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0xA5, .devkey = "        M       ",
+	 .info_op_name = "MOVE MEDIUM",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0xA5, .devkey = "     O          ",
+	 .info_op_name = "PLAY AUDIO(12)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0xA6, .devkey = "     O  O       ",
+	 .info_op_name = "EXCHANGE/LOAD/UNLOAD MEDIUM",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0xA7, .devkey = "     O          ",
+	 .info_op_name = "SET READ AHEAD",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0xA8, .devkey = "         O      ",
+	 .info_op_name = "GET MESSAGE(12)",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 6, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0xA8, .devkey = "O   OO O        ",
+	 .info_op_name = "READ(12)",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|
 #ifdef CONFIG_SCST_TEST_IO_IN_SIRQ
 			 SCST_TEST_IO_IN_SIRQ_ALLOWED|
 #endif
 			 SCST_WRITE_EXCL_ALLOWED,
-	 6, get_trans_len_4},
-	{0xA9, "     O          ", "PLAY TRACK RELATIVE(12)",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0xAA, "O   OO O        ", "WRITE(12)",
-	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|
+	 .info_lba_off = 2, .info_lba_len = 4,
+	 .info_len_off = 6, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_lba_4_len_4},
+	{.ops = 0xA9, .devkey = "     O          ",
+	 .info_op_name = "PLAY TRACK RELATIVE(12)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0xAA, .devkey = "O   OO O        ",
+	 .info_op_name = "WRITE(12)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|
 #ifdef CONFIG_SCST_TEST_IO_IN_SIRQ
 			  SCST_TEST_IO_IN_SIRQ_ALLOWED|
 #endif
 			  SCST_WRITE_MEDIUM,
-	 6, get_trans_len_4},
-	{0xAA, "         O      ", "SEND MESSAGE(12)",
-	 SCST_DATA_WRITE, FLAG_NONE, 6, get_trans_len_4},
-	{0xAC, "       O        ", "ERASE(12)",
-	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-	{0xAC, "     M          ", "GET PERFORMANCE",
-	 SCST_DATA_READ, SCST_UNKNOWN_LENGTH, 0, get_trans_len_none},
-	{0xAD, "     O          ", "READ DVD STRUCTURE",
-	 SCST_DATA_READ, FLAG_NONE, 8, get_trans_len_2},
-	{0xAE, "O   OO O        ", "WRITE AND VERIFY(12)",
-	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
-	 6, get_trans_len_4},
-	{0xAF, "O   OO O        ", "VERIFY(12)",
-	 SCST_DATA_NONE, SCST_TRANSFER_LEN_TYPE_FIXED|
-			 SCST_VERIFY_BYTCHK_MISMATCH_ALLOWED|
-			 SCST_WRITE_EXCL_ALLOWED,
-	 6, get_trans_len_4},
-#if 0 /* No need to support at all */
-	{0xB0, "    OO O        ", "SEARCH DATA HIGH(12)",
-	 SCST_DATA_WRITE, FLAG_NONE, 9, get_trans_len_1},
-	{0xB1, "    OO O        ", "SEARCH DATA EQUAL(12)",
-	 SCST_DATA_WRITE, FLAG_NONE, 9, get_trans_len_1},
-	{0xB2, "    OO O        ", "SEARCH DATA LOW(12)",
-	 SCST_DATA_WRITE, FLAG_NONE, 9, get_trans_len_1},
-#endif
-	{0xB3, "    OO O        ", "SET LIMITS(12)",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0xB5, "        O       ", "REQUEST VOLUME ELEMENT ADDRESS",
-	 SCST_DATA_READ, FLAG_NONE, 9, get_trans_len_1},
-	{0xB6, "        O       ", "SEND VOLUME TAG",
-	 SCST_DATA_WRITE, FLAG_NONE, 9, get_trans_len_1},
-	{0xB6, "     M         ", "SET STREAMING",
-	 SCST_DATA_WRITE, FLAG_NONE, 9, get_trans_len_2},
-	{0xB7, "       O        ", "READ DEFECT DATA(12)",
-	 SCST_DATA_READ, SCST_WRITE_EXCL_ALLOWED,
-	 9, get_trans_len_1},
-	{0xB8, "        O       ", "READ ELEMENT STATUS",
-	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_3_read_elem_stat},
-	{0xB9, "     O          ", "READ CD MSF",
-	 SCST_DATA_READ, SCST_UNKNOWN_LENGTH, 0, get_trans_len_none},
-	{0xBA, "     O          ", "SCAN",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-	{0xBA, "            O   ", "REDUNDANCY GROUP(IN)",
-	 SCST_DATA_READ, FLAG_NONE, 6, get_trans_len_4},
-	{0xBB, "     O          ", "SET SPEED",
-	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-	{0xBB, "            O   ", "REDUNDANCY GROUP(OUT)",
-	 SCST_DATA_WRITE, FLAG_NONE, 6, get_trans_len_4},
-	{0xBC, "            O   ", "SPARE(IN)",
-	 SCST_DATA_READ, FLAG_NONE, 6, get_trans_len_4},
-	{0xBD, "     O          ", "MECHANISM STATUS",
-	 SCST_DATA_READ, FLAG_NONE, 8, get_trans_len_2},
-	{0xBD, "            O   ", "SPARE(OUT)",
-	 SCST_DATA_WRITE, FLAG_NONE, 6, get_trans_len_4},
-	{0xBE, "     O          ", "READ CD",
-	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED, 6, get_trans_len_3},
-	{0xBE, "            O   ", "VOLUME SET(IN)",
-	 SCST_DATA_READ, FLAG_NONE, 6, get_trans_len_4},
-	{0xBF, "     O          ", "SEND DVD STRUCTUE",
-	 SCST_DATA_WRITE, FLAG_NONE, 8, get_trans_len_2},
-	{0xBF, "            O   ", "VOLUME SET(OUT)",
-	 SCST_DATA_WRITE, FLAG_NONE, 6, get_trans_len_4},
-	{0xE7, "        V       ", "INIT ELEMENT STATUS WRANGE",
-	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_cdb_len_10}
+	 .info_lba_off = 2, .info_lba_len = 4,
+	 .info_len_off = 6, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_lba_4_len_4},
+	{.ops = 0xAA, .devkey = "         O      ",
+	 .info_op_name = "SEND MESSAGE(12)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 6, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0xAC, .devkey = "       O        ",
+	 .info_op_name = "ERASE(12)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_WRITE_MEDIUM,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0xAC, .devkey = "     M          ",
+	 .info_op_name = "GET PERFORMANCE",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_UNKNOWN_LENGTH,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0xAD, .devkey = "     O          ",
+	 .info_op_name = "READ DVD STRUCTURE",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 8, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0xAE, .devkey = "O   OO O        ",
+	 .info_op_name = "WRITE AND VERIFY(12)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
+	 .info_lba_off = 2, .info_lba_len = 4,
+	 .info_len_off = 6, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_lba_4_len_4},
+	{.ops = 0xAF, .devkey = "O   OO O        ",
+	 .info_op_name = "VERIFY(12)",
+	 .info_data_direction = SCST_DATA_UNKNOWN,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_EXCL_ALLOWED,
+	 .info_lba_off = 2, .info_lba_len = 4,
+	 .info_len_off = 6, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_verify12},
+	{.ops = 0xB3, .devkey = "    OO O        ",
+	 .info_op_name = "SET LIMITS(12)",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0xB5, .devkey = "OO   O          ",
+	 .info_op_name = "SECURITY PROTOCOL OUT",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 6, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0xB5, .devkey = "        O       ",
+	 .info_op_name = "REQUEST VOLUME ELEMENT ADDRESS",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 7, .info_len_len = 3,
+	 .get_cdb_info = get_cdb_info_len_3},
+	{.ops = 0xB6, .devkey = "        O       ",
+	 .info_op_name = "SEND VOLUME TAG",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 9, .info_len_len = 1,
+	 .get_cdb_info = get_cdb_info_len_1},
+	{.ops = 0xB6, .devkey = "     M         ",
+	 .info_op_name = "SET STREAMING",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 9, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0xB7, .devkey = "O      O        ",
+	 .info_op_name = "READ DEFECT DATA(12)",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_WRITE_EXCL_ALLOWED,
+	 .info_len_off = 9, .info_len_len = 1,
+	 .get_cdb_info = get_cdb_info_len_1},
+	{.ops = 0xB8, .devkey = "        O       ",
+	 .info_op_name = "READ ELEMENT STATUS",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 7, .info_len_len = 3,
+	 .get_cdb_info = get_cdb_info_len_3_read_elem_stat},
+	{.ops = 0xB9, .devkey = "     O          ",
+	 .info_op_name = "READ CD MSF",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_UNKNOWN_LENGTH,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0xBA, .devkey = "     O          ",
+	 .info_op_name = "SCAN",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0xBA, .devkey = "            O   ",
+	 .info_op_name = "REDUNDANCY GROUP(IN)",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 6, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0xBB, .devkey = "     O          ",
+	 .info_op_name = "SET SPEED",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = FLAG_NONE,
+	 .get_cdb_info = get_cdb_info_none},
+	{.ops = 0xBB, .devkey = "            O   ",
+	 .info_op_name = "REDUNDANCY GROUP(OUT)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 6, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0xBC, .devkey = "            O   ",
+	 .info_op_name = "SPARE(IN)",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 6, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0xBD, .devkey = "     O          ",
+	 .info_op_name = "MECHANISM STATUS",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 8, .info_len_len = 2,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0xBD, .devkey = "            O   ",
+	 .info_op_name = "SPARE(OUT)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 6, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0xBE, .devkey = "     O          ",
+	 .info_op_name = "READ CD",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = SCST_TRANSFER_LEN_TYPE_FIXED,
+	 .info_len_off = 6, .info_len_len = 3,
+	 .get_cdb_info = get_cdb_info_len_3},
+	{.ops = 0xBE, .devkey = "            O   ",
+	 .info_op_name = "VOLUME SET(IN)",
+	 .info_data_direction = SCST_DATA_READ,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 6, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0xBF, .devkey = "     O          ",
+	 .info_op_name = "SEND DVD STRUCTUE",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 8, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_2},
+	{.ops = 0xBF, .devkey = "            O   ",
+	 .info_op_name = "VOLUME SET(OUT)",
+	 .info_data_direction = SCST_DATA_WRITE,
+	 .info_op_flags = FLAG_NONE,
+	 .info_len_off = 6, .info_len_len = 4,
+	 .get_cdb_info = get_cdb_info_len_4},
+	{.ops = 0xE7, .devkey = "        V       ",
+	 .info_op_name = "INIT ELEMENT STATUS WRANGE",
+	 .info_data_direction = SCST_DATA_NONE,
+	 .info_op_flags = SCST_LONG_TIMEOUT,
+	 .get_cdb_info = get_cdb_info_len_10}
 };
 
 #define SCST_CDB_TBL_SIZE	((int)ARRAY_SIZE(scst_scsi_op_table))
@@ -845,7 +1470,7 @@ static int scst_set_lun_not_supported_request_sense(struct scst_cmd *cmd,
 		goto out;
 	}
 
-	if ((cmd->sg != NULL) && SCST_SENSE_VALID(sg_virt(cmd->sg))) {
+	if ((cmd->sg != NULL) && scst_sense_valid(sg_virt(cmd->sg))) {
 		TRACE_MGMT_DBG("cmd %p already has sense set", cmd);
 		res = -EEXIST;
 		goto out;
@@ -853,13 +1478,13 @@ static int scst_set_lun_not_supported_request_sense(struct scst_cmd *cmd,
 
 	if (cmd->sg == NULL) {
 		/*
-		 * If target driver preparing data buffer using alloc_data_buf()
+		 * If target driver preparing data buffer using tgt_alloc_data_buf()
 		 * callback, it is responsible to copy the sense to its buffer
 		 * in xmit_response().
 		 */
-		if (cmd->tgt_data_buf_alloced && (cmd->tgt_sg != NULL)) {
-			cmd->sg = cmd->tgt_sg;
-			cmd->sg_cnt = cmd->tgt_sg_cnt;
+		if (cmd->tgt_i_data_buf_alloced && (cmd->tgt_i_sg != NULL)) {
+			cmd->sg = cmd->tgt_i_sg;
+			cmd->sg_cnt = cmd->tgt_i_sg_cnt;
 			TRACE_MEM("Tgt sg used for sense for cmd %p", cmd);
 			goto go;
 		}
@@ -867,7 +1492,7 @@ static int scst_set_lun_not_supported_request_sense(struct scst_cmd *cmd,
 		if (cmd->bufflen == 0)
 			cmd->bufflen = cmd->cdb[4];
 
-		cmd->sg = scst_alloc(cmd->bufflen, GFP_ATOMIC, &cmd->sg_cnt);
+		cmd->sg = scst_alloc_sg(cmd->bufflen, GFP_ATOMIC, &cmd->sg_cnt);
 		if (cmd->sg == NULL) {
 			PRINT_ERROR("Unable to alloc sg for REQUEST SENSE"
 				"(sense %x/%x/%x)", key, asc, ascq);
@@ -919,23 +1544,23 @@ static int scst_set_lun_not_supported_inquiry(struct scst_cmd *cmd)
 	}
 
 	if (cmd->sg == NULL) {
+		if (cmd->bufflen == 0)
+			cmd->bufflen = min_t(int, 36, get_unaligned_be16(&cmd->cdb[3]));
+
 		/*
-		 * If target driver preparing data buffer using alloc_data_buf()
+		 * If target driver preparing data buffer using tgt_alloc_data_buf()
 		 * callback, it is responsible to copy the sense to its buffer
 		 * in xmit_response().
 		 */
-		if (cmd->tgt_data_buf_alloced && (cmd->tgt_sg != NULL)) {
-			cmd->sg = cmd->tgt_sg;
-			cmd->sg_cnt = cmd->tgt_sg_cnt;
+		if (cmd->tgt_i_data_buf_alloced && (cmd->tgt_i_sg != NULL)) {
+			cmd->sg = cmd->tgt_i_sg;
+			cmd->sg_cnt = cmd->tgt_i_sg_cnt;
 			TRACE_MEM("Tgt used for INQUIRY for not supported "
 				"LUN for cmd %p", cmd);
 			goto go;
 		}
 
-		if (cmd->bufflen == 0)
-			cmd->bufflen = min_t(int, 36, (cmd->cdb[3] << 8) | cmd->cdb[4]);
-
-		cmd->sg = scst_alloc(cmd->bufflen, GFP_ATOMIC, &cmd->sg_cnt);
+		cmd->sg = scst_alloc_sg(cmd->bufflen, GFP_ATOMIC, &cmd->sg_cnt);
 		if (cmd->sg == NULL) {
 			PRINT_ERROR("%s", "Unable to alloc sg for INQUIRY "
 				"for not supported LUN");
@@ -1020,13 +1645,95 @@ do_sense:
 
 	cmd->sense_valid_len = scst_set_sense(cmd->sense, cmd->sense_buflen,
 		scst_get_cmd_dev_d_sense(cmd), key, asc, ascq);
-	TRACE_BUFFER("Sense set", cmd->sense, cmd->sense_valid_len);
 
 out:
 	TRACE_EXIT_RES(res);
 	return res;
 }
 EXPORT_SYMBOL(scst_set_cmd_error);
+
+static void scst_fill_field_pointer_sense(uint8_t *fp_sense, int field_offs,
+	int bit_offs, bool cdb)
+{
+	/* Sense key specific */
+	fp_sense[0] = 0x80; /* SKSV */
+	if (cdb)
+		fp_sense[0] |= 0x40; /* C/D */
+	if ((bit_offs & SCST_INVAL_FIELD_BIT_OFFS_VALID) != 0)
+		fp_sense[0] |= (8 | (bit_offs & 7));
+	put_unaligned_be16(field_offs, &fp_sense[1]);
+	return;
+}
+
+static int scst_set_invalid_field_in(struct scst_cmd *cmd, int field_offs,
+	int bit_offs, bool cdb)
+{
+	int res, asc = cdb ? 0x24 : 0x26; /* inval field in CDB or param list */
+	int d_sense = scst_get_cmd_dev_d_sense(cmd);
+
+	TRACE_ENTRY();
+
+	TRACE_DBG("cmd %p, cdb %d, bit_offs %d, field_offs %d (d_sense %d)",
+		cmd, cdb, bit_offs, field_offs, d_sense);
+
+	res = scst_set_cmd_error_status(cmd, SAM_STAT_CHECK_CONDITION);
+	if (res != 0)
+		goto out;
+
+	res = scst_alloc_sense(cmd, 1);
+	if (res != 0) {
+		PRINT_ERROR("Lost %s sense data", cdb ? "INVALID FIELD IN CDB" :
+			"INVALID FIELD IN PARAMETERS LIST");
+		goto out;
+	}
+
+	sBUG_ON(cmd->sense_buflen < 18);
+	BUILD_BUG_ON(SCST_SENSE_BUFFERSIZE < 18);
+
+	if (d_sense) {
+		/* Descriptor format */
+		cmd->sense[0] = 0x72;
+		cmd->sense[1] = ILLEGAL_REQUEST;
+		cmd->sense[2] = asc;
+		cmd->sense[3] = 0; /* ASCQ */
+		cmd->sense[7] = 8; /* additional Sense Length */
+		cmd->sense[8] = 2; /* sense key specific descriptor */
+		cmd->sense[9] = 6;
+		scst_fill_field_pointer_sense(&cmd->sense[12], field_offs,
+			bit_offs, cdb);
+		cmd->sense_valid_len = 16;
+	} else {
+		/* Fixed format */
+		cmd->sense[0] = 0x70;
+		cmd->sense[2] = ILLEGAL_REQUEST;
+		cmd->sense[7] = 0x0a; /* additional Sense Length */
+		cmd->sense[12] = asc;
+		cmd->sense[13] = 0; /* ASCQ */
+		scst_fill_field_pointer_sense(&cmd->sense[15], field_offs,
+			bit_offs, cdb);
+		cmd->sense_valid_len = 18;
+	}
+
+	TRACE_BUFFER("Sense set", cmd->sense, cmd->sense_valid_len);
+
+out:
+	TRACE_EXIT_RES(res);
+	return res;
+}
+
+int scst_set_invalid_field_in_cdb(struct scst_cmd *cmd, int field_offs,
+	int bit_offs)
+{
+	return scst_set_invalid_field_in(cmd, field_offs, bit_offs, true);
+}
+EXPORT_SYMBOL(scst_set_invalid_field_in_cdb);
+
+int scst_set_invalid_field_in_parm_list(struct scst_cmd *cmd, int field_offs,
+	int bit_offs)
+{
+	return scst_set_invalid_field_in(cmd, field_offs, bit_offs, false);
+}
+EXPORT_SYMBOL(scst_set_invalid_field_in_parm_list);
 
 /**
  * scst_set_sense() - set sense from KEY/ASC/ASCQ numbers
@@ -1042,6 +1749,16 @@ int scst_set_sense(uint8_t *buffer, int len, bool d_sense,
 	sBUG_ON(len == 0);
 
 	memset(buffer, 0, len);
+
+	/*
+	 * The RESPONSE CODE field shall be set to 70h in all unit attention
+	 * condition sense data in which:
+	 * a) the ADDITIONAL SENSE CODE field is set to 29h; or
+	 * b) the additional sense code is set to MODE PARAMETERS CHANGED.
+	 */
+	if ((key == UNIT_ATTENTION) &&
+	      ((asc == 0x29) || ((asc == 0x2A) && (ascq == 1))))
+		d_sense = false;
 
 	if (d_sense) {
 		/* Descriptor format */
@@ -1095,7 +1812,8 @@ bool scst_analyze_sense(const uint8_t *sense, int len, unsigned int valid_mask,
 	bool res = false;
 
 	/* Response Code */
-	if ((sense[0] == 0x70) || (sense[0] == 0x71)) {
+	if ((scst_sense_response_code(sense) == 0x70) ||
+	    (scst_sense_response_code(sense) == 0x71)) {
 		/* Fixed format */
 
 		/* Sense Key */
@@ -1121,7 +1839,8 @@ bool scst_analyze_sense(const uint8_t *sense, int len, unsigned int valid_mask,
 			if (sense[13] != ascq)
 				goto out;
 		}
-	} else if ((sense[0] == 0x72) || (sense[0] == 0x73)) {
+	} else if ((scst_sense_response_code(sense) == 0x72) ||
+		   (scst_sense_response_code(sense) == 0x73)) {
 		/* Descriptor format */
 
 		/* Sense Key */
@@ -1147,8 +1866,11 @@ bool scst_analyze_sense(const uint8_t *sense, int len, unsigned int valid_mask,
 			if (sense[3] != ascq)
 				goto out;
 		}
-	} else
+	} else {
+		PRINT_ERROR("Unknown sense response code 0x%x",
+			scst_sense_response_code(sense));
 		goto out;
+	}
 
 	res = true;
 
@@ -1166,7 +1888,7 @@ EXPORT_SYMBOL(scst_analyze_sense);
  */
 bool scst_is_ua_sense(const uint8_t *sense, int len)
 {
-	if (SCST_SENSE_VALID(sense))
+	if (scst_sense_valid(sense))
 		return scst_analyze_sense(sense, len,
 			SCST_SENSE_KEY_VALID, UNIT_ATTENTION, 0, 0);
 	else
@@ -1194,6 +1916,10 @@ bool scst_is_ua_global(const uint8_t *sense, int len)
  *
  * Checks if sense in the sense buffer, if any, is in the correct format.
  * If not, converts it in the correct format.
+ *
+ * WARNING! This function converts only RESPONSE CODE, ASC and ASC codes,
+ * dropping enverything else, including corresponding descriptors from
+ * descriptor format sense! ToDo: fix it.
  */
 void scst_check_convert_sense(struct scst_cmd *cmd)
 {
@@ -1205,9 +1931,18 @@ void scst_check_convert_sense(struct scst_cmd *cmd)
 		goto out;
 
 	d_sense = scst_get_cmd_dev_d_sense(cmd);
-	if (d_sense && ((cmd->sense[0] == 0x70) || (cmd->sense[0] == 0x71))) {
-		TRACE_MGMT_DBG("Converting fixed sense to descriptor (cmd %p)",
-			cmd);
+	if (d_sense && ((scst_sense_response_code(cmd->sense) == 0x70) ||
+			(scst_sense_response_code(cmd->sense) == 0x71)) &&
+	    /*
+	     * The RESPONSE CODE field shall be set to 70h in all unit attention
+	     * condition sense data in which:
+	     * a) the ADDITIONAL SENSE CODE field is set to 29h; or
+	     * b) the additional sense code is set to MODE PARAMETERS CHANGED.
+	     */
+	    !((cmd->sense[2] == UNIT_ATTENTION) &&
+	      ((cmd->sense[12] == 0x29) ||
+	       ((cmd->sense[12] == 0x2A) && (cmd->sense[13] == 1))))) {
+		TRACE_MGMT_DBG("Converting fixed sense to descriptor (cmd %p)", cmd);
 		if ((cmd->sense_valid_len < 18)) {
 			PRINT_ERROR("Sense too small to convert (%d, "
 				"type: fixed)", cmd->sense_buflen);
@@ -1215,8 +1950,8 @@ void scst_check_convert_sense(struct scst_cmd *cmd)
 		}
 		cmd->sense_valid_len = scst_set_sense(cmd->sense, cmd->sense_buflen,
 			d_sense, cmd->sense[2], cmd->sense[12], cmd->sense[13]);
-	} else if (!d_sense && ((cmd->sense[0] == 0x72) ||
-				(cmd->sense[0] == 0x73))) {
+	} else if (!d_sense && ((scst_sense_response_code(cmd->sense) == 0x72) ||
+				(scst_sense_response_code(cmd->sense) == 0x73))) {
 		TRACE_MGMT_DBG("Converting descriptor sense to fixed (cmd %p)",
 			cmd);
 		if ((cmd->sense_buflen < 18) || (cmd->sense_valid_len < 8)) {
@@ -1236,7 +1971,7 @@ out:
 }
 EXPORT_SYMBOL(scst_check_convert_sense);
 
-static int scst_set_cmd_error_sense(struct scst_cmd *cmd, uint8_t *sense,
+int scst_set_cmd_error_sense(struct scst_cmd *cmd, uint8_t *sense,
 	unsigned int len)
 {
 	int res;
@@ -1312,7 +2047,7 @@ void scst_set_initial_UA(struct scst_session *sess, int key, int asc, int ascq)
 			if (!list_empty(&tgt_dev->UA_list)) {
 				struct scst_tgt_dev_UA *ua;
 
-				ua = list_entry(tgt_dev->UA_list.next,
+				ua = list_first_entry(&tgt_dev->UA_list,
 					typeof(*ua), UA_list_entry);
 				if (scst_analyze_sense(ua->UA_sense_buffer,
 						ua->UA_valid_sense_len,
@@ -1615,7 +2350,7 @@ void scst_report_luns_changed(struct scst_acg *acg)
 
 	TRACE_ENTRY();
 
-	TRACE_MGMT_DBG("REPORTED LUNS DATA CHANGED (acg %s)", acg->acg_name);
+	TRACE_DBG("REPORTED LUNS DATA CHANGED (acg %s)", acg->acg_name);
 
 	list_for_each_entry(sess, &acg->acg_sess_list, acg_sess_list_entry) {
 		scst_report_luns_changed_sess(sess);
@@ -1690,12 +2425,16 @@ out_free:
 }
 EXPORT_SYMBOL(scst_aen_done);
 
-void scst_requeue_ua(struct scst_cmd *cmd)
+void scst_requeue_ua(struct scst_cmd *cmd, const uint8_t *buf, int size)
 {
 	TRACE_ENTRY();
 
-	if (scst_analyze_sense(cmd->sense, cmd->sense_valid_len,
-			SCST_SENSE_ALL_VALID,
+	if (buf == NULL) {
+		buf = cmd->sense;
+		size = cmd->sense_valid_len;
+	}
+
+	if (scst_analyze_sense(buf, size, SCST_SENSE_ALL_VALID,
 			SCST_LOAD_SENSE(scst_sense_reported_luns_data_changed))) {
 		TRACE_MGMT_DBG("Requeuing REPORTED LUNS DATA CHANGED UA "
 			"for delivery failed cmd %p", cmd);
@@ -1705,8 +2444,7 @@ void scst_requeue_ua(struct scst_cmd *cmd)
 		mutex_unlock(&scst_mutex);
 	} else {
 		TRACE_MGMT_DBG("Requeuing UA for delivery failed cmd %p", cmd);
-		scst_check_set_UA(cmd->tgt_dev, cmd->sense,
-			cmd->sense_valid_len, SCST_SET_UA_FLAG_AT_HEAD);
+		scst_check_set_UA(cmd->tgt_dev, buf, size, SCST_SET_UA_FLAG_AT_HEAD);
 	}
 
 	TRACE_EXIT();
@@ -1722,24 +2460,25 @@ static void scst_check_reassign_sess(struct scst_session *sess)
 	struct list_head *head;
 	struct scst_tgt_dev *tgt_dev;
 	bool luns_changed = false;
-	bool add_failed, something_freed, not_needed_freed = false;
+	bool add_failed, something_freed;
 
 	TRACE_ENTRY();
 
 	if (sess->shut_phase != SCST_SESS_SPH_READY)
 		goto out;
 
-	TRACE_MGMT_DBG("Checking reassignment for sess %p (initiator %s)",
+	TRACE_DBG("Checking reassignment for sess %p (initiator %s)",
 		sess, sess->initiator_name);
 
 	acg = scst_find_acg(sess);
 	if (acg == sess->acg) {
-		TRACE_MGMT_DBG("No reassignment for sess %p", sess);
+		TRACE_DBG("No reassignment for sess %p", sess);
 		goto out;
 	}
 
-	TRACE_MGMT_DBG("sess %p will be reassigned from acg %s to acg %s",
-		sess, sess->acg->acg_name, acg->acg_name);
+	PRINT_INFO("sess %p (initiator %s) will be reassigned from acg %s to "
+		"acg %s", sess, sess->initiator_name, sess->acg->acg_name,
+		acg->acg_name);
 
 	old_acg = sess->acg;
 	sess->acg = NULL; /* to catch implicit dependencies earlier */
@@ -1747,7 +2486,7 @@ static void scst_check_reassign_sess(struct scst_session *sess)
 retry_add:
 	add_failed = false;
 	list_for_each_entry(acg_dev, &acg->acg_dev_list, acg_dev_list_entry) {
-		unsigned int inq_changed_ua_needed = 0;
+		bool inq_changed_ua_needed = false;
 
 		for (i = 0; i < SESS_TGT_DEV_LIST_HASH_SIZE; i++) {
 			head = &sess->sess_tgt_dev_list[i];
@@ -1756,15 +2495,20 @@ retry_add:
 					sess_tgt_dev_list_entry) {
 				if ((tgt_dev->dev == acg_dev->dev) &&
 				    (tgt_dev->lun == acg_dev->lun) &&
-				    (tgt_dev->acg_dev->rd_only == acg_dev->rd_only)) {
+				    (tgt_dev->acg_dev->acg_dev_rd_only == acg_dev->acg_dev_rd_only)) {
 					TRACE_MGMT_DBG("sess %p: tgt_dev %p for "
 						"LUN %lld stays the same",
 						sess, tgt_dev,
 						(unsigned long long)tgt_dev->lun);
 					tgt_dev->acg_dev = acg_dev;
 					goto next;
-				} else if (tgt_dev->lun == acg_dev->lun)
+				} else if (tgt_dev->lun == acg_dev->lun) {
+					TRACE_MGMT_DBG("Replacing LUN %lld",
+						(long long)tgt_dev->lun);
+					scst_free_tgt_dev(tgt_dev);
 					inq_changed_ua_needed = 1;
+					break;
+				}
 			}
 		}
 
@@ -1781,14 +2525,12 @@ retry_add:
 			break;
 		}
 
-		tgt_dev->inq_changed_ua_needed = inq_changed_ua_needed ||
-						 not_needed_freed;
+		tgt_dev->inq_changed_ua_needed = inq_changed_ua_needed;
 next:
 		continue;
 	}
 
 	something_freed = false;
-	not_needed_freed = true;
 	for (i = 0; i < SESS_TGT_DEV_LIST_HASH_SIZE; i++) {
 		struct scst_tgt_dev *t;
 		head = &sess->sess_tgt_dev_list[i];
@@ -1839,7 +2581,7 @@ next:
 					tgt_dev->inq_changed_ua_needed = 0;
 
 					scst_gen_aen_or_ua(tgt_dev,
-						SCST_LOAD_SENSE(scst_sense_inquery_data_changed));
+						SCST_LOAD_SENSE(scst_sense_inquiry_data_changed));
 				}
 			}
 		}
@@ -1872,7 +2614,7 @@ void scst_check_reassign_sessions(void)
 	return;
 }
 
-static int scst_get_cmd_abnormal_done_state(const struct scst_cmd *cmd)
+int scst_get_cmd_abnormal_done_state(const struct scst_cmd *cmd)
 {
 	int res;
 
@@ -1918,11 +2660,11 @@ static int scst_get_cmd_abnormal_done_state(const struct scst_cmd *cmd)
 	case SCST_CMD_STATE_RDY_TO_XFER:
 	case SCST_CMD_STATE_DATA_WAIT:
 	case SCST_CMD_STATE_TGT_PRE_EXEC:
-	case SCST_CMD_STATE_START_EXEC:
-	case SCST_CMD_STATE_SEND_FOR_EXEC:
+	case SCST_CMD_STATE_EXEC_CHECK_BLOCKING:
+	case SCST_CMD_STATE_EXEC_CHECK_SN:
 	case SCST_CMD_STATE_LOCAL_EXEC:
 	case SCST_CMD_STATE_REAL_EXEC:
-	case SCST_CMD_STATE_REAL_EXECUTING:
+	case SCST_CMD_STATE_EXEC_WAIT:
 		res = SCST_CMD_STATE_PRE_DEV_DONE;
 		break;
 
@@ -1937,16 +2679,15 @@ static int scst_get_cmd_abnormal_done_state(const struct scst_cmd *cmd)
 	TRACE_EXIT_RES(res);
 	return res;
 }
+EXPORT_SYMBOL_GPL(scst_get_cmd_abnormal_done_state);
 
 /**
  * scst_set_cmd_abnormal_done_state() - set command's next abnormal done state
  *
  * Sets state of the SCSI target state machine to abnormally complete command
  * ASAP.
- *
- * Returns the new state.
  */
-int scst_set_cmd_abnormal_done_state(struct scst_cmd *cmd)
+void scst_set_cmd_abnormal_done_state(struct scst_cmd *cmd)
 {
 	TRACE_ENTRY();
 
@@ -1977,11 +2718,11 @@ int scst_set_cmd_abnormal_done_state(struct scst_cmd *cmd)
 		cmd->resid_possible = 1;
 		break;
 	case SCST_CMD_STATE_TGT_PRE_EXEC:
-	case SCST_CMD_STATE_SEND_FOR_EXEC:
-	case SCST_CMD_STATE_START_EXEC:
+	case SCST_CMD_STATE_EXEC_CHECK_SN:
+	case SCST_CMD_STATE_EXEC_CHECK_BLOCKING:
 	case SCST_CMD_STATE_LOCAL_EXEC:
 	case SCST_CMD_STATE_REAL_EXEC:
-	case SCST_CMD_STATE_REAL_EXECUTING:
+	case SCST_CMD_STATE_EXEC_WAIT:
 	case SCST_CMD_STATE_DEV_DONE:
 	case SCST_CMD_STATE_PRE_DEV_DONE:
 	case SCST_CMD_STATE_MODE_SELECT_CHECKS:
@@ -2005,8 +2746,8 @@ int scst_set_cmd_abnormal_done_state(struct scst_cmd *cmd)
 	}
 #endif
 
-	TRACE_EXIT_RES(cmd->state);
-	return cmd->state;
+	TRACE_EXIT();
+	return;
 }
 EXPORT_SYMBOL_GPL(scst_set_cmd_abnormal_done_state);
 
@@ -2045,41 +2786,38 @@ next:
 static void scst_adjust_sg(struct scst_cmd *cmd, struct scatterlist *sg,
 	int *sg_cnt, int adjust_len)
 {
-	int i, j, l;
+	struct scatterlist *sgi;
+	int i, l;
 
 	TRACE_ENTRY();
 
 	l = 0;
-	for (i = 0, j = 0; i < *sg_cnt; i++, j++) {
+	for_each_sg(sg, sgi, *sg_cnt, i) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 24)
-		TRACE_DBG("i %d, j %d, sg_cnt %d, sg %p, page_link %lx", i, j,
-			*sg_cnt, sg, sg[j].page_link);
+		TRACE_DBG("i %d, sg_cnt %d, sg %p, page_link %lx", i,
+			*sg_cnt, sg, sgi->page_link);
 #else
-		TRACE_DBG("i %d, j %d, sg_cnt %d, sg %p, page_link %lx", i, j,
+		TRACE_DBG("i %d, sg_cnt %d, sg %p, page_link %lx", i,
 			*sg_cnt, sg, 0UL);
 #endif
-		if (unlikely(sg_is_chain(&sg[j]))) {
-			sg = sg_chain_ptr(&sg[j]);
-			j = 0;
-		}
-		l += sg[j].length;
+		l += sgi->length;
 		if (l >= adjust_len) {
-			int left = adjust_len - (l - sg[j].length);
+			int left = adjust_len - (l - sgi->length);
 #ifdef CONFIG_SCST_DEBUG
 			TRACE(TRACE_SG_OP|TRACE_MEMORY, "cmd %p (tag %llu), "
-				"sg %p, sg_cnt %d, adjust_len %d, i %d, j %d, "
+				"sg %p, sg_cnt %d, adjust_len %d, i %d, "
 				"sg[j].length %d, left %d",
 				cmd, (long long unsigned int)cmd->tag,
-				sg, *sg_cnt, adjust_len, i, j,
-				sg[j].length, left);
+				sg, *sg_cnt, adjust_len, i,
+				sgi->length, left);
 #endif
-			cmd->orig_sg = sg;
 			cmd->p_orig_sg_cnt = sg_cnt;
 			cmd->orig_sg_cnt = *sg_cnt;
-			cmd->orig_sg_entry = j;
-			cmd->orig_entry_len = sg[j].length;
-			*sg_cnt = (left > 0) ? j+1 : j;
-			sg[j].length = left;
+			cmd->orig_sg_entry = sgi;
+			cmd->orig_entry_offs = sgi->offset;
+			cmd->orig_entry_len = sgi->length;
+			*sg_cnt = (left > 0) ? i+1 : i;
+			sgi->length = left;
 			cmd->sg_buff_modified = 1;
 			break;
 		}
@@ -2096,11 +2834,12 @@ static void scst_adjust_sg(struct scst_cmd *cmd, struct scatterlist *sg,
  */
 void scst_restore_sg_buff(struct scst_cmd *cmd)
 {
-	TRACE_MEM("cmd %p, sg %p, orig_sg_entry %d, "
-		"orig_entry_len %d, orig_sg_cnt %d", cmd, cmd->orig_sg,
-		cmd->orig_sg_entry, cmd->orig_entry_len,
+	TRACE_MEM("cmd %p, sg %p, orig_sg_entry %p, orig_entry_offs %d, "
+		"orig_entry_len %d, orig_sg_cnt %d", cmd, cmd->sg,
+		cmd->orig_sg_entry, cmd->orig_entry_offs, cmd->orig_entry_len,
 		cmd->orig_sg_cnt);
-	cmd->orig_sg[cmd->orig_sg_entry].length = cmd->orig_entry_len;
+	cmd->orig_sg_entry->offset = cmd->orig_entry_offs;
+	cmd->orig_sg_entry->length = cmd->orig_entry_len;
 	*cmd->p_orig_sg_cnt = cmd->orig_sg_cnt;
 	cmd->sg_buff_modified = 0;
 }
@@ -2125,6 +2864,19 @@ void scst_set_resp_data_len(struct scst_cmd *cmd, int resp_data_len)
 		goto out;
 
 	TRACE_DBG("cmd %p, resp_data_len %d", cmd, resp_data_len);
+
+	if (unlikely(resp_data_len > cmd->bufflen)) {
+		PRINT_ERROR("Too big response data len %d (max %d), limiting "
+			"it to the max (dev %s)", resp_data_len, cmd->bufflen,
+			cmd->dev ? cmd->dev->virt_name : "(no LUN)");
+		/*
+		 * It's a bug in the lower level code, so dump stack to know
+		 * who is the cause
+		 */
+		dump_stack();
+		cmd->resp_data_len = cmd->bufflen;
+		goto out;
+	}
 
 	scst_adjust_sg(cmd, cmd->sg, &cmd->sg_cnt, resp_data_len);
 
@@ -2284,50 +3036,31 @@ out:
 EXPORT_SYMBOL(__scst_get_resid);
 
 /* No locks */
-int scst_queue_retry_cmd(struct scst_cmd *cmd, int finished_cmds)
+void scst_queue_retry_cmd(struct scst_cmd *cmd)
 {
 	struct scst_tgt *tgt = cmd->tgt;
-	int res = 0;
 	unsigned long flags;
 
 	TRACE_ENTRY();
 
 	spin_lock_irqsave(&tgt->tgt_lock, flags);
+
 	tgt->retry_cmds++;
-	/*
-	 * Memory barrier is needed here, because we need the exact order
-	 * between the read and write between retry_cmds and finished_cmds to
-	 * not miss the case when a command finished while we queueing it for
-	 * retry after the finished_cmds check.
-	 */
-	smp_mb();
-	TRACE_RETRY("TGT QUEUE FULL: incrementing retry_cmds %d",
-	      tgt->retry_cmds);
-	if (finished_cmds != atomic_read(&tgt->finished_cmds)) {
-		/* At least one cmd finished, so try again */
-		tgt->retry_cmds--;
-		TRACE_RETRY("Some command(s) finished, direct retry "
-		      "(finished_cmds=%d, tgt->finished_cmds=%d, "
-		      "retry_cmds=%d)", finished_cmds,
-		      atomic_read(&tgt->finished_cmds), tgt->retry_cmds);
-		res = -1;
-		goto out_unlock_tgt;
-	}
 
 	TRACE_RETRY("Adding cmd %p to retry cmd list", cmd);
 	list_add_tail(&cmd->cmd_list_entry, &tgt->retry_cmd_list);
 
 	if (!tgt->retry_timer_active) {
+		TRACE_DBG("Activating retry timer for tgt %p", tgt);
 		tgt->retry_timer.expires = jiffies + SCST_TGT_RETRY_TIMEOUT;
 		add_timer(&tgt->retry_timer);
 		tgt->retry_timer_active = 1;
 	}
 
-out_unlock_tgt:
 	spin_unlock_irqrestore(&tgt->tgt_lock, flags);
 
-	TRACE_EXIT_RES(res);
-	return res;
+	TRACE_EXIT();
+	return;
 }
 
 /**
@@ -2386,7 +3119,7 @@ static int scst_check_hw_pending_cmd(struct scst_cmd *cmd,
 		goto out;
 	}
 
-	TRACE_MGMT_DBG("Cmd %p HW pending for too long %ld (state %x)",
+	TRACE(TRACE_MGMT, "Cmd %p HW pending for too long %ld (state %x)",
 		cmd, (cur_time - cmd->hw_pending_start) / HZ,
 		cmd->state);
 
@@ -2512,10 +3245,9 @@ int gen_relative_target_port_id(uint16_t *id)
 
 	TRACE_ENTRY();
 
-	if (mutex_lock_interruptible(&scst_mutex) != 0) {
-		res = -EINTR;
+	res = mutex_lock_interruptible(&scst_mutex);
+	if (res != 0)
 		goto out;
-	}
 
 	rti_prev = rti;
 	do {
@@ -2547,7 +3279,7 @@ int scst_alloc_tgt(struct scst_tgt_template *tgtt, struct scst_tgt **tgt)
 
 	TRACE_ENTRY();
 
-	t = kzalloc(sizeof(*t), GFP_KERNEL);
+	t = kmem_cache_zalloc(scst_tgt_cachep, GFP_KERNEL);
 	if (t == NULL) {
 		PRINT_ERROR("%s", "Allocation of tgt failed");
 		res = -ENOMEM;
@@ -2555,12 +3287,12 @@ int scst_alloc_tgt(struct scst_tgt_template *tgtt, struct scst_tgt **tgt)
 	}
 
 	INIT_LIST_HEAD(&t->sess_list);
+	INIT_LIST_HEAD(&t->sysfs_sess_list);
 	init_waitqueue_head(&t->unreg_waitQ);
 	t->tgtt = tgtt;
 	t->sg_tablesize = tgtt->sg_tablesize;
 	spin_lock_init(&t->tgt_lock);
 	INIT_LIST_HEAD(&t->retry_cmd_list);
-	atomic_set(&t->finished_cmds, 0);
 	init_timer(&t->retry_timer);
 	t->retry_timer.data = (unsigned long)t;
 	t->retry_timer.function = scst_tgt_retry_timer_fn;
@@ -2593,7 +3325,7 @@ void scst_free_tgt(struct scst_tgt *tgt)
 	kfree(tgt->default_group_name);
 #endif
 
-	kfree(tgt);
+	kmem_cache_free(scst_tgt_cachep, tgt);
 
 	TRACE_EXIT();
 	return;
@@ -2605,12 +3337,12 @@ static void scst_init_order_data(struct scst_order_data *order_data)
 	spin_lock_init(&order_data->sn_lock);
 	INIT_LIST_HEAD(&order_data->deferred_cmd_list);
 	INIT_LIST_HEAD(&order_data->skipped_sn_list);
-	order_data->curr_sn = (typeof(order_data->curr_sn))(-300);
-	order_data->expected_sn = order_data->curr_sn + 1;
-	order_data->num_free_sn_slots = ARRAY_SIZE(order_data->sn_slots)-1;
+	order_data->curr_sn = (typeof(order_data->curr_sn))(-20);
+	order_data->expected_sn = order_data->curr_sn;
 	order_data->cur_sn_slot = &order_data->sn_slots[0];
 	for (i = 0; i < (int)ARRAY_SIZE(order_data->sn_slots); i++)
 		atomic_set(&order_data->sn_slots[i], 0);
+	spin_lock_init(&order_data->init_done_lock);
 	return;
 }
 
@@ -2622,7 +3354,7 @@ int scst_alloc_device(gfp_t gfp_mask, struct scst_device **out_dev)
 
 	TRACE_ENTRY();
 
-	dev = kzalloc(sizeof(*dev), gfp_mask);
+	dev = kmem_cache_zalloc(scst_dev_cachep, gfp_mask);
 	if (dev == NULL) {
 		PRINT_ERROR("%s", "Allocation of scst_device failed");
 		res = -ENOMEM;
@@ -2630,7 +3362,9 @@ int scst_alloc_device(gfp_t gfp_mask, struct scst_device **out_dev)
 	}
 
 	dev->handler = &scst_null_devtype;
+#ifdef CONFIG_SCST_PER_DEVICE_CMD_COUNT_LIMIT
 	atomic_set(&dev->dev_cmd_count, 0);
+#endif
 	scst_init_mem_lim(&dev->dev_mem_lim);
 	spin_lock_init(&dev->dev_lock);
 	INIT_LIST_HEAD(&dev->blocked_cmd_list);
@@ -2674,7 +3408,7 @@ void scst_free_device(struct scst_device *dev)
 	scst_deinit_threads(&dev->dev_cmd_threads);
 
 	kfree(dev->virt_name);
-	kfree(dev);
+	kmem_cache_free(scst_dev_cachep, dev);
 
 	TRACE_EXIT();
 	return;
@@ -2759,7 +3493,7 @@ int scst_acg_add_lun(struct scst_acg *acg, struct kobject *parent,
 		res = -ENOMEM;
 		goto out;
 	}
-	acg_dev->rd_only = read_only;
+	acg_dev->acg_dev_rd_only = read_only;
 
 	TRACE_DBG("Adding acg_dev %p to acg_dev_list and dev_acg_dev_list",
 		acg_dev);
@@ -2785,8 +3519,8 @@ int scst_acg_add_lun(struct scst_acg *acg, struct kobject *parent,
 		scst_report_luns_changed(acg);
 
 	PRINT_INFO("Added device %s to group %s (LUN %lld, "
-		"rd_only %d)", dev->virt_name, acg->acg_name,
-		(long long unsigned int)lun, read_only);
+		"rd_only %d) to target %s", dev->virt_name, acg->acg_name,
+		(long long unsigned int)lun, read_only, acg->tgt->tgt_name);
 
 	if (out_acg_dev != NULL)
 		*out_acg_dev = acg_dev;
@@ -2837,8 +3571,8 @@ int scst_acg_del_lun(struct scst_acg *acg, uint64_t lun,
 	if (gen_scst_report_luns_changed)
 		scst_report_luns_changed(acg);
 
-	PRINT_INFO("Removed LUN %lld from group %s", (unsigned long long)lun,
-		acg->acg_name);
+	PRINT_INFO("Removed LUN %lld from group %s (target %s)",
+		(unsigned long long)lun, acg->acg_name, acg->tgt->tgt_name);
 
 out:
 	TRACE_EXIT_RES(res);
@@ -3063,7 +3797,7 @@ out:
 found:
 	if (t->active_cmd_threads == &scst_main_cmd_threads) {
 		res = t;
-		TRACE_MGMT_DBG("Going to share async IO context %p (res %p, "
+		TRACE_DBG("Going to share async IO context %p (res %p, "
 			"ini %s, dev %s, grouping type %d)",
 			t->aic_keeper->aic, res, t->sess->initiator_name,
 			t->dev->virt_name,
@@ -3071,13 +3805,13 @@ found:
 	} else {
 		res = t;
 		if (!*(volatile bool*)&res->active_cmd_threads->io_context_ready) {
-			TRACE_MGMT_DBG("IO context for t %p not yet "
+			TRACE_DBG("IO context for t %p not yet "
 				"initialized, waiting...", t);
 			msleep(100);
 			goto found;
 		}
 		smp_rmb();
-		TRACE_MGMT_DBG("Going to share IO context %p (res %p, ini %s, "
+		TRACE_DBG("Going to share IO context %p (res %p, ini %s, "
 			"dev %s, cmd_threads %p, grouping type %d)",
 			res->active_cmd_threads->io_context, res,
 			t->sess->initiator_name, t->dev->virt_name,
@@ -3123,9 +3857,13 @@ static int scst_ioc_keeper_thread(void *arg)
 	sBUG_ON(aic_keeper->aic != NULL);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 25)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 3, 0)
+	aic_keeper->aic = get_task_io_context(current, GFP_KERNEL, NUMA_NO_NODE);
+#else
 	aic_keeper->aic = get_io_context(GFP_KERNEL, -1);
 #endif
-	TRACE_MGMT_DBG("Alloced new async IO context %p (aic %p)",
+#endif
+	TRACE_DBG("Alloced new async IO context %p (aic %p)",
 		aic_keeper->aic, aic_keeper);
 
 	/* We have our own ref counting */
@@ -3166,7 +3904,7 @@ int scst_tgt_dev_setup_threads(struct scst_tgt_dev *tgt_dev)
 			aic_keeper = shared_io_tgt_dev->aic_keeper;
 			kref_get(&aic_keeper->aic_keeper_kref);
 
-			TRACE_MGMT_DBG("Linking async io context %p "
+			TRACE_DBG("Linking async io context %p "
 				"for shared tgt_dev %p (dev %s)",
 				aic_keeper->aic, tgt_dev,
 				tgt_dev->dev->virt_name);
@@ -3196,7 +3934,7 @@ int scst_tgt_dev_setup_threads(struct scst_tgt_dev *tgt_dev)
 			wait_event(aic_keeper->aic_keeper_waitQ,
 				aic_keeper->aic_ready);
 
-			TRACE_MGMT_DBG("Created async io context %p "
+			TRACE_DBG("Created async io context %p "
 				"for not shared tgt_dev %p (dev %s)",
 				aic_keeper->aic, tgt_dev,
 				tgt_dev->dev->virt_name);
@@ -3221,7 +3959,7 @@ int scst_tgt_dev_setup_threads(struct scst_tgt_dev *tgt_dev)
 
 		shared_io_tgt_dev = scst_find_shared_io_tgt_dev(tgt_dev);
 		if (shared_io_tgt_dev != NULL) {
-			TRACE_MGMT_DBG("Linking io context %p for "
+			TRACE_DBG("Linking io context %p for "
 				"shared tgt_dev %p (cmd_threads %p)",
 				shared_io_tgt_dev->active_cmd_threads->io_context,
 				tgt_dev, tgt_dev->active_cmd_threads);
@@ -3342,6 +4080,7 @@ static int scst_alloc_add_tgt_dev(struct scst_session *sess,
 	tgt_dev->dev = dev;
 	tgt_dev->lun = acg_dev->lun;
 	tgt_dev->acg_dev = acg_dev;
+	tgt_dev->tgt_dev_rd_only = acg_dev->acg_dev_rd_only || dev->dev_rd_only;
 	tgt_dev->sess = sess;
 	atomic_set(&tgt_dev->tgt_dev_cmd_count, 0);
 
@@ -3371,8 +4110,6 @@ static int scst_alloc_add_tgt_dev(struct scst_session *sess,
 
 	spin_lock_init(&tgt_dev->tgt_dev_lock);
 	INIT_LIST_HEAD(&tgt_dev->UA_list);
-	spin_lock_init(&tgt_dev->thr_data_lock);
-	INIT_LIST_HEAD(&tgt_dev->thr_data_list);
 
 	scst_init_order_data(&tgt_dev->tgt_dev_order_data);
 	if (dev->tst == SCST_CONTR_MODE_SEP_TASK_SETS)
@@ -3381,17 +4118,14 @@ static int scst_alloc_add_tgt_dev(struct scst_session *sess,
 		tgt_dev->curr_order_data = &dev->dev_order_data;
 
 	if (dev->handler->parse_atomic &&
-	    dev->handler->alloc_data_buf_atomic &&
+	    dev->handler->dev_alloc_data_buf_atomic &&
 	    (sess->tgt->tgtt->preprocessing_done == NULL)) {
 		if (sess->tgt->tgtt->rdy_to_xfer_atomic)
-			__set_bit(SCST_TGT_DEV_AFTER_INIT_WR_ATOMIC,
-				&tgt_dev->tgt_dev_flags);
+			tgt_dev->tgt_dev_after_init_wr_atomic = 1;
 	}
 	if (dev->handler->dev_done_atomic &&
-	    sess->tgt->tgtt->xmit_response_atomic) {
-		__set_bit(SCST_TGT_DEV_AFTER_EXEC_ATOMIC,
-			&tgt_dev->tgt_dev_flags);
-	}
+	    sess->tgt->tgtt->xmit_response_atomic)
+		tgt_dev->tgt_dev_after_exec_atimic = 1;
 
 	sl = scst_set_sense(sense_buffer, sizeof(sense_buffer),
 		dev->d_sense, SCST_LOAD_SENSE(scst_sense_reset_UA));
@@ -3418,7 +4152,7 @@ static int scst_alloc_add_tgt_dev(struct scst_session *sess,
 	if (res != 0)
 		goto out_pr_clear;
 
-	if (dev->handler && dev->handler->attach_tgt) {
+	if (dev->handler->attach_tgt) {
 		TRACE_DBG("Calling dev handler's attach_tgt(%p)", tgt_dev);
 		res = dev->handler->attach_tgt(tgt_dev);
 		TRACE_DBG("%s", "Dev handler's attach_tgt() returned");
@@ -3442,6 +4176,8 @@ static int scst_alloc_add_tgt_dev(struct scst_session *sess,
 	head = &sess->sess_tgt_dev_list[SESS_TGT_DEV_LIST_HASH_FN(tgt_dev->lun)];
 	list_add_tail(&tgt_dev->sess_tgt_dev_list_entry, head);
 
+	scst_tg_init_tgt_dev(tgt_dev);
+
 	*out_tgt_dev = tgt_dev;
 
 out:
@@ -3449,7 +4185,7 @@ out:
 	return res;
 
 out_detach:
-	if (dev->handler && dev->handler->detach_tgt) {
+	if (dev->handler->detach_tgt) {
 		TRACE_DBG("Calling dev handler's detach_tgt(%p)",
 		      tgt_dev);
 		dev->handler->detach_tgt(tgt_dev);
@@ -3477,25 +4213,13 @@ void scst_nexus_loss(struct scst_tgt_dev *tgt_dev, bool queue_UA)
 {
 	TRACE_ENTRY();
 
-	scst_clear_reservation(tgt_dev);
-
-#if 0 /* Clearing UAs and last sense isn't required by SAM and it looks to be
-       * better to not clear them to not loose important events, so let's
-       * disable it.
-       */
-	/* With activity suspended the lock isn't needed, but let's be safe */
-	spin_lock_bh(&tgt_dev->tgt_dev_lock);
-	scst_free_all_UA(tgt_dev);
-	memset(tgt_dev->tgt_dev_sense, 0, sizeof(tgt_dev->tgt_dev_sense));
-	spin_unlock_bh(&tgt_dev->tgt_dev_lock);
-#endif
-
 	if (queue_UA) {
 		uint8_t sense_buffer[SCST_STANDARD_SENSE_LEN];
 		int sl = scst_set_sense(sense_buffer, sizeof(sense_buffer),
 				tgt_dev->dev->d_sense,
 				SCST_LOAD_SENSE(scst_sense_nexus_loss_UA));
-		scst_check_set_UA(tgt_dev, sense_buffer, sl, 0);
+		scst_check_set_UA(tgt_dev, sense_buffer, sl,
+			SCST_SET_UA_FLAG_AT_HEAD);
 	}
 
 	TRACE_EXIT();
@@ -3535,8 +4259,6 @@ static void scst_free_tgt_dev(struct scst_tgt_dev *tgt_dev)
 	}
 
 	scst_tgt_dev_stop_threads(tgt_dev);
-
-	sBUG_ON(!list_empty(&tgt_dev->thr_data_list));
 
 	kmem_cache_free(scst_tgtd_cachep, tgt_dev);
 
@@ -3639,7 +4361,8 @@ int scst_acg_add_acn(struct scst_acg *acg, const char *name)
 
 out:
 	if (res == 0) {
-		PRINT_INFO("Added name %s to group %s", name, acg->acg_name);
+		PRINT_INFO("Added name %s to group %s (target %s)", name,
+			acg->acg_name, acg->tgt->tgt_name);
 		scst_check_reassign_sessions();
 	}
 
@@ -3712,8 +4435,8 @@ int scst_acg_remove_name(struct scst_acg *acg, const char *name, bool reassign)
 	}
 
 	if (res == 0) {
-		PRINT_INFO("Removed name '%s' from group '%s'", name,
-			acg->acg_name);
+		PRINT_INFO("Removed name %s from group %s (target %s)", name,
+			acg->acg_name, acg->tgt->tgt_name);
 		if (reassign)
 			scst_check_reassign_sessions();
 	} else
@@ -3727,11 +4450,12 @@ int scst_acg_remove_name(struct scst_acg *acg, const char *name, bool reassign)
 
 static struct scst_cmd *scst_create_prepare_internal_cmd(
 	struct scst_cmd *orig_cmd, const uint8_t *cdb,
-	unsigned int cdb_len, int bufsize)
+	unsigned int cdb_len, enum scst_cmd_queue_type queue_type)
 {
 	struct scst_cmd *res;
 	int rc;
 	gfp_t gfp_mask = scst_cmd_atomic(orig_cmd) ? GFP_ATOMIC : GFP_KERNEL;
+	unsigned long flags;
 
 	TRACE_ENTRY();
 
@@ -3746,17 +4470,31 @@ static struct scst_cmd *scst_create_prepare_internal_cmd(
 	res->tgtt = orig_cmd->tgtt;
 	res->tgt = orig_cmd->tgt;
 	res->dev = orig_cmd->dev;
+	res->devt = orig_cmd->devt;
 	res->tgt_dev = orig_cmd->tgt_dev;
 	res->cur_order_data = orig_cmd->tgt_dev->curr_order_data;
 	res->lun = orig_cmd->lun;
-	res->queue_type = SCST_CMD_QUEUE_HEAD_OF_QUEUE;
+	res->queue_type = queue_type;
 	res->data_direction = SCST_DATA_UNKNOWN;
-	res->orig_cmd = orig_cmd;
-	res->bufflen = bufsize;
+
+	/*
+	 * We need to keep it here to be able to abort during TM processing.
+	 * They should be aborted to (1) speed up TM processing and (2) to
+	 * guarantee that after a TM command finished the affected device(s)
+	 * is/are in a quiescent state with all affected commands finished and
+	 * others - blocked.
+	 */
+	spin_lock_irqsave(&res->sess->sess_list_lock, flags);
+	list_add_tail(&res->sess_cmd_list_entry, &res->sess->sess_cmd_list);
+	spin_unlock_irqrestore(&res->sess->sess_list_lock, flags);
 
 	scst_sess_get(res->sess);
 	if (res->tgt_dev != NULL)
 		res->cpu_cmd_counter = scst_get();
+
+	scst_set_start_time(res);
+
+	TRACE(TRACE_SCSI, "New internal cmd %p (op 0x%x)", res, res->cdb[0]);
 
 	rc = scst_pre_parse(res);
 	sBUG_ON(rc != 0);
@@ -3787,13 +4525,14 @@ int scst_prepare_request_sense(struct scst_cmd *orig_cmd)
 
 	rs_cmd = scst_create_prepare_internal_cmd(orig_cmd,
 			request_sense, sizeof(request_sense),
-			SCST_SENSE_BUFFERSIZE);
+			SCST_CMD_QUEUE_HEAD_OF_QUEUE);
 	if (rs_cmd == NULL)
 		goto out_error;
 
+	rs_cmd->tgt_i_priv = orig_cmd;
+
 	rs_cmd->cdb[1] |= scst_get_cmd_dev_d_sense(orig_cmd);
-	rs_cmd->data_direction = SCST_DATA_READ;
-	rs_cmd->expected_data_direction = rs_cmd->data_direction;
+	rs_cmd->expected_data_direction = SCST_DATA_READ;
 	rs_cmd->expected_transfer_len = SCST_SENSE_BUFFERSIZE;
 	rs_cmd->expected_values_set = 1;
 
@@ -3815,7 +4554,7 @@ out_error:
 
 static void scst_complete_request_sense(struct scst_cmd *req_cmd)
 {
-	struct scst_cmd *orig_cmd = req_cmd->orig_cmd;
+	struct scst_cmd *orig_cmd = req_cmd->tgt_i_priv;
 	uint8_t *buf;
 	int len;
 
@@ -3826,7 +4565,7 @@ static void scst_complete_request_sense(struct scst_cmd *req_cmd)
 	len = scst_get_buf_full(req_cmd, &buf);
 
 	if (scsi_status_is_good(req_cmd->status) && (len > 0) &&
-	    SCST_SENSE_VALID(buf) && (!SCST_NO_SENSE(buf))) {
+	    scst_sense_valid(buf) && !scst_no_sense(buf)) {
 		PRINT_BUFF_FLAG(TRACE_SCSI, "REQUEST SENSE returned",
 			buf, len);
 		scst_alloc_set_sense(orig_cmd, scst_cmd_atomic(req_cmd), buf,
@@ -3852,21 +4591,371 @@ static void scst_complete_request_sense(struct scst_cmd *req_cmd)
 	return;
 }
 
+struct scst_write_same_priv {
+	/* Must be the first for scst_finish_internal_cmd()! */
+	scst_i_finish_fn_t ws_finish_fn;
+
+	struct scst_cmd *ws_orig_cmd;
+
+	struct mutex ws_mutex;
+
+	int64_t ws_cur_lba; /* in blocks */
+	int ws_left_to_send; /* in blocks */
+
+	int ws_max_each;/* in blocks */
+	int ws_cur_in_flight;
+
+	int ws_sg_cnt;
+	struct scatterlist *ws_sg;
+};
+
+/* ws_mutex suppose to be locked */
+static int scst_ws_push_single_write(struct scst_write_same_priv *wsp,
+	int64_t lba, int blocks)
+{
+	struct scst_cmd *ws_cmd = wsp->ws_orig_cmd;
+	struct scatterlist *ws_sg = wsp->ws_sg;
+	int ws_sg_cnt = wsp->ws_sg_cnt;
+	int res, i;
+	uint8_t write16_cdb[16];
+	struct scatterlist *sg;
+	int sg_cnt, len = blocks << ws_cmd->dev->block_shift;
+	struct sgv_pool_obj *sgv;
+	struct scst_cmd *cmd;
+	int64_t cur_lba;
+
+	TRACE_ENTRY();
+
+	if (unlikely(test_bit(SCST_CMD_ABORTED, &ws_cmd->cmd_flags)) ||
+	    unlikely(ws_cmd->completed)) {
+		TRACE_DBG("ws cmd %p aborted or completed (%d), aborting "
+			"further write commands", ws_cmd, ws_cmd->completed);
+		wsp->ws_left_to_send = 0;
+		res = -EPIPE;
+		goto out;
+	}
+
+	memset(write16_cdb, 0, sizeof(write16_cdb));
+	write16_cdb[0] = WRITE_16;
+	put_unaligned_be64(lba, &write16_cdb[2]);
+	put_unaligned_be32(blocks, &write16_cdb[10]);
+
+	cmd = scst_create_prepare_internal_cmd(ws_cmd, write16_cdb,
+		sizeof(write16_cdb), SCST_CMD_QUEUE_SIMPLE);
+	if (cmd == NULL) {
+		res = -ENOMEM;
+		goto out_busy;
+	}
+
+	cmd->expected_data_direction = SCST_DATA_WRITE;
+	cmd->expected_transfer_len = len;
+	cmd->expected_values_set = 1;
+
+	cmd->tgt_i_priv = wsp;
+
+	if ((ws_cmd->cdb[1] & 0x6) == 0) {
+		TRACE_DBG("Using direct ws_sg %p (cnt %d)", ws_sg, ws_sg_cnt);
+		sg = ws_sg;
+		EXTRACHECKS_BUG_ON(blocks > ws_sg_cnt);
+		sg_cnt = blocks;
+		goto set_add;
+	}
+
+	sgv = NULL; /* we don't supply sgv */
+	sg = sgv_pool_alloc(ws_cmd->tgt_dev->pool, len, GFP_KERNEL, 0,
+			&sg_cnt, &sgv, &cmd->dev->dev_mem_lim, NULL);
+	if (sg == NULL) {
+		PRINT_ERROR("Unable to alloc sg for %d blocks", blocks);
+		res = -ENOMEM;
+		goto out_free_cmd;
+	}
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 4, 0)
+	sg_copy(sg, ws_sg, ws_sg_cnt, len, KM_USER0, KM_USER1);
+#else
+	sg_copy(sg, ws_sg, ws_sg_cnt, len);
+#endif
+
+	cur_lba = lba;
+	for (i = 0; i < sg_cnt; i++) {
+		int cur_offs = 0;
+		while (cur_offs < sg[i].length) {
+			uint8_t *q;
+			q = &((int8_t *)(page_address(sg_page(&sg[i]))))[cur_offs];
+			*((uint64_t *)q) = cur_lba;
+			cur_offs += ws_cmd->dev->block_size;
+			cur_lba++;
+		}
+	}
+
+set_add:
+	cmd->tgt_i_sg = sg;
+	cmd->tgt_i_sg_cnt = sg_cnt;
+	cmd->out_sgv = sgv; /* hacky, but it isn't used for WRITE(16) */
+	cmd->tgt_i_data_buf_alloced = 1;
+
+	wsp->ws_cur_lba += blocks;
+	wsp->ws_left_to_send -= blocks;
+	wsp->ws_cur_in_flight++;
+
+	TRACE_DBG("Adding WRITE(16) cmd %p to active cmd list", cmd);
+	spin_lock_irq(&cmd->cmd_threads->cmd_list_lock);
+	list_add_tail(&cmd->cmd_list_entry, &cmd->cmd_threads->active_cmd_list);
+	spin_unlock_irq(&cmd->cmd_threads->cmd_list_lock);
+
+	res = 0;
+
+out:
+	TRACE_EXIT_RES(res);
+	return res;
+
+out_free_cmd:
+	__scst_cmd_put(cmd);
+
+out_busy:
+	scst_set_busy(ws_cmd);
+	goto out;
+}
+
+static void scst_ws_finished(struct scst_write_same_priv *wsp)
+{
+	struct scst_cmd *ws_cmd = wsp->ws_orig_cmd;
+
+	TRACE_ENTRY();
+
+	TRACE_DBG("ws cmd %p finished with status %d", ws_cmd, ws_cmd->status);
+
+	sBUG_ON(wsp->ws_cur_in_flight != 0);
+
+	kfree(wsp->ws_sg);
+	kfree(wsp);
+
+	ws_cmd->completed = 1; /* for success */
+	ws_cmd->scst_cmd_done(ws_cmd, SCST_CMD_STATE_DEFAULT, SCST_CONTEXT_THREAD);
+
+	TRACE_EXIT();
+	return;
+}
+
+/* Must be called in a thread context and no locks */
+static void scst_ws_write_cmd_finished(struct scst_cmd *cmd)
+{
+	struct scst_write_same_priv *wsp = cmd->tgt_i_priv;
+	struct scst_cmd *ws_cmd = wsp->ws_orig_cmd;
+	int rc, blocks;
+
+	TRACE_ENTRY();
+
+	TRACE_DBG("Write cmd %p finished (ws cmd %p, ws_cur_in_flight %d)",
+		cmd, ws_cmd, wsp->ws_cur_in_flight);
+
+	if ((ws_cmd->cdb[1] & 0x6) != 0)
+		sgv_pool_free(cmd->out_sgv, &cmd->dev->dev_mem_lim);
+
+	cmd->sg = NULL;
+	cmd->sg_cnt = 0;
+
+	mutex_lock(&wsp->ws_mutex);
+
+	wsp->ws_cur_in_flight--;
+
+	if (cmd->status != 0) {
+		int rc;
+		TRACE_DBG("Write cmd %p (ws cmd %p) finished not successfully",
+			cmd, ws_cmd);
+		sBUG_ON(cmd->resp_data_len != 0);
+		if (cmd->status == SAM_STAT_CHECK_CONDITION)
+			rc = scst_set_cmd_error_sense(ws_cmd, cmd->sense,
+				cmd->sense_valid_len);
+		else {
+			sBUG_ON(cmd->sense != NULL);
+			rc = scst_set_cmd_error_status(ws_cmd, cmd->status);
+		}
+		if (rc != 0) {
+			/* Requeue possible UA */
+			if (scst_is_ua_sense(cmd->sense, cmd->sense_valid_len))
+				scst_requeue_ua(cmd, NULL, 0);
+		}
+	}
+
+	if (wsp->ws_left_to_send == 0)
+		goto out_check_finish;
+
+	blocks = min_t(int, wsp->ws_left_to_send, wsp->ws_max_each);
+
+	rc = scst_ws_push_single_write(wsp, wsp->ws_cur_lba, blocks);
+	if (rc != 0)
+		goto out_check_finish;
+
+	wake_up(&ws_cmd->cmd_threads->cmd_list_waitQ);
+
+out_unlock:
+	mutex_unlock(&wsp->ws_mutex);
+
+out:
+	TRACE_EXIT();
+	return;
+
+out_check_finish:
+	if (wsp->ws_cur_in_flight > 0)
+		goto out_unlock;
+
+	mutex_unlock(&wsp->ws_mutex);
+	scst_ws_finished(wsp);
+	goto out;
+}
+
+/* Must be called in a thread context and no locks */
+static void scst_ws_gen_writes(struct scst_write_same_priv *wsp)
+{
+	struct scst_cmd *ws_cmd = wsp->ws_orig_cmd;
+	int cnt = 0;
+
+	TRACE_ENTRY();
+
+	mutex_lock(&wsp->ws_mutex);
+
+	while ((wsp->ws_left_to_send > 0) &&
+	       (wsp->ws_cur_in_flight < SCST_MAX_IN_FLIGHT_INTERNAL_COMMANDS)) {
+		int rc, blocks;
+
+		blocks = min_t(int, wsp->ws_left_to_send, wsp->ws_max_each);
+
+		rc = scst_ws_push_single_write(wsp, wsp->ws_cur_lba, blocks);
+		if (rc != 0)
+			goto out_err;
+
+		cnt++;
+	}
+
+out_wake:
+	if (cnt != 0)
+		wake_up(&ws_cmd->cmd_threads->cmd_list_waitQ);
+
+	mutex_unlock(&wsp->ws_mutex);
+
+out:
+	TRACE_EXIT();
+	return;
+
+out_err:
+	if (wsp->ws_cur_in_flight != 0)
+		goto out_wake;
+	else {
+		mutex_unlock(&wsp->ws_mutex);
+		scst_ws_finished(wsp);
+		goto out;
+	}
+}
+
+/*
+ * Library function to perform WRITE SAME in a generic manner. On exit, cmd
+ * always completed with sense set, if necessary.
+ */
+void scst_write_same(struct scst_cmd *cmd)
+{
+	struct scst_write_same_priv *wsp;
+	int i;
+
+	TRACE_ENTRY();
+
+	if (cmd->sg_cnt != 1) {
+		PRINT_ERROR("WRITE SAME must contain only single block of data "
+			"in a single SG (cmd %p)", cmd);
+		scst_set_cmd_error(cmd, SCST_LOAD_SENSE(scst_sense_parameter_value_invalid));
+		goto out_done;
+	}
+
+	if (((cmd->cdb[1] & 0x6) == 0x6) || ((cmd->cdb[1] & 0xE0) != 0)) {
+		scst_set_invalid_field_in_cdb(cmd, 1, 0);
+		goto out_done;
+	}
+
+	wsp = kzalloc(sizeof(*wsp), GFP_KERNEL);
+	if (wsp == NULL) {
+		PRINT_ERROR("Unable to allocate ws_priv (size %zd, cmd %p)",
+			sizeof(*wsp), cmd);
+		goto out_busy;
+	}
+
+	mutex_init(&wsp->ws_mutex);
+	wsp->ws_finish_fn = scst_ws_write_cmd_finished;
+	wsp->ws_orig_cmd = cmd;
+
+	wsp->ws_cur_lba = cmd->lba;
+	wsp->ws_left_to_send = cmd->data_len >> cmd->dev->block_shift;
+	wsp->ws_max_each = SCST_MAX_EACH_INTERNAL_IO_SIZE >> cmd->dev->block_shift;
+
+	wsp->ws_sg_cnt = min_t(int, wsp->ws_left_to_send, wsp->ws_max_each);
+	wsp->ws_sg = kmalloc(wsp->ws_sg_cnt * sizeof(*wsp->ws_sg), GFP_KERNEL);
+	if (wsp->ws_sg == NULL) {
+		PRINT_ERROR("Unable to alloc sg for %d entries", wsp->ws_sg_cnt);
+		goto out_free;
+	}
+	sg_init_table(wsp->ws_sg, wsp->ws_sg_cnt);
+
+	for (i = 0; i < wsp->ws_sg_cnt; i++) {
+		sg_set_page(&wsp->ws_sg[i], sg_page(cmd->sg),
+			cmd->sg->length, cmd->sg->offset);
+	}
+
+	scst_ws_gen_writes(wsp);
+
+out:
+	TRACE_EXIT();
+	return;
+
+out_free:
+	kfree(wsp);
+
+out_busy:
+	scst_set_busy(cmd);
+
+out_done:
+	cmd->scst_cmd_done(cmd, SCST_CMD_STATE_DEFAULT, SCST_CONTEXT_THREAD);
+	goto out;
+}
+EXPORT_SYMBOL_GPL(scst_write_same);
+
 int scst_finish_internal_cmd(struct scst_cmd *cmd)
 {
 	int res;
+	unsigned long flags;
 
 	TRACE_ENTRY();
 
 	sBUG_ON(!cmd->internal);
 
+	if (scst_cmd_atomic(cmd)) {
+		TRACE_DBG("Rescheduling finished internal atomic cmd %p in a "
+			"thread context", cmd);
+		res = SCST_CMD_STATE_RES_NEED_THREAD;
+		goto out;
+	}
+
+	spin_lock_irqsave(&cmd->sess->sess_list_lock, flags);
+	list_del(&cmd->sess_cmd_list_entry);
+	cmd->done = 1;
+	cmd->finished = 1;
+	spin_unlock_irqrestore(&cmd->sess->sess_list_lock, flags);
+
+	if (unlikely(test_bit(SCST_CMD_ABORTED, &cmd->cmd_flags))) {
+		scst_done_cmd_mgmt(cmd);
+		scst_finish_cmd_mgmt(cmd);
+	}
+
 	if (cmd->cdb[0] == REQUEST_SENSE)
 		scst_complete_request_sense(cmd);
+	else {
+		scst_i_finish_fn_t f = (void *) *((unsigned long long **)cmd->tgt_i_priv);
+		f(cmd);
+	}
 
 	__scst_cmd_put(cmd);
 
 	res = SCST_CMD_STATE_RES_CONT_NEXT;
 
+out:
 	TRACE_EXIT_HRES(res);
 	return res;
 }
@@ -4009,6 +5098,12 @@ void scst_free_session(struct scst_session *sess)
 
 	scst_sess_free_tgt_devs(sess);
 
+	TRACE_DBG("Removing sess %p from the list", sess);
+	list_del(&sess->sess_list_entry);
+
+	TRACE_DBG("Removing session %p from acg %s", sess, sess->acg->acg_name);
+	list_del(&sess->acg_sess_list_entry);
+
 	mutex_unlock(&scst_mutex);
 
 #ifndef CONFIG_SCST_PROC
@@ -4022,15 +5117,7 @@ void scst_free_session(struct scst_session *sess)
 
 	mutex_lock(&scst_mutex);
 
-	/*
-	 * The lists delete must be after sysfs del. Otherwise it would break
-	 * logic in scst_sess_sysfs_create() to avoid duplicate sysfs names.
-	 */
-
-	TRACE_DBG("Removing sess %p from the list", sess);
-	list_del(&sess->sess_list_entry);
-	TRACE_DBG("Removing session %p from acg %s", sess, sess->acg->acg_name);
-	list_del(&sess->acg_sess_list_entry);
+	list_del(&sess->sysfs_sess_list_entry);
 
 	/* Called under lock to protect from too early tgt release */
 	wake_up_all(&sess->tgt->unreg_waitQ);
@@ -4043,6 +5130,8 @@ void scst_free_session(struct scst_session *sess)
 
 	kfree(sess->transport_id);
 	kfree(sess->initiator_name);
+	if (sess->sess_name != sess->initiator_name)
+		kfree(sess->sess_name);
 
 	kmem_cache_free(scst_sess_cachep, sess);
 
@@ -4142,6 +5231,7 @@ void scst_cmd_set_ext_cdb(struct scst_cmd *cmd,
 		goto out;
 	}
 
+	/* It's read-mostly, so cache alignment isn't needed */
 	cmd->cdb = kmalloc(len, gfp_mask);
 	if (unlikely(cmd->cdb == NULL)) {
 		PRINT_ERROR("Unable to alloc extended CDB (size %d)", len);
@@ -4166,18 +5256,22 @@ out_err:
 }
 EXPORT_SYMBOL(scst_cmd_set_ext_cdb);
 
-struct scst_cmd *scst_alloc_cmd(const uint8_t *cdb,
+int scst_pre_init_cmd(struct scst_cmd *cmd, const uint8_t *cdb,
 	unsigned int cdb_len, gfp_t gfp_mask)
 {
-	struct scst_cmd *cmd;
+	int res;
 
 	TRACE_ENTRY();
 
-	cmd = kmem_cache_zalloc(scst_cmd_cachep, gfp_mask);
-	if (cmd == NULL) {
-		TRACE(TRACE_OUT_OF_MEM, "%s", "Allocation of scst_cmd failed");
-		goto out;
+#ifdef CONFIG_SCST_EXTRACHECKS
+	/* cmd supposed to be zeroed */
+	{
+		int i;
+		uint8_t *b = (uint8_t *)cmd;
+		for (i = 0; i < sizeof(*cmd); i++)
+			EXTRACHECKS_BUG_ON(b[i] != 0);
 	}
+#endif
 
 	cmd->state = SCST_CMD_STATE_INIT_WAIT;
 	cmd->start_time = jiffies;
@@ -4188,7 +5282,11 @@ struct scst_cmd *scst_alloc_cmd(const uint8_t *cdb,
 	cmd->queue_type = SCST_CMD_QUEUE_SIMPLE;
 	cmd->timeout = SCST_DEFAULT_TIMEOUT;
 	cmd->retries = 0;
-	cmd->data_len = -1;
+#ifdef CONFIG_SCST_EXTRACHECKS
+	/* To ensure they are inited */
+	cmd->lba = SCST_DEF_LBA_DATA_LEN;
+	cmd->data_len = SCST_DEF_LBA_DATA_LEN;
+#endif
 	cmd->is_send_status = 1;
 	cmd->resp_data_len = -1;
 	cmd->write_sg = &cmd->sg;
@@ -4199,25 +5297,54 @@ struct scst_cmd *scst_alloc_cmd(const uint8_t *cdb,
 
 	if (unlikely(cdb_len == 0)) {
 		PRINT_ERROR("%s", "Wrong CDB len 0, finishing cmd");
-		goto out_free;
+		res = -EINVAL;
+		goto out;
 	} else if (cdb_len <= SCST_MAX_CDB_SIZE) {
 		/* Duplicate memcpy to save a branch on the most common path */
 		memcpy(cmd->cdb, cdb, cdb_len);
 	} else {
 		if (unlikely(cdb_len > SCST_MAX_LONG_CDB_SIZE)) {
 			PRINT_ERROR("Too big CDB (%d), finishing cmd", cdb_len);
-			goto out_free;
+			res = -EINVAL;
+			goto out;
 		}
+		/* It's read-mostly, so cache alignment isn't needed */
 		cmd->cdb = kmalloc(cdb_len, gfp_mask);
 		if (unlikely(cmd->cdb == NULL)) {
 			PRINT_ERROR("Unable to alloc extended CDB (size %d)",
 				cdb_len);
-			goto out_free;
+			res = -ENOMEM;
+			goto out;
 		}
 		memcpy(cmd->cdb, cdb, cdb_len);
 	}
 
 	cmd->cdb_len = cdb_len;
+
+	res = 0;
+
+out:
+	TRACE_EXIT_RES(res);
+	return res;
+}
+
+struct scst_cmd *scst_alloc_cmd(const uint8_t *cdb,
+	unsigned int cdb_len, gfp_t gfp_mask)
+{
+	struct scst_cmd *cmd;
+	int rc;
+
+	TRACE_ENTRY();
+
+	cmd = kmem_cache_zalloc(scst_cmd_cachep, gfp_mask);
+	if (cmd == NULL) {
+		TRACE(TRACE_OUT_OF_MEM, "%s", "Allocation of scst_cmd failed");
+		goto out;
+	}
+
+	rc = scst_pre_init_cmd(cmd, cdb, cdb_len, gfp_mask);
+	if (unlikely(rc != 0))
+		goto out_free;
 
 out:
 	TRACE_EXIT();
@@ -4229,8 +5356,14 @@ out_free:
 	goto out;
 }
 
-static void scst_destroy_put_cmd(struct scst_cmd *cmd)
+static void scst_destroy_cmd(struct scst_cmd *cmd)
 {
+	bool pre_alloced = cmd->pre_alloced;
+
+	TRACE_ENTRY();
+
+	TRACE_DBG("Destroying cmd %p", cmd);
+
 	scst_sess_put(cmd->sess);
 
 	/*
@@ -4239,7 +5372,20 @@ static void scst_destroy_put_cmd(struct scst_cmd *cmd)
 	if (likely(cmd->tgt_dev != NULL))
 		scst_put(cmd->cpu_cmd_counter);
 
-	scst_destroy_cmd(cmd);
+	EXTRACHECKS_BUG_ON(cmd->pre_alloced && cmd->internal);
+
+	if ((cmd->tgtt->on_free_cmd != NULL) && likely(!cmd->internal)) {
+		TRACE_DBG("Calling target's on_free_cmd(%p)", cmd);
+		cmd->tgtt->on_free_cmd(cmd);
+		TRACE_DBG("%s", "Target's on_free_cmd() returned");
+	}
+
+	/* At this point cmd can be already freed! */
+
+	if (!pre_alloced)
+		kmem_cache_free(scst_cmd_cachep, cmd);
+
+	TRACE_EXIT();
 	return;
 }
 
@@ -4263,27 +5409,17 @@ void scst_free_cmd(struct scst_cmd *cmd)
 	 * Target driver can already free sg buffer before calling
 	 * scst_tgt_cmd_done(). E.g., scst_local has to do that.
 	 */
-	if (!cmd->tgt_data_buf_alloced)
+	if (!cmd->tgt_i_data_buf_alloced)
 		scst_check_restore_sg_buff(cmd);
 
-	if ((cmd->tgtt->on_free_cmd != NULL) && likely(!cmd->internal)) {
-		TRACE_DBG("Calling target's on_free_cmd(%p)", cmd);
-		scst_set_cur_start(cmd);
-		cmd->tgtt->on_free_cmd(cmd);
-		scst_set_tgt_on_free_time(cmd);
-		TRACE_DBG("%s", "Target's on_free_cmd() returned");
-	}
-
 	if (likely(cmd->dev != NULL)) {
-		struct scst_dev_type *handler = cmd->dev->handler;
-		if (handler->on_free_cmd != NULL) {
+		struct scst_dev_type *devt = cmd->devt;
+		if (devt->on_free_cmd != NULL) {
 			TRACE_DBG("Calling dev handler %s on_free_cmd(%p)",
-				handler->name, cmd);
-			scst_set_cur_start(cmd);
-			handler->on_free_cmd(cmd);
-			scst_set_dev_on_free_time(cmd);
+				devt->name, cmd);
+			devt->on_free_cmd(cmd);
 			TRACE_DBG("Dev handler %s on_free_cmd() returned",
-				handler->name);
+				devt->name);
 		}
 	}
 
@@ -4296,32 +5432,26 @@ void scst_free_cmd(struct scst_cmd *cmd)
 	}
 
 	if (likely(cmd->tgt_dev != NULL)) {
-#ifdef CONFIG_SCST_EXTRACHECKS
-		if (unlikely(!cmd->sent_for_exec) && !cmd->internal) {
-			PRINT_ERROR("Finishing not executed cmd %p (opcode "
-			    "%d, target %s, LUN %lld, sn %d, expected_sn %d)",
-			    cmd, cmd->cdb[0], cmd->tgtt->name,
-			    (long long unsigned int)cmd->lun,
-			    cmd->sn, cmd->cur_order_data->expected_sn);
-			scst_unblock_deferred(cmd->cur_order_data, cmd);
-		}
-#endif
-
+		EXTRACHECKS_BUG_ON(!test_bit(SCST_CMD_INC_EXPECTED_SN_PASSED,
+				      &cmd->cmd_flags) && cmd->sn_set && !cmd->out_of_sn);
 		if (unlikely(cmd->out_of_sn)) {
+			destroy = test_and_set_bit(SCST_CMD_CAN_BE_DESTROYED,
+					&cmd->cmd_flags);
 			TRACE_SN("Out of SN cmd %p (tag %llu, sn %d), "
 				"destroy=%d", cmd,
 				(long long unsigned int)cmd->tag,
 				cmd->sn, destroy);
-			destroy = test_and_set_bit(SCST_CMD_CAN_BE_DESTROYED,
-					&cmd->cmd_flags);
 		}
 	}
+
+	if (unlikely(cmd->op_flags & SCST_DESCRIPTORS_BASED))
+		scst_free_descriptors(cmd);
 
 	if (cmd->cdb != cmd->cdb_buf)
 		kfree(cmd->cdb);
 
 	if (likely(destroy))
-		scst_destroy_put_cmd(cmd);
+		scst_destroy_cmd(cmd);
 
 	TRACE_EXIT();
 	return;
@@ -4334,13 +5464,6 @@ void scst_check_retries(struct scst_tgt *tgt)
 
 	TRACE_ENTRY();
 
-	/*
-	 * We don't worry about overflow of finished_cmds, because we check
-	 * only for its change.
-	 */
-	atomic_inc(&tgt->finished_cmds);
-	/* See comment in scst_queue_retry_cmd() */
-	smp_mb__after_atomic_inc();
 	if (unlikely(tgt->retry_cmds > 0)) {
 		struct scst_cmd *c, *tc;
 		unsigned long flags;
@@ -4363,7 +5486,7 @@ void scst_check_retries(struct scst_tgt *tgt)
 			spin_unlock(&c->cmd_threads->cmd_list_lock);
 
 			need_wake_up++;
-			if (need_wake_up >= 2) /* "slow start" */
+			if (need_wake_up >= 20) /* "slow start" */
 				break;
 		}
 		spin_unlock_irqrestore(&tgt->tgt_lock, flags);
@@ -4386,6 +5509,15 @@ static void scst_tgt_retry_timer_fn(unsigned long arg)
 
 	scst_check_retries(tgt);
 
+	spin_lock_irqsave(&tgt->tgt_lock, flags);
+	if ((tgt->retry_cmds > 0) && !tgt->retry_timer_active) {
+		TRACE_DBG("Reactivating retry timer for tgt %p", tgt);
+		tgt->retry_timer.expires = jiffies + SCST_TGT_RETRY_TIMEOUT;
+		add_timer(&tgt->retry_timer);
+		tgt->retry_timer_active = 1;
+	}
+	spin_unlock_irqrestore(&tgt->tgt_lock, flags);
+
 	TRACE_EXIT();
 	return;
 }
@@ -4403,6 +5535,8 @@ struct scst_mgmt_cmd *scst_alloc_mgmt_cmd(gfp_t gfp_mask)
 		goto out;
 	}
 	memset(mcmd, 0, sizeof(*mcmd));
+
+	mcmd->status = SCST_MGMT_STATUS_SUCCESS;
 
 out:
 	TRACE_EXIT();
@@ -4444,10 +5578,10 @@ static bool scst_on_sg_tablesize_low(struct scst_cmd *cmd, bool out)
 		goto failed;
 	}
 
-	if (tgt_dev->dev->handler->on_sg_tablesize_low == NULL)
+	if (cmd->devt->on_sg_tablesize_low == NULL)
 		goto failed;
 
-	res = tgt_dev->dev->handler->on_sg_tablesize_low(cmd);
+	res = cmd->devt->on_sg_tablesize_low(cmd);
 
 	TRACE_DBG("on_sg_tablesize_low(%p) returned %d", cmd, res);
 
@@ -4532,16 +5666,16 @@ static void scst_release_space(struct scst_cmd *cmd)
 
 	if (cmd->sgv == NULL) {
 		if ((cmd->sg != NULL) &&
-		    !(cmd->tgt_data_buf_alloced || cmd->dh_data_buf_alloced)) {
+		    !(cmd->tgt_i_data_buf_alloced || cmd->dh_data_buf_alloced)) {
 			TRACE_MEM("Freeing sg %p for cmd %p (cnt %d)", cmd->sg,
 				cmd, cmd->sg_cnt);
-			scst_free(cmd->sg, cmd->sg_cnt);
+			scst_free_sg(cmd->sg, cmd->sg_cnt);
 			goto out_zero;
 		} else
 			goto out;
 	}
 
-	if (cmd->tgt_data_buf_alloced || cmd->dh_data_buf_alloced) {
+	if (cmd->tgt_i_data_buf_alloced || cmd->dh_data_buf_alloced) {
 		TRACE_MEM("%s", "*data_buf_alloced set, returning");
 		goto out;
 	}
@@ -4577,8 +5711,12 @@ out:
  */
 static int sg_copy_elem(struct scatterlist **pdst_sg, size_t *pdst_len,
 			size_t *pdst_offs, struct scatterlist *src_sg,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 4, 0)
 			size_t copy_len,
 			enum km_type d_km_type, enum km_type s_km_type)
+#else
+			size_t copy_len)
+#endif
 {
 	int res = 0;
 	struct scatterlist *dst_sg;
@@ -4598,12 +5736,19 @@ static int sg_copy_elem(struct scatterlist **pdst_sg, size_t *pdst_len,
 		void *saddr, *daddr;
 		size_t n;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 4, 0)
 		saddr = kmap_atomic(src_page +
 					 (src_offs >> PAGE_SHIFT), s_km_type) +
 				    (src_offs & ~PAGE_MASK);
 		daddr = kmap_atomic(dst_page +
 					(dst_offs >> PAGE_SHIFT), d_km_type) +
 				    (dst_offs & ~PAGE_MASK);
+#else
+		saddr = kmap_atomic(src_page + (src_offs >> PAGE_SHIFT)) +
+			(src_offs & ~PAGE_MASK);
+		daddr = kmap_atomic(dst_page + (dst_offs >> PAGE_SHIFT)) +
+			(dst_offs & ~PAGE_MASK);
+#endif
 
 		if (((src_offs & ~PAGE_MASK) == 0) &&
 		    ((dst_offs & ~PAGE_MASK) == 0) &&
@@ -4622,8 +5767,13 @@ static int sg_copy_elem(struct scatterlist **pdst_sg, size_t *pdst_len,
 		dst_offs += n;
 		src_offs += n;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 4, 0)
 		kunmap_atomic(saddr, s_km_type);
 		kunmap_atomic(daddr, d_km_type);
+#else
+		kunmap_atomic(saddr);
+		kunmap_atomic(daddr);
+#endif
 
 		res += n;
 		copy_len -= n;
@@ -4633,7 +5783,7 @@ static int sg_copy_elem(struct scatterlist **pdst_sg, size_t *pdst_len,
 		src_len -= n;
 		dst_len -= n;
 		if (dst_len == 0) {
-			dst_sg = sg_next(dst_sg);
+			dst_sg = sg_next_inline(dst_sg);
 			if (dst_sg == NULL)
 				goto out;
 			dst_page = sg_page(dst_sg);
@@ -4664,8 +5814,12 @@ out:
  *    NULL. Returns number of bytes copied.
  */
 static int sg_copy(struct scatterlist *dst_sg, struct scatterlist *src_sg,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 4, 0)
 	    int nents_to_copy, size_t copy_len,
 	    enum km_type d_km_type, enum km_type s_km_type)
+#else
+	    int nents_to_copy, size_t copy_len)
+#endif
 {
 	int res = 0;
 	size_t dst_len, dst_offs;
@@ -4681,7 +5835,11 @@ static int sg_copy(struct scatterlist *dst_sg, struct scatterlist *src_sg,
 
 	do {
 		int copied = sg_copy_elem(&dst_sg, &dst_len, &dst_offs,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 4, 0)
 				src_sg, copy_len, d_km_type, s_km_type);
+#else
+				src_sg, copy_len);
+#endif
 		copy_len -= copied;
 		res += copied;
 		if ((copy_len == 0) || (dst_sg == NULL))
@@ -4691,7 +5849,7 @@ static int sg_copy(struct scatterlist *dst_sg, struct scatterlist *src_sg,
 		if (nents_to_copy == 0)
 			goto out;
 
-		src_sg = sg_next(src_sg);
+		src_sg = sg_next_inline(src_sg);
 	} while (src_sg != NULL);
 
 out:
@@ -4734,7 +5892,7 @@ int scst_scsi_exec_async(struct scst_cmd *cmd, void *data,
 	struct request *rq;
 	struct scsi_io_context *sioc;
 	int write = (cmd->data_direction & SCST_DATA_WRITE) ? WRITE : READ;
-	gfp_t gfp = cmd->noio_mem_alloc ? GFP_NOIO : GFP_KERNEL;
+	gfp_t gfp = scst_cmd_get_gfp_flags(cmd);
 	int cmd_len = cmd->cdb_len;
 
 	sioc = kmem_cache_zalloc(scsi_io_context_cache, gfp);
@@ -4835,20 +5993,22 @@ EXPORT_SYMBOL(scst_scsi_exec_async);
 /**
  * scst_copy_sg() - copy data between the command's SGs
  *
- * Copies data between cmd->tgt_sg and cmd->sg in direction defined by
+ * Copies data between cmd->tgt_i_sg and cmd->sg in direction defined by
  * copy_dir parameter.
  */
 void scst_copy_sg(struct scst_cmd *cmd, enum scst_sg_copy_dir copy_dir)
 {
 	struct scatterlist *src_sg, *dst_sg;
 	unsigned int to_copy;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 4, 0)
 	int atomic = scst_cmd_atomic(cmd);
+#endif
 
 	TRACE_ENTRY();
 
 	if (copy_dir == SCST_SG_COPY_FROM_TARGET) {
 		if (cmd->data_direction != SCST_DATA_BIDI) {
-			src_sg = cmd->tgt_sg;
+			src_sg = cmd->tgt_i_sg;
 			dst_sg = cmd->sg;
 			to_copy = cmd->bufflen;
 		} else {
@@ -4859,14 +6019,15 @@ void scst_copy_sg(struct scst_cmd *cmd, enum scst_sg_copy_dir copy_dir)
 		}
 	} else {
 		src_sg = cmd->sg;
-		dst_sg = cmd->tgt_sg;
-		to_copy = cmd->resp_data_len;
+		dst_sg = cmd->tgt_i_sg;
+		to_copy = cmd->adjusted_resp_data_len;
 	}
 
 	TRACE_MEM("cmd %p, copy_dir %d, src_sg %p, dst_sg %p, to_copy %lld",
 		cmd, copy_dir, src_sg, dst_sg, (long long)to_copy);
 
-	if (unlikely(src_sg == NULL) || unlikely(dst_sg == NULL)) {
+	if (unlikely(src_sg == NULL) || unlikely(dst_sg == NULL) ||
+	    unlikely(to_copy == 0)) {
 		/*
 		 * It can happened, e.g., with scst_user for cmd with delay
 		 * alloc, which failed with Check Condition.
@@ -4874,9 +6035,13 @@ void scst_copy_sg(struct scst_cmd *cmd, enum scst_sg_copy_dir copy_dir)
 		goto out;
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 4, 0)
 	sg_copy(dst_sg, src_sg, 0, to_copy,
 		atomic ? KM_SOFTIRQ0 : KM_USER0,
 		atomic ? KM_SOFTIRQ1 : KM_USER1);
+#else
+	sg_copy(dst_sg, src_sg, 0, to_copy);
+#endif
 
 out:
 	TRACE_EXIT();
@@ -4948,12 +6113,43 @@ out:
 EXPORT_SYMBOL(scst_get_buf_full);
 
 /**
+ * scst_get_buf_full_sense - return linear buffer for command
+ * @cmd:	scst command
+ * @buf:	pointer on the resulting pointer
+ *
+ * Does the same as scst_get_buf_full(), but in case of error
+ * additionally sets in cmd status code and sense.
+ */
+int scst_get_buf_full_sense(struct scst_cmd *cmd, uint8_t **buf)
+{
+	int res = 0;
+
+	TRACE_ENTRY();
+
+	res = scst_get_buf_full(cmd, buf);
+	if (unlikely(res < 0)) {
+		PRINT_ERROR("scst_get_buf_full() failed: %d", res);
+		if (res == -ENOMEM)
+			scst_set_busy(cmd);
+		else
+			scst_set_cmd_error(cmd,
+				SCST_LOAD_SENSE(scst_sense_hardw_error));
+		goto out;
+	}
+
+out:
+	TRACE_EXIT_RES(res);
+	return res;
+}
+EXPORT_SYMBOL(scst_get_buf_full_sense);
+
+/**
  * scst_put_buf_full - unmaps linear buffer for command
  * @cmd:	scst command
  * @buf:	pointer on the buffer to unmap
  *
- * Reverse operation for scst_get_buf_full. If the buffer was vmalloced(),
- * it vfree() the buffer.
+ * Reverse operation for scst_get_buf_full()/scst_get_buf_full_sense().
+ * If the buffer was vmalloced(), it vfree() the buffer.
  */
 void scst_put_buf_full(struct scst_cmd *cmd, uint8_t *buf)
 {
@@ -4997,59 +6193,105 @@ static const int SCST_CDB_LENGTH[8] = { 6, 10, 10, 0, 16, 12, 0, 0 };
 #define SCST_CDB_GROUP(opcode)   ((opcode >> 5) & 0x7)
 #define SCST_GET_CDB_LEN(opcode) SCST_CDB_LENGTH[SCST_CDB_GROUP(opcode)]
 
-/* get_trans_len_x extract x bytes from cdb as length starting from off */
-
-static int get_trans_cdb_len_10(struct scst_cmd *cmd, uint8_t off)
+static int get_cdb_info_len_10(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
 {
 	cmd->cdb_len = 10;
-	cmd->bufflen = 0;
+	cmd->op_flags |= SCST_LBA_NOT_VALID;
+	cmd->lba = 0;
+
+	/* It supposed to be already zeroed */
+	EXTRACHECKS_BUG_ON(cmd->bufflen != 0);
+
+	cmd->data_len = cmd->bufflen;
 	return 0;
 }
 
-static int get_trans_len_block_limit(struct scst_cmd *cmd, uint8_t off)
+static int get_cdb_info_block_limit(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
 {
+	cmd->op_flags |= SCST_LBA_NOT_VALID;
+	cmd->lba = 0;
 	cmd->bufflen = 6;
+	cmd->data_len = cmd->bufflen;
 	return 0;
 }
 
-static int get_trans_len_read_capacity(struct scst_cmd *cmd, uint8_t off)
+static int get_cdb_info_read_capacity(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
 {
+	cmd->op_flags |= SCST_LBA_NOT_VALID;
+	cmd->lba = 0;
 	cmd->bufflen = 8;
+	cmd->data_len = cmd->bufflen;
 	return 0;
 }
 
-static int get_trans_len_serv_act_in(struct scst_cmd *cmd, uint8_t off)
+static int get_cdb_info_serv_act_in(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
 {
 	int res = 0;
 
 	TRACE_ENTRY();
 
-	if ((cmd->cdb[1] & 0x1f) == SAI_READ_CAPACITY_16) {
-		cmd->op_name = "READ CAPACITY(16)";
-		cmd->bufflen = be32_to_cpu(get_unaligned((__be32 *)&cmd->cdb[10]));
-		cmd->op_flags |= SCST_IMPLICIT_HQ | SCST_REG_RESERVE_ALLOWED |
-			SCST_WRITE_EXCL_ALLOWED | SCST_EXCL_ACCESS_ALLOWED;
-	} else
-		cmd->op_flags |= SCST_UNKNOWN_LENGTH;
+	cmd->lba = 0;
 
+	switch (cmd->cdb[1] & 0x1f) {
+	case SAI_READ_CAPACITY_16:
+		cmd->op_name = "READ CAPACITY(16)";
+		cmd->bufflen = get_unaligned_be32(&cmd->cdb[10]);
+		if (unlikely(cmd->bufflen & SCST_MAX_VALID_BUFFLEN_MASK))
+			goto out_inval_bufflen10;
+		cmd->op_flags |= SCST_IMPLICIT_HQ | SCST_LBA_NOT_VALID |
+				SCST_REG_RESERVE_ALLOWED |
+				SCST_WRITE_EXCL_ALLOWED |
+				SCST_EXCL_ACCESS_ALLOWED;
+		break;
+	case SAI_GET_LBA_STATUS:
+		cmd->op_name = "GET LBA STATUS";
+		cmd->lba = get_unaligned_be64(&cmd->cdb[2]);
+		cmd->bufflen = get_unaligned_be32(&cmd->cdb[10]);
+		if (unlikely(cmd->bufflen & SCST_MAX_VALID_BUFFLEN_MASK))
+			goto out_inval_bufflen10;
+		cmd->op_flags |= SCST_WRITE_EXCL_ALLOWED;
+		break;
+	default:
+		cmd->op_flags |= SCST_UNKNOWN_LENGTH | SCST_LBA_NOT_VALID;
+		break;
+	}
+
+	cmd->data_len = cmd->bufflen;
+
+out:
 	TRACE_EXIT_RES(res);
 	return res;
+
+out_inval_bufflen10:
+	PRINT_ERROR("Too big bufflen %d (op %x)", cmd->bufflen, cmd->cdb[0]);
+	scst_set_invalid_field_in_cdb(cmd, 10, 0);
+	res = 1;
+	goto out;
 }
 
-static int get_trans_len_single(struct scst_cmd *cmd, uint8_t off)
+static int get_cdb_info_single(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
 {
+	cmd->op_flags |= SCST_LBA_NOT_VALID;
+	cmd->lba = 0;
 	cmd->bufflen = 1;
+	cmd->data_len = cmd->bufflen;
 	return 0;
 }
 
-static int get_trans_len_read_pos(struct scst_cmd *cmd, uint8_t off)
+static int get_cdb_info_read_pos(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
 {
-	uint8_t *p = (uint8_t *)cmd->cdb + off;
 	int res = 0;
 
-	cmd->bufflen = 0;
-	cmd->bufflen |= ((u32)p[0]) << 8;
-	cmd->bufflen |= ((u32)p[1]);
+	cmd->op_flags |= SCST_LBA_NOT_VALID;
+	cmd->lba = 0;
+
+	cmd->bufflen = get_unaligned_be16(cmd->cdb + sdbops->info_len_off);
 
 	switch (cmd->cdb[1] & 0x1f) {
 	case 0:
@@ -5059,7 +6301,7 @@ static int get_trans_len_read_pos(struct scst_cmd *cmd, uint8_t off)
 			PRINT_ERROR("READ POSITION: Invalid non-zero (%d) "
 				"allocation length for service action %x",
 				cmd->bufflen, cmd->cdb[1] & 0x1f);
-			goto out_inval;
+			goto out_inval_field1;
 		}
 		break;
 	}
@@ -5078,44 +6320,58 @@ static int get_trans_len_read_pos(struct scst_cmd *cmd, uint8_t off)
 	default:
 		PRINT_ERROR("READ POSITION: Invalid service action %x",
 			cmd->cdb[1] & 0x1f);
-		goto out_inval;
+		goto out_inval_field1;
 	}
+
+	cmd->data_len = cmd->bufflen;
 
 out:
 	return res;
 
-out_inval:
-	scst_set_cmd_error(cmd,
-		SCST_LOAD_SENSE(scst_sense_invalid_field_in_cdb));
+out_inval_field1:
+	scst_set_invalid_field_in_cdb(cmd, 1, 0);
 	res = 1;
 	goto out;
 }
 
-static int get_trans_len_prevent_allow_medium_removal(struct scst_cmd *cmd,
-	uint8_t off)
+static int get_cdb_info_prevent_allow_medium_removal(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
 {
+	cmd->op_flags |= SCST_LBA_NOT_VALID;
+	cmd->lba = 0;
+
+	cmd->data_len = 0;
+	/* It supposed to be already zeroed */
+	EXTRACHECKS_BUG_ON(cmd->bufflen != 0);
 	if ((cmd->cdb[4] & 3) == 0)
 		cmd->op_flags |= SCST_REG_RESERVE_ALLOWED |
 			SCST_WRITE_EXCL_ALLOWED | SCST_EXCL_ACCESS_ALLOWED;
 	return 0;
 }
 
-static int get_trans_len_start_stop(struct scst_cmd *cmd, uint8_t off)
+static int get_cdb_info_start_stop(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
 {
+	cmd->op_flags |= SCST_LBA_NOT_VALID;
+	cmd->lba = 0;
+
+	cmd->data_len = 0;
+	/* It supposed to be already zeroed */
+	EXTRACHECKS_BUG_ON(cmd->bufflen != 0);
 	if ((cmd->cdb[4] & 0xF1) == 0x1)
 		cmd->op_flags |= SCST_REG_RESERVE_ALLOWED |
 			SCST_WRITE_EXCL_ALLOWED | SCST_EXCL_ACCESS_ALLOWED;
 	return 0;
 }
 
-static int get_trans_len_3_read_elem_stat(struct scst_cmd *cmd, uint8_t off)
+static int get_cdb_info_len_3_read_elem_stat(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
 {
-	const uint8_t *p = cmd->cdb + off;
+	cmd->op_flags |= SCST_LBA_NOT_VALID;
+	cmd->lba = 0;
 
-	cmd->bufflen = 0;
-	cmd->bufflen |= ((u32)p[0]) << 16;
-	cmd->bufflen |= ((u32)p[1]) << 8;
-	cmd->bufflen |= ((u32)p[2]);
+	cmd->bufflen = get_unaligned_be24(cmd->cdb + sdbops->info_len_off);
+	cmd->data_len = cmd->bufflen;
 
 	if ((cmd->cdb[6] & 0x2) == 0x2)
 		cmd->op_flags |= SCST_REG_RESERVE_ALLOWED |
@@ -5123,73 +6379,405 @@ static int get_trans_len_3_read_elem_stat(struct scst_cmd *cmd, uint8_t off)
 	return 0;
 }
 
-static int get_trans_len_1(struct scst_cmd *cmd, uint8_t off)
+static int get_cdb_info_bidi_lba_4_len_2(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
 {
-	cmd->bufflen = (u32)cmd->cdb[off];
-	return 0;
-}
-
-static int get_trans_len_1_256(struct scst_cmd *cmd, uint8_t off)
-{
-	cmd->bufflen = (u32)cmd->cdb[off];
-	if (cmd->bufflen == 0)
-		cmd->bufflen = 256;
-	return 0;
-}
-
-static int get_trans_len_2(struct scst_cmd *cmd, uint8_t off)
-{
-	const uint8_t *p = cmd->cdb + off;
-
-	cmd->bufflen = 0;
-	cmd->bufflen |= ((u32)p[0]) << 8;
-	cmd->bufflen |= ((u32)p[1]);
-
-	return 0;
-}
-
-static int get_trans_len_3(struct scst_cmd *cmd, uint8_t off)
-{
-	const uint8_t *p = cmd->cdb + off;
-
-	cmd->bufflen = 0;
-	cmd->bufflen |= ((u32)p[0]) << 16;
-	cmd->bufflen |= ((u32)p[1]) << 8;
-	cmd->bufflen |= ((u32)p[2]);
-
-	return 0;
-}
-
-static int get_trans_len_4(struct scst_cmd *cmd, uint8_t off)
-{
-	const uint8_t *p = cmd->cdb + off;
-
-	cmd->bufflen = 0;
-	cmd->bufflen |= ((u32)p[0]) << 24;
-	cmd->bufflen |= ((u32)p[1]) << 16;
-	cmd->bufflen |= ((u32)p[2]) << 8;
-	cmd->bufflen |= ((u32)p[3]);
-
-	return 0;
-}
-
-static int get_trans_len_none(struct scst_cmd *cmd, uint8_t off)
-{
-	cmd->bufflen = 0;
-	return 0;
-}
-
-static int get_bidi_trans_len_2(struct scst_cmd *cmd, uint8_t off)
-{
-	const uint8_t *p = cmd->cdb + off;
-
-	cmd->bufflen = 0;
-	cmd->bufflen |= ((u32)p[0]) << 8;
-	cmd->bufflen |= ((u32)p[1]);
-
+	cmd->lba = get_unaligned_be32(cmd->cdb + sdbops->info_lba_off);
+	cmd->bufflen = get_unaligned_be16(cmd->cdb + sdbops->info_len_off);
+	cmd->data_len = cmd->bufflen;
 	cmd->out_bufflen = cmd->bufflen;
-
 	return 0;
+}
+
+static int get_cdb_info_fmt(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->op_flags |= SCST_LBA_NOT_VALID;
+	cmd->lba = 0;
+
+	/* It is not really supported anyway */
+	cmd->data_len = 0;
+
+	if (cmd->cdb[1] & 0x10/*FMTDATA*/) {
+		cmd->data_direction = SCST_DATA_WRITE;
+		cmd->op_flags |= SCST_UNKNOWN_LENGTH;
+	}
+	return 0;
+}
+
+static int get_cdb_info_verify10(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->lba = get_unaligned_be32(cmd->cdb + sdbops->info_lba_off);
+	if (cmd->cdb[1] & BYTCHK) {
+		cmd->bufflen = get_unaligned_be16(cmd->cdb + sdbops->info_len_off);
+		cmd->data_len = cmd->bufflen;
+		cmd->data_direction = SCST_DATA_WRITE;
+	} else {
+		cmd->bufflen = 0;
+		cmd->data_len = get_unaligned_be16(cmd->cdb + sdbops->info_len_off);
+		cmd->data_direction = SCST_DATA_NONE;
+	}
+	return 0;
+}
+
+static int get_cdb_info_verify6(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->op_flags |= SCST_LBA_NOT_VALID;
+	cmd->lba = 0;
+
+	if (cmd->cdb[1] & BYTCHK) {
+		cmd->bufflen = get_unaligned_be24(cmd->cdb + sdbops->info_len_off);
+		cmd->data_len = cmd->bufflen;
+		cmd->data_direction = SCST_DATA_WRITE;
+	} else {
+		cmd->bufflen = 0;
+		cmd->data_len = get_unaligned_be24(cmd->cdb + sdbops->info_len_off);
+		cmd->data_direction = SCST_DATA_NONE;
+	}
+	return 0;
+}
+
+static int get_cdb_info_verify12(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->lba = get_unaligned_be32(cmd->cdb + sdbops->info_lba_off);
+	if (cmd->cdb[1] & BYTCHK) {
+		cmd->bufflen = get_unaligned_be32(cmd->cdb + sdbops->info_len_off);
+		if (unlikely(cmd->bufflen & SCST_MAX_VALID_BUFFLEN_MASK)) {
+			PRINT_ERROR("Too big bufflen %d (op %x)",
+				cmd->bufflen, cmd->cdb[0]);
+			scst_set_invalid_field_in_cdb(cmd, sdbops->info_len_off, 0);
+			return 1;
+		}
+		cmd->data_len = cmd->bufflen;
+		cmd->data_direction = SCST_DATA_WRITE;
+	} else {
+		cmd->bufflen = 0;
+		cmd->data_len = get_unaligned_be32(cmd->cdb + sdbops->info_len_off);
+		cmd->data_direction = SCST_DATA_NONE;
+	}
+	return 0;
+}
+
+static int get_cdb_info_verify16(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->lba = get_unaligned_be64(cmd->cdb + sdbops->info_lba_off);
+	if (cmd->cdb[1] & BYTCHK) {
+		cmd->bufflen = get_unaligned_be32(cmd->cdb + sdbops->info_len_off);
+		if (unlikely(cmd->bufflen & SCST_MAX_VALID_BUFFLEN_MASK)) {
+			PRINT_ERROR("Too big bufflen %d (op %x)",
+				cmd->bufflen, cmd->cdb[0]);
+			scst_set_invalid_field_in_cdb(cmd, sdbops->info_len_off, 0);
+			return 1;
+		}
+		cmd->data_len = cmd->bufflen;
+		cmd->data_direction = SCST_DATA_WRITE;
+	} else {
+		cmd->bufflen = 0;
+		cmd->data_len = get_unaligned_be32(cmd->cdb + sdbops->info_len_off);
+		cmd->data_direction = SCST_DATA_NONE;
+	}
+	return 0;
+}
+
+static int get_cdb_info_len_1(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->op_flags |= SCST_LBA_NOT_VALID;
+	cmd->lba = 0;
+
+	cmd->bufflen = cmd->cdb[sdbops->info_len_off];
+	cmd->data_len = cmd->bufflen;
+	return 0;
+}
+
+static int get_cdb_info_lba_2_len_1_256(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->lba = get_unaligned_be16(cmd->cdb + sdbops->info_lba_off);
+	/*
+	 * From the READ(6) specification: a TRANSFER LENGTH field set to zero
+	 * specifies that 256 logical blocks shall be read.
+	 *
+	 * Note: while the C standard specifies that the behavior of a
+	 * computation with signed integers that overflows is undefined, the
+	 * same standard guarantees that the result of a computation with
+	 * unsigned integers that cannot be represented will yield the value
+	 * is reduced modulo the largest value that can be represented by the
+	 * resulting type.
+	 */
+	cmd->bufflen = (u8)(cmd->cdb[sdbops->info_len_off] - 1) + 1;
+	cmd->data_len = cmd->bufflen;
+	return 0;
+}
+
+static int get_cdb_info_len_2(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->op_flags |= SCST_LBA_NOT_VALID;
+	cmd->lba = 0;
+	cmd->bufflen = get_unaligned_be16(cmd->cdb + sdbops->info_len_off);
+	cmd->data_len = cmd->bufflen;
+	return 0;
+}
+
+static int get_cdb_info_len_3(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->op_flags |= SCST_LBA_NOT_VALID;
+	cmd->lba = 0;
+	cmd->bufflen = get_unaligned_be24(cmd->cdb + sdbops->info_len_off);
+	cmd->data_len = cmd->bufflen;
+	return 0;
+}
+
+static int get_cdb_info_len_4(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->op_flags |= SCST_LBA_NOT_VALID;
+	cmd->lba = 0;
+	cmd->bufflen = get_unaligned_be32(cmd->cdb + sdbops->info_len_off);
+	if (unlikely(cmd->bufflen & SCST_MAX_VALID_BUFFLEN_MASK)) {
+		PRINT_ERROR("Too big bufflen %d (op %x)", cmd->bufflen,
+			cmd->cdb[0]);
+		scst_set_invalid_field_in_cdb(cmd, sdbops->info_len_off, 0);
+		return 1;
+	}
+	cmd->data_len = cmd->bufflen;
+	return 0;
+}
+
+static int get_cdb_info_none(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->op_flags |= SCST_LBA_NOT_VALID;
+	cmd->lba = 0;
+
+	/* It supposed to be already zeroed */
+	EXTRACHECKS_BUG_ON(cmd->bufflen != 0);
+
+	cmd->data_len = cmd->bufflen;
+	return 0;
+}
+
+static int get_cdb_info_lba_2_none(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->lba = get_unaligned_be16(cmd->cdb + sdbops->info_lba_off);
+
+	/* It supposed to be already zeroed */
+	EXTRACHECKS_BUG_ON(cmd->bufflen != 0);
+
+	cmd->data_len = cmd->bufflen;
+	return 0;
+}
+
+static int get_cdb_info_lba_4_none(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->lba = get_unaligned_be32(cmd->cdb + sdbops->info_lba_off);
+
+	/* It supposed to be already zeroed */
+	EXTRACHECKS_BUG_ON(cmd->bufflen != 0);
+
+	cmd->data_len = cmd->bufflen;
+	return 0;
+}
+
+static int get_cdb_info_lba_8_none(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->lba = get_unaligned_be64(cmd->cdb + sdbops->info_lba_off);
+
+	/* It supposed to be already zeroed */
+	EXTRACHECKS_BUG_ON(cmd->bufflen != 0);
+
+	cmd->data_len = cmd->bufflen;
+	return 0;
+}
+
+static int get_cdb_info_lba_4_len_2(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->lba = get_unaligned_be32(cmd->cdb + sdbops->info_lba_off);
+	cmd->bufflen = get_unaligned_be16(cmd->cdb + sdbops->info_len_off);
+	cmd->data_len = cmd->bufflen;
+	return 0;
+}
+
+static int get_cdb_info_lba_4_len_4(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->lba = get_unaligned_be32(cmd->cdb + sdbops->info_lba_off);
+	cmd->bufflen = get_unaligned_be32(cmd->cdb + sdbops->info_len_off);
+	if (unlikely(cmd->bufflen & SCST_MAX_VALID_BUFFLEN_MASK)) {
+		PRINT_ERROR("Too big bufflen %d (op %x)", cmd->bufflen,
+			cmd->cdb[0]);
+		scst_set_invalid_field_in_cdb(cmd, sdbops->info_len_off, 0);
+		return 1;
+	}
+	cmd->data_len = cmd->bufflen;
+	return 0;
+}
+
+static int get_cdb_info_lba_8_len_4(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->lba = get_unaligned_be64(cmd->cdb + sdbops->info_lba_off);
+	cmd->bufflen = get_unaligned_be32(cmd->cdb + sdbops->info_len_off);
+	if (unlikely(cmd->bufflen & SCST_MAX_VALID_BUFFLEN_MASK)) {
+		PRINT_ERROR("Too big bufflen %d (op %x)", cmd->bufflen,
+			cmd->cdb[0]);
+		scst_set_invalid_field_in_cdb(cmd, sdbops->info_len_off, 0);
+		return 1;
+	}
+	cmd->data_len = cmd->bufflen;
+	return 0;
+}
+
+static int get_cdb_info_write_same10(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->lba = get_unaligned_be32(cmd->cdb + sdbops->info_lba_off);
+	cmd->bufflen = 1;
+	cmd->data_len = get_unaligned_be16(cmd->cdb + sdbops->info_len_off);
+	return 0;
+}
+
+static int get_cdb_info_write_same16(struct scst_cmd *cmd,
+	const struct scst_sdbops *sdbops)
+{
+	cmd->lba = get_unaligned_be64(cmd->cdb + sdbops->info_lba_off);
+	cmd->bufflen = 1;
+	cmd->data_len = get_unaligned_be32(cmd->cdb + sdbops->info_len_off);
+	return 0;
+}
+
+/**
+ * scst_get_cdb_info_apt() - Parse ATA PASS-THROUGH CDB.
+ *
+ * Parse ATA PASS-THROUGH(12) and ATA PASS-THROUGH(16). See also SAT-3 for a
+ * detailed description of these commands.
+ */
+static int get_cdb_info_apt(struct scst_cmd *cmd,
+			    const struct scst_sdbops *sdbops)
+{
+	const u8 *const cdb = cmd->cdb;
+	const u8 op         = cdb[0];
+	const u8 extend     = cdb[1] & 1;
+	const u8 multiple   = cdb[1] >> 5;
+	const u8 protocol   = (cdb[1] >> 1) & 0xf;
+	const u8 t_type     = (cdb[2] >> 4) & 1;
+	const u8 t_dir      = (cdb[2] >> 3) & 1;
+	const u8 byte_block = (cdb[2] >> 2) & 1;
+	const u8 t_length   = cdb[2] & 3;
+	int bufflen = 0;
+
+	/*
+	 * If the PROTOCOL field contains Fh (i.e., Return Response
+	 * Information), then the SATL shall ignore all fields in the CDB
+	 * except for the PROTOCOL field.
+	 */
+	if (protocol == 0xf)
+		goto out;
+
+	switch (op) {
+	case ATA_12:
+		switch (t_length) {
+		case 0:
+			bufflen = 0;
+			break;
+		case 1:
+			bufflen = cdb[3];
+			break;
+		case 2:
+			bufflen = cdb[4];
+			break;
+		case 3:
+			/*
+			 * Not yet implemented: "The transfer length is an
+			 * unsigned integer specified in the TPSIU (see
+			 * 3.1.97)."
+			 */
+			WARN_ON(true);
+			break;
+		}
+		break;
+	case ATA_16:
+		switch (t_length) {
+		case 0:
+			bufflen = 0;
+			break;
+		case 1:
+			bufflen = extend ? get_unaligned_be16(&cdb[3]) : cdb[4];
+			break;
+		case 2:
+			bufflen = extend ? get_unaligned_be16(&cdb[5]) : cdb[6];
+			break;
+		case 3:
+			WARN_ON(true);
+			break;
+		}
+		break;
+	}
+
+	/* See also "Table 133 - Mapping of BYTE_BLOCK, T_TYPE, and T_LENGTH" */
+	cmd->cdb_len = SCST_GET_CDB_LEN(op);
+	if (t_length != 0 && byte_block != 0) {
+		/*
+		 * "The number of ATA logical sector size (see 3.1.16) blocks
+		 * to be transferred"
+		 */
+		bufflen *= t_type ? cmd->dev->block_size : 512;
+	}
+	/*
+	 * If the T_DIR bit is set to zero, then the SATL shall transfer data
+	 * from the application client to the ATA device. If the T_DIR bit is
+	 * set to one, then the SATL shall transfer data from the ATA device
+	 * to the application client. The SATL shall ignore the T_DIR bit if
+	 * the T_LENGTH field is set to zero.
+	*/
+	cmd->data_direction = (t_length == 0 ? SCST_DATA_NONE : t_dir ?
+			       SCST_DATA_READ : SCST_DATA_WRITE);
+	cmd->lba = 0;
+	cmd->bufflen = bufflen << multiple;
+	cmd->data_len = cmd->bufflen;
+out:
+	cmd->op_flags = SCST_INFO_VALID;
+	return 0;
+}
+
+/* Parse MAINTENANCE IN */
+static int get_cdb_info_min(struct scst_cmd *cmd,
+			    const struct scst_sdbops *sdbops)
+{
+	switch (cmd->cdb[1] & 0x1f) {
+	case MI_REPORT_IDENTIFYING_INFORMATION:
+		cmd->op_name = "REPORT IDENTIFYING INFORMATION";
+		cmd->op_flags |= SCST_REG_RESERVE_ALLOWED |
+			SCST_WRITE_EXCL_ALLOWED | SCST_EXCL_ACCESS_ALLOWED;
+		break;
+	case MI_REPORT_TARGET_PGS:
+		cmd->op_name = "REPORT TARGET PORT GROUPS";
+		cmd->op_flags |= SCST_REG_RESERVE_ALLOWED |
+			SCST_WRITE_EXCL_ALLOWED | SCST_EXCL_ACCESS_ALLOWED;
+		break;
+	case MI_REPORT_SUPPORTED_OPERATION_CODES:
+		cmd->op_name = "REPORT SUPPORTED OPERATION CODES";
+		cmd->op_flags |= SCST_WRITE_EXCL_ALLOWED;
+		break;
+	case MI_REPORT_SUPPORTED_TASK_MANAGEMENT_FUNCTIONS:
+		cmd->op_name = "REPORT SUPPORTED TASK MANAGEMENT FUNCTIONS";
+		cmd->op_flags |= SCST_WRITE_EXCL_ALLOWED;
+		break;
+	default:
+		break;
+	}
+
+	return get_cdb_info_len_4(cmd, sdbops);
 }
 
 /**
@@ -5213,9 +6801,8 @@ int scst_get_cdb_info(struct scst_cmd *cmd)
 
 	op = cmd->cdb[0];	/* get clear opcode */
 
-	TRACE_DBG("opcode=%02x, cdblen=%d bytes, tblsize=%d, "
-		"dev_type=%d", op, SCST_GET_CDB_LEN(op), SCST_CDB_TBL_SIZE,
-		dev_type);
+	TRACE_DBG("opcode=%02x, cdblen=%d bytes, dev_type=%d", op,
+		SCST_GET_CDB_LEN(op), dev_type);
 
 	i = scst_scsi_op_list[op];
 	while (i < SCST_CDB_TBL_SIZE && scst_scsi_op_table[i].ops == op) {
@@ -5232,11 +6819,12 @@ int scst_get_cdb_info(struct scst_cmd *cmd)
 			      ptr->devkey[7],	/* worm     */
 			      ptr->devkey[8],	/* changer */
 			      ptr->devkey[9],	/* commdev */
-			      ptr->op_name);
-			TRACE_DBG("direction=%d flags=%d off=%d",
-			      ptr->direction,
-			      ptr->flags,
-			      ptr->off);
+			      ptr->info_op_name);
+			TRACE_DBG("data direction %d, op flags 0x%x, lba off %d, "
+				"lba len %d, len off %d, len len %d",
+				ptr->info_data_direction, ptr->info_op_flags,
+				ptr->info_lba_off, ptr->info_lba_len,
+				ptr->info_len_off, ptr->info_len_len);
 			break;
 		}
 		i++;
@@ -5251,10 +6839,14 @@ int scst_get_cdb_info(struct scst_cmd *cmd)
 	}
 
 	cmd->cdb_len = SCST_GET_CDB_LEN(op);
-	cmd->op_name = ptr->op_name;
-	cmd->data_direction = ptr->direction;
-	cmd->op_flags = ptr->flags | SCST_INFO_VALID;
-	res = (*ptr->get_trans_len)(cmd, ptr->off);
+	cmd->op_name = ptr->info_op_name;
+	cmd->data_direction = ptr->info_data_direction;
+	cmd->op_flags = ptr->info_op_flags | SCST_INFO_VALID;
+	cmd->lba_off = ptr->info_lba_off;
+	cmd->lba_len = ptr->info_lba_len;
+	cmd->len_off = ptr->info_len_off;
+	cmd->len_len = ptr->info_len_len;
+	res = (*ptr->get_cdb_info)(cmd, ptr);
 
 out:
 	TRACE_EXIT_RES(res);
@@ -5275,6 +6867,7 @@ __be64 scst_pack_lun(const uint64_t lun, enum scst_lun_addr_method addr_method)
 	TRACE_EXIT_HRES(res >> 48);
 	return cpu_to_be64(res);
 }
+EXPORT_SYMBOL(scst_pack_lun);
 
 /*
  * Function to extract a LUN number from an 8-byte LUN structure in network byte
@@ -5290,30 +6883,28 @@ uint64_t scst_unpack_lun(const uint8_t *lun, int len)
 
 	TRACE_BUFF_FLAG(TRACE_DEBUG, "Raw LUN", lun, len);
 
-	if (unlikely(len < 2)) {
-		PRINT_ERROR("Illegal lun length %d, expected 2 bytes or "
-			"more", len);
-		goto out;
-	}
-
-	if (len > 2) {
-		switch (len) {
-		case 8:
-			if ((*((__be64 *)lun) &
-			  __constant_cpu_to_be64(0x0000FFFFFFFFFFFFLL)) != 0)
-				goto out_err;
-			break;
-		case 4:
-			if (*((__be16 *)&lun[2]) != 0)
-				goto out_err;
-			break;
-		case 6:
-			if (*((__be32 *)&lun[2]) != 0)
-				goto out_err;
-			break;
-		default:
+	switch (len) {
+	case 2:
+		break;
+	case 8:
+		if ((*((__be64 *)lun) & cpu_to_be64(0x0000FFFFFFFFFFFFLL)) != 0)
 			goto out_err;
-		}
+		break;
+	case 4:
+		if (*((__be16 *)&lun[2]) != 0)
+			goto out_err;
+		break;
+	case 6:
+		if (*((__be32 *)&lun[2]) != 0)
+			goto out_err;
+		break;
+	case 1:
+	case 0:
+		PRINT_ERROR("Illegal lun length %d, expected 2 bytes "
+			    "or more", len);
+		goto out;
+	default:
+		goto out_err;
 	}
 
 	address_method = (*lun) >> 6;	/* high 2 bits of byte 0 */
@@ -5339,6 +6930,7 @@ out_err:
 	PRINT_ERROR("%s", "Multi-level LUN unimplemented");
 	goto out;
 }
+EXPORT_SYMBOL(scst_unpack_lun);
 
 /**
  ** Generic parse() support routines.
@@ -5353,19 +6945,14 @@ out_err:
  */
 int scst_calc_block_shift(int sector_size)
 {
-	int block_shift = 0;
-	int t;
+	int block_shift;
 
 	if (sector_size == 0)
 		sector_size = 512;
 
-	t = sector_size;
-	while (1) {
-		if ((t & 1) != 0)
-			break;
-		t >>= 1;
-		block_shift++;
-	}
+	block_shift = ilog2(sector_size);
+	WARN_ON(1 << block_shift != sector_size);
+
 	if (block_shift < 9) {
 		PRINT_ERROR("Wrong sector size %d", sector_size);
 		block_shift = -1;
@@ -5376,66 +6963,84 @@ int scst_calc_block_shift(int sector_size)
 }
 EXPORT_SYMBOL_GPL(scst_calc_block_shift);
 
-/**
- * scst_sbc_generic_parse() - generic SBC parsing
- *
- * Generic parse() for SBC (disk) devices
+/*
+ * Test whether the result of a shift-left operation would be larger than
+ * what fits in a variable with the type of @a.
  */
-int scst_sbc_generic_parse(struct scst_cmd *cmd,
-	int (*get_block_shift)(struct scst_cmd *cmd))
+#define shift_left_overflows(a, b)					\
+	({								\
+		typeof(a) _minus_one = -1LL;				\
+		bool _a_is_signed = _minus_one < 0;			\
+		int _shift = sizeof(1ULL) * 8 - ((b) + _a_is_signed);	\
+		_shift < 0 || ((a) & ~((1ULL << _shift) - 1)) != 0;	\
+	})
+
+/**
+ * scst_generic_parse() - Generic parse() for devices supporting an LBA
+ */
+static inline int scst_generic_parse(struct scst_cmd *cmd, const int timeout[3])
 {
-	int res = 0;
+	const int block_shift = cmd->dev->block_shift;
+	int res = -EINVAL;
 
 	TRACE_ENTRY();
+
+	EXTRACHECKS_BUG_ON(block_shift < 0);
 
 	/*
 	 * SCST sets good defaults for cmd->data_direction and cmd->bufflen,
 	 * therefore change them only if necessary
 	 */
 
-	TRACE_DBG("op_name <%s> direct %d flags %d transfer_len %d",
-	      cmd->op_name, cmd->data_direction, cmd->op_flags, cmd->bufflen);
-
-	switch (cmd->cdb[0]) {
-	case VERIFY_6:
-	case VERIFY:
-	case VERIFY_12:
-	case VERIFY_16:
-		if ((cmd->cdb[1] & BYTCHK) == 0) {
-			cmd->data_len = cmd->bufflen << get_block_shift(cmd);
-			cmd->bufflen = 0;
-			goto set_timeout;
-		} else
-			cmd->data_len = 0;
-		break;
-	default:
-		/* It's all good */
-		break;
-	}
-
 	if (cmd->op_flags & SCST_TRANSFER_LEN_TYPE_FIXED) {
-		int block_shift = get_block_shift(cmd);
 		/*
 		 * No need for locks here, since *_detach() can not be
 		 * called, when there are existing commands.
 		 */
 		cmd->bufflen = cmd->bufflen << block_shift;
+		cmd->data_len = cmd->data_len << block_shift;
 		cmd->out_bufflen = cmd->out_bufflen << block_shift;
 	}
 
-set_timeout:
-	if ((cmd->op_flags & (SCST_SMALL_TIMEOUT | SCST_LONG_TIMEOUT)) == 0)
-		cmd->timeout = SCST_GENERIC_DISK_REG_TIMEOUT;
-	else if (cmd->op_flags & SCST_SMALL_TIMEOUT)
-		cmd->timeout = SCST_GENERIC_DISK_SMALL_TIMEOUT;
-	else if (cmd->op_flags & SCST_LONG_TIMEOUT)
-		cmd->timeout = SCST_GENERIC_DISK_LONG_TIMEOUT;
+	if (unlikely(!(cmd->op_flags & SCST_LBA_NOT_VALID) &&
+		     shift_left_overflows(cmd->lba, block_shift))) {
+		PRINT_WARNING("offset %llu * %u >= 2**63 for device %s (len %lld)",
+			   cmd->lba, 1 << block_shift, cmd->dev->virt_name,
+			   cmd->data_len);
+		scst_set_cmd_error(cmd, SCST_LOAD_SENSE(
+					scst_sense_block_out_range_error));
+		goto out;
+	}
 
-	TRACE_DBG("res %d, bufflen %d, data_len %d, direct %d",
-	      res, cmd->bufflen, cmd->data_len, cmd->data_direction);
+	cmd->timeout = timeout[cmd->op_flags & SCST_BOTH_TIMEOUTS];
+	res = 0;
+
+out:
+	TRACE_DBG("res %d, bufflen %d, data_len %lld, direct %d", res,
+		cmd->bufflen, (long long)cmd->data_len, cmd->data_direction);
 
 	TRACE_EXIT_RES(res);
 	return res;
+}
+
+ /**
+ * scst_sbc_generic_parse() - generic SBC parsing
+  *
+ * Generic parse() for SBC (disk) devices
+  */
+int scst_sbc_generic_parse(struct scst_cmd *cmd)
+{
+	static const int disk_timeout[] = {
+		[0] = SCST_GENERIC_DISK_REG_TIMEOUT,
+		[SCST_SMALL_TIMEOUT] = SCST_GENERIC_DISK_SMALL_TIMEOUT,
+		[SCST_LONG_TIMEOUT] = SCST_GENERIC_DISK_LONG_TIMEOUT,
+		[SCST_BOTH_TIMEOUTS] = SCST_GENERIC_DISK_LONG_TIMEOUT,
+	};
+	BUILD_BUG_ON(SCST_SMALL_TIMEOUT != 1);
+	BUILD_BUG_ON(SCST_LONG_TIMEOUT != 2);
+	BUILD_BUG_ON(SCST_BOTH_TIMEOUTS != 3);
+
+	return scst_generic_parse(cmd, disk_timeout);
 }
 EXPORT_SYMBOL_GPL(scst_sbc_generic_parse);
 
@@ -5444,58 +7049,20 @@ EXPORT_SYMBOL_GPL(scst_sbc_generic_parse);
  *
  * Generic parse() for MMC (cdrom) devices
  */
-int scst_cdrom_generic_parse(struct scst_cmd *cmd,
-	int (*get_block_shift)(struct scst_cmd *cmd))
+int scst_cdrom_generic_parse(struct scst_cmd *cmd)
 {
-	int res = 0;
-
-	TRACE_ENTRY();
-
-	/*
-	 * SCST sets good defaults for cmd->data_direction and cmd->bufflen,
-	 * therefore change them only if necessary
-	 */
-
-	TRACE_DBG("op_name <%s> direct %d flags %d transfer_len %d",
-	      cmd->op_name, cmd->data_direction, cmd->op_flags, cmd->bufflen);
+	static const int cdrom_timeout[] = {
+		[0] = SCST_GENERIC_CDROM_REG_TIMEOUT,
+		[SCST_SMALL_TIMEOUT] = SCST_GENERIC_CDROM_SMALL_TIMEOUT,
+		[SCST_LONG_TIMEOUT] = SCST_GENERIC_CDROM_LONG_TIMEOUT,
+		[SCST_BOTH_TIMEOUTS] = SCST_GENERIC_CDROM_LONG_TIMEOUT,
+	};
+	BUILD_BUG_ON(SCST_SMALL_TIMEOUT != 1);
+	BUILD_BUG_ON(SCST_LONG_TIMEOUT != 2);
+	BUILD_BUG_ON(SCST_BOTH_TIMEOUTS != 3);
 
 	cmd->cdb[1] &= 0x1f;
-
-	switch (cmd->cdb[0]) {
-	case VERIFY_6:
-	case VERIFY:
-	case VERIFY_12:
-	case VERIFY_16:
-		if ((cmd->cdb[1] & BYTCHK) == 0) {
-			cmd->data_len = cmd->bufflen << get_block_shift(cmd);
-			cmd->bufflen = 0;
-			goto set_timeout;
-		}
-		break;
-	default:
-		/* It's all good */
-		break;
-	}
-
-	if (cmd->op_flags & SCST_TRANSFER_LEN_TYPE_FIXED) {
-		int block_shift = get_block_shift(cmd);
-		cmd->bufflen = cmd->bufflen << block_shift;
-		cmd->out_bufflen = cmd->out_bufflen << block_shift;
-	}
-
-set_timeout:
-	if ((cmd->op_flags & (SCST_SMALL_TIMEOUT | SCST_LONG_TIMEOUT)) == 0)
-		cmd->timeout = SCST_GENERIC_CDROM_REG_TIMEOUT;
-	else if (cmd->op_flags & SCST_SMALL_TIMEOUT)
-		cmd->timeout = SCST_GENERIC_CDROM_SMALL_TIMEOUT;
-	else if (cmd->op_flags & SCST_LONG_TIMEOUT)
-		cmd->timeout = SCST_GENERIC_CDROM_LONG_TIMEOUT;
-
-	TRACE_DBG("res=%d, bufflen=%d, direct=%d", res, cmd->bufflen,
-		cmd->data_direction);
-
-	TRACE_EXIT();
-	return res;
+	return scst_generic_parse(cmd, cdrom_timeout);
 }
 EXPORT_SYMBOL_GPL(scst_cdrom_generic_parse);
 
@@ -5504,58 +7071,20 @@ EXPORT_SYMBOL_GPL(scst_cdrom_generic_parse);
  *
  * Generic parse() for MO disk devices
  */
-int scst_modisk_generic_parse(struct scst_cmd *cmd,
-	int (*get_block_shift)(struct scst_cmd *cmd))
+int scst_modisk_generic_parse(struct scst_cmd *cmd)
 {
-	int res = 0;
-
-	TRACE_ENTRY();
-
-	/*
-	 * SCST sets good defaults for cmd->data_direction and cmd->bufflen,
-	 * therefore change them only if necessary
-	 */
-
-	TRACE_DBG("op_name <%s> direct %d flags %d transfer_len %d",
-	      cmd->op_name, cmd->data_direction, cmd->op_flags, cmd->bufflen);
+	static const int modisk_timeout[] = {
+		[0] = SCST_GENERIC_MODISK_REG_TIMEOUT,
+		[SCST_SMALL_TIMEOUT] = SCST_GENERIC_MODISK_SMALL_TIMEOUT,
+		[SCST_LONG_TIMEOUT] = SCST_GENERIC_MODISK_LONG_TIMEOUT,
+		[SCST_BOTH_TIMEOUTS] = SCST_GENERIC_MODISK_LONG_TIMEOUT,
+	};
+	BUILD_BUG_ON(SCST_SMALL_TIMEOUT != 1);
+	BUILD_BUG_ON(SCST_LONG_TIMEOUT != 2);
+	BUILD_BUG_ON(SCST_BOTH_TIMEOUTS != 3);
 
 	cmd->cdb[1] &= 0x1f;
-
-	switch (cmd->cdb[0]) {
-	case VERIFY_6:
-	case VERIFY:
-	case VERIFY_12:
-	case VERIFY_16:
-		if ((cmd->cdb[1] & BYTCHK) == 0) {
-			cmd->data_len = cmd->bufflen << get_block_shift(cmd);
-			cmd->bufflen = 0;
-			goto set_timeout;
-		}
-		break;
-	default:
-		/* It's all good */
-		break;
-	}
-
-	if (cmd->op_flags & SCST_TRANSFER_LEN_TYPE_FIXED) {
-		int block_shift = get_block_shift(cmd);
-		cmd->bufflen = cmd->bufflen << block_shift;
-		cmd->out_bufflen = cmd->out_bufflen << block_shift;
-	}
-
-set_timeout:
-	if ((cmd->op_flags & (SCST_SMALL_TIMEOUT | SCST_LONG_TIMEOUT)) == 0)
-		cmd->timeout = SCST_GENERIC_MODISK_REG_TIMEOUT;
-	else if (cmd->op_flags & SCST_SMALL_TIMEOUT)
-		cmd->timeout = SCST_GENERIC_MODISK_SMALL_TIMEOUT;
-	else if (cmd->op_flags & SCST_LONG_TIMEOUT)
-		cmd->timeout = SCST_GENERIC_MODISK_LONG_TIMEOUT;
-
-	TRACE_DBG("res=%d, bufflen=%d, direct=%d", res, cmd->bufflen,
-		cmd->data_direction);
-
-	TRACE_EXIT_RES(res);
-	return res;
+	return scst_generic_parse(cmd, modisk_timeout);
 }
 EXPORT_SYMBOL_GPL(scst_modisk_generic_parse);
 
@@ -5564,8 +7093,7 @@ EXPORT_SYMBOL_GPL(scst_modisk_generic_parse);
  *
  * Generic parse() for tape devices
  */
-int scst_tape_generic_parse(struct scst_cmd *cmd,
-	int (*get_block_size)(struct scst_cmd *cmd))
+int scst_tape_generic_parse(struct scst_cmd *cmd)
 {
 	int res = 0;
 
@@ -5575,9 +7103,6 @@ int scst_tape_generic_parse(struct scst_cmd *cmd,
 	 * SCST sets good defaults for cmd->data_direction and cmd->bufflen,
 	 * therefore change them only if necessary
 	 */
-
-	TRACE_DBG("op_name <%s> direct %d flags %d transfer_len %d",
-	      cmd->op_name, cmd->data_direction, cmd->op_flags, cmd->bufflen);
 
 	if (cmd->cdb[0] == READ_POSITION) {
 		int tclp = cmd->cdb[1] & 4;
@@ -5592,11 +7117,13 @@ int scst_tape_generic_parse(struct scst_cmd *cmd,
 			cmd->bufflen = 0;
 			cmd->data_direction = SCST_DATA_NONE;
 		}
+		cmd->data_len = cmd->bufflen;
 	}
 
 	if (cmd->op_flags & SCST_TRANSFER_LEN_TYPE_FIXED & cmd->cdb[1]) {
-		int block_size = get_block_size(cmd);
+		int block_size = cmd->dev->block_size;
 		cmd->bufflen = cmd->bufflen * block_size;
+		cmd->data_len = cmd->data_len * block_size;
 		cmd->out_bufflen = cmd->out_bufflen * block_size;
 	}
 
@@ -5623,8 +7150,6 @@ static int scst_null_parse(struct scst_cmd *cmd)
 	 * therefore change them only if necessary
 	 */
 
-	TRACE_DBG("op_name <%s> direct %d flags %d transfer_len %d",
-	      cmd->op_name, cmd->data_direction, cmd->op_flags, cmd->bufflen);
 #if 0
 	switch (cmd->cdb[0]) {
 	default:
@@ -5632,6 +7157,7 @@ static int scst_null_parse(struct scst_cmd *cmd)
 		break;
 	}
 #endif
+
 	TRACE_DBG("res %d bufflen %d direct %d",
 	      res, cmd->bufflen, cmd->data_direction);
 
@@ -5644,8 +7170,7 @@ static int scst_null_parse(struct scst_cmd *cmd)
  *
  * Generic parse() for changer devices
  */
-int scst_changer_generic_parse(struct scst_cmd *cmd,
-	int (*nothing)(struct scst_cmd *cmd))
+int scst_changer_generic_parse(struct scst_cmd *cmd)
 {
 	int res = scst_null_parse(cmd);
 
@@ -5663,8 +7188,7 @@ EXPORT_SYMBOL_GPL(scst_changer_generic_parse);
  *
  * Generic parse() for SCSI processor devices
  */
-int scst_processor_generic_parse(struct scst_cmd *cmd,
-	int (*nothing)(struct scst_cmd *cmd))
+int scst_processor_generic_parse(struct scst_cmd *cmd)
 {
 	int res = scst_null_parse(cmd);
 
@@ -5682,8 +7206,7 @@ EXPORT_SYMBOL_GPL(scst_processor_generic_parse);
  *
  * Generic parse() for RAID devices
  */
-int scst_raid_generic_parse(struct scst_cmd *cmd,
-	int (*nothing)(struct scst_cmd *cmd))
+int scst_raid_generic_parse(struct scst_cmd *cmd)
 {
 	int res = scst_null_parse(cmd);
 
@@ -5695,6 +7218,57 @@ int scst_raid_generic_parse(struct scst_cmd *cmd,
 	return res;
 }
 EXPORT_SYMBOL_GPL(scst_raid_generic_parse);
+
+int scst_do_internal_parsing(struct scst_cmd *cmd)
+{
+	int res, rc;
+
+	TRACE_ENTRY();
+
+	switch (cmd->dev->type) {
+	case TYPE_DISK:
+		rc = scst_sbc_generic_parse(cmd);
+		break;
+	case TYPE_TAPE:
+		rc = scst_tape_generic_parse(cmd);
+		break;
+	case TYPE_PROCESSOR:
+		rc = scst_processor_generic_parse(cmd);
+		break;
+	case TYPE_ROM:
+		rc = scst_cdrom_generic_parse(cmd);
+		break;
+	case TYPE_MOD:
+		rc = scst_modisk_generic_parse(cmd);
+		break;
+	case TYPE_MEDIUM_CHANGER:
+		rc = scst_changer_generic_parse(cmd);
+		break;
+	case TYPE_RAID:
+		rc = scst_raid_generic_parse(cmd);
+		break;
+	default:
+		PRINT_ERROR("Internal parse for type %d not supported",
+			cmd->dev->type);
+		goto out_hw_err;
+	}
+
+	if (rc != 0)
+		goto out_abn;
+
+	res = SCST_CMD_STATE_DEFAULT;
+
+out:
+	TRACE_EXIT();
+	return res;
+
+out_hw_err:
+	scst_set_cmd_error(cmd, SCST_LOAD_SENSE(scst_sense_hardw_error));
+
+out_abn:
+	res = scst_get_cmd_abnormal_done_state(cmd);
+	goto out;
+}
 
 /**
  ** Generic dev_done() support routines.
@@ -5722,10 +7296,8 @@ int scst_block_generic_dev_done(struct scst_cmd *cmd,
 	 * therefore change them only if necessary
 	 */
 
-	if ((status == SAM_STAT_GOOD) || (status == SAM_STAT_CONDITION_MET)) {
-		switch (opcode) {
-		case READ_CAPACITY:
-		{
+	if (unlikely(opcode == READ_CAPACITY)) {
+		if ((status == SAM_STAT_GOOD) || (status == SAM_STAT_CONDITION_MET)) {
 			/* Always keep track of disk capacity */
 			int buffer_size, sector_size, sh;
 			uint8_t *buffer;
@@ -5733,15 +7305,14 @@ int scst_block_generic_dev_done(struct scst_cmd *cmd,
 			buffer_size = scst_get_buf_full(cmd, &buffer);
 			if (unlikely(buffer_size <= 0)) {
 				if (buffer_size < 0) {
-					PRINT_ERROR("%s: Unable to get the"
-					" buffer (%d)",	__func__, buffer_size);
+					PRINT_ERROR("%s: Unable to get cmd "
+						"buffer (%d)",	__func__,
+						buffer_size);
 				}
 				goto out;
 			}
 
-			sector_size =
-			    ((buffer[4] << 24) | (buffer[5] << 16) |
-			     (buffer[6] << 8) | (buffer[7] << 0));
+			sector_size = get_unaligned_be32(&buffer[4]);
 			scst_put_buf_full(cmd, buffer);
 			if (sector_size != 0)
 				sh = scst_calc_block_shift(sector_size);
@@ -5749,12 +7320,9 @@ int scst_block_generic_dev_done(struct scst_cmd *cmd,
 				sh = 0;
 			set_block_shift(cmd, sh);
 			TRACE_DBG("block_shift %d", sh);
-			break;
 		}
-		default:
-			/* It's all good */
-			break;
-		}
+	} else {
+		/* It's all good */
 	}
 
 	TRACE_DBG("cmd->is_send_status=%x, cmd->resp_data_len=%d, "
@@ -5787,7 +7355,7 @@ int scst_tape_generic_dev_done(struct scst_cmd *cmd,
 	 * therefore change them only if necessary
 	 */
 
-	if (cmd->status != SAM_STAT_GOOD)
+	if (unlikely(cmd->status != SAM_STAT_GOOD))
 		goto out;
 
 	switch (opcode) {
@@ -5809,8 +7377,7 @@ int scst_tape_generic_dev_done(struct scst_cmd *cmd,
 		TRACE_DBG("%s", "MODE_SENSE");
 		if ((cmd->cdb[2] & 0xC0) == 0) {
 			if (buffer[3] == 8) {
-				bs = (buffer[9] << 16) |
-				    (buffer[10] << 8) | buffer[11];
+				bs = get_unaligned_be24(&buffer[9]);
 				set_block_size(cmd, bs);
 			}
 		}
@@ -5818,8 +7385,7 @@ int scst_tape_generic_dev_done(struct scst_cmd *cmd,
 	case MODE_SELECT:
 		TRACE_DBG("%s", "MODE_SELECT");
 		if (buffer[3] == 8) {
-			bs = (buffer[9] << 16) | (buffer[10] << 8) |
-			    (buffer[11]);
+			bs = get_unaligned_be24(&buffer[9]);
 			set_block_size(cmd, bs);
 		}
 		break;
@@ -5840,6 +7406,160 @@ out:
 	return res;
 }
 EXPORT_SYMBOL_GPL(scst_tape_generic_dev_done);
+
+typedef void (*scst_set_cdb_lba_fn_t)(struct scst_cmd *cmd, int64_t lba);
+
+static void scst_set_cdb_lba1(struct scst_cmd *cmd, int64_t lba)
+{
+	TRACE_ENTRY();
+
+	cmd->cdb[cmd->lba_off] = lba;
+
+	TRACE_EXIT();
+	return;
+}
+
+static void scst_set_cdb_lba2(struct scst_cmd *cmd, int64_t lba)
+{
+	TRACE_ENTRY();
+
+	put_unaligned_be16(lba, &cmd->cdb[cmd->lba_off]);
+
+	TRACE_EXIT();
+	return;
+}
+
+static void scst_set_cdb_lba3(struct scst_cmd *cmd, int64_t lba)
+{
+	TRACE_ENTRY();
+
+	put_unaligned_be24(lba, &cmd->cdb[cmd->lba_off]);
+
+	TRACE_EXIT();
+	return;
+}
+
+static void scst_set_cdb_lba4(struct scst_cmd *cmd, int64_t lba)
+{
+	TRACE_ENTRY();
+
+	put_unaligned_be32(lba, &cmd->cdb[cmd->lba_off]);
+
+	TRACE_EXIT();
+	return;
+}
+
+static void scst_set_cdb_lba8(struct scst_cmd *cmd, int64_t lba)
+{
+	TRACE_ENTRY();
+
+	put_unaligned_be64(lba, &cmd->cdb[cmd->lba_off]);
+
+	TRACE_EXIT();
+	return;
+}
+
+static const scst_set_cdb_lba_fn_t scst_set_cdb_lba_fns[9] = {
+	[1] = scst_set_cdb_lba1,
+	[2] = scst_set_cdb_lba2,
+	[3] = scst_set_cdb_lba3,
+	[4] = scst_set_cdb_lba4,
+	[8] = scst_set_cdb_lba8,
+};
+
+int scst_set_cdb_lba(struct scst_cmd *cmd, int64_t lba)
+{
+	int res;
+
+	TRACE_ENTRY();
+
+	EXTRACHECKS_BUG_ON(cmd->op_flags & SCST_LBA_NOT_VALID);
+
+	scst_set_cdb_lba_fns[cmd->lba_len](cmd, lba);
+	res = 0;
+
+	TRACE_DBG("cmd %p, new LBA %lld", cmd, (unsigned long long)lba);
+
+	TRACE_EXIT_RES(res);
+	return res;
+}
+EXPORT_SYMBOL_GPL(scst_set_cdb_lba);
+
+typedef void (*scst_set_cdb_transf_len_fn_t)(struct scst_cmd *cmd, int len);
+
+static void scst_set_cdb_transf_len1(struct scst_cmd *cmd, int len)
+{
+	TRACE_ENTRY();
+
+	cmd->cdb[cmd->len_off] = len;
+
+	TRACE_EXIT();
+	return;
+}
+
+static void scst_set_cdb_transf_len2(struct scst_cmd *cmd, int len)
+{
+	TRACE_ENTRY();
+
+	put_unaligned_be16(len, &cmd->cdb[cmd->len_off]);
+
+	TRACE_EXIT();
+	return;
+}
+
+static void scst_set_cdb_transf_len3(struct scst_cmd *cmd, int len)
+{
+	TRACE_ENTRY();
+
+	put_unaligned_be24(len, &cmd->cdb[cmd->len_off]);
+
+	TRACE_EXIT();
+	return;
+}
+
+static void scst_set_cdb_transf_len4(struct scst_cmd *cmd, int len)
+{
+	TRACE_ENTRY();
+
+	put_unaligned_be32(len, &cmd->cdb[cmd->len_off]);
+
+	TRACE_EXIT();
+	return;
+}
+
+static void scst_set_cdb_transf_len8(struct scst_cmd *cmd, int len)
+{
+	TRACE_ENTRY();
+
+	put_unaligned_be64(len, &cmd->cdb[cmd->len_off]);
+
+	TRACE_EXIT();
+	return;
+}
+
+static const scst_set_cdb_transf_len_fn_t scst_set_cdb_transf_len_fns[9] = {
+	[1] = scst_set_cdb_transf_len1,
+	[2] = scst_set_cdb_transf_len2,
+	[3] = scst_set_cdb_transf_len3,
+	[4] = scst_set_cdb_transf_len4,
+	[8] = scst_set_cdb_transf_len8,
+};
+
+int scst_set_cdb_transf_len(struct scst_cmd *cmd, int len)
+{
+	int res;
+
+	TRACE_ENTRY();
+
+	scst_set_cdb_transf_len_fns[cmd->len_len](cmd, len);
+	res = 0;
+
+	TRACE_DBG("cmd %p, new len %d", cmd, len);
+
+	TRACE_EXIT_RES(res);
+	return res;
+}
+EXPORT_SYMBOL_GPL(scst_set_cdb_transf_len);
 
 static void scst_check_internal_sense(struct scst_device *dev, int result,
 	uint8_t *sense, int sense_len)
@@ -5891,158 +7611,17 @@ enum dma_data_direction scst_to_tgt_dma_dir(int scst_dir)
 }
 EXPORT_SYMBOL(scst_to_tgt_dma_dir);
 
-/**
- * scst_obtain_device_parameters() - obtain device control parameters
+/*
+ * Called under dev_lock and BH off.
  *
- * Issues a MODE SENSE for control mode page data and sets the corresponding
- * dev's parameter from it. Returns 0 on success and not 0 otherwise.
+ * !! scst_unblock_aborted_cmds() must be called after this function !!
  */
-int scst_obtain_device_parameters(struct scst_device *dev)
-{
-	int rc, i;
-	uint8_t cmd[16];
-	uint8_t buffer[4+0x0A];
-	uint8_t sense_buffer[SCSI_SENSE_BUFFERSIZE];
-
-	TRACE_ENTRY();
-
-	EXTRACHECKS_BUG_ON(dev->scsi_dev == NULL);
-
-	for (i = 0; i < 5; i++) {
-		/* Get control mode page */
-		memset(cmd, 0, sizeof(cmd));
-#if 0
-		cmd[0] = MODE_SENSE_10;
-		cmd[1] = 0;
-		cmd[2] = 0x0A;
-		cmd[8] = sizeof(buffer); /* it's < 256 */
-#else
-		cmd[0] = MODE_SENSE;
-		cmd[1] = 8; /* DBD */
-		cmd[2] = 0x0A;
-		cmd[4] = sizeof(buffer);
-#endif
-
-		memset(buffer, 0, sizeof(buffer));
-		memset(sense_buffer, 0, sizeof(sense_buffer));
-
-		TRACE(TRACE_SCSI, "%s", "Doing internal MODE_SENSE");
-		rc = scsi_execute(dev->scsi_dev, cmd, SCST_DATA_READ, buffer,
-				sizeof(buffer), sense_buffer, 15, 0, 0
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29)
-				, NULL
-#endif
-				);
-
-		TRACE_DBG("MODE_SENSE done: %x", rc);
-
-		if (scsi_status_is_good(rc)) {
-			int q;
-
-			PRINT_BUFF_FLAG(TRACE_SCSI, "Returned control mode "
-				"page data", buffer, sizeof(buffer));
-
-			dev->tst = buffer[4+2] >> 5;
-			q = buffer[4+3] >> 4;
-			if (q > SCST_CONTR_MODE_QUEUE_ALG_UNRESTRICTED_REORDER) {
-				PRINT_ERROR("Too big QUEUE ALG %x, dev %s",
-					dev->queue_alg, dev->virt_name);
-			}
-			dev->queue_alg = q;
-			dev->swp = (buffer[4+4] & 0x8) >> 3;
-			dev->tas = (buffer[4+5] & 0x40) >> 6;
-			dev->d_sense = (buffer[4+2] & 0x4) >> 2;
-
-			/*
-			 * Unfortunately, SCSI ML doesn't provide a way to
-			 * specify commands task attribute, so we can rely on
-			 * device's restricted reordering only. Linux I/O
-			 * subsystem doesn't reorder pass-through (PC) requests.
-			 */
-			dev->has_own_order_mgmt = !dev->queue_alg;
-
-			PRINT_INFO("Device %s: TST %x, QUEUE ALG %x, SWP %x, "
-				"TAS %x, D_SENSE %d, has_own_order_mgmt %d",
-				dev->virt_name, dev->tst, dev->queue_alg,
-				dev->swp, dev->tas, dev->d_sense,
-				dev->has_own_order_mgmt);
-
-			goto out;
-		} else {
-			scst_check_internal_sense(dev, rc, sense_buffer,
-				sizeof(sense_buffer));
-#if 0
-			if ((status_byte(rc) == CHECK_CONDITION) &&
-			    SCST_SENSE_VALID(sense_buffer)) {
-#else
-			/*
-			 * 3ware controller is buggy and returns CONDITION_GOOD
-			 * instead of CHECK_CONDITION
-			 */
-			if (SCST_SENSE_VALID(sense_buffer)) {
-#endif
-				PRINT_BUFF_FLAG(TRACE_SCSI, "Returned sense "
-					"data", sense_buffer,
-					sizeof(sense_buffer));
-				if (scst_analyze_sense(sense_buffer,
-						sizeof(sense_buffer),
-						SCST_SENSE_KEY_VALID,
-						ILLEGAL_REQUEST, 0, 0)) {
-					PRINT_INFO("Device %s doesn't support "
-						"MODE SENSE", dev->virt_name);
-					break;
-				} else if (scst_analyze_sense(sense_buffer,
-						sizeof(sense_buffer),
-						SCST_SENSE_KEY_VALID,
-						NOT_READY, 0, 0)) {
-					PRINT_ERROR("Device %s not ready",
-						dev->virt_name);
-					break;
-				}
-			} else {
-				PRINT_INFO("Internal MODE SENSE to "
-					"device %s failed: %x",
-					dev->virt_name, rc);
-				PRINT_BUFF_FLAG(TRACE_SCSI, "MODE SENSE sense",
-					sense_buffer, sizeof(sense_buffer));
-				switch (host_byte(rc)) {
-				case DID_RESET:
-				case DID_ABORT:
-				case DID_SOFT_ERROR:
-					break;
-				default:
-					goto brk;
-				}
-				switch (driver_byte(rc)) {
-				case DRIVER_BUSY:
-				case DRIVER_SOFT:
-					break;
-				default:
-					goto brk;
-				}
-			}
-		}
-	}
-brk:
-	PRINT_WARNING("Unable to get device's %s control mode page, using "
-		"existing values/defaults: TST %x, QUEUE ALG %x, SWP %x, "
-		"TAS %x, D_SENSE %d, has_own_order_mgmt %d", dev->virt_name,
-		dev->tst, dev->queue_alg, dev->swp, dev->tas, dev->d_sense,
-		dev->has_own_order_mgmt);
-
-out:
-	TRACE_EXIT();
-	return 0;
-}
-EXPORT_SYMBOL_GPL(scst_obtain_device_parameters);
-
-/* Called under dev_lock and BH off */
 void scst_process_reset(struct scst_device *dev,
 	struct scst_session *originator, struct scst_cmd *exclude_cmd,
 	struct scst_mgmt_cmd *mcmd, bool setUA)
 {
 	struct scst_tgt_dev *tgt_dev;
-	struct scst_cmd *cmd, *tcmd;
+	struct scst_cmd *cmd;
 
 	TRACE_ENTRY();
 
@@ -6098,20 +7677,6 @@ void scst_process_reset(struct scst_device *dev,
 		spin_unlock_irq(&sess->sess_list_lock);
 	}
 
-	list_for_each_entry_safe(cmd, tcmd, &dev->blocked_cmd_list,
-				blocked_cmd_list_entry) {
-		if (test_bit(SCST_CMD_ABORTED, &cmd->cmd_flags)) {
-			list_del(&cmd->blocked_cmd_list_entry);
-			TRACE_MGMT_DBG("Adding aborted blocked cmd %p "
-				"to active cmd list", cmd);
-			spin_lock_irq(&cmd->cmd_threads->cmd_list_lock);
-			list_add_tail(&cmd->cmd_list_entry,
-				&cmd->cmd_threads->active_cmd_list);
-			wake_up(&cmd->cmd_threads->cmd_list_waitQ);
-			spin_unlock_irq(&cmd->cmd_threads->cmd_list_lock);
-		}
-	}
-
 	if (setUA) {
 		uint8_t sense_buffer[SCST_STANDARD_SENSE_LEN];
 		int sl = scst_set_sense(sense_buffer, sizeof(sense_buffer),
@@ -6134,7 +7699,7 @@ void scst_tgt_dev_del_free_UA(struct scst_tgt_dev *tgt_dev,
 }
 
 /* No locks, no IRQ or IRQ-disabled context allowed */
-int scst_set_pending_UA(struct scst_cmd *cmd)
+int scst_set_pending_UA(struct scst_cmd *cmd, uint8_t *buf, int *size)
 {
 	int res = 0, i;
 	struct scst_tgt_dev_UA *UA_entry;
@@ -6156,20 +7721,20 @@ int scst_set_pending_UA(struct scst_cmd *cmd)
 		goto out;
 	}
 
-	TRACE_MGMT_DBG("Setting pending UA cmd %p", cmd);
-
 	spin_lock_bh(&cmd->tgt_dev->tgt_dev_lock);
 
 again:
 	/* UA list could be cleared behind us, so retest */
 	if (list_empty(&cmd->tgt_dev->UA_list)) {
-		TRACE_DBG("%s",
-		      "SCST_TGT_DEV_UA_PENDING set, but UA_list empty");
+		TRACE_DBG("SCST_TGT_DEV_UA_PENDING set, but UA_list empty");
 		res = -1;
 		goto out_unlock;
-	}
+	} else
+		TRACE_MGMT_DBG("Setting pending UA cmd %p (tgt_dev %p, dev %s, "
+			"initiator %s)", cmd->tgt_dev, cmd, cmd->dev->virt_name,
+			cmd->sess->initiator_name);
 
-	UA_entry = list_entry(cmd->tgt_dev->UA_list.next, typeof(*UA_entry),
+	UA_entry = list_first_entry(&cmd->tgt_dev->UA_list, typeof(*UA_entry),
 			      UA_list_entry);
 
 	TRACE_DBG("next %p UA_entry %p",
@@ -6203,9 +7768,22 @@ again:
 		goto again;
 	}
 
-	if (scst_set_cmd_error_sense(cmd, UA_entry->UA_sense_buffer,
-			UA_entry->UA_valid_sense_len) != 0)
-		goto out_unlock;
+	if (buf == NULL) {
+		if (scst_set_cmd_error_sense(cmd, UA_entry->UA_sense_buffer,
+				UA_entry->UA_valid_sense_len) != 0)
+			goto out_unlock;
+	} else {
+		sBUG_ON(*size == 0);
+		if (UA_entry->UA_valid_sense_len > *size) {
+			TRACE(TRACE_MINOR, "%s: Being returned UA truncated "
+				"to size %d (needed %d)", cmd->op_name,
+				*size, UA_entry->UA_valid_sense_len);
+			*size = UA_entry->UA_valid_sense_len;
+		}
+		TRACE_DBG("Returning UA in buffer %p (size %d)", buf, *size);
+		memcpy(buf, UA_entry->UA_sense_buffer, *size);
+		*size = UA_entry->UA_valid_sense_len;
+	}
 
 	cmd->ua_ignore = 1;
 
@@ -6298,7 +7876,8 @@ static void scst_alloc_set_UA(struct scst_tgt_dev *tgt_dev,
 
 	set_bit(SCST_TGT_DEV_UA_PENDING, &tgt_dev->tgt_dev_flags);
 
-	TRACE_MGMT_DBG("Adding new UA to tgt_dev %p", tgt_dev);
+	TRACE_MGMT_DBG("Adding new UA to tgt_dev %p (dev %s, initiator %s)",
+		tgt_dev, tgt_dev->dev->virt_name, tgt_dev->sess->initiator_name);
 
 	if (flags & SCST_SET_UA_FLAG_AT_HEAD)
 		list_add(&UA_entry->UA_list_entry, &tgt_dev->UA_list);
@@ -6323,7 +7902,9 @@ static void __scst_check_set_UA(struct scst_tgt_dev *tgt_dev,
 	list_for_each_entry(UA_entry_tmp, &tgt_dev->UA_list,
 			    UA_list_entry) {
 		if (memcmp(sense, UA_entry_tmp->UA_sense_buffer, len) == 0) {
-			TRACE_MGMT_DBG("%s", "UA already exists");
+			TRACE_DBG("UA already exists (dev %s, "
+				"initiator %s)", tgt_dev->dev->virt_name,
+				tgt_dev->sess->initiator_name);
 			skip_UA = 1;
 			break;
 		}
@@ -6370,24 +7951,46 @@ void scst_dev_check_set_local_UA(struct scst_device *dev,
 	return;
 }
 
-/* Called under dev_lock and BH off */
-void __scst_dev_check_set_UA(struct scst_device *dev,
+/*
+ * Called under dev_lock and BH off. Returns true if scst_unblock_aborted_cmds()
+ * should be called outside of the dev_lock.
+ */
+static bool __scst_dev_check_set_UA(struct scst_device *dev,
 	struct scst_cmd *exclude, const uint8_t *sense, int sense_len)
 {
+	bool res = false;
+
 	TRACE_ENTRY();
 
 	TRACE_MGMT_DBG("Processing UA dev %s", dev->virt_name);
 
 	/* Check for reset UA */
 	if (scst_analyze_sense(sense, sense_len, SCST_SENSE_ASC_VALID,
-				0, SCST_SENSE_ASC_UA_RESET, 0))
+				0, SCST_SENSE_ASC_UA_RESET, 0)) {
 		scst_process_reset(dev,
 				   (exclude != NULL) ? exclude->sess : NULL,
 				   exclude, NULL, false);
+		res = true;
+	}
 
 	scst_dev_check_set_local_UA(dev, exclude, sense, sense_len);
 
-	TRACE_EXIT();
+	TRACE_EXIT_RES(res);
+	return res;
+}
+
+void scst_dev_check_set_UA(struct scst_device *dev,
+	struct scst_cmd *exclude, const uint8_t *sense, int sense_len)
+{
+	bool rc;
+
+	spin_lock_bh(&dev->dev_lock);
+	rc = __scst_dev_check_set_UA(dev, exclude, sense, sense_len);
+	spin_unlock_bh(&dev->dev_lock);
+
+	if (rc)
+		scst_unblock_aborted_cmds(NULL, NULL, dev, false);
+
 	return;
 }
 
@@ -6412,229 +8015,108 @@ static void scst_free_all_UA(struct scst_tgt_dev *tgt_dev)
 	return;
 }
 
-/* No locks */
-struct scst_cmd *__scst_check_deferred_commands(struct scst_order_data *order_data)
+/*
+ * sn_lock supposed to be locked and IRQs off. Might drop then reacquire
+ * it inside.
+ */
+struct scst_cmd *__scst_check_deferred_commands_locked(
+	struct scst_order_data *order_data, bool return_first)
 {
 	struct scst_cmd *res = NULL, *cmd, *t;
 	typeof(order_data->expected_sn) expected_sn = order_data->expected_sn;
+	bool activate = !return_first, first = true, found = false;
 
-	spin_lock_irq(&order_data->sn_lock);
+	TRACE_ENTRY();
 
 	if (unlikely(order_data->hq_cmd_count != 0))
-		goto out_unlock;
+		goto out;
 
 restart:
 	list_for_each_entry_safe(cmd, t, &order_data->deferred_cmd_list,
 				sn_cmd_list_entry) {
-		EXTRACHECKS_BUG_ON(cmd->queue_type ==
-			SCST_CMD_QUEUE_HEAD_OF_QUEUE);
+		EXTRACHECKS_BUG_ON((cmd->queue_type != SCST_CMD_QUEUE_SIMPLE) &&
+				   (cmd->queue_type != SCST_CMD_QUEUE_ORDERED));
 		if (cmd->sn == expected_sn) {
+			bool stop = (cmd->sn_slot == NULL);
+
 			TRACE_SN("Deferred command %p (sn %d, set %d) found",
 				cmd, cmd->sn, cmd->sn_set);
+
 			order_data->def_cmd_count--;
 			list_del(&cmd->sn_cmd_list_entry);
-			if (res == NULL)
-				res = cmd;
-			else {
+
+			if (activate) {
 				spin_lock(&cmd->cmd_threads->cmd_list_lock);
-				TRACE_SN("Adding cmd %p to active cmd list",
-					cmd);
+				TRACE_SN("Adding cmd %p to active cmd list", cmd);
 				list_add_tail(&cmd->cmd_list_entry,
 					&cmd->cmd_threads->active_cmd_list);
 				wake_up(&cmd->cmd_threads->cmd_list_waitQ);
 				spin_unlock(&cmd->cmd_threads->cmd_list_lock);
+				/* !! At this point cmd can be already dead !! */
 			}
+			if (first) {
+				if (!activate)
+					res = cmd;
+				if (stop) {
+					/*
+					 * Then there can be only one command
+					 * with this SN, so there's no point
+					 * to iterate further.
+					 */
+					goto out;
+				}
+				first = false;
+				activate = true;
+			}
+			found = true;
 		}
 	}
-	if (res != NULL)
-		goto out_unlock;
+	if (found)
+		goto out;
 
 	list_for_each_entry(cmd, &order_data->skipped_sn_list,
 				sn_cmd_list_entry) {
-		EXTRACHECKS_BUG_ON(cmd->queue_type ==
-			SCST_CMD_QUEUE_HEAD_OF_QUEUE);
+		EXTRACHECKS_BUG_ON(cmd->queue_type == SCST_CMD_QUEUE_HEAD_OF_QUEUE);
 		if (cmd->sn == expected_sn) {
-			atomic_t *slot = cmd->sn_slot;
 			/*
-			 * !! At this point any pointer in cmd, except !!
-			 * !! sn_slot and sn_cmd_list_entry, could be	!!
-			 * !! already destroyed				!!
+			 * !! At this point any pointer in cmd, except	     !!
+			 * !! cur_order_data, sn_slot and sn_cmd_list_entry, !!
+			 * !! could be already destroyed!		     !!
 			 */
 			TRACE_SN("cmd %p (tag %llu) with skipped sn %d found",
-				 cmd,
-				 (long long unsigned int)cmd->tag,
-				 cmd->sn);
+				 cmd, (long long unsigned int)cmd->tag, cmd->sn);
 			order_data->def_cmd_count--;
 			list_del(&cmd->sn_cmd_list_entry);
 			spin_unlock_irq(&order_data->sn_lock);
+			scst_inc_expected_sn(cmd);
 			if (test_and_set_bit(SCST_CMD_CAN_BE_DESTROYED,
 					     &cmd->cmd_flags))
-				scst_destroy_put_cmd(cmd);
-			scst_inc_expected_sn(order_data, slot);
+				scst_destroy_cmd(cmd);
 			expected_sn = order_data->expected_sn;
 			spin_lock_irq(&order_data->sn_lock);
 			goto restart;
 		}
 	}
 
-out_unlock:
-	spin_unlock_irq(&order_data->sn_lock);
+out:
+	TRACE_EXIT_HRES((unsigned long)res);
 	return res;
 }
 
-/*****************************************************************
- ** The following thr_data functions are necessary, because the
- ** kernel doesn't provide a better way to have threads local
- ** storage
- *****************************************************************/
-
-/**
- * scst_add_thr_data() - add the current thread's local data
- *
- * Adds local to the current thread data to tgt_dev
- * (they will be local for the tgt_dev and current thread).
- */
-void scst_add_thr_data(struct scst_tgt_dev *tgt_dev,
-	struct scst_thr_data_hdr *data,
-	void (*free_fn) (struct scst_thr_data_hdr *data))
+/* No locks */
+struct scst_cmd *__scst_check_deferred_commands(
+	struct scst_order_data *order_data, bool return_first)
 {
-	data->owner_thr = current;
-	atomic_set(&data->ref, 1);
-	EXTRACHECKS_BUG_ON(free_fn == NULL);
-	data->free_fn = free_fn;
-	spin_lock(&tgt_dev->thr_data_lock);
-	list_add_tail(&data->thr_data_list_entry, &tgt_dev->thr_data_list);
-	spin_unlock(&tgt_dev->thr_data_lock);
-}
-EXPORT_SYMBOL_GPL(scst_add_thr_data);
-
-/**
- * scst_del_all_thr_data() - delete all thread's local data
- *
- * Deletes all local to threads data from tgt_dev
- */
-void scst_del_all_thr_data(struct scst_tgt_dev *tgt_dev)
-{
-	spin_lock(&tgt_dev->thr_data_lock);
-	while (!list_empty(&tgt_dev->thr_data_list)) {
-		struct scst_thr_data_hdr *d = list_entry(
-				tgt_dev->thr_data_list.next, typeof(*d),
-				thr_data_list_entry);
-		list_del(&d->thr_data_list_entry);
-		spin_unlock(&tgt_dev->thr_data_lock);
-		scst_thr_data_put(d);
-		spin_lock(&tgt_dev->thr_data_lock);
-	}
-	spin_unlock(&tgt_dev->thr_data_lock);
-	return;
-}
-EXPORT_SYMBOL_GPL(scst_del_all_thr_data);
-
-/**
- * scst_dev_del_all_thr_data() - delete all thread's local data from device
- *
- * Deletes all local to threads data from all tgt_dev's of the device
- */
-void scst_dev_del_all_thr_data(struct scst_device *dev)
-{
-	struct scst_tgt_dev *tgt_dev;
+	struct scst_cmd *res;
 
 	TRACE_ENTRY();
 
-	mutex_lock(&scst_mutex);
+	spin_lock_irq(&order_data->sn_lock);
+	res = __scst_check_deferred_commands_locked(order_data, return_first);
+	spin_unlock_irq(&order_data->sn_lock);
 
-	list_for_each_entry(tgt_dev, &dev->dev_tgt_dev_list,
-				dev_tgt_dev_list_entry) {
-		scst_del_all_thr_data(tgt_dev);
-	}
-
-	mutex_unlock(&scst_mutex);
-
-	TRACE_EXIT();
-	return;
-}
-EXPORT_SYMBOL_GPL(scst_dev_del_all_thr_data);
-
-/* thr_data_lock supposed to be held */
-static struct scst_thr_data_hdr *__scst_find_thr_data_locked(
-	struct scst_tgt_dev *tgt_dev, struct task_struct *tsk)
-{
-	struct scst_thr_data_hdr *res = NULL, *d;
-
-	list_for_each_entry(d, &tgt_dev->thr_data_list, thr_data_list_entry) {
-		if (d->owner_thr == tsk) {
-			res = d;
-			scst_thr_data_get(res);
-			break;
-		}
-	}
+	TRACE_EXIT_HRES((unsigned long)res);
 	return res;
-}
-
-/**
- * __scst_find_thr_data() - find local to the thread data
- *
- * Finds local to the thread data. Returns NULL, if they not found.
- */
-struct scst_thr_data_hdr *__scst_find_thr_data(struct scst_tgt_dev *tgt_dev,
-	struct task_struct *tsk)
-{
-	struct scst_thr_data_hdr *res;
-
-	spin_lock(&tgt_dev->thr_data_lock);
-	res = __scst_find_thr_data_locked(tgt_dev, tsk);
-	spin_unlock(&tgt_dev->thr_data_lock);
-
-	return res;
-}
-EXPORT_SYMBOL_GPL(__scst_find_thr_data);
-
-bool scst_del_thr_data(struct scst_tgt_dev *tgt_dev, struct task_struct *tsk)
-{
-	bool res;
-	struct scst_thr_data_hdr *td;
-
-	spin_lock(&tgt_dev->thr_data_lock);
-
-	td = __scst_find_thr_data_locked(tgt_dev, tsk);
-	if (td != NULL) {
-		list_del(&td->thr_data_list_entry);
-		res = true;
-	} else
-		res = false;
-
-	spin_unlock(&tgt_dev->thr_data_lock);
-
-	if (td != NULL) {
-		/* the find() fn also gets it */
-		scst_thr_data_put(td);
-		scst_thr_data_put(td);
-	}
-
-	return res;
-}
-
-static void __scst_unblock_deferred(struct scst_order_data *order_data,
-	struct scst_cmd *out_of_sn_cmd)
-{
-	EXTRACHECKS_BUG_ON(!out_of_sn_cmd->sn_set);
-
-	if (out_of_sn_cmd->sn == order_data->expected_sn) {
-		scst_inc_expected_sn(order_data, out_of_sn_cmd->sn_slot);
-		scst_make_deferred_commands_active(order_data);
-	} else {
-		out_of_sn_cmd->out_of_sn = 1;
-		spin_lock_irq(&order_data->sn_lock);
-		order_data->def_cmd_count++;
-		list_add_tail(&out_of_sn_cmd->sn_cmd_list_entry,
-			      &order_data->skipped_sn_list);
-		TRACE_SN("out_of_sn_cmd %p with sn %d added to skipped_sn_list"
-			" (expected_sn %d)", out_of_sn_cmd, out_of_sn_cmd->sn,
-			order_data->expected_sn);
-		spin_unlock_irq(&order_data->sn_lock);
-	}
-
-	return;
 }
 
 void scst_unblock_deferred(struct scst_order_data *order_data,
@@ -6647,7 +8129,27 @@ void scst_unblock_deferred(struct scst_order_data *order_data,
 		goto out;
 	}
 
-	__scst_unblock_deferred(order_data, out_of_sn_cmd);
+	if (out_of_sn_cmd->sn == order_data->expected_sn) {
+		TRACE_SN("out of sn cmd %p (expected sn %d)",
+			out_of_sn_cmd, order_data->expected_sn);
+		scst_inc_expected_sn(out_of_sn_cmd);
+	} else {
+		out_of_sn_cmd->out_of_sn = 1;
+		spin_lock_irq(&order_data->sn_lock);
+		order_data->def_cmd_count++;
+		list_add_tail(&out_of_sn_cmd->sn_cmd_list_entry,
+			      &order_data->skipped_sn_list);
+		TRACE_SN("out_of_sn_cmd %p with sn %d added to skipped_sn_list"
+			" (expected_sn %d)", out_of_sn_cmd, out_of_sn_cmd->sn,
+			order_data->expected_sn);
+		spin_unlock_irq(&order_data->sn_lock);
+		/*
+		 * expected_sn could change while we there, so we need to
+		 * recheck deferred commands on this path as well
+		 */
+	}
+
+	scst_make_deferred_commands_active(order_data);
 
 out:
 	TRACE_EXIT();
@@ -6658,11 +8160,14 @@ out:
 void scst_block_dev(struct scst_device *dev)
 {
 	dev->block_count++;
-	TRACE_MGMT_DBG("Device BLOCK (new count %d), dev %s", dev->block_count,
+	TRACE_BLOCK("Device BLOCK (new count %d), dev %s", dev->block_count,
 		dev->virt_name);
 }
 
-/* dev_lock supposed to be held and BH disabled */
+/*
+ * dev_lock supposed to be held and BH disabled. Returns true if cmd blocked,
+ * hence stop processing it and go to the next command.
+ */
 bool __scst_check_blocked_dev(struct scst_cmd *cmd)
 {
 	int res = false;
@@ -6671,32 +8176,25 @@ bool __scst_check_blocked_dev(struct scst_cmd *cmd)
 	TRACE_ENTRY();
 
 	EXTRACHECKS_BUG_ON(cmd->unblock_dev);
-
-	if (unlikely(cmd->internal) && (cmd->cdb[0] == REQUEST_SENSE)) {
-		/*
-		 * The original command can already block the device, so
-		 * REQUEST SENSE command should always pass.
-		 */
-		goto out;
-	}
+	EXTRACHECKS_BUG_ON(cmd->internal);
 
 	if (unlikely(test_bit(SCST_CMD_ABORTED, &cmd->cmd_flags)))
 		goto out;
 
 	if (dev->block_count > 0) {
-		TRACE_MGMT_DBG("Delaying cmd %p due to blocking "
+		TRACE_BLOCK("Delaying cmd %p due to blocking "
 			"(tag %llu, op %x, dev %s)", cmd,
 			(long long unsigned int)cmd->tag, cmd->cdb[0],
 			dev->virt_name);
 		goto out_block;
-	} else if (scst_is_strictly_serialized_cmd(cmd)) {
-		TRACE_MGMT_DBG("cmd %p (tag %llu, op %x): blocking further "
+	} else if ((cmd->op_flags & SCST_STRICTLY_SERIALIZED) == SCST_STRICTLY_SERIALIZED) {
+		TRACE_BLOCK("cmd %p (tag %llu, op %x): blocking further "
 			"cmds on dev %s due to strict serialization", cmd,
 			(long long unsigned int)cmd->tag, cmd->cdb[0],
 			dev->virt_name);
 		scst_block_dev(dev);
 		if (dev->on_dev_cmd_count > 1) {
-			TRACE_MGMT_DBG("Delaying strictly serialized cmd %p "
+			TRACE_BLOCK("Delaying strictly serialized cmd %p "
 				"(dev %s, on_dev_cmds to wait %d)", cmd,
 				dev->virt_name, dev->on_dev_cmd_count-1);
 			EXTRACHECKS_BUG_ON(dev->strictly_serialized_cmd_waiting);
@@ -6704,8 +8202,9 @@ bool __scst_check_blocked_dev(struct scst_cmd *cmd)
 			goto out_block;
 		} else
 			cmd->unblock_dev = 1;
-	} else if ((dev->dev_double_ua_possible) || scst_is_serialized_cmd(cmd)) {
-		TRACE_MGMT_DBG("cmd %p (tag %llu, op %x): blocking further cmds "
+	} else if ((dev->dev_double_ua_possible) ||
+		   ((cmd->op_flags & SCST_SERIALIZED) != 0)) {
+		TRACE_BLOCK("cmd %p (tag %llu, op %x): blocking further cmds "
 			"on dev %s due to %s", cmd, (long long unsigned int)cmd->tag,
 			cmd->cdb[0], dev->virt_name,
 			dev->dev_double_ua_possible ? "possible double reset UA" :
@@ -6713,7 +8212,7 @@ bool __scst_check_blocked_dev(struct scst_cmd *cmd)
 		scst_block_dev(dev);
 		cmd->unblock_dev = 1;
 	} else
-		TRACE_MGMT_DBG("No blocks for device %s", dev->virt_name);
+		TRACE_BLOCK("No blocks for device %s", dev->virt_name);
 
 out:
 	TRACE_EXIT_RES(res);
@@ -6735,12 +8234,8 @@ void scst_unblock_dev(struct scst_device *dev)
 {
 	TRACE_ENTRY();
 
-	TRACE_MGMT_DBG("Device UNBLOCK(new %d), dev %s",
+	TRACE_BLOCK("Device UNBLOCK(new %d), dev %s",
 		dev->block_count-1, dev->virt_name);
-
-#ifdef CONFIG_SMP
-	EXTRACHECKS_BUG_ON(!spin_is_locked(&dev->dev_lock));
-#endif
 
 	if (--dev->block_count == 0) {
 		struct scst_cmd *cmd, *tcmd;
@@ -6751,7 +8246,7 @@ void scst_unblock_dev(struct scst_device *dev)
 					 blocked_cmd_list_entry) {
 			bool strictly_serialized;
 			list_del(&cmd->blocked_cmd_list_entry);
-			TRACE_MGMT_DBG("Adding blocked cmd %p to active cmd "
+			TRACE_BLOCK("Adding blocked cmd %p to active cmd "
 					"list", cmd);
 			spin_lock(&cmd->cmd_threads->cmd_list_lock);
 			if (cmd->queue_type == SCST_CMD_QUEUE_HEAD_OF_QUEUE)
@@ -6760,7 +8255,7 @@ void scst_unblock_dev(struct scst_device *dev)
 			else
 				list_add_tail(&cmd->cmd_list_entry,
 					&cmd->cmd_threads->active_cmd_list);
-			strictly_serialized = scst_is_strictly_serialized_cmd(cmd);
+			strictly_serialized = ((cmd->op_flags & SCST_STRICTLY_SERIALIZED) == SCST_STRICTLY_SERIALIZED);
 			wake_up(&cmd->cmd_threads->cmd_list_waitQ);
 			spin_unlock(&cmd->cmd_threads->cmd_list_lock);
 			if (dev->strictly_serialized_cmd_waiting && strictly_serialized)
@@ -6776,6 +8271,167 @@ void scst_unblock_dev(struct scst_device *dev)
 	TRACE_EXIT();
 	return;
 }
+
+/**
+ * scst_obtain_device_parameters() - obtain device control parameters
+ * @dev:	device to act on
+ * @mode_select_cdb: original MODE SELECT CDB
+ *
+ * Issues a MODE SENSE for necessary pages data and sets the corresponding
+ * dev's parameter from it. Parameter mode_select_cdb is pointer on original
+ * MODE SELECT CDB, if this function called to refresh parameters after
+ * successfully finished MODE SELECT command detected.
+ *
+ * Returns 0 on success and not 0 otherwise.
+ */
+int scst_obtain_device_parameters(struct scst_device *dev,
+	const uint8_t *mode_select_cdb)
+{
+	int rc, i;
+	uint8_t cmd[16];
+	uint8_t buffer[4+0x0A];
+	uint8_t sense_buffer[SCSI_SENSE_BUFFERSIZE];
+
+	TRACE_ENTRY();
+
+	EXTRACHECKS_BUG_ON(dev->scsi_dev == NULL);
+
+	if (mode_select_cdb != NULL) {
+		if ((mode_select_cdb[2] & 0x3F) != 0x0A) {
+			TRACE_DBG("Not control mode page (%x) change requested, "
+				"skipping", mode_select_cdb[2] & 0x3F);
+			goto out;
+		}
+	}
+
+	for (i = 0; i < 5; i++) {
+		/* Get control mode page */
+		memset(cmd, 0, sizeof(cmd));
+#if 0
+		cmd[0] = MODE_SENSE_10;
+		cmd[1] = 0;
+		cmd[2] = 0x0A;
+		cmd[8] = sizeof(buffer); /* it's < 256 */
+#else
+		cmd[0] = MODE_SENSE;
+		cmd[1] = 8; /* DBD */
+		cmd[2] = 0x0A;
+		cmd[4] = sizeof(buffer);
+#endif
+
+		memset(buffer, 0, sizeof(buffer));
+		memset(sense_buffer, 0, sizeof(sense_buffer));
+
+		TRACE(TRACE_SCSI, "%s", "Doing internal MODE_SENSE");
+		rc = scsi_execute(dev->scsi_dev, cmd, SCST_DATA_READ, buffer,
+				sizeof(buffer), sense_buffer, 15, 0, 0
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29)
+				, NULL
+#endif
+				);
+
+		TRACE_DBG("MODE_SENSE done: %x", rc);
+
+		if (scsi_status_is_good(rc)) {
+			int q;
+
+			PRINT_BUFF_FLAG(TRACE_SCSI, "Returned control mode "
+				"page data", buffer, sizeof(buffer));
+
+			dev->tst = buffer[4+2] >> 5;
+			q = buffer[4+3] >> 4;
+			if (q > SCST_CONTR_MODE_QUEUE_ALG_UNRESTRICTED_REORDER) {
+				PRINT_ERROR("Too big QUEUE ALG %x, dev %s",
+					dev->queue_alg, dev->virt_name);
+			}
+			dev->queue_alg = q;
+			dev->swp = (buffer[4+4] & 0x8) >> 3;
+			dev->tas = (buffer[4+5] & 0x40) >> 6;
+			dev->d_sense = (buffer[4+2] & 0x4) >> 2;
+
+			/*
+			 * Unfortunately, SCSI ML doesn't provide a way to
+			 * specify commands task attribute, so we can rely on
+			 * device's restricted reordering only. Linux I/O
+			 * subsystem doesn't reorder pass-through (PC) requests.
+			 */
+			dev->has_own_order_mgmt = !dev->queue_alg;
+
+			PRINT_INFO("Device %s: TST %x, QUEUE ALG %x, SWP %x, "
+				"TAS %x, D_SENSE %d, has_own_order_mgmt %d",
+				dev->virt_name, dev->tst, dev->queue_alg,
+				dev->swp, dev->tas, dev->d_sense,
+				dev->has_own_order_mgmt);
+
+			goto out;
+		} else {
+			scst_check_internal_sense(dev, rc, sense_buffer,
+				sizeof(sense_buffer));
+#if 0
+			if ((status_byte(rc) == CHECK_CONDITION) &&
+			    scst_sense_valid(sense_buffer)) {
+#else
+			/*
+			 * 3ware controller is buggy and returns CONDITION_GOOD
+			 * instead of CHECK_CONDITION
+			 */
+			if (scst_sense_valid(sense_buffer)) {
+#endif
+				PRINT_BUFF_FLAG(TRACE_SCSI, "Returned sense "
+					"data", sense_buffer,
+					sizeof(sense_buffer));
+				if (scst_analyze_sense(sense_buffer,
+						sizeof(sense_buffer),
+						SCST_SENSE_KEY_VALID,
+						ILLEGAL_REQUEST, 0, 0)) {
+					PRINT_INFO("Device %s doesn't support "
+						"MODE SENSE or control mode page",
+						dev->virt_name);
+					break;
+				} else if (scst_analyze_sense(sense_buffer,
+						sizeof(sense_buffer),
+						SCST_SENSE_KEY_VALID,
+						NOT_READY, 0, 0)) {
+					PRINT_ERROR("Device %s not ready",
+						dev->virt_name);
+					break;
+				}
+			} else {
+				PRINT_INFO("Internal MODE SENSE to "
+					"device %s failed: %x",
+					dev->virt_name, rc);
+				PRINT_BUFF_FLAG(TRACE_SCSI, "MODE SENSE sense",
+					sense_buffer, sizeof(sense_buffer));
+				switch (host_byte(rc)) {
+				case DID_RESET:
+				case DID_ABORT:
+				case DID_SOFT_ERROR:
+					break;
+				default:
+					goto brk;
+				}
+				switch (driver_byte(rc)) {
+				case DRIVER_BUSY:
+				case DRIVER_SOFT:
+					break;
+				default:
+					goto brk;
+				}
+			}
+		}
+	}
+brk:
+	PRINT_WARNING("Unable to get device's %s control mode page, using "
+		"existing values/defaults: TST %x, QUEUE ALG %x, SWP %x, "
+		"TAS %x, D_SENSE %d, has_own_order_mgmt %d", dev->virt_name,
+		dev->tst, dev->queue_alg, dev->swp, dev->tas, dev->d_sense,
+		dev->has_own_order_mgmt);
+
+out:
+	TRACE_EXIT();
+	return 0;
+}
+EXPORT_SYMBOL_GPL(scst_obtain_device_parameters);
 
 void scst_on_hq_cmd_response(struct scst_cmd *cmd)
 {
@@ -6809,7 +8465,7 @@ void scst_store_sense(struct scst_cmd *cmd)
 {
 	TRACE_ENTRY();
 
-	if (SCST_SENSE_VALID(cmd->sense) &&
+	if (scst_sense_valid(cmd->sense) &&
 	    !test_bit(SCST_CMD_NO_RESP, &cmd->cmd_flags) &&
 	    (cmd->tgt_dev != NULL)) {
 		struct scst_tgt_dev *tgt_dev = cmd->tgt_dev;
@@ -6895,18 +8551,18 @@ int scst_get_max_lun_commands(struct scst_session *sess, uint64_t lun)
 EXPORT_SYMBOL(scst_get_max_lun_commands);
 
 /**
- * scst_reassign_persistent_sess_states() - reassigns persistent states
+ * scst_reassign_retained_sess_states() - reassigns retained states
  *
- * Reassigns persistent states from old_sess to new_sess.
+ * Reassigns retained during nexus loss states from old_sess to new_sess.
  */
-void scst_reassign_persistent_sess_states(struct scst_session *new_sess,
+void scst_reassign_retained_sess_states(struct scst_session *new_sess,
 	struct scst_session *old_sess)
 {
 	struct scst_device *dev;
 
 	TRACE_ENTRY();
 
-	TRACE_PR("Reassigning persistent states from old_sess %p to "
+	TRACE_MGMT_DBG("Reassigning retained states from old_sess %p to "
 		"new_sess %p", old_sess, new_sess);
 
 	if ((new_sess == NULL) || (old_sess == NULL)) {
@@ -6954,6 +8610,24 @@ void scst_reassign_persistent_sess_states(struct scst_session *new_sess,
 			continue;
 		}
 
+		/** Reassign regualar reservations **/
+
+		if (dev->dev_reserved &&
+		    !test_bit(SCST_TGT_DEV_RESERVED, &old_tgt_dev->tgt_dev_flags)) {
+			clear_bit(SCST_TGT_DEV_RESERVED, &new_tgt_dev->tgt_dev_flags);
+			set_bit(SCST_TGT_DEV_RESERVED, &old_tgt_dev->tgt_dev_flags);
+			TRACE_DBG("Reservation reassigned from old_tgt_dev %p "
+				"to new_tgt_dev %p", old_tgt_dev, new_tgt_dev);
+		}
+
+		/** Reassign PRs **/
+
+		if ((new_sess->transport_id == NULL) ||
+		    (old_sess->transport_id == NULL)) {
+			TRACE_DBG("%s", "new_sess or old_sess doesn't support PRs");
+			goto next;
+		}
+
 		scst_pr_write_lock(dev);
 
 		if (old_tgt_dev->registrant != NULL) {
@@ -6971,6 +8645,16 @@ void scst_reassign_persistent_sess_states(struct scst_session *new_sess,
 		}
 
 		scst_pr_write_unlock(dev);
+next:
+		/** Reassign other DH specific states **/
+
+		if (dev->handler->reassign_retained_states != NULL) {
+			TRACE_DBG("Calling dev's %s reassign_retained_states(%p, %p)",
+				dev->virt_name, new_tgt_dev, old_tgt_dev);
+			dev->handler->reassign_retained_states(new_tgt_dev, old_tgt_dev);
+			TRACE_DBG("Dev's %s reassign_retained_states() returned",
+				dev->virt_name);
+		}
 	}
 
 	mutex_unlock(&scst_mutex);
@@ -6979,7 +8663,7 @@ out:
 	TRACE_EXIT();
 	return;
 }
-EXPORT_SYMBOL(scst_reassign_persistent_sess_states);
+EXPORT_SYMBOL(scst_reassign_retained_sess_states);
 
 /**
  * scst_get_next_lexem() - parse and return next lexem in the string
@@ -6990,8 +8674,7 @@ EXPORT_SYMBOL(scst_reassign_persistent_sess_states);
  */
 char *scst_get_next_lexem(char **token_str)
 {
-	char *p = *token_str;
-	char *q;
+	char *p, *q;
 	static const char blank = '\0';
 
 	if ((token_str == NULL) || (*token_str == NULL))
@@ -7055,12 +8738,327 @@ char *scst_get_next_token_str(char **input_str)
 }
 EXPORT_SYMBOL_GPL(scst_get_next_token_str);
 
+static int scst_parse_unmap_descriptors(struct scst_cmd *cmd)
+{
+	int res = 0;
+	ssize_t length = 0;
+	uint8_t *address;
+	int i, cnt, offset, descriptor_len, total_len;
+	struct scst_data_descriptor *pd;
+
+	TRACE_ENTRY();
+
+	EXTRACHECKS_BUG_ON(cmd->cmd_data_descriptors != NULL);
+	EXTRACHECKS_BUG_ON(cmd->cmd_data_descriptors_cnt != 0);
+
+	length = scst_get_buf_full_sense(cmd, &address);
+	if (unlikely(length <= 0)) {
+		if (length == 0)
+			goto out;
+		else
+			goto out_abn;
+	}
+
+	total_len = get_unaligned_be16(&cmd->cdb[7]);
+	offset = 8;
+
+	descriptor_len = get_unaligned_be16(&address[2]);
+
+	TRACE_DBG("total_len %d, descriptor_len %d", total_len, descriptor_len);
+
+	if (descriptor_len == 0)
+		goto out_put;
+
+	if (unlikely((descriptor_len > (total_len - 8)) ||
+		     ((descriptor_len % 16) != 0))) {
+		PRINT_ERROR("Bad descriptor length: %d < %d - 8",
+			descriptor_len, total_len);
+		scst_set_cmd_error(cmd,
+			SCST_LOAD_SENSE(scst_sense_invalid_field_in_parm_list));
+		goto out_abn_put;
+	}
+
+	cnt = descriptor_len/16;
+	if (cnt == 0)
+		goto out_put;
+
+	pd = kzalloc(sizeof(*pd) * cnt, GFP_KERNEL);
+	if (pd == NULL) {
+		PRINT_ERROR("Unable to kmalloc UNMAP %d descriptors", cnt+1);
+		scst_set_busy(cmd);
+		goto out_abn_put;
+	}
+
+	TRACE_DBG("cnt %d, pd %p", cnt, pd);
+
+	i = 0;
+	while ((offset - 8) < descriptor_len) {
+		struct scst_data_descriptor *d = &pd[i];
+		d->sdd_lba = get_unaligned_be64(&address[offset]);
+		offset += 8;
+		d->sdd_blocks = get_unaligned_be32(&address[offset]);
+		offset += 8;
+		TRACE_DBG("i %d, lba %lld, blocks %lld", i,
+			(long long)d->sdd_lba, (long long)d->sdd_blocks);
+		i++;
+	}
+
+	cmd->cmd_data_descriptors = pd;
+	cmd->cmd_data_descriptors_cnt = cnt;
+
+out_put:
+	scst_put_buf_full(cmd, address);
+
+out:
+	TRACE_EXIT_RES(res);
+	return res;
+
+out_abn_put:
+	scst_put_buf_full(cmd, address);
+
+out_abn:
+	scst_set_cmd_abnormal_done_state(cmd);
+	res = -1;
+	goto out;
+}
+
+static void scst_free_unmap_descriptors(struct scst_cmd *cmd)
+{
+	TRACE_ENTRY();
+
+	kfree(cmd->cmd_data_descriptors);
+	cmd->cmd_data_descriptors = NULL;
+
+	TRACE_EXIT();
+	return;
+}
+
+int scst_parse_descriptors(struct scst_cmd *cmd)
+{
+	int res;
+
+	TRACE_ENTRY();
+
+	switch (cmd->cdb[0]) {
+	case UNMAP:
+		res = scst_parse_unmap_descriptors(cmd);
+		break;
+	default:
+		sBUG_ON(1);
+		res = -1;
+		break;
+	}
+
+	TRACE_EXIT_RES(res);
+	return res;
+}
+
+static void scst_free_descriptors(struct scst_cmd *cmd)
+{
+	TRACE_ENTRY();
+
+	switch (cmd->cdb[0]) {
+	case UNMAP:
+		scst_free_unmap_descriptors(cmd);
+		break;
+	default:
+		sBUG_ON(1);
+		break;
+	}
+
+	TRACE_EXIT();
+	return;
+}
+
+/* Abstract vfs_unlink() for different kernel versions (as possible) */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 39)
+void scst_vfs_unlink_and_put(struct nameidata *nd)
+{
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,25)
+	vfs_unlink(nd->dentry->d_parent->d_inode, nd->dentry);
+	dput(nd->dentry);
+	mntput(nd->mnt);
+#else
+	vfs_unlink(nd->path.dentry->d_parent->d_inode,
+		nd->path.dentry);
+	path_put(&nd->path);
+#endif
+}
+#else
+void scst_vfs_unlink_and_put(struct path *path)
+{
+	vfs_unlink(path->dentry->d_parent->d_inode, path->dentry);
+	path_put(path);
+}
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 39)
+void scst_path_put(struct nameidata *nd)
+{
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,25)
+	dput(nd->dentry);
+	mntput(nd->mnt);
+#else
+	path_put(&nd->path);
+#endif
+}
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
+int scst_vfs_fsync(struct file *file, loff_t loff, loff_t len)
+{
+	int res;
+
+	res = sync_page_range(file->f_dentry->d_inode, file->f_mapping,
+			loff, len);
+	return res;
+}
+#endif
+
+int scst_copy_file(const char *src, const char *dest)
+{
+	int res = 0;
+	struct inode *inode;
+	loff_t file_size, pos;
+	uint8_t *buf = NULL;
+	struct file *file_src = NULL, *file_dest = NULL;
+	mm_segment_t old_fs = get_fs();
+
+	TRACE_ENTRY();
+
+	if (src == NULL || dest == NULL) {
+		res = -EINVAL;
+		PRINT_ERROR("%s", "Invalid persistent files path - backup "
+			"skipped");
+		goto out;
+	}
+
+	TRACE_DBG("Copying '%s' into '%s'", src, dest);
+
+	set_fs(KERNEL_DS);
+
+	file_src = filp_open(src, O_RDONLY, 0);
+	if (IS_ERR(file_src)) {
+		res = PTR_ERR(file_src);
+		TRACE_DBG("Unable to open file '%s' - error %d", src, res);
+		goto out_free;
+	}
+
+	file_dest = filp_open(dest, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (IS_ERR(file_dest)) {
+		res = PTR_ERR(file_dest);
+		TRACE_DBG("Unable to open backup file '%s' - error %d", dest,
+			res);
+		goto out_close;
+	}
+
+	inode = file_src->f_dentry->d_inode;
+
+	if (S_ISREG(inode->i_mode))
+		/* Nothing to do */;
+	else if (S_ISBLK(inode->i_mode))
+		inode = inode->i_bdev->bd_inode;
+	else {
+		PRINT_ERROR("Invalid file mode 0x%x", inode->i_mode);
+		res = -EINVAL;
+		set_fs(old_fs);
+		goto out_skip;
+	}
+
+	file_size = inode->i_size;
+
+	buf = vmalloc(file_size);
+	if (buf == NULL) {
+		res = -ENOMEM;
+		PRINT_ERROR("%s", "Unable to allocate temporary buffer");
+		goto out_skip;
+	}
+
+	pos = 0;
+	res = vfs_read(file_src, (void __force __user *)buf, file_size, &pos);
+	if (res != file_size) {
+		PRINT_ERROR("Unable to read file '%s' - error %d", src, res);
+		goto out_skip;
+	}
+
+	pos = 0;
+	res = vfs_write(file_dest, (void __force __user *)buf, file_size, &pos);
+	if (res != file_size) {
+		PRINT_ERROR("Unable to write to '%s' - error %d", dest, res);
+		goto out_skip;
+	}
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
+	res = scst_vfs_fsync(file_dest, 0, file_size);
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 35)
+	res = vfs_fsync(file_dest, file_dest->f_path.dentry, 0);
+#else
+	res = vfs_fsync(file_dest, 0);
+#endif
+	if (res != 0) {
+		PRINT_ERROR("fsync() of the backup PR file failed: %d", res);
+		goto out_skip;
+	}
+
+out_skip:
+	filp_close(file_dest, NULL);
+
+out_close:
+	filp_close(file_src, NULL);
+
+out_free:
+	if (buf != NULL)
+		vfree(buf);
+
+	set_fs(old_fs);
+
+out:
+	TRACE_EXIT_RES(res);
+	return res;
+}
+
+int scst_remove_file(const char *name)
+{
+	int res = 0;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 39)
+	struct nameidata nd;
+#else
+	struct path path;
+#endif
+	mm_segment_t old_fs = get_fs();
+
+	TRACE_ENTRY();
+
+	set_fs(KERNEL_DS);
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 39)
+	res = path_lookup(name, 0, &nd);
+	if (!res)
+		scst_vfs_unlink_and_put(&nd);
+	else
+		TRACE_DBG("Unable to lookup file '%s' - error %d", name, res);
+#else
+	res = kern_path(name, 0, &path);
+	if (!res)
+		scst_vfs_unlink_and_put(&path);
+	else
+		TRACE_DBG("Unable to lookup file '%s' - error %d", name, res);
+#endif
+
+	set_fs(old_fs);
+
+	TRACE_EXIT_RES(res);
+	return res;
+}
+
 static void __init scst_scsi_op_list_init(void)
 {
 	int i;
 	uint8_t op = 0xff;
 
 	TRACE_ENTRY();
+
+	TRACE_DBG("tblsize=%d", SCST_CDB_TBL_SIZE);
 
 	for (i = 0; i < 256; i++)
 		scst_scsi_op_list[i] = SCST_CDB_TBL_SIZE;
@@ -7071,6 +9069,9 @@ static void __init scst_scsi_op_list_init(void)
 			scst_scsi_op_list[op] = i;
 		}
 	}
+
+	TRACE_BUFFER("scst_scsi_op_list", scst_scsi_op_list,
+		sizeof(scst_scsi_op_list));
 
 	TRACE_EXIT();
 	return;
@@ -7085,7 +9086,8 @@ int __init scst_lib_init(void)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 30)
 	scsi_io_context_cache = kmem_cache_create("scst_scsi_io_context",
 					sizeof(struct scsi_io_context),
-					0, 0, NULL);
+					__alignof__(struct scsi_io_context),
+					SCST_SLAB_FLAGS|SLAB_HWCACHE_ALIGN, NULL);
 	if (!scsi_io_context_cache) {
 		PRINT_ERROR("%s", "Can't init scsi io context cache");
 		res = -ENOMEM;
@@ -7175,7 +9177,7 @@ static const int tm_dbg_on_state_num_passes[] = { 5, 1, 0x7ffffff };
 
 static void tm_dbg_init_tgt_dev(struct scst_tgt_dev *tgt_dev)
 {
-	if (tgt_dev->lun == 6) {
+	if (tgt_dev->lun == 15) {
 		unsigned long flags;
 
 		if (tm_dbg_tgt_dev != NULL)
@@ -7212,8 +9214,6 @@ static void tm_dbg_timer_fn(unsigned long arg)
 {
 	TRACE_MGMT_DBG("%s", "delayed cmd timer expired");
 	tm_dbg_flags.tm_dbg_release = 1;
-	/* Used to make sure that all woken up threads see the new value */
-	smp_wmb();
 	wake_up_all(&tm_dbg_tgt_dev->active_cmd_threads->cmd_list_waitQ);
 	return;
 }
@@ -7286,8 +9286,8 @@ void tm_dbg_check_released_cmds(void)
 	}
 }
 
-/* Called under scst_tm_dbg_lock */
-static void tm_dbg_change_state(void)
+/* Called under scst_tm_dbg_lock, but can drop it inside, then reget */
+static void tm_dbg_change_state(unsigned long *flags)
 {
 	tm_dbg_flags.tm_dbg_blocked = 0;
 	if (--tm_dbg_on_state_passes == 0) {
@@ -7318,7 +9318,9 @@ static void tm_dbg_change_state(void)
 	}
 
 	TRACE_MGMT_DBG("%s", "Deleting timer");
+	spin_unlock_irqrestore(&scst_tm_dbg_lock, *flags);
 	del_timer_sync(&tm_dbg_timer);
+	spin_lock_irqsave(&scst_tm_dbg_lock, *flags);
 	return;
 }
 
@@ -7341,13 +9343,13 @@ int tm_dbg_check_cmd(struct scst_cmd *cmd)
 		tm_dbg_delayed_cmds_count--;
 		if ((tm_dbg_delayed_cmds_count == 0) &&
 		    (tm_dbg_state == TM_DBG_STATE_ABORT))
-			tm_dbg_change_state();
+			tm_dbg_change_state(&flags);
 		spin_unlock_irqrestore(&scst_tm_dbg_lock, flags);
 	} else if (cmd->tgt_dev && (tm_dbg_tgt_dev == cmd->tgt_dev)) {
-		/* Delay 50th command */
+		/* Delay 5000th command */
 		spin_lock_irqsave(&scst_tm_dbg_lock, flags);
 		if (tm_dbg_flags.tm_dbg_blocked ||
-		    (++tm_dbg_passed_cmds_count % 50) == 0) {
+		    (++tm_dbg_passed_cmds_count % 5000) == 0) {
 			tm_dbg_delay_cmd(cmd);
 			res = 1;
 		} else
@@ -7373,6 +9375,9 @@ void tm_dbg_release_cmd(struct scst_cmd *cmd)
 				"delayed cmd %p (tag=%llu), moving it to "
 				"active cmd list (delayed_cmds_count=%d)",
 				c, c->tag, tm_dbg_delayed_cmds_count);
+
+			if (!(in_atomic() || in_interrupt() || irqs_disabled()))
+				msleep(2000);
 
 			if (!test_bit(SCST_CMD_ABORTED_OTHER,
 					    &cmd->cmd_flags)) {
@@ -7414,7 +9419,7 @@ void tm_dbg_task_mgmt(struct scst_device *dev, const char *fn, int force)
 	if ((tm_dbg_state != TM_DBG_STATE_OFFLINE) || force) {
 		TRACE_MGMT_DBG("%s: freeing %d delayed cmds", fn,
 			tm_dbg_delayed_cmds_count);
-		tm_dbg_change_state();
+		tm_dbg_change_state(&flags);
 		tm_dbg_flags.tm_dbg_release = 1;
 		/*
 		 * Used to make sure that all woken up threads see the new
@@ -7441,126 +9446,106 @@ int tm_dbg_is_release(void)
 #ifdef CONFIG_SCST_DEBUG_SN
 void scst_check_debug_sn(struct scst_cmd *cmd)
 {
-	static DEFINE_SPINLOCK(lock);
-	static int type;
-	static int cnt;
-	unsigned long flags;
 	int old = cmd->queue_type;
 
-	spin_lock_irqsave(&lock, flags);
-
-	if (cnt == 0) {
-		if ((scst_random() % 1000) == 500) {
-			if ((scst_random() % 3) == 1)
-				type = SCST_CMD_QUEUE_HEAD_OF_QUEUE;
-			else
-				type = SCST_CMD_QUEUE_ORDERED;
-			do {
-				cnt = scst_random() % 10;
-			} while (cnt == 0);
-		} else
-			goto out_unlock;
+	/* To simulate from time to time queue flushing */
+	if (!in_interrupt() && (scst_random() % 120) == 8) {
+		int t = scst_random() % 1200;
+		TRACE_SN("Delaying IO on %d ms", t);
+		msleep(t);
 	}
 
-	cmd->queue_type = type;
-	cnt--;
-
-	if (((scst_random() % 1000) == 750))
+	if ((scst_random() % 15) == 7)
 		cmd->queue_type = SCST_CMD_QUEUE_ORDERED;
-	else if (((scst_random() % 1000) == 751))
+	else if ((scst_random() % 1000) == 751)
 		cmd->queue_type = SCST_CMD_QUEUE_HEAD_OF_QUEUE;
-	else if (((scst_random() % 1000) == 752))
+	else if ((scst_random() % 1000) == 752)
 		cmd->queue_type = SCST_CMD_QUEUE_SIMPLE;
 
-	TRACE_SN("DbgSN changed cmd %p: %d/%d (cnt %d)", cmd, old,
-		cmd->queue_type, cnt);
-
-out_unlock:
-	spin_unlock_irqrestore(&lock, flags);
+	if (old != cmd->queue_type)
+		TRACE_SN("DbgSN queue type changed for cmd %p from %d to %d",
+			cmd, old, cmd->queue_type);
 	return;
 }
 #endif /* CONFIG_SCST_DEBUG_SN */
 
 #ifdef CONFIG_SCST_MEASURE_LATENCY
 
-static uint64_t scst_get_nsec(void)
+static uint64_t scst_get_usec(void)
 {
 	struct timespec ts;
+
 	ktime_get_ts(&ts);
-	return (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 16)
+	return ((uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec) / 1000;
+#else
+#if (BITS_PER_LONG > 32)
+	return timespec_to_ns(&ts) / 1000;
+#else
+	return timespec_to_ns(&ts) >> 10;
+#endif
+#endif
 }
 
 void scst_set_start_time(struct scst_cmd *cmd)
 {
-	cmd->start = scst_get_nsec();
+	cmd->start = scst_get_usec();
 	TRACE_DBG("cmd %p: start %lld", cmd, cmd->start);
 }
 
 void scst_set_cur_start(struct scst_cmd *cmd)
 {
-	cmd->curr_start = scst_get_nsec();
+	cmd->curr_start = scst_get_usec();
 	TRACE_DBG("cmd %p: cur_start %lld", cmd, cmd->curr_start);
 }
 
 void scst_set_parse_time(struct scst_cmd *cmd)
 {
-	cmd->parse_time += scst_get_nsec() - cmd->curr_start;
+	cmd->parse_time += scst_get_usec() - cmd->curr_start;
 	TRACE_DBG("cmd %p: parse_time %lld", cmd, cmd->parse_time);
 }
 
 void scst_set_alloc_buf_time(struct scst_cmd *cmd)
 {
-	cmd->alloc_buf_time += scst_get_nsec() - cmd->curr_start;
+	cmd->alloc_buf_time += scst_get_usec() - cmd->curr_start;
 	TRACE_DBG("cmd %p: alloc_buf_time %lld", cmd, cmd->alloc_buf_time);
 }
 
 void scst_set_restart_waiting_time(struct scst_cmd *cmd)
 {
-	cmd->restart_waiting_time += scst_get_nsec() - cmd->curr_start;
+	cmd->restart_waiting_time += scst_get_usec() - cmd->curr_start;
 	TRACE_DBG("cmd %p: restart_waiting_time %lld", cmd,
 		cmd->restart_waiting_time);
 }
 
 void scst_set_rdy_to_xfer_time(struct scst_cmd *cmd)
 {
-	cmd->rdy_to_xfer_time += scst_get_nsec() - cmd->curr_start;
+	cmd->rdy_to_xfer_time += scst_get_usec() - cmd->curr_start;
 	TRACE_DBG("cmd %p: rdy_to_xfer_time %lld", cmd, cmd->rdy_to_xfer_time);
 }
 
 void scst_set_pre_exec_time(struct scst_cmd *cmd)
 {
-	cmd->pre_exec_time += scst_get_nsec() - cmd->curr_start;
+	cmd->pre_exec_time += scst_get_usec() - cmd->curr_start;
 	TRACE_DBG("cmd %p: pre_exec_time %lld", cmd, cmd->pre_exec_time);
 }
 
 void scst_set_exec_time(struct scst_cmd *cmd)
 {
-	cmd->exec_time += scst_get_nsec() - cmd->curr_start;
+	cmd->exec_time += scst_get_usec() - cmd->curr_start;
 	TRACE_DBG("cmd %p: exec_time %lld", cmd, cmd->exec_time);
 }
 
 void scst_set_dev_done_time(struct scst_cmd *cmd)
 {
-	cmd->dev_done_time += scst_get_nsec() - cmd->curr_start;
+	cmd->dev_done_time += scst_get_usec() - cmd->curr_start;
 	TRACE_DBG("cmd %p: dev_done_time %lld", cmd, cmd->dev_done_time);
 }
 
 void scst_set_xmit_time(struct scst_cmd *cmd)
 {
-	cmd->xmit_time += scst_get_nsec() - cmd->curr_start;
+	cmd->xmit_time += scst_get_usec() - cmd->curr_start;
 	TRACE_DBG("cmd %p: xmit_time %lld", cmd, cmd->xmit_time);
-}
-
-void scst_set_tgt_on_free_time(struct scst_cmd *cmd)
-{
-	cmd->tgt_on_free_time += scst_get_nsec() - cmd->curr_start;
-	TRACE_DBG("cmd %p: tgt_on_free_time %lld", cmd, cmd->tgt_on_free_time);
-}
-
-void scst_set_dev_on_free_time(struct scst_cmd *cmd)
-{
-	cmd->dev_on_free_time += scst_get_nsec() - cmd->curr_start;
-	TRACE_DBG("cmd %p: dev_on_free_time %lld", cmd, cmd->dev_on_free_time);
 }
 
 void scst_update_lat_stats(struct scst_cmd *cmd)
@@ -7571,7 +9556,7 @@ void scst_update_lat_stats(struct scst_cmd *cmd)
 	int i;
 	struct scst_ext_latency_stat *latency_stat, *dev_latency_stat;
 
-	finish = scst_get_nsec();
+	finish = scst_get_usec();
 
 	/* Determine the IO size for extended latency statistics */
 	data_len = cmd->bufflen;
@@ -7594,13 +9579,10 @@ void scst_update_lat_stats(struct scst_cmd *cmd)
 	scst_time = finish - cmd->start - (cmd->parse_time +
 		cmd->alloc_buf_time + cmd->restart_waiting_time +
 		cmd->rdy_to_xfer_time + cmd->pre_exec_time +
-		cmd->exec_time + cmd->dev_done_time + cmd->xmit_time +
-		cmd->tgt_on_free_time + cmd->dev_on_free_time);
+		cmd->exec_time + cmd->dev_done_time + cmd->xmit_time);
 	tgt_time = cmd->alloc_buf_time + cmd->restart_waiting_time +
-		cmd->rdy_to_xfer_time + cmd->pre_exec_time +
-		cmd->xmit_time + cmd->tgt_on_free_time;
-	dev_time = cmd->parse_time + cmd->exec_time + cmd->dev_done_time +
-		cmd->dev_on_free_time;
+		cmd->rdy_to_xfer_time + cmd->pre_exec_time;
+	dev_time = cmd->parse_time + cmd->exec_time + cmd->dev_done_time;
 
 	spin_lock_bh(&sess->lat_lock);
 

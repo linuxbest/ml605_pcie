@@ -1,9 +1,9 @@
 /*
  *  scst_user.c
  *
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin <vst@vlnb.net>
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin <vst@vlnb.net>
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  SCSI virtual user space device handler
  *
@@ -69,11 +69,9 @@ struct scst_user_dev {
 	unsigned int d_sense:1;
 	unsigned int has_own_order_mgmt:1;
 
-	int (*generic_parse)(struct scst_cmd *cmd,
-		int (*get_block)(struct scst_cmd *cmd));
+	int (*generic_parse)(struct scst_cmd *cmd);
 
-	int block;
-	int def_block;
+	int def_block_size;
 
 	struct scst_mem_lim udev_mem_lim;
 	struct sgv_pool *pool;
@@ -106,14 +104,20 @@ struct scst_user_cmd {
 	struct scst_cmd *cmd;
 	struct scst_user_dev *dev;
 
-	atomic_t ucmd_ref;
-
+	/*
+	 * Note, gcc reported to have a long standing bug, when it uses 64-bit
+	 * memory accesses for int bit fields, so, if any neighbor int field
+	 * modified intependently to those bit fields, it must be 64-bit
+	 * aligned to workaround this gcc bug!
+	 */
 	unsigned int buff_cached:1;
 	unsigned int buf_dirty:1;
 	unsigned int background_exec:1;
 	unsigned int aborted:1;
 
 	struct scst_user_cmd *buf_ucmd;
+
+	atomic_t ucmd_ref;
 
 	int cur_data_page;
 	int num_data_pages;
@@ -149,19 +153,7 @@ struct scst_user_cmd {
 	int result;
 };
 
-static struct scst_user_cmd *dev_user_alloc_ucmd(struct scst_user_dev *dev,
-	gfp_t gfp_mask);
 static void dev_user_free_ucmd(struct scst_user_cmd *ucmd);
-
-static int dev_user_parse(struct scst_cmd *cmd);
-static int dev_user_alloc_data_buf(struct scst_cmd *cmd);
-static int dev_user_exec(struct scst_cmd *cmd);
-static void dev_user_on_free_cmd(struct scst_cmd *cmd);
-static int dev_user_task_mgmt_fn(struct scst_mgmt_cmd *mcmd,
-	struct scst_tgt_dev *tgt_dev);
-
-static int dev_user_disk_done(struct scst_cmd *cmd);
-static int dev_user_tape_done(struct scst_cmd *cmd);
 
 static struct page *dev_user_alloc_pages(struct scatterlist *sg,
 	gfp_t gfp_mask, void *priv);
@@ -196,8 +188,10 @@ static int dev_user_exit_dev(struct scst_user_dev *dev);
 
 #ifdef CONFIG_SCST_PROC
 
+#ifdef CONFIG_SCST_DEBUG
 static int dev_user_read_proc(struct seq_file *seq,
 	struct scst_dev_type *dev_type);
+#endif
 
 #else /* CONFIG_SCST_PROC */
 
@@ -218,6 +212,8 @@ static int dev_usr_parse(struct scst_cmd *cmd);
 
 /** Data **/
 
+static struct kmem_cache *user_dev_cachep;
+
 static struct kmem_cache *user_cmd_cachep;
 static struct kmem_cache *user_get_cmd_cachep;
 
@@ -236,7 +232,7 @@ static struct scst_dev_type dev_user_devtype = {
 	.name =		DEV_USER_NAME,
 	.type =		-1,
 	.parse =	dev_usr_parse,
-#ifdef CONFIG_SCST_PROC
+#if defined(CONFIG_SCST_PROC) && defined(CONFIG_SCST_DEBUG)
 	.read_proc =    dev_user_read_proc,
 #endif
 #if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
@@ -671,12 +667,12 @@ static int dev_user_alloc_space(struct scst_user_cmd *ucmd)
 		goto out;
 	else if (rc < 0) {
 		scst_set_busy(cmd);
-		res = scst_set_cmd_abnormal_done_state(cmd);
+		res = scst_get_cmd_abnormal_done_state(cmd);
 		goto out;
 	}
 
 	if (!(cmd->data_direction & SCST_DATA_WRITE) &&
-	    !scst_is_cmd_local(cmd)) {
+	    ((cmd->op_flags & SCST_LOCAL_CMD) == 0)) {
 		TRACE_DBG("Delayed alloc, ucmd %p", ucmd);
 		goto out;
 	}
@@ -730,17 +726,6 @@ out:
 	return ucmd;
 }
 
-static int dev_user_get_block(struct scst_cmd *cmd)
-{
-	struct scst_user_dev *dev = cmd->dev->dh_priv;
-	/*
-	 * No need for locks here, since *_detach() can not be
-	 * called, when there are existing commands.
-	 */
-	TRACE_EXIT_RES(dev->block);
-	return dev->block;
-}
-
 static int dev_user_parse(struct scst_cmd *cmd)
 {
 	int rc, res = SCST_CMD_STATE_DEFAULT;
@@ -781,14 +766,16 @@ static int dev_user_parse(struct scst_cmd *cmd)
 	switch (dev->parse_type) {
 	case SCST_USER_PARSE_STANDARD:
 		TRACE_DBG("PARSE STANDARD: ucmd %p", ucmd);
-		rc = dev->generic_parse(cmd, dev_user_get_block);
-		if (rc != 0)
-			goto out_invalid;
+		rc = dev->generic_parse(cmd);
+		if (rc != 0) {
+			PRINT_ERROR("PARSE failed (ucmd %p, rc %d)", ucmd, rc);
+			goto out_error;
+		}
 		break;
 
 	case SCST_USER_PARSE_EXCEPTION:
 		TRACE_DBG("PARSE EXCEPTION: ucmd %p", ucmd);
-		rc = dev->generic_parse(cmd, dev_user_get_block);
+		rc = dev->generic_parse(cmd);
 		if ((rc == 0) && (cmd->op_flags & SCST_INFO_VALID))
 			break;
 		else if (rc == SCST_CMD_STATE_NEED_THREAD_CTX) {
@@ -812,7 +799,9 @@ static int dev_user_parse(struct scst_cmd *cmd)
 			min_t(int, SCST_MAX_CDB_SIZE, cmd->cdb_len));
 		ucmd->user_cmd.parse_cmd.cdb_len = cmd->cdb_len;
 		ucmd->user_cmd.parse_cmd.timeout = cmd->timeout / HZ;
+		ucmd->user_cmd.parse_cmd.lba = cmd->lba;
 		ucmd->user_cmd.parse_cmd.bufflen = cmd->bufflen;
+		ucmd->user_cmd.parse_cmd.data_len = cmd->data_len;
 		ucmd->user_cmd.parse_cmd.out_bufflen = cmd->out_bufflen;
 		ucmd->user_cmd.parse_cmd.queue_type = cmd->queue_type;
 		ucmd->user_cmd.parse_cmd.data_direction = cmd->data_direction;
@@ -849,12 +838,8 @@ out:
 	TRACE_EXIT_RES(res);
 	return res;
 
-out_invalid:
-	PRINT_ERROR("PARSE failed (ucmd %p, rc %d)", ucmd, rc);
-	scst_set_cmd_error(cmd, SCST_LOAD_SENSE(scst_sense_invalid_opcode));
-
 out_error:
-	res = scst_set_cmd_abnormal_done_state(cmd);
+	res = scst_get_cmd_abnormal_done_state(cmd);
 	goto out;
 }
 
@@ -921,9 +906,10 @@ static int dev_user_exec(struct scst_cmd *cmd)
 
 	TRACE_ENTRY();
 
-	TRACE_DBG("Preparing EXEC for user space (ucmd=%p, h=%d, "
-		"bufflen %d, data_len %d, ubuff %lx)", ucmd, ucmd->h,
-		cmd->bufflen, cmd->data_len, ucmd->ubuff);
+	TRACE_DBG("Preparing EXEC for user space (ucmd=%p, h=%d, lba %lld, "
+		"bufflen %d, data_len %lld, ubuff %lx)", ucmd, ucmd->h,
+		(long long)cmd->lba, cmd->bufflen, (long long)cmd->data_len,
+		ucmd->ubuff);
 
 	if (cmd->data_direction & SCST_DATA_WRITE)
 		dev_user_flush_dcache(ucmd);
@@ -937,6 +923,7 @@ static int dev_user_exec(struct scst_cmd *cmd)
 	memcpy(ucmd->user_cmd.exec_cmd.cdb, cmd->cdb,
 		min_t(int, SCST_MAX_CDB_SIZE, cmd->cdb_len));
 	ucmd->user_cmd.exec_cmd.cdb_len = cmd->cdb_len;
+	ucmd->user_cmd.exec_cmd.lba = cmd->lba;
 	ucmd->user_cmd.exec_cmd.bufflen = cmd->bufflen;
 	ucmd->user_cmd.exec_cmd.data_len = cmd->data_len;
 	ucmd->user_cmd.exec_cmd.pbuf = ucmd->ubuff;
@@ -1026,18 +1013,49 @@ out_reply:
 	goto out;
 }
 
-static void dev_user_set_block(struct scst_cmd *cmd, int block)
+static void dev_user_set_block_shift(struct scst_cmd *cmd, int block_shift)
 {
-	struct scst_user_dev *dev = cmd->dev->dh_priv;
+	struct scst_device *dev = cmd->dev;
+
+	TRACE_ENTRY();
+
 	/*
 	 * No need for locks here, since *_detach() can not be
 	 * called, when there are existing commands.
 	 */
-	TRACE_DBG("dev %p, new block %d", dev, block);
-	if (block != 0)
-		dev->block = block;
-	else
-		dev->block = dev->def_block;
+	TRACE_DBG("dev %p, new block shift %d", dev, block_shift);
+	if (block_shift != 0)
+		dev->block_shift = block_shift;
+	else {
+		struct scst_user_dev *udev = cmd->dev->dh_priv;
+		dev->block_shift = scst_calc_block_shift(udev->def_block_size);
+	}
+	dev->block_size = 1 << dev->block_shift;
+
+	TRACE_EXIT();
+	return;
+}
+
+static void dev_user_set_block_size(struct scst_cmd *cmd, int block_size)
+{
+	struct scst_device *dev = cmd->dev;
+
+	TRACE_ENTRY();
+
+	/*
+	 * No need for locks here, since *_detach() can not be
+	 * called, when there are existing commands.
+	 */
+	TRACE_DBG("dev %p, new block size %d", dev, block_size);
+	if (block_size != 0)
+		dev->block_size = block_size;
+	else {
+		struct scst_user_dev *udev = cmd->dev->dh_priv;
+		dev->block_size = udev->def_block_size;
+	}
+	dev->block_shift = -1; /* not used */
+
+	TRACE_EXIT();
 	return;
 }
 
@@ -1047,7 +1065,7 @@ static int dev_user_disk_done(struct scst_cmd *cmd)
 
 	TRACE_ENTRY();
 
-	res = scst_block_generic_dev_done(cmd, dev_user_set_block);
+	res = scst_block_generic_dev_done(cmd, dev_user_set_block_shift);
 
 	TRACE_EXIT_RES(res);
 	return res;
@@ -1059,10 +1077,53 @@ static int dev_user_tape_done(struct scst_cmd *cmd)
 
 	TRACE_ENTRY();
 
-	res = scst_tape_generic_dev_done(cmd, dev_user_set_block);
+	res = scst_tape_generic_dev_done(cmd, dev_user_set_block_size);
 
 	TRACE_EXIT_RES(res);
 	return res;
+}
+
+static inline bool dev_user_mgmt_ucmd(struct scst_user_cmd *ucmd)
+{
+	return (ucmd->state == UCMD_STATE_TM_RECEIVED_EXECING) ||
+	       (ucmd->state == UCMD_STATE_TM_DONE_EXECING) ||
+	       (ucmd->state == UCMD_STATE_ATTACH_SESS) ||
+	       (ucmd->state == UCMD_STATE_DETACH_SESS);
+}
+
+/* Supposed to be called under cmd_list_lock */
+static inline void dev_user_add_to_ready_head(struct scst_user_cmd *ucmd)
+{
+	struct scst_user_dev *dev = ucmd->dev;
+	struct list_head *entry;
+
+	TRACE_ENTRY();
+
+	__list_for_each(entry, &dev->ready_cmd_list) {
+		struct scst_user_cmd *u = list_entry(entry,
+			struct scst_user_cmd, ready_cmd_list_entry);
+		/*
+		 * Skip other queued mgmt commands to not reverse order
+		 * of them and prevent conditions, where DETACH_SESS or a SCSI
+		 * command comes before ATTACH_SESS for the same session.
+		 */
+		if (unlikely(dev_user_mgmt_ucmd(u)))
+			continue;
+		TRACE_DBG("Adding ucmd %p (state %d) after mgmt ucmd %p (state "
+			"%d)", ucmd, ucmd->state, u, u->state);
+		list_add_tail(&ucmd->ready_cmd_list_entry,
+			&u->ready_cmd_list_entry);
+		goto out;
+	}
+
+	TRACE_DBG("Adding ucmd %p (state %d) to tail "
+		"of mgmt ready cmd list", ucmd, ucmd->state);
+	list_add_tail(&ucmd->ready_cmd_list_entry,
+		&dev->ready_cmd_list);
+
+out:
+	TRACE_EXIT();
+	return;
 }
 
 static void dev_user_add_to_ready(struct scst_user_cmd *ucmd)
@@ -1091,25 +1152,16 @@ static void dev_user_add_to_ready(struct scst_user_cmd *ucmd)
 		 * of our commands completed in NOP timeout to allow the head
 		 * commands to go, then we are really overloaded and/or stuck.
 		 */
-		TRACE_DBG("Adding ucmd %p (state %d) to head of ready "
-			"cmd list", ucmd, ucmd->state);
-		list_add(&ucmd->ready_cmd_list_entry,
-			&dev->ready_cmd_list);
-	} else if (unlikely(ucmd->state == UCMD_STATE_TM_EXECING) ||
-		   unlikely(ucmd->state == UCMD_STATE_ATTACH_SESS) ||
-		   unlikely(ucmd->state == UCMD_STATE_DETACH_SESS)) {
-		TRACE_MGMT_DBG("Adding mgmt ucmd %p (state %d) to head of "
-			"ready cmd list", ucmd, ucmd->state);
-		list_add(&ucmd->ready_cmd_list_entry,
-			&dev->ready_cmd_list);
+		dev_user_add_to_ready_head(ucmd);
+	} else if (unlikely(dev_user_mgmt_ucmd(ucmd))) {
+		dev_user_add_to_ready_head(ucmd);
 		do_wake = 1;
 	} else {
 		if ((ucmd->cmd != NULL) &&
 		    unlikely((ucmd->cmd->queue_type == SCST_CMD_QUEUE_HEAD_OF_QUEUE))) {
 			TRACE_DBG("Adding HQ ucmd %p to head of ready cmd list",
 				ucmd);
-			list_add(&ucmd->ready_cmd_list_entry,
-				&dev->ready_cmd_list);
+			dev_user_add_to_ready_head(ucmd);
 		} else {
 			TRACE_DBG("Adding ucmd %p to ready cmd list", ucmd);
 			list_add_tail(&ucmd->ready_cmd_list_entry,
@@ -1146,9 +1198,8 @@ static int dev_user_map_buf(struct scst_user_cmd *ucmd, unsigned long ubuff,
 
 	ucmd->num_data_pages = num_pg;
 
-	ucmd->data_pages =
-		kmalloc(sizeof(*ucmd->data_pages) * ucmd->num_data_pages,
-			  GFP_KERNEL);
+	ucmd->data_pages = kmalloc(sizeof(*ucmd->data_pages) * ucmd->num_data_pages,
+				   GFP_KERNEL);
 	if (ucmd->data_pages == NULL) {
 		TRACE(TRACE_OUT_OF_MEM, "Unable to allocate data_pages array "
 			"(num_data_pages=%d)", ucmd->num_data_pages);
@@ -1273,7 +1324,7 @@ static int dev_user_process_reply_parse(struct scst_user_cmd *ucmd,
 		goto out_inval;
 
 	if (unlikely((preply->bufflen < 0) || (preply->out_bufflen < 0) ||
-		     (preply->data_len < 0)))
+		     (preply->data_len < 0) || (preply->lba < 0)))
 		goto out_inval;
 
 	if (unlikely(preply->cdb_len > cmd->cdb_len))
@@ -1282,14 +1333,15 @@ static int dev_user_process_reply_parse(struct scst_user_cmd *ucmd,
 	if (!(preply->op_flags & SCST_INFO_VALID))
 		goto out_inval;
 
-	TRACE_DBG("ucmd %p, queue_type %x, data_direction, %x, bufflen %d, "
-		"data_len %d, pbuf %llx, cdb_len %d, op_flags %x", ucmd,
-		preply->queue_type, preply->data_direction, preply->bufflen,
-		preply->data_len, reply->alloc_reply.pbuf, preply->cdb_len,
-		preply->op_flags);
+	TRACE_DBG("ucmd %p, queue_type %x, data_direction, %x, lba %lld, "
+		"bufflen %d, data_len %lld, pbuf %llx, cdb_len %d, op_flags %x",
+		ucmd, preply->queue_type, preply->data_direction,
+		(long long)preply->lba, preply->bufflen, (long long)preply->data_len,
+		reply->alloc_reply.pbuf, preply->cdb_len, preply->op_flags);
 
 	cmd->queue_type = preply->queue_type;
 	cmd->data_direction = preply->data_direction;
+	cmd->lba = preply->lba;
 	cmd->bufflen = preply->bufflen;
 	cmd->out_bufflen = preply->out_bufflen;
 	cmd->data_len = preply->data_len;
@@ -1450,7 +1502,8 @@ static int dev_user_process_reply_exec(struct scst_user_cmd *ucmd,
 			 * We have an empty SG, so can't call
 			 * scst_set_resp_data_len()
 			 */
-			cmd->resp_data_len = ereply->resp_data_len;
+			WARN_ON(ereply->resp_data_len != 0);
+			cmd->resp_data_len = 0;
 			cmd->resid_possible = 1;
 		} else
 			scst_set_resp_data_len(cmd, ereply->resp_data_len);
@@ -1586,8 +1639,12 @@ unlock_process:
 		res = dev_user_process_reply_on_cache_free(ucmd);
 		break;
 
-	case UCMD_STATE_TM_EXECING:
-		res = dev_user_process_reply_tm_exec(ucmd, reply->result);
+	case UCMD_STATE_TM_RECEIVED_EXECING:
+	case UCMD_STATE_TM_DONE_EXECING:
+		res = dev_user_process_reply_tm_exec(ucmd,
+			(state == UCMD_STATE_TM_RECEIVED_EXECING) ?
+				SCST_MGMT_STATUS_RECEIVED_STAGE_COMPLETED :
+				reply->result);
 		break;
 
 	case UCMD_STATE_ATTACH_SESS:
@@ -1797,7 +1854,7 @@ static struct scst_user_cmd *__dev_user_get_next_cmd(struct list_head *cmd_list)
 again:
 	u = NULL;
 	if (!list_empty(cmd_list)) {
-		u = list_entry(cmd_list->next, typeof(*u),
+		u = list_first_entry(cmd_list, typeof(*u),
 			       ready_cmd_list_entry);
 
 		TRACE_DBG("Found ready ucmd %p", u);
@@ -1862,29 +1919,13 @@ static int dev_user_get_next_cmd(struct scst_user_dev *dev,
 	struct scst_user_cmd **ucmd)
 {
 	int res = 0;
-	wait_queue_t wait;
 
 	TRACE_ENTRY();
 
-	init_waitqueue_entry(&wait, current);
-
 	while (1) {
-		if (!test_cmd_threads(dev)) {
-			add_wait_queue_exclusive_head(
-				&dev->udev_cmd_threads.cmd_list_waitQ,
-				&wait);
-			for (;;) {
-				set_current_state(TASK_INTERRUPTIBLE);
-				if (test_cmd_threads(dev))
-					break;
-				spin_unlock_irq(&dev->udev_cmd_threads.cmd_list_lock);
-				schedule();
-				spin_lock_irq(&dev->udev_cmd_threads.cmd_list_lock);
-			}
-			set_current_state(TASK_RUNNING);
-			remove_wait_queue(&dev->udev_cmd_threads.cmd_list_waitQ,
-				&wait);
-		}
+		wait_event_locked(dev->udev_cmd_threads.cmd_list_waitQ,
+				  test_cmd_threads(dev), lock_irq,
+				  dev->udev_cmd_threads.cmd_list_lock);
 
 		dev_user_process_scst_commands(dev);
 
@@ -2251,7 +2292,8 @@ static void dev_user_unjam_cmd(struct scst_user_cmd *ucmd, int busy,
 
 	case UCMD_STATE_ON_FREEING:
 	case UCMD_STATE_ON_CACHE_FREEING:
-	case UCMD_STATE_TM_EXECING:
+	case UCMD_STATE_TM_RECEIVED_EXECING:
+	case UCMD_STATE_TM_DONE_EXECING:
 	case UCMD_STATE_ATTACH_SESS:
 	case UCMD_STATE_DETACH_SESS:
 		if (flags != NULL)
@@ -2269,9 +2311,12 @@ static void dev_user_unjam_cmd(struct scst_user_cmd *ucmd, int busy,
 			dev_user_process_reply_on_cache_free(ucmd);
 			break;
 
-		case UCMD_STATE_TM_EXECING:
+		case UCMD_STATE_TM_RECEIVED_EXECING:
+		case UCMD_STATE_TM_DONE_EXECING:
 			dev_user_process_reply_tm_exec(ucmd,
-						       SCST_MGMT_STATUS_FAILED);
+				(state == UCMD_STATE_TM_RECEIVED_EXECING) ?
+					SCST_MGMT_STATUS_RECEIVED_STAGE_COMPLETED :
+					SCST_MGMT_STATUS_FAILED);
 			break;
 
 		case UCMD_STATE_ATTACH_SESS:
@@ -2409,8 +2454,8 @@ again:
 }
 
 /* Can be called under some spinlock and IRQs off */
-static int dev_user_task_mgmt_fn(struct scst_mgmt_cmd *mcmd,
-	struct scst_tgt_dev *tgt_dev)
+static void __dev_user_task_mgmt_fn(struct scst_mgmt_cmd *mcmd,
+	struct scst_tgt_dev *tgt_dev, bool done)
 {
 	struct scst_user_cmd *ucmd;
 	struct scst_user_dev *dev = tgt_dev->dev->dh_priv;
@@ -2456,7 +2501,8 @@ static int dev_user_task_mgmt_fn(struct scst_mgmt_cmd *mcmd,
 	 * stuck commands would affect only related devices.
 	 */
 
-	dev_user_abort_ready_commands(dev);
+	if (!done)
+		dev_user_abort_ready_commands(dev);
 
 	/* We can't afford missing TM command due to memory shortage */
 	ucmd = dev_user_alloc_ucmd(dev, GFP_ATOMIC|__GFP_NOFAIL);
@@ -2470,7 +2516,10 @@ static int dev_user_task_mgmt_fn(struct scst_mgmt_cmd *mcmd,
 		offsetof(struct scst_user_get_cmd, tm_cmd) +
 		sizeof(ucmd->user_cmd.tm_cmd);
 	ucmd->user_cmd.cmd_h = ucmd->h;
-	ucmd->user_cmd.subcode = SCST_USER_TASK_MGMT;
+	if (done)
+		ucmd->user_cmd.subcode = SCST_USER_TASK_MGMT_DONE;
+	else
+		ucmd->user_cmd.subcode = SCST_USER_TASK_MGMT_RECEIVED;
 	ucmd->user_cmd.tm_cmd.sess_h = (unsigned long)tgt_dev;
 	ucmd->user_cmd.tm_cmd.fn = mcmd->fn;
 	ucmd->user_cmd.tm_cmd.cmd_sn = mcmd->cmd_sn;
@@ -2488,7 +2537,10 @@ static int dev_user_task_mgmt_fn(struct scst_mgmt_cmd *mcmd,
 		ucmd->user_cmd.tm_cmd.cmd_h_to_abort, mcmd);
 
 	ucmd->mcmd = mcmd;
-	ucmd->state = UCMD_STATE_TM_EXECING;
+	if (done)
+		ucmd->state = UCMD_STATE_TM_DONE_EXECING;
+	else
+		ucmd->state = UCMD_STATE_TM_RECEIVED_EXECING;
 
 	scst_prepare_async_mcmd(mcmd);
 
@@ -2496,7 +2548,25 @@ static int dev_user_task_mgmt_fn(struct scst_mgmt_cmd *mcmd,
 
 out:
 	TRACE_EXIT();
-	return SCST_DEV_TM_NOT_COMPLETED;
+	return;
+}
+
+static void dev_user_task_mgmt_fn_received(struct scst_mgmt_cmd *mcmd,
+	struct scst_tgt_dev *tgt_dev)
+{
+	TRACE_ENTRY();
+	__dev_user_task_mgmt_fn(mcmd, tgt_dev, false);
+	TRACE_EXIT();
+	return;
+}
+
+static void dev_user_task_mgmt_fn_done(struct scst_mgmt_cmd *mcmd,
+	struct scst_tgt_dev *tgt_dev)
+{
+	TRACE_ENTRY();
+	__dev_user_task_mgmt_fn(mcmd, tgt_dev, true);
+	TRACE_EXIT();
+	return;
 }
 
 static int dev_user_attach(struct scst_device *sdev)
@@ -2518,6 +2588,18 @@ static int dev_user_attach(struct scst_device *sdev)
 		PRINT_ERROR("Device %s not found", sdev->virt_name);
 		res = -EINVAL;
 		goto out;
+	}
+
+	sdev->block_size = dev->def_block_size;
+	switch (sdev->type) {
+	case TYPE_DISK:
+	case TYPE_ROM:
+	case TYPE_MOD:
+		sdev->block_shift = scst_calc_block_shift(sdev->block_size);
+		break;
+	default:
+		sdev->block_shift = -1; /* not used */
+		break;
 	}
 
 	sdev->dh_priv = dev;
@@ -2605,7 +2687,7 @@ static int dev_user_attach_tgt(struct scst_tgt_dev *tgt_dev)
 	 * memory for SCST local commands, like REPORT LUNS, where there is no
 	 * corresponding ucmd. Otherwise we will crash in dev_user_alloc_sg().
 	 */
-	if (test_bit(SCST_TGT_DEV_CLUST_POOL, &tgt_dev->tgt_dev_flags))
+	if (tgt_dev->tgt_dev_clust_pool)
 		tgt_dev->dh_priv = dev->pool_clust;
 	else
 		tgt_dev->dh_priv = dev->pool;
@@ -2623,7 +2705,7 @@ static int dev_user_attach_tgt(struct scst_tgt_dev *tgt_dev)
 	ucmd->user_cmd.sess.sess_h = (unsigned long)tgt_dev;
 	ucmd->user_cmd.sess.lun = (uint64_t)tgt_dev->lun;
 	ucmd->user_cmd.sess.threads_num = tgt_dev->sess->tgt->tgtt->threads_num;
-	ucmd->user_cmd.sess.rd_only = tgt_dev->acg_dev->rd_only;
+	ucmd->user_cmd.sess.rd_only = tgt_dev->tgt_dev_rd_only;
 	if (tgtt->get_phys_transport_version != NULL)
 		ucmd->user_cmd.sess.phys_transport_version =
 			tgtt->get_phys_transport_version(tgt);
@@ -2717,7 +2799,7 @@ static void dev_user_setup_functions(struct scst_user_dev *dev)
 	TRACE_ENTRY();
 
 	dev->devtype.parse = dev_user_parse;
-	dev->devtype.alloc_data_buf = dev_user_alloc_data_buf;
+	dev->devtype.dev_alloc_data_buf = dev_user_alloc_data_buf;
 	dev->devtype.dev_done = NULL;
 
 	if (dev->parse_type != SCST_USER_PARSE_CALL) {
@@ -2825,7 +2907,7 @@ static int dev_user_register_dev(struct file *file,
 {
 	int res, i;
 	struct scst_user_dev *dev, *d;
-	int block;
+	int block_size;
 
 	TRACE_ENTRY();
 
@@ -2838,19 +2920,18 @@ static int dev_user_register_dev(struct file *file,
 	case TYPE_ROM:
 	case TYPE_MOD:
 		if (dev_desc->block_size == 0) {
-			PRINT_ERROR("Wrong block size %d",
-				    dev_desc->block_size);
+			PRINT_ERROR("Wrong block size %d", dev_desc->block_size);
 			res = -EINVAL;
 			goto out;
 		}
-		block = scst_calc_block_shift(dev_desc->block_size);
-		if (block == -1) {
+		block_size = dev_desc->block_size;
+		if (scst_calc_block_shift(block_size) == -1) {
 			res = -EINVAL;
 			goto out;
 		}
 		break;
 	default:
-		block = dev_desc->block_size;
+		block_size = dev_desc->block_size;
 		break;
 	}
 
@@ -2860,7 +2941,7 @@ static int dev_user_register_dev(struct file *file,
 		goto out;
 	}
 
-	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
+	dev = kmem_cache_zalloc(user_dev_cachep, GFP_KERNEL);
 	if (dev == NULL) {
 		res = -ENOMEM;
 		goto out_put;
@@ -2922,7 +3003,7 @@ static int dev_user_register_dev(struct file *file,
 	dev->devtype.type = dev_desc->type;
 	dev->devtype.threads_num = -1;
 	dev->devtype.parse_atomic = 1;
-	dev->devtype.alloc_data_buf_atomic = 1;
+	dev->devtype.dev_alloc_data_buf_atomic = 1;
 	dev->devtype.dev_done_atomic = 1;
 #ifdef CONFIG_SCST_PROC
 	dev->devtype.no_proc = 1;
@@ -2935,13 +3016,13 @@ static int dev_user_register_dev(struct file *file,
 	dev->devtype.detach_tgt = dev_user_detach_tgt;
 	dev->devtype.exec = dev_user_exec;
 	dev->devtype.on_free_cmd = dev_user_on_free_cmd;
-	dev->devtype.task_mgmt_fn = dev_user_task_mgmt_fn;
+	dev->devtype.task_mgmt_fn_received = dev_user_task_mgmt_fn_received;
+	dev->devtype.task_mgmt_fn_done = dev_user_task_mgmt_fn_done;
 	if (dev_desc->enable_pr_cmds_notifications)
 		dev->devtype.pr_cmds_notifications = 1;
 
 	init_completion(&dev->cleanup_cmpl);
-	dev->block = block;
-	dev->def_block = block;
+	dev->def_block_size = block_size;
 
 	res = __dev_user_set_opt(dev, &dev_desc->opt);
 	if (res != 0)
@@ -3009,7 +3090,7 @@ out_free0:
 out_deinit_threads:
 	scst_deinit_threads(&dev->udev_cmd_threads);
 
-	kfree(dev);
+	kmem_cache_free(user_dev_cachep, dev);
 
 out_put:
 	module_put(THIS_MODULE);
@@ -3033,7 +3114,7 @@ static int dev_user_unregister_dev(struct file *file)
 	down_read(&dev->dev_rwsem);
 	mutex_unlock(&dev_priv_mutex);
 
-	res = scst_suspend_activity(true);
+	res = scst_suspend_activity(SCST_SUSPEND_TIMEOUT_USER);
 	if (res != 0)
 		goto out_up;
 
@@ -3057,7 +3138,7 @@ static int dev_user_unregister_dev(struct file *file)
 
 	up_write(&dev->dev_rwsem); /* to make lockdep happy */
 
-	kfree(dev);
+	kmem_cache_free(user_dev_cachep, dev);
 
 out_resume:
 	scst_resume_activity();
@@ -3088,7 +3169,7 @@ static int dev_user_flush_cache(struct file *file)
 	down_read(&dev->dev_rwsem);
 	mutex_unlock(&dev_priv_mutex);
 
-	res = scst_suspend_activity(true);
+	res = scst_suspend_activity(SCST_SUSPEND_TIMEOUT_USER);
 	if (res != 0)
 		goto out_up;
 
@@ -3279,7 +3360,6 @@ static int __dev_user_set_opt(struct scst_user_dev *dev,
 	dev->queue_alg = opt->queue_alg;
 	dev->swp = opt->swp;
 	dev->tas = opt->tas;
-	dev->tst = opt->tst;
 	dev->d_sense = opt->d_sense;
 	dev->has_own_order_mgmt = opt->has_own_order_mgmt;
 	if (dev->sdev != NULL) {
@@ -3315,7 +3395,7 @@ static int dev_user_set_opt(struct file *file, const struct scst_user_opt *opt)
 	down_read(&dev->dev_rwsem);
 	mutex_unlock(&dev_priv_mutex);
 
-	res = scst_suspend_activity(true);
+	res = scst_suspend_activity(SCST_SUSPEND_TIMEOUT_USER);
 	if (res != 0)
 		goto out_up;
 
@@ -3439,7 +3519,7 @@ static int __dev_user_release(void *arg)
 {
 	struct scst_user_dev *dev = arg;
 	dev_user_exit_dev(dev);
-	kfree(dev);
+	kmem_cache_free(user_dev_cachep, dev);
 	return 0;
 }
 
@@ -3510,13 +3590,12 @@ static int dev_user_process_cleanup(struct scst_user_dev *dev)
 	int i;
 	for (i = 0; i < (int)ARRAY_SIZE(dev->ucmd_hash); i++) {
 		struct list_head *head = &dev->ucmd_hash[i];
-		struct scst_user_cmd *ucmd2;
-again:
-		list_for_each_entry(ucmd2, head, hash_list_entry) {
+		struct scst_user_cmd *ucmd2, *tmp;
+
+		list_for_each_entry_safe(ucmd2, tmp, head, hash_list_entry) {
 			PRINT_ERROR("Lost ucmd %p (state %x, ref %d)", ucmd2,
 				ucmd2->state, atomic_read(&ucmd2->ucmd_ref));
 			ucmd_put(ucmd2);
-			goto again;
 		}
 	}
 }
@@ -3577,6 +3656,7 @@ static ssize_t dev_user_sysfs_commands_show(struct kobject *kobj,
 
 #else /* CONFIG_SCST_PROC */
 
+#ifdef CONFIG_SCST_DEBUG
 /*
  * Called when a file in the /proc/scsi_tgt/scst_user is read
  */
@@ -3614,6 +3694,7 @@ static int dev_user_read_proc(struct seq_file *seq, struct scst_dev_type *dev_ty
 	TRACE_EXIT_RES(res);
 	return res;
 }
+#endif /* CONFIG_SCST_DEBUG */
 #endif /* CONFIG_SCST_PROC */
 
 static inline int test_cleanup_list(void)
@@ -3633,22 +3714,8 @@ static int dev_user_cleanup_thread(void *arg)
 
 	spin_lock(&cleanup_lock);
 	while (!kthread_should_stop()) {
-		wait_queue_t wait;
-		init_waitqueue_entry(&wait, current);
-
-		if (!test_cleanup_list()) {
-			add_wait_queue_exclusive(&cleanup_list_waitQ, &wait);
-			for (;;) {
-				set_current_state(TASK_INTERRUPTIBLE);
-				if (test_cleanup_list())
-					break;
-				spin_unlock(&cleanup_lock);
-				schedule();
-				spin_lock(&cleanup_lock);
-			}
-			set_current_state(TASK_RUNNING);
-			remove_wait_queue(&cleanup_list_waitQ, &wait);
-		}
+		wait_event_locked(cleanup_list_waitQ, test_cleanup_list(),
+				  lock, cleanup_lock);
 
 		/*
 		 * We have to poll devices, because commands can go from SCST
@@ -3663,7 +3730,7 @@ static int dev_user_cleanup_thread(void *arg)
 			while (!list_empty(&cleanup_list)) {
 				int rc;
 
-				dev = list_entry(cleanup_list.next,
+				dev = list_first_entry(&cleanup_list,
 					typeof(*dev), cleanup_list_entry);
 				list_del(&dev->cleanup_list_entry);
 
@@ -3684,7 +3751,7 @@ static int dev_user_cleanup_thread(void *arg)
 			spin_lock(&cleanup_lock);
 
 			while (!list_empty(&cl_devs)) {
-				dev = list_entry(cl_devs.next, typeof(*dev),
+				dev = list_first_entry(&cl_devs, typeof(*dev),
 					cleanup_list_entry);
 				list_move_tail(&dev->cleanup_list_entry,
 					&cleanup_list);
@@ -3732,13 +3799,22 @@ static int __init init_scst_user(void)
 #endif
 #endif
 
-	user_cmd_cachep = KMEM_CACHE(scst_user_cmd, SCST_SLAB_FLAGS);
-	if (user_cmd_cachep == NULL) {
+	user_dev_cachep = KMEM_CACHE(scst_user_dev,
+				SCST_SLAB_FLAGS|SLAB_HWCACHE_ALIGN);
+	if (user_dev_cachep == NULL) {
 		res = -ENOMEM;
 		goto out;
 	}
 
-	user_get_cmd_cachep = KMEM_CACHE(max_get_reply, SCST_SLAB_FLAGS);
+	user_cmd_cachep = KMEM_CACHE(scst_user_cmd,
+				SCST_SLAB_FLAGS|SLAB_HWCACHE_ALIGN);
+	if (user_cmd_cachep == NULL) {
+		res = -ENOMEM;
+		goto out_dev_cache;
+	}
+
+	user_get_cmd_cachep = KMEM_CACHE(max_get_reply,
+				SCST_SLAB_FLAGS|SLAB_HWCACHE_ALIGN);
 	if (user_get_cmd_cachep == NULL) {
 		res = -ENOMEM;
 		goto out_cache;
@@ -3833,6 +3909,9 @@ out_cache1:
 
 out_cache:
 	kmem_cache_destroy(user_cmd_cachep);
+
+out_dev_cache:
+	kmem_cache_destroy(user_dev_cachep);
 	goto out;
 }
 
@@ -3861,6 +3940,7 @@ static void __exit exit_scst_user(void)
 
 	kmem_cache_destroy(user_get_cmd_cachep);
 	kmem_cache_destroy(user_cmd_cachep);
+	kmem_cache_destroy(user_dev_cachep);
 
 	TRACE_EXIT();
 	return;

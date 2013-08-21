@@ -1,8 +1,8 @@
 /*
  *  Copyright (C) 2005 FUJITA Tomonori <tomof@acm.org>
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -20,6 +20,7 @@
 #define ISCSI_ISNS_SERVER_ATTR_NAME		"iSNSServer"
 #define ISCSI_ISNS_ACCESS_CONTROL_ATTR_NAME	"iSNSAccessControl"
 #define ISCSI_ENABLED_ATTR_NAME			"enabled"
+#define ISCSI_ISNS_ENTITY_ATTR_NAME			"isns_entity_name"
 #define ISCSI_ALLOWED_PORTAL_ATTR_NAME		"allowed_portal"
 #define ISCSI_PER_PORTAL_ACL_ATTR_NAME		"per_portal_acl"
 #define ISCSI_TARGET_REDIRECTION_ATTR_NAME	"redirect"

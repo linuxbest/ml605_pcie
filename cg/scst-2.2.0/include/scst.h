@@ -1,10 +1,10 @@
 /*
  *  include/scst.h
  *
- *  Copyright (C) 2004 - 2011 Vladislav Bolkhovitin <vst@vlnb.net>
+ *  Copyright (C) 2004 - 2013 Vladislav Bolkhovitin <vst@vlnb.net>
  *  Copyright (C) 2004 - 2005 Leonid Stoljar
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *  Copyright (C) 2010 - 2011 Bart Van Assche <bvanassche@acm.org>.
  *
  *  Main SCSI target mid-level include file.
@@ -23,6 +23,11 @@
 #ifndef __SCST_H
 #define __SCST_H
 
+/** See README for description of those conditional defines **/
+/* #define CONFIG_SCST_MEASURE_LATENCY */
+/* #define CONFIG_SCST_DEBUG_TM */
+/* #define CONFIG_SCST_TM_DBG_GO_OFFLINE */
+
 #include <linux/types.h>
 #ifndef INSIDE_KERNEL_TREE
 #include <linux/version.h>
@@ -31,6 +36,14 @@
 #include <linux/interrupt.h>
 #include <linux/wait.h>
 #include <linux/cpumask.h>
+#ifdef CONFIG_SCST_MEASURE_LATENCY
+#include <linux/log2.h>
+#endif
+#include <asm/unaligned.h>
+
+#if 0 /* Let's disable it for now to see if users will complain about it */
+#define CONFIG_SCST_PER_DEVICE_CMD_COUNT_LIMIT
+#endif
 
 /* #define CONFIG_SCST_PROC */
 
@@ -62,13 +75,24 @@ typedef _Bool bool;
 #define false 0
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 21) && !defined(RHEL_MAJOR)
+#define __packed __attribute__((packed))
+#define __aligned __attribute__((aligned))
+#endif
+
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 32)
+#ifndef O_DSYNC
+#define O_DSYNC O_SYNC
+#endif
+#endif
+
 #ifdef INSIDE_KERNEL_TREE
 #include <scst/scst_sgv.h>
 #else
 #include "scst_sgv.h"
 #endif
 
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 20)
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 20) && !defined(BACKPORT_LINUX_CPUMASK_H)
 #define nr_cpu_ids NR_CPUS
 #endif
 
@@ -146,7 +170,7 @@ static inline unsigned int queue_max_hw_sectors(struct request_queue *q)
 #endif
 
 #define SCST_INTERFACE_VERSION	    \
-		SCST_VERSION_STRING "$Revision: 4021 $" SCST_CONST_VERSION
+		SCST_VERSION_STRING "$Revision: 4974 $" SCST_CONST_VERSION
 
 #define SCST_LOCAL_NAME			"scst_local"
 
@@ -156,77 +180,81 @@ static inline unsigned int queue_max_hw_sectors(struct request_queue *q)
  ** more efficient generated code of the corresponding
  ** "switch" statements.
  *************************************************************/
+enum {
+	/* Dev handler's parse() is going to be called */
+	SCST_CMD_STATE_PARSE = 0,
 
-/* Dev handler's parse() is going to be called */
-#define SCST_CMD_STATE_PARSE	     0
+	/* Allocation of the cmd's data buffer */
+	SCST_CMD_STATE_PREPARE_SPACE,
 
-/* Allocation of the cmd's data buffer */
-#define SCST_CMD_STATE_PREPARE_SPACE 1
+	/* Calling preprocessing_done() */
+	SCST_CMD_STATE_PREPROCESSING_DONE,
 
-/* Calling preprocessing_done() */
-#define SCST_CMD_STATE_PREPROCESSING_DONE 2
+	/* Target driver's rdy_to_xfer() is going to be called */
+	SCST_CMD_STATE_RDY_TO_XFER,
 
-/* Target driver's rdy_to_xfer() is going to be called */
-#define SCST_CMD_STATE_RDY_TO_XFER   3
+	/* Target driver's pre_exec() is going to be called */
+	SCST_CMD_STATE_TGT_PRE_EXEC,
 
-/* Target driver's pre_exec() is going to be called */
-#define SCST_CMD_STATE_TGT_PRE_EXEC  4
+	/*
+	 * Cmd is going to be sent for execution. The first stage of it is
+	 * order checking
+	 */
+	SCST_CMD_STATE_EXEC_CHECK_SN,
 
-/* Cmd is going to be sent for execution */
-#define SCST_CMD_STATE_SEND_FOR_EXEC 5
+	/* Internal post-exec checks */
+	SCST_CMD_STATE_PRE_DEV_DONE,
 
-/* Internal post-exec checks */
-#define SCST_CMD_STATE_PRE_DEV_DONE  6
+	/* Internal MODE SELECT pages related checks */
+	SCST_CMD_STATE_MODE_SELECT_CHECKS,
 
-/* Internal MODE SELECT pages related checks */
-#define SCST_CMD_STATE_MODE_SELECT_CHECKS 7
+	/* Dev handler's dev_done() is going to be called */
+	SCST_CMD_STATE_DEV_DONE,
 
-/* Dev handler's dev_done() is going to be called */
-#define SCST_CMD_STATE_DEV_DONE      8
+	/* Checks before target driver's xmit_response() is called */
+	SCST_CMD_STATE_PRE_XMIT_RESP,
 
-/* Checks before target driver's xmit_response() is called */
-#define SCST_CMD_STATE_PRE_XMIT_RESP 9
+	/* Target driver's xmit_response() is going to be called */
+	SCST_CMD_STATE_XMIT_RESP,
 
-/* Target driver's xmit_response() is going to be called */
-#define SCST_CMD_STATE_XMIT_RESP     10
+	/* Cmd finished */
+	SCST_CMD_STATE_FINISHED,
 
-/* Cmd finished */
-#define SCST_CMD_STATE_FINISHED      11
+	/* Internal cmd finished */
+	SCST_CMD_STATE_FINISHED_INTERNAL,
 
-/* Internal cmd finished */
-#define SCST_CMD_STATE_FINISHED_INTERNAL 12
+	SCST_CMD_STATE_LAST_ACTIVE = (SCST_CMD_STATE_FINISHED_INTERNAL+100),
 
-#define SCST_CMD_STATE_LAST_ACTIVE   (SCST_CMD_STATE_FINISHED_INTERNAL+100)
+	/* A cmd is created, but scst_cmd_init_done() not called */
+	SCST_CMD_STATE_INIT_WAIT,
 
-/* A cmd is created, but scst_cmd_init_done() not called */
-#define SCST_CMD_STATE_INIT_WAIT     (SCST_CMD_STATE_LAST_ACTIVE+1)
+	/* LUN translation (cmd->tgt_dev assignment) */
+	SCST_CMD_STATE_INIT,
 
-/* LUN translation (cmd->tgt_dev assignment) */
-#define SCST_CMD_STATE_INIT          (SCST_CMD_STATE_LAST_ACTIVE+2)
+	/* Waiting for scst_restart_cmd() */
+	SCST_CMD_STATE_PREPROCESSING_DONE_CALLED,
 
-/* Waiting for scst_restart_cmd() */
-#define SCST_CMD_STATE_PREPROCESSING_DONE_CALLED (SCST_CMD_STATE_LAST_ACTIVE+3)
+	/* Waiting for data from the initiator (until scst_rx_data() called) */
+	SCST_CMD_STATE_DATA_WAIT,
 
-/* Waiting for data from the initiator (until scst_rx_data() called) */
-#define SCST_CMD_STATE_DATA_WAIT     (SCST_CMD_STATE_LAST_ACTIVE+4)
+	/*
+	 * Cmd is ready for exec (after check if its device is blocked or should
+	 * be blocked)
+	 */
+	SCST_CMD_STATE_EXEC_CHECK_BLOCKING,
 
-/*
- * Cmd is ready for exec (after check if its device is blocked or should
- * be blocked)
- */
-#define SCST_CMD_STATE_START_EXEC (SCST_CMD_STATE_LAST_ACTIVE+5)
+	/* Cmd is being checked if it should be executed locally */
+	SCST_CMD_STATE_LOCAL_EXEC,
 
-/* Cmd is being checked if it should be executed locally */
-#define SCST_CMD_STATE_LOCAL_EXEC    (SCST_CMD_STATE_LAST_ACTIVE+6)
+	/* Cmd is ready for execution */
+	SCST_CMD_STATE_REAL_EXEC,
 
-/* Cmd is ready for execution */
-#define SCST_CMD_STATE_REAL_EXEC     (SCST_CMD_STATE_LAST_ACTIVE+7)
+	/* Waiting for CDB's execution finish */
+	SCST_CMD_STATE_EXEC_WAIT,
 
-/* Waiting for CDB's execution finish */
-#define SCST_CMD_STATE_REAL_EXECUTING (SCST_CMD_STATE_LAST_ACTIVE+8)
-
-/* Waiting for response's transmission finish */
-#define SCST_CMD_STATE_XMIT_WAIT     (SCST_CMD_STATE_LAST_ACTIVE+9)
+	/* Waiting for response's transmission finish */
+	SCST_CMD_STATE_XMIT_WAIT,
+};
 
 /*************************************************************
  * Can be returned instead of cmd's state by dev handlers'
@@ -252,27 +280,28 @@ static inline unsigned int queue_max_hw_sectors(struct request_queue *q)
 /*************************************************************
  ** States of mgmt command processing state machine
  *************************************************************/
+enum {
+	/* LUN translation (mcmd->tgt_dev assignment) */
+	SCST_MCMD_STATE_INIT = 0,
 
-/* LUN translation (mcmd->tgt_dev assignment) */
-#define SCST_MCMD_STATE_INIT				0
+	/* Mgmt cmd is being processed */
+	SCST_MCMD_STATE_EXEC,
 
-/* Mgmt cmd is being processed */
-#define SCST_MCMD_STATE_EXEC				1
+	/* Waiting for affected commands done */
+	SCST_MCMD_STATE_WAITING_AFFECTED_CMDS_DONE,
 
-/* Waiting for affected commands done */
-#define SCST_MCMD_STATE_WAITING_AFFECTED_CMDS_DONE	2
+	/* Post actions when affected commands done */
+	SCST_MCMD_STATE_AFFECTED_CMDS_DONE,
 
-/* Post actions when affected commands done */
-#define SCST_MCMD_STATE_AFFECTED_CMDS_DONE		3
+	/* Waiting for affected local commands finished */
+	SCST_MCMD_STATE_WAITING_AFFECTED_CMDS_FINISHED,
 
-/* Waiting for affected local commands finished */
-#define SCST_MCMD_STATE_WAITING_AFFECTED_CMDS_FINISHED	4
+	/* Target driver's task_mgmt_fn_done() is going to be called */
+	SCST_MCMD_STATE_DONE,
 
-/* Target driver's task_mgmt_fn_done() is going to be called */
-#define SCST_MCMD_STATE_DONE				5
-
-/* The mcmd finished */
-#define SCST_MCMD_STATE_FINISHED			6
+	/* The mcmd finished */
+	SCST_MCMD_STATE_FINISHED,
+};
 
 /*************************************************************
  ** Constants for "atomic" parameter of SCST's functions
@@ -419,7 +448,7 @@ enum scst_exec_context {
 /*
  * Fatal error, if returned by xmit_response() the cmd will
  * be destroyed, if by any other function, xmit_response()
- * will be called with HARDWARE ERROR sense data
+ * will be called with READ or WRITE FAILED sense data
  */
 #define SCST_TGT_RES_FATAL_ERROR     -3
 
@@ -427,18 +456,17 @@ enum scst_exec_context {
  ** Return codes for dev handler's exec()
  *************************************************************/
 
-/* The cmd is done, go to other ones */
+/*
+ * The cmd is completed, go to other ones. It doesn't necessary to be really
+ * completed, it can still be being processed. This code means that SCST
+ * core should start performing post processing actions for this cmd, like
+ * increase SN and reactivate deferred commands, if allowed, and start
+ * processing other commands.
+ */
 #define SCST_EXEC_COMPLETED          0
 
-/* The cmd should be sent to SCSI mid-level */
+/* The cmd should continue staying on the EXEC phase */
 #define SCST_EXEC_NOT_COMPLETED      1
-
-/*************************************************************
- ** Additional return code for dev handler's task_mgmt_fn()
- *************************************************************/
-
-/* Regular standard actions for the command should be done */
-#define SCST_DEV_TM_NOT_COMPLETED     1
 
 /*************************************************************
  ** Session initialization phases
@@ -480,7 +508,14 @@ enum scst_exec_context {
  ** Cmd's async (atomic) flags
  *************************************************************/
 
-/* Set if the cmd is aborted and ABORTED sense will be sent as the result */
+/*
+ * Set if the cmd is aborted and should be unconditionally finished
+ * as soon as possible.
+ *
+ * !! Direct check of this bit must not be done anywhere outside of  !!
+ * !! SCST core! Use the corresponding helper functions listed below !!
+ * !! for that!							     !!
+ */
 #define SCST_CMD_ABORTED		0
 
 /* Set if the cmd is aborted by other initiator */
@@ -498,6 +533,11 @@ enum scst_exec_context {
  */
 #define SCST_CMD_DEVICE_TAS		4
 
+#ifdef CONFIG_SCST_EXTRACHECKS
+/* Set if scst_inc_expected_sn() passed for this cmd */
+#define SCST_CMD_INC_EXPECTED_SN_PASSED	10
+#endif
+
 /*************************************************************
  ** Tgt_dev's async. flags (tgt_dev_flags)
  *************************************************************/
@@ -507,12 +547,6 @@ enum scst_exec_context {
 
 /* Set if tgt_dev is RESERVED by another session */
 #define SCST_TGT_DEV_RESERVED		1
-
-/* Set if the corresponding context should be atomic */
-#define SCST_TGT_DEV_AFTER_INIT_WR_ATOMIC	5
-#define SCST_TGT_DEV_AFTER_EXEC_ATOMIC		6
-
-#define SCST_TGT_DEV_CLUST_POOL			11
 
 /*************************************************************
  ** I/O grouping types. Changing them don't forget to change
@@ -644,6 +678,12 @@ struct scst_tgt_template {
 	unsigned fake_aca:1;
 
 	/*
+	 * True, if this target adapter can call scst_cmd_init_done() from
+	 * several threads at the same time.
+	 */
+	unsigned multithreaded_init_done:1;
+
+	/*
 	 * Preferred SCSI LUN addressing method.
 	 */
 	enum scst_lun_addr_method preferred_addr_method;
@@ -717,6 +757,13 @@ struct scst_tgt_template {
 	 * Necessary, because for aborted commands xmit_response() could not
 	 * be called. Could be called on IRQ context.
 	 *
+	 * This callback is called when the last reference to cmd is dropped,
+	 * which can be much later after scst_tgt_cmd_done() called by the
+	 * target driver, so it is not recommended that the target driver
+	 * clean hardware or connection related cmd resources in this callback.
+	 * It is recommended to clean them before calling scst_tgt_cmd_done()
+	 * instead.
+	 *
 	 * OPTIONAL
 	 */
 	void (*on_free_cmd) (struct scst_cmd *cmd);
@@ -728,13 +775,13 @@ struct scst_tgt_template {
 	 * Target driver doesn't have to always allocate buffer in this
 	 * function, but if it decide to do it, it must check that
 	 * scst_cmd_get_data_buff_alloced() returns 0, otherwise to avoid
-	 * double buffer allocation and memory leaks alloc_data_buf() shall
+	 * double buffer allocation and memory leaks tgt_alloc_data_buf() shall
 	 * fail.
 	 *
 	 * Shall return 0 in case of success or < 0 (preferably -ENOMEM)
 	 * in case of error, or > 0 if the regular SCST allocation should be
 	 * done. In case of returning successfully,
-	 * scst_cmd->tgt_data_buf_alloced will be set by SCST.
+	 * scst_cmd->tgt_i_data_buf_alloced will be set by SCST.
 	 *
 	 * It is possible that both target driver and dev handler request own
 	 * memory allocation. In this case, data will be memcpy() between
@@ -750,7 +797,7 @@ struct scst_tgt_template {
 	 *
 	 * OPTIONAL.
 	 */
-	int (*alloc_data_buf) (struct scst_cmd *cmd);
+	int (*tgt_alloc_data_buf) (struct scst_cmd *cmd);
 
 	/*
 	 * This function informs the driver that data
@@ -956,6 +1003,19 @@ struct scst_tgt_template {
 	ssize_t (*mgmt_cmd) (char *cmd);
 
 	/*
+	 * Forcibly close a session. Note: this function may operate
+	 * asynchronously - there is no guarantee the session will actually
+	 * have been closed at the time this function returns. May be called
+	 * with scst_mutex held. Activity may be suspended while this function
+	 * is invoked. May sleep but must not wait until session
+	 * unregistration finished. Must return 0 upon success and -EINTR if
+	 * the session has not been closed because a signal has been received.
+	 *
+	 * OPTIONAL
+	 */
+	int (*close_session)(struct scst_session *sess);
+
+	/*
 	 * Should return physical transport version. Used in the corresponding
 	 * INQUIRY version descriptor. See SPC for the list of available codes.
 	 *
@@ -1043,7 +1103,7 @@ struct scst_tgt_template {
 	/* Device number in /proc */
 	int proc_dev_num;
 #else
-	struct kobject tgtt_kobj; /* kobject for this struct */
+	struct kobject tgtt_kobj; /* target driver sysfs entry */
 
 	/* Number of currently active sysfs mgmt works (scst_sysfs_work_item) */
 	int tgtt_active_sysfs_works_count;
@@ -1071,7 +1131,7 @@ struct scst_tgt_template {
 	/*
 	 * Optional revision to be reported in the SCSI inquiry response. If
 	 * NULL, an SCST device handler specific default value will be used,
-	 * e.g. " 220" for scst_vdisk file I/O.
+	 * e.g. " 210" for scst_vdisk file I/O.
 	 */
 	const char *revision;
 
@@ -1128,7 +1188,7 @@ struct scst_dev_type {
 	 * the atomic (non-sleeping) context
 	 */
 	unsigned parse_atomic:1;
-	unsigned alloc_data_buf_atomic:1;
+	unsigned dev_alloc_data_buf_atomic:1;
 	unsigned dev_done_atomic:1;
 
 #ifdef CONFIG_SCST_PROC
@@ -1187,7 +1247,7 @@ struct scst_dev_type {
 	 *
 	 * OPTIONAL
 	 */
-	int (*alloc_data_buf) (struct scst_cmd *cmd);
+	int (*dev_alloc_data_buf) (struct scst_cmd *cmd);
 
 	/*
 	 * Called to execute CDB. Useful, for instance, to implement
@@ -1202,9 +1262,9 @@ struct scst_dev_type {
 	 * exec_sync flag and consider to setup dedicated threads by
 	 * setting threads_num > 0.
 	 *
-	 * !! If this function is implemented, scst_check_local_events() !!
-	 * !! shall be called inside it just before the actual command's !!
-	 * !! execution.                                                 !!
+	 * Dev handlers implementing internal queuing in their exec() callback
+	 * should call scst_check_local_events() just before the actual
+	 * command's execution (i.e. after it's taken from the internal queue).
 	 *
 	 * OPTIONAL, if not set, the commands will be sent directly to SCSI
 	 * device.
@@ -1240,14 +1300,7 @@ struct scst_dev_type {
 	void (*on_free_cmd) (struct scst_cmd *cmd);
 
 	/*
-	 * Called to execute a task management command.
-	 * Returns:
-	 *  - SCST_MGMT_STATUS_SUCCESS - the command is done with success,
-	 *	no further actions required
-	 *  - The SCST_MGMT_STATUS_* error code if the command is failed and
-	 *	no further actions required
-	 *  - SCST_DEV_TM_NOT_COMPLETED - regular standard actions for the
-	 *      command should be done
+	 * Called to notify dev handler that a task management command received
 	 *
 	 * Can be called under many internal SCST locks, including under
 	 * disabled IRQs, so dev handler should be careful with locking and,
@@ -1259,8 +1312,38 @@ struct scst_dev_type {
 	 *
 	 * OPTIONAL
 	 */
-	int (*task_mgmt_fn) (struct scst_mgmt_cmd *mgmt_cmd,
+	void (*task_mgmt_fn_received) (struct scst_mgmt_cmd *mgmt_cmd,
 		struct scst_tgt_dev *tgt_dev);
+
+	/*
+	 * Called to execute a task management command. On any problem, error
+	 * code (one of SCST_MGMT_STATUS_* codes) should be set using function
+	 * scst_mgmt_cmd_set_status().
+	 *
+	 * Can be called under many internal SCST locks, including under
+	 * disabled IRQs, so dev handler should be careful with locking and,
+	 * if necessary, pass processing somewhere outside (in a work, e.g.)
+	 *
+	 * But at the moment it's called under disabled IRQs only for
+	 * SCST_ABORT_TASK, however dev handler using it should add a BUG_ON
+	 * trap to catch if it's changed in future.
+	 *
+	 * OPTIONAL
+	 */
+	void (*task_mgmt_fn_done) (struct scst_mgmt_cmd *mgmt_cmd,
+		struct scst_tgt_dev *tgt_dev);
+
+	/*
+	 * Called to reassign retained states (mode pages, etc.) from
+	 * old_tgt_dev to new_tgt_dev during nexus loss (iSCSI sessions
+	 * reinstatement, etc.) processing.
+	 *
+	 * Can be called under scst_mutex.
+	 *
+	 * OPTIONAL
+	 */
+	void (*reassign_retained_states) (struct scst_tgt_dev *new_tgt_dev,
+		struct scst_tgt_dev *old_tgt_dev);
 
 	/*
 	 * Called to notify dev handler that its sg_tablesize is too low to
@@ -1445,6 +1528,12 @@ struct scst_tgt {
 	/* List of remote sessions per target, protected by scst_mutex */
 	struct list_head sess_list;
 
+	/*
+	 * List of remote sessions registered in sysfs per target, protected
+	 * by scst_mutex.
+	 */
+	struct list_head sysfs_sess_list;
+
 	/* List entry of targets per template (tgts_list) */
 	struct list_head tgt_list_entry;
 
@@ -1473,7 +1562,6 @@ struct scst_tgt {
 	 */
 	bool retry_timer_active;
 	struct timer_list retry_timer;
-	atomic_t finished_cmds;
 	int retry_cmds;
 	spinlock_t tgt_lock;
 	struct list_head retry_cmd_list;
@@ -1510,15 +1598,31 @@ struct scst_tgt {
 
 #ifdef CONFIG_SCST_MEASURE_LATENCY
 
+/* Divide two 64-bit numbers with reasonably accuracy. */
+static inline void __scst_time_per_cmd(uint64_t *t, uint64_t n)
+{
+	unsigned shift;
+
+	if (!n)
+		return;
+	shift = max(0, ilog2(n) - 32 + 1);
+	*t >>= shift;
+	n >>= shift;
+	WARN_ON(n != (uint32_t)n);
+	do_div(*t, (uint32_t)n);
+}
+
+#define scst_time_per_cmd(t, n) __scst_time_per_cmd(&(t), (n))
+
 /* Defines extended latency statistics */
 struct scst_ext_latency_stat {
 	uint64_t scst_time_rd, tgt_time_rd, dev_time_rd;
-	unsigned int processed_cmds_rd;
+	uint64_t processed_cmds_rd;
 	uint64_t min_scst_time_rd, min_tgt_time_rd, min_dev_time_rd;
 	uint64_t max_scst_time_rd, max_tgt_time_rd, max_dev_time_rd;
 
 	uint64_t scst_time_wr, tgt_time_wr, dev_time_wr;
-	unsigned int processed_cmds_wr;
+	uint64_t processed_cmds_wr;
 	uint64_t min_scst_time_wr, min_tgt_time_wr, min_dev_time_wr;
 	uint64_t max_scst_time_wr, max_tgt_time_wr, max_dev_time_wr;
 };
@@ -1555,7 +1659,7 @@ struct scst_session {
 	struct scst_tgt *tgt;	/* corresponding target */
 
 	/* Used for storage of target driver private stuff */
-	void *tgt_priv;
+	void *sess_tgt_priv;
 
 	/* session's async flags */
 	unsigned long sess_aflags;
@@ -1576,7 +1680,7 @@ struct scst_session {
 	 * very beginning, because otherwise they can be missed during
 	 * TM processing.
 	 */
-	struct list_head sess_cmd_list;
+	struct list_head sess_cmd_list ____cacheline_aligned_in_smp;
 
 	spinlock_t sess_list_lock; /* protects sess_cmd_list, etc */
 
@@ -1609,8 +1713,14 @@ struct scst_session {
 	/* Name of attached initiator */
 	const char *initiator_name;
 
+	/* Unique session name: initiator name + optional _%d. */
+	const char *sess_name;
+
 	/* List entry of sessions per target */
 	struct list_head sess_list_entry;
+
+	/* Per target list entry for sessions registered in sysfs. */
+	struct list_head sysfs_sess_list_entry;
 
 	/* List entry for the list that keeps session, waiting for the init */
 	struct list_head sess_init_list_entry;
@@ -1643,7 +1753,7 @@ struct scst_session {
 #ifndef CONFIG_SCST_PROC
 	unsigned int sess_kobj_ready:1;
 
-	struct kobject sess_kobj; /* kobject for this struct */
+	struct kobject sess_kobj; /* session sysfs entry */
 #endif
 
 	/*
@@ -1656,13 +1766,9 @@ struct scst_session {
 	void (*unreg_done_fn) (struct scst_session *sess);
 
 #ifdef CONFIG_SCST_MEASURE_LATENCY
-	/*
-	 * Must be the last to allow to work with drivers who don't know
-	 * about this config time option.
-	 */
 	spinlock_t lat_lock;
 	uint64_t scst_time, tgt_time, dev_time;
-	unsigned int processed_cmds;
+	uint64_t processed_cmds;
 	uint64_t min_scst_time, min_tgt_time, min_dev_time;
 	uint64_t max_scst_time, max_tgt_time, max_dev_time;
 	struct scst_ext_latency_stat sess_latency_stat[SCST_LATENCY_STATS_NUM];
@@ -1719,27 +1825,33 @@ struct scst_cmd_threads {
  */
 struct scst_order_data {
 	/*
-	 * Protected by sn_lock, except expected_sn, which is protected by
-	 * itself. Curr_sn must have the same size as expected_sn to
-	 * overflow simultaneously.
+	 * All fields, when needed, protected by sn_lock. Curr_sn must have
+	 * the same type as expected_sn to overflow simultaneously!
 	 */
-	int def_cmd_count;
+
+	struct list_head skipped_sn_list;
+	struct list_head deferred_cmd_list;
+
 	spinlock_t sn_lock;
+
+	int hq_cmd_count;
+
+	/* Set if the prev cmd was ORDERED */
+	bool prev_cmd_ordered;
+
+	int def_cmd_count;
 	unsigned int expected_sn;
 	unsigned int curr_sn;
-	int hq_cmd_count;
-	struct list_head deferred_cmd_list;
-	struct list_head skipped_sn_list;
+	int pending_simple_inc_expected_sn;
 
-	/*
-	 * Set if the prev cmd was ORDERED. Size and, hence, alignment must
-	 * allow unprotected modifications independently to the neighbour fields.
-	 */
-	unsigned long prev_cmd_ordered;
-
-	int num_free_sn_slots; /* if it's <0, then all slots are busy */
 	atomic_t *cur_sn_slot;
 	atomic_t sn_slots[15];
+
+	/*
+	 * Used to serialized scst_cmd_init_done() if the corresponding
+	 * session's target template has multithreaded_init_done set
+	 */
+	spinlock_t init_done_lock;
 };
 
 /*
@@ -1766,10 +1878,18 @@ struct scst_cmd {
 	 *************************************************************/
 
 	/*
-	 * Set if expected_sn should be incremented, i.e. cmd was sent
-	 * for execution
+	 * Set if cmd was sent for execution to optimize aborts waiting.
+	 * Also it is a sign under contract that if inc_expected_sn_on_done
+	 * is not set, the thread setting it is committing obligation to
+	 * call scst_inc_expected_sn() after this cmd was sent to exec.
 	 */
 	unsigned int sent_for_exec:1;
+
+	/* Set if cmd's SN was set */
+	unsigned int sn_set:1;
+
+	/* Set if increment expected_sn in cmd->scst_cmd_done() */
+	unsigned int inc_expected_sn_on_done:1;
 
 	/* Set if the cmd's action is completed */
 	unsigned int completed:1;
@@ -1814,16 +1934,16 @@ struct scst_cmd {
 
 	/*
 	 * Set if the target driver wants to alloc data buffers on its own.
-	 * In this case alloc_data_buf() must be provided in the target driver
-	 * template.
+	 * In this case tgt_alloc_data_buf() must be provided in the target
+	 * driver template.
 	 */
 	unsigned int tgt_need_alloc_data_buf:1;
 
 	/*
-	 * Set by SCST if the custom data buffer allocation by the target driver
-	 * succeeded.
+	 * Set by SCST if the custom data buffer allocated by the target driver
+	 * or, for internal commands, by SCST core .
 	 */
-	unsigned int tgt_data_buf_alloced:1;
+	unsigned int tgt_i_data_buf_alloced:1;
 
 	/* Set if custom data buffer allocated by dev handler */
 	unsigned int dh_data_buf_alloced:1;
@@ -1848,9 +1968,6 @@ struct scst_cmd {
 	 */
 	unsigned int preprocessing_only:1;
 
-	/* Set if cmd's SN was set */
-	unsigned int sn_set:1;
-
 	/* Set if hq_cmd_count was incremented */
 	unsigned int hq_cmd_inced:1;
 
@@ -1873,9 +1990,6 @@ struct scst_cmd {
 	/* Set if the cmd was done or aborted out of its SN */
 	unsigned int out_of_sn:1;
 
-	/* Set if increment expected_sn in cmd->scst_cmd_done() */
-	unsigned int inc_expected_sn_on_done:1;
-
 	/* Set if tgt_sn field is valid */
 	unsigned int tgt_sn_set:1;
 
@@ -1891,19 +2005,8 @@ struct scst_cmd {
 	 */
 	unsigned int finished:1;
 
-	/*
-	 * Set if scst_check_local_events() can be called more than once. Set by
-	 * scst_pre_check_local_events().
-	 */
-	unsigned int check_local_events_once_done:1;
-
-#ifdef CONFIG_SCST_DEBUG_TM
-	/* Set if the cmd was delayed by task management debugging code */
-	unsigned int tm_dbg_delayed:1;
-
-	/* Set if the cmd must be ignored by task management debugging code */
-	unsigned int tm_dbg_immut:1;
-#endif
+	/* Set if cmd was pre-alloced by target driver */
+	unsigned int pre_alloced:1;
 
 	/**************************************************************/
 
@@ -1916,6 +2019,7 @@ struct scst_cmd {
 	struct scst_tgt_template *tgtt;	/* to save extra dereferences */
 	struct scst_tgt *tgt;		/* to save extra dereferences */
 	struct scst_device *dev;	/* to save extra dereferences */
+	struct scst_dev_type *devt;	/* to save extra dereferences */
 
 	/* corresponding I_T_L device for this cmd */
 	struct scst_tgt_dev *tgt_dev;
@@ -1950,8 +2054,12 @@ struct scst_cmd {
 	unsigned short cdb_len;
 	uint8_t cdb_buf[SCST_MAX_CDB_SIZE];
 
-	enum scst_cdb_flags op_flags;
-	const char *op_name;
+	uint8_t lba_off;	/* LBA offset in cdb */
+	uint8_t lba_len;	/* LBA length in cdb */
+	uint8_t len_off;	/* length offset in cdb */
+	uint8_t len_len;	/* length length in cdb */
+	uint32_t op_flags;	/* various flags of this opcode */
+	const char *op_name;	/* op code SCSI full name */
 
 	enum scst_cmd_queue_type queue_type;
 
@@ -1966,12 +2074,14 @@ struct scst_cmd {
 	int expected_transfer_len;
 	int expected_out_transfer_len; /* for bidi writes */
 
+	int64_t lba; /* LBA of this cmd */
+
 	/*
 	 * Cmd data length. Could be different from bufflen for commands like
 	 * VERIFY, which transfer different amount of data (if any), than
 	 * processed.
 	 */
-	int data_len;
+	int64_t data_len;
 
 	/* Completion routine */
 	void (*scst_cmd_done) (struct scst_cmd *cmd, int next_state,
@@ -1979,8 +2089,8 @@ struct scst_cmd {
 
 	struct sgv_pool_obj *sgv;	/* sgv object */
 	int bufflen;			/* cmd buffer length */
-	struct scatterlist *sg;		/* cmd data buffer SG vector */
 	int sg_cnt;			/* SG segments count */
+	struct scatterlist *sg;		/* cmd data buffer SG vector */
 
 	/*
 	 * Response data length in data buffer. Must not be set
@@ -2013,22 +2123,22 @@ struct scst_cmd {
 	int get_sg_buf_entry_num;
 
 	/* Bidirectional transfers support */
-	int out_bufflen;			/* WRITE buffer length */
+	int out_bufflen;		/* WRITE buffer length */
 	struct sgv_pool_obj *out_sgv;	/* WRITE sgv object */
 	struct scatterlist *out_sg;	/* WRITE data buffer SG vector */
 	int out_sg_cnt;			/* WRITE SG segments count */
 
 	/*
-	 * Used if both target driver and dev handler request own memory
-	 * allocation. In other cases, both are equal to sg and sg_cnt
-	 * correspondingly.
+	 * Used if both target driver or SCST core for internal commands and
+	 * dev handler request own memory allocation. In other cases, both
+	 * are equal to sg and sg_cnt correspondingly.
 	 *
 	 * If target driver requests own memory allocations, it MUST use
 	 * functions scst_cmd_get_tgt_sg*() to get sg and sg_cnt! Otherwise,
 	 * it may use functions scst_cmd_get_sg*().
 	 */
-	struct scatterlist *tgt_sg;
-	int tgt_sg_cnt;
+	struct scatterlist *tgt_i_sg;
+	int tgt_i_sg_cnt;
 	struct scatterlist *tgt_out_sg;	/* bidirectional */
 	int tgt_out_sg_cnt;		/* bidirectional */
 
@@ -2048,16 +2158,17 @@ struct scst_cmd {
 	/* Start time when cmd was sent to rdy_to_xfer() or xmit_response() */
 	unsigned long hw_pending_start;
 
-	/* Used for storage of target driver private stuff */
-	void *tgt_priv;
+	/* Used for storage of target driver or internal commands private stuff */
+	void *tgt_i_priv;
 
 	/* Used for storage of dev handler private stuff */
 	void *dh_priv;
 
 	/* Used to restore sg if it was modified by scst_adjust_sg() */
-	struct scatterlist *orig_sg;
 	int *p_orig_sg_cnt;
-	int orig_sg_cnt, orig_sg_entry, orig_entry_len;
+	int orig_sg_cnt;
+	struct scatterlist *orig_sg_entry;
+	int orig_entry_offs, orig_entry_len;
 
 	/* Used to retry commands in case of double UA */
 	int dbl_ua_orig_resp_data_len, dbl_ua_orig_data_direction;
@@ -2074,17 +2185,26 @@ struct scst_cmd {
 	/* Counter of the corresponding SCST_PR_ABORT_ALL TM commands */
 	struct scst_pr_abort_all_pending_mgmt_cmds_counter *pr_abort_counter;
 
-	struct scst_cmd *orig_cmd; /* Used to issue REQUEST SENSE */
+	/*
+	 * List of parsed data descriptors for commands operating with
+	 * several lba and data_len pairs, like UNMAP, and its size in elements.
+	 */
+	void *cmd_data_descriptors;
+	int cmd_data_descriptors_cnt;
 
 #ifdef CONFIG_SCST_MEASURE_LATENCY
-	/*
-	 * Must be the last to allow to work with drivers who don't know
-	 * about this config time option.
-	 */
 	uint64_t start, curr_start, parse_time, alloc_buf_time;
 	uint64_t restart_waiting_time, rdy_to_xfer_time;
 	uint64_t pre_exec_time, exec_time, dev_done_time;
-	uint64_t xmit_time, tgt_on_free_time, dev_on_free_time;
+	uint64_t xmit_time;
+#endif
+
+#ifdef CONFIG_SCST_DEBUG_TM
+	/* Set if the cmd was delayed by task management debugging code */
+	unsigned int tm_dbg_delayed:1;
+
+	/* Set if the cmd must be ignored by task management debugging code */
+	unsigned int tm_dbg_immut:1;
 #endif
 };
 
@@ -2140,6 +2260,8 @@ struct scst_mgmt_cmd {
 	unsigned int needs_unblocking:1;
 	unsigned int lun_set:1;		/* set, if lun field is valid */
 	unsigned int cmd_sn_set:1;	/* set, if cmd_sn field is valid */
+	/* Set if dev handler's task_mgmt_fn_received was called */
+	unsigned int task_mgmt_fn_received_called:1;
 
 	/*
 	 * Number of commands to finish before sending response,
@@ -2158,14 +2280,14 @@ struct scst_mgmt_cmd {
 
 	uint64_t lun;	/* LUN for this mgmt cmd */
 	/* or (and for iSCSI) */
-	uint64_t tag;	/* tag of the corresponding cmd */
+	uint64_t tag;	/* for ABORT TASK, tag of the cmd to abort */
 
 	uint32_t cmd_sn; /* affected command's highest SN */
 
 	/* corresponding cmd (to be aborted, found by tag) */
 	struct scst_cmd *cmd_to_abort;
 
-	/* corresponding device for this mgmt cmd (found by lun) */
+	/* corresponding device for this mgmt cmd (found by lun or by tag) */
 	struct scst_tgt_dev *mcmd_tgt_dev;
 
 	/* completion status, one of the SCST_MGMT_STATUS_* constants */
@@ -2201,7 +2323,7 @@ struct scst_dev_registrant {
  * SCST device
  */
 struct scst_device {
-	unsigned short type;	/* SCSI type of the device */
+	unsigned int type;	/* SCSI type of the device */
 
 	/*************************************************************
 	 ** Dev's flags. Updates serialized by dev_lock or suspended
@@ -2209,16 +2331,16 @@ struct scst_device {
 	 *************************************************************/
 
 	/* Set if dev is RESERVED */
-	unsigned short dev_reserved:1;
+	unsigned int dev_reserved:1;
 
 	/* Set if double reset UA is possible */
-	unsigned short dev_double_ua_possible:1;
+	unsigned int dev_double_ua_possible:1;
 
 	/* If set, dev is read only */
-	unsigned short rd_only:1;
+	unsigned int dev_rd_only:1;
 
 	/* Set, if a strictly serialized cmd is waiting blocked */
-	unsigned short strictly_serialized_cmd_waiting:1;
+	unsigned int strictly_serialized_cmd_waiting:1;
 
 	/*
 	 * Set, if this device is being unregistered. Useful to let sysfs
@@ -2226,17 +2348,17 @@ struct scst_device {
 	 * possible deadlocks with their device unregistration waiting for
 	 * their kobj last put.
 	 */
-	unsigned short dev_unregistering:1;
+	unsigned int dev_unregistering:1;
 
 	/**************************************************************/
 
 	/*************************************************************
 	 ** Dev's control mode page related values. Updates serialized
-	 ** by scst_block_dev(). Modified independently to the above and
-	 ** below fields, hence the alignment.
+	 ** by scst_block_dev(). Modified independently to the above
+	 ** fields, hence the alignment.
 	 *************************************************************/
 
-	unsigned int queue_alg:4  __attribute__((aligned(sizeof(long))));
+	unsigned int queue_alg:4 __aligned(sizeof(long));
 	unsigned int tst:3;
 	unsigned int tas:1;
 	unsigned int swp:1;
@@ -2251,10 +2373,40 @@ struct scst_device {
 
 	/**************************************************************/
 
+	/*
+	 * Device block size and block shift if fixed size blocks used. Supposed
+	 * to be read-only or serialized the same way as MODE pages changes.
+	 */
+	int block_size;
+	int block_shift;
+
+	/*
+	 * Set if dev is persistently reserved. Protected by dev_pr_mutex.
+	 * Modified independently to the above field, hence the alignment.
+	 */
+	unsigned int pr_is_set:1 __aligned(sizeof(long));
+
+	/*
+	 * Set if there is a thread changing or going to change PR state(s).
+	 * Protected by dev_pr_mutex.
+	 */
+	unsigned int pr_writer_active:1;
+
+	struct scst_dev_type *handler;	/* corresponding dev handler */
+
+	/* Used for storage of dev handler private stuff */
+	void *dh_priv;
+
+	/* Corresponding real SCSI device, could be NULL for virtual devices */
+	struct scsi_device *scsi_dev;
+
+	/* Device lock */
+	spinlock_t dev_lock ____cacheline_aligned_in_smp;
+
+#ifdef CONFIG_SCST_PER_DEVICE_CMD_COUNT_LIMIT
 	/* How many cmds alive on this dev */
 	atomic_t dev_cmd_count;
-
-	spinlock_t dev_lock; /* device lock */
+#endif
 
 	/*
 	 * How many times device was blocked for new cmds execution.
@@ -2274,31 +2426,11 @@ struct scst_device {
 	 */
 	int pr_readers_count;
 
-	/*
-	 * Set if dev is persistently reserved. Protected by dev_pr_mutex.
-	 * Modified independently to the above field, hence the alignment.
-	 */
-	unsigned int pr_is_set:1 __attribute__((aligned(sizeof(long))));
-
-	/*
-	 * Set if there is a thread changing or going to change PR state(s).
-	 * Protected by dev_pr_mutex.
-	 */
-	unsigned int pr_writer_active:1;
-
-	struct scst_dev_type *handler;	/* corresponding dev handler */
-
-	/* Used for storage of dev handler private stuff */
-	void *dh_priv;
-
-	/* Corresponding real SCSI device, could be NULL for virtual devices */
-	struct scsi_device *scsi_dev;
+	/* Memory limits for this device */
+	struct scst_mem_lim dev_mem_lim;
 
 	/* List of commands with lock, if dedicated threads are used */
 	struct scst_cmd_threads dev_cmd_threads;
-
-	/* Memory limits for this device */
-	struct scst_mem_lim dev_mem_lim;
 
 	/*************************************************************
 	 ** Persistent reservation fields. Protected by dev_pr_mutex.
@@ -2308,7 +2440,7 @@ struct scst_device {
 	 * True if persist through power loss is activated. Modified
 	 * independently to the above field, hence the alignment.
 	 */
-	unsigned short pr_aptpl:1 __attribute__((aligned(sizeof(long))));
+	unsigned short pr_aptpl:1 __aligned(sizeof(long));
 
 	/* Persistent reservation type */
 	uint8_t pr_type;
@@ -2346,7 +2478,7 @@ struct scst_device {
 	/* List of blocked commands, protected by dev_lock. */
 	struct list_head blocked_cmd_list;
 
-	/* A list entry used during TM, protected by scst_mutex */
+	/* A list entry used during TM */
 	struct list_head tm_dev_list_entry;
 
 	int virt_id; /* virtual device internal ID */
@@ -2375,24 +2507,12 @@ struct scst_device {
 	/* sysfs release completion */
 	struct completion *dev_kobj_release_cmpl;
 
-	struct kobject dev_kobj; /* kobject for this struct */
+	struct kobject dev_kobj; /* device sysfs entry */
 	struct kobject *dev_exp_kobj; /* exported groups */
 
 	/* Export number in the dev's sysfs list. Protected by scst_mutex */
 	int dev_exported_lun_num;
 #endif
-};
-
-/*
- * Used to store threads local tgt_dev specific data
- */
-struct scst_thr_data_hdr {
-	/* List entry in tgt_dev->thr_data_list */
-	struct list_head thr_data_list_entry;
-	struct task_struct *owner_thr; /* the owner thread */
-	atomic_t ref;
-	/* Function that will be called on the tgt_dev destruction */
-	void (*free_fn) (struct scst_thr_data_hdr *data);
 };
 
 /*
@@ -2421,6 +2541,22 @@ struct scst_tgt_dev {
 	struct sgv_pool *pool;
 	int max_sg_cnt;
 
+	/*************************************************************
+	 ** Tgt_dev's flags
+	 *************************************************************/
+
+	/* Set if tgt_dev is read only (to save extra dereferences) */
+	unsigned int tgt_dev_rd_only:1;
+
+	/* Set if the corresponding context should be atomic */
+	unsigned int tgt_dev_after_init_wr_atomic:1;
+	unsigned int tgt_dev_after_exec_atimic:1;
+
+	/* Set if tgt_dev uses clustered SGV pool */
+	unsigned int tgt_dev_clust_pool:1;
+
+	/**************************************************************/
+
 	/*
 	 * Tgt_dev's async flags. Modified independently to the neighbour
 	 * fields.
@@ -2431,14 +2567,13 @@ struct scst_tgt_dev {
 	void *dh_priv;
 
 	/* How many cmds alive on this dev in this session */
-	atomic_t tgt_dev_cmd_count;
+	atomic_t tgt_dev_cmd_count ____cacheline_aligned_in_smp;
+
+	/* ALUA command filter */
+	bool (*alua_filter)(struct scst_cmd *cmd);
 
 	struct scst_order_data *curr_order_data;
 	struct scst_order_data tgt_dev_order_data;
-
-	/* List of scst_thr_data_hdr and lock */
-	spinlock_t thr_data_lock;
-	struct list_head thr_data_list;
 
 	/* Pointer to lists of commands with the lock */
 	struct scst_cmd_threads *active_cmd_threads;
@@ -2470,7 +2605,7 @@ struct scst_tgt_dev {
 	/* List entry in dev->dev_tgt_dev_list */
 	struct list_head dev_tgt_dev_list_entry;
 
-	/* Internal tmp list entry */
+	/* Internal tmp list entry. User must hold scst_mutex. */
 	struct list_head extra_tgt_dev_list_entry;
 
 	/* Set if INQUIRY DATA HAS CHANGED UA is needed */
@@ -2487,18 +2622,15 @@ struct scst_tgt_dev {
 	/* sysfs release completion */
 	struct completion *tgt_dev_kobj_release_cmpl;
 
-	struct kobject tgt_dev_kobj; /* kobject for this struct */
+	struct kobject tgt_dev_kobj; /* sessions' LUNs sysfs entry */
 #endif
 
 #ifdef CONFIG_SCST_MEASURE_LATENCY
 	/*
-	 * Must be the last to allow to work with drivers who don't know
-	 * about this config time option.
-	 *
 	 * Protected by sess->lat_lock.
 	 */
 	uint64_t scst_time, tgt_time, dev_time;
-	unsigned int processed_cmds;
+	uint64_t processed_cmds;
 	struct scst_ext_latency_stat dev_latency_stat[SCST_LATENCY_STATS_NUM];
 #endif
 };
@@ -2512,7 +2644,7 @@ struct scst_acg_dev {
 	uint64_t lun; /* device's LUN in this acg */
 
 	/* If set, the corresponding LU is read only */
-	unsigned int rd_only:1;
+	unsigned int acg_dev_rd_only:1;
 
 	struct scst_acg *acg; /* parent acg */
 
@@ -2523,8 +2655,7 @@ struct scst_acg_dev {
 	struct list_head acg_dev_list_entry;
 
 #ifndef CONFIG_SCST_PROC
-	/* kobject for this structure */
-	struct kobject acg_dev_kobj;
+	struct kobject acg_dev_kobj; /* targets' LUNs sysfs entry */
 
 	/* sysfs release completion */
 	struct completion *acg_dev_kobj_release_cmpl;
@@ -2551,7 +2682,7 @@ struct scst_acg {
 	/* List of attached acn's, protected by scst_mutex */
 	struct list_head acn_list;
 
-	/* List entry in acg_lists */
+	/* List entry in acg_lists (procfs) or tgt_acg_list (sysfs) */
 	struct list_head acg_list_entry;
 
 	/* Name of this acg */
@@ -2574,8 +2705,7 @@ struct scst_acg {
 	struct completion *acg_kobj_release_cmpl;
 
 #ifndef CONFIG_SCST_PROC
-	/* kobject for this structure */
-	struct kobject acg_kobj;
+	struct kobject acg_kobj; /* targets' ini_groups sysfs entry */
 
 	struct kobject *luns_kobj;
 	struct kobject *initiators_kobj;
@@ -2767,7 +2897,10 @@ bool scst_initiator_has_luns(struct scst_tgt *tgt, const char *initiator_name);
 
 struct scst_cmd *scst_rx_cmd(struct scst_session *sess,
 	const uint8_t *lun, int lun_len, const uint8_t *cdb,
-	unsigned int cdb_len, int atomic);
+	unsigned int cdb_len, bool atomic);
+int scst_rx_cmd_prealloced(struct scst_cmd *cmd, struct scst_session *sess,
+	const uint8_t *lun, int lun_len, const uint8_t *cdb,
+	unsigned int cdb_len, bool atomic);
 void scst_cmd_init_done(struct scst_cmd *cmd,
 	enum scst_exec_context pref_context);
 
@@ -2800,6 +2933,12 @@ void scst_tgt_cmd_done(struct scst_cmd *cmd,
 int scst_rx_mgmt_fn(struct scst_session *sess,
 	const struct scst_rx_mgmt_params *params);
 
+static inline void scst_rx_mgmt_params_init(
+		struct scst_rx_mgmt_params *params)
+{
+	memset(params, 0, sizeof(*params));
+}
+
 /*
  * Creates new management command using tag and sends it for execution.
  * Can be used for SCST_ABORT_TASK only.
@@ -2815,7 +2954,8 @@ static inline int scst_rx_mgmt_fn_tag(struct scst_session *sess, int fn,
 
 	BUG_ON(fn != SCST_ABORT_TASK);
 
-	memset(&params, 0, sizeof(params));
+	scst_rx_mgmt_params_init(&params);
+
 	params.fn = fn;
 	params.tag = tag;
 	params.tag_set = 1;
@@ -2833,17 +2973,18 @@ static inline int scst_rx_mgmt_fn_tag(struct scst_session *sess, int fn,
  * Obsolete in favor of scst_rx_mgmt_fn()
  */
 static inline int scst_rx_mgmt_fn_lun(struct scst_session *sess, int fn,
-	const uint8_t *lun, int lun_len, int atomic, void *tgt_priv)
+	const void *lun, int lun_len, int atomic, void *tgt_priv)
 {
 	struct scst_rx_mgmt_params params;
 
 	BUG_ON(fn == SCST_ABORT_TASK);
 
-	memset(&params, 0, sizeof(params));
+	scst_rx_mgmt_params_init(&params);
+
 	params.fn = fn;
 	params.lun = lun;
 	params.lun_len = lun_len;
-	params.lun_set = 1;
+	params.lun_set = !!lun;
 	params.atomic = atomic;
 	params.tgt_priv = tgt_priv;
 	return scst_rx_mgmt_fn(sess, &params);
@@ -2868,30 +3009,6 @@ struct scst_cmd *scst_find_cmd(struct scst_session *sess, void *data,
 
 enum dma_data_direction scst_to_dma_dir(int scst_dir);
 enum dma_data_direction scst_to_tgt_dma_dir(int scst_dir);
-
-/*
- * Returns true, if cmd's CDB is fully locally handled by SCST and false
- * otherwise. Dev handlers parse() and dev_done() not called for such commands.
- */
-static inline bool scst_is_cmd_fully_local(struct scst_cmd *cmd)
-{
-	return (cmd->op_flags & SCST_FULLY_LOCAL_CMD) != 0;
-}
-
-/*
- * Returns true, if cmd's CDB is locally handled by SCST and
- * false otherwise.
- */
-static inline bool scst_is_cmd_local(struct scst_cmd *cmd)
-{
-	return (cmd->op_flags & SCST_LOCAL_CMD) != 0;
-}
-
-/* Returns true, if cmd can deliver UA */
-static inline bool scst_is_ua_command(struct scst_cmd *cmd)
-{
-	return (cmd->op_flags & SCST_SKIP_UA) == 0;
-}
 
 int scst_register_virtual_device(struct scst_dev_type *dev_handler,
 	const char *dev_name);
@@ -2930,13 +3047,13 @@ void scst_update_hw_pending_start(struct scst_cmd *cmd);
  */
 static inline void *scst_sess_get_tgt_priv(struct scst_session *sess)
 {
-	return sess->tgt_priv;
+	return sess->sess_tgt_priv;
 }
 
 static inline void scst_sess_set_tgt_priv(struct scst_session *sess,
 					      void *val)
 {
-	sess->tgt_priv = val;
+	sess->sess_tgt_priv = val;
 }
 
 uint16_t scst_lookup_tg_id(struct scst_device *dev, struct scst_tgt *tgt);
@@ -2961,7 +3078,11 @@ static inline bool scst_cmd_atomic(struct scst_cmd *cmd)
 	 */
 	if (unlikely((in_atomic() || in_interrupt() || irqs_disabled()) &&
 		     !res)) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 28)
 		printk(KERN_ERR "ERROR: atomic context and non-atomic cmd!\n");
+#else
+		pr_err("ERROR: atomic context and non-atomic cmd!\n");
+#endif
 		dump_stack();
 		cmd->atomic = 1;
 		res = 1;
@@ -3073,6 +3194,12 @@ static inline int scst_cmd_get_sg_cnt(struct scst_cmd *cmd)
 	return cmd->sg_cnt;
 }
 
+/* Returns cmd's LBA */
+static inline int64_t scst_cmd_get_lba(struct scst_cmd *cmd)
+{
+	return cmd->lba;
+}
+
 /*
  * Returns cmd's data buffer length.
  *
@@ -3080,9 +3207,18 @@ static inline int scst_cmd_get_sg_cnt(struct scst_cmd *cmd)
  * this function is not recommended, use scst_get_buf_*()
  * family of functions instead.
  */
-static inline unsigned int scst_cmd_get_bufflen(struct scst_cmd *cmd)
+static inline int scst_cmd_get_bufflen(struct scst_cmd *cmd)
 {
 	return cmd->bufflen;
+}
+
+/*
+ * Returns cmd's data_len. See the corresponding field's description in
+ * struct scst_cmd above.
+ */
+static inline int64_t scst_cmd_get_data_len(struct scst_cmd *cmd)
+{
+	return cmd->data_len;
 }
 
 /*
@@ -3128,25 +3264,34 @@ static inline unsigned int scst_cmd_get_out_bufflen(struct scst_cmd *cmd)
 	return cmd->out_bufflen;
 }
 
-/* Returns pointer to cmd's target's SG data buffer */
+/*
+ * Returns pointer to cmd's target's SG data buffer. Since it's for target
+ * drivers, the "_i_" part is omitted.
+ */
 static inline struct scatterlist *scst_cmd_get_tgt_sg(struct scst_cmd *cmd)
 {
-	return cmd->tgt_sg;
+	return cmd->tgt_i_sg;
 }
 
-/* Returns cmd's target's sg_cnt */
+/*
+ * Returns cmd's target's sg_cnt. Since it's for target
+ * drivers, the "_i_" part is omitted.
+ */
 static inline int scst_cmd_get_tgt_sg_cnt(struct scst_cmd *cmd)
 {
-	return cmd->tgt_sg_cnt;
+	return cmd->tgt_i_sg_cnt;
 }
 
-/* Sets cmd's target's SG data buffer */
+/*
+ * Sets cmd's target's SG data buffer. Since it's for target
+ * drivers, the "_i_" part is omitted.
+ */
 static inline void scst_cmd_set_tgt_sg(struct scst_cmd *cmd,
 	struct scatterlist *sg, int sg_cnt)
 {
-	cmd->tgt_sg = sg;
-	cmd->tgt_sg_cnt = sg_cnt;
-	cmd->tgt_data_buf_alloced = 1;
+	cmd->tgt_i_sg = sg;
+	cmd->tgt_i_sg_cnt = sg_cnt;
+	cmd->tgt_i_data_buf_alloced = 1;
 }
 
 /* Returns pointer to cmd's target's OUT SG data buffer */
@@ -3165,7 +3310,7 @@ static inline int scst_cmd_get_tgt_out_sg_cnt(struct scst_cmd *cmd)
 static inline void scst_cmd_set_tgt_out_sg(struct scst_cmd *cmd,
 	struct scatterlist *sg, int sg_cnt)
 {
-	WARN_ON(!cmd->tgt_data_buf_alloced);
+	WARN_ON(!cmd->tgt_i_data_buf_alloced);
 
 	cmd->tgt_out_sg = sg;
 	cmd->tgt_out_sg_cnt = sg_cnt;
@@ -3276,12 +3421,12 @@ static inline void scst_cmd_set_tag(struct scst_cmd *cmd, uint64_t tag)
  */
 static inline void *scst_cmd_get_tgt_priv(struct scst_cmd *cmd)
 {
-	return cmd->tgt_priv;
+	return cmd->tgt_i_priv;
 }
 
 static inline void scst_cmd_set_tgt_priv(struct scst_cmd *cmd, void *val)
 {
-	cmd->tgt_priv = val;
+	cmd->tgt_i_priv = val;
 }
 
 /*
@@ -3298,16 +3443,17 @@ static inline void scst_cmd_set_tgt_need_alloc_data_buf(struct scst_cmd *cmd)
 }
 
 /*
- * Get/Set functions for tgt_data_buf_alloced flag
+ * Get/Set functions for tgt_i_data_buf_alloced flag. Since they are for target
+ * drivers, the "_i_" part is omitted.
  */
 static inline int scst_cmd_get_tgt_data_buff_alloced(struct scst_cmd *cmd)
 {
-	return cmd->tgt_data_buf_alloced;
+	return cmd->tgt_i_data_buf_alloced;
 }
 
 static inline void scst_cmd_set_tgt_data_buff_alloced(struct scst_cmd *cmd)
 {
-	cmd->tgt_data_buf_alloced = 1;
+	cmd->tgt_i_data_buf_alloced = 1;
 }
 
 /*
@@ -3365,11 +3511,28 @@ static inline void scst_cmd_set_noio_mem_alloc(struct scst_cmd *cmd)
 }
 
 /*
- * Returns 1 if the cmd was aborted, so its status is invalid and no
- * reply shall be sent to the remote initiator. A target driver should
- * only clear internal resources, associated with cmd.
+ * Returns true if the cmd was aborted, so the caller should complete it as
+ * soon as possible.
+ *
+ * !! Xmit_response() callback must use scst_cmd_aborted_on_xmit() instead !!
+ * !! to allow status of completed commands aborted by other initiators be !!
+ * !! delivered to their initiators !!
  */
-static inline int scst_cmd_aborted(struct scst_cmd *cmd)
+static inline bool scst_cmd_aborted(struct scst_cmd *cmd)
+{
+	return test_bit(SCST_CMD_ABORTED, &cmd->cmd_flags);
+}
+
+/*
+ * Returns true if the cmd was aborted by its initiator or aborted by another
+ * initiator and not completed, so its status is invalid and no reply shall
+ * be sent to the remote initiator. A target driver should only clear
+ * internal resources, associated with cmd.
+ *
+ * This functions shall be called by all target drivers in the beginning of
+ * xmit_response() callback.
+ */
+static inline bool scst_cmd_aborted_on_xmit(struct scst_cmd *cmd)
 {
 	return test_bit(SCST_CMD_ABORTED, &cmd->cmd_flags) &&
 		!test_bit(SCST_CMD_ABORTED_OTHER, &cmd->cmd_flags);
@@ -3461,6 +3624,9 @@ static inline unsigned int scst_get_active_cmd_count(struct scst_cmd *cmd)
 		return (unsigned int)-1;
 }
 
+int scst_set_cdb_lba(struct scst_cmd *cmd, int64_t len);
+int scst_set_cdb_transf_len(struct scst_cmd *cmd, int len);
+
 /*
  * Get/Set function for mgmt cmd's target private data
  */
@@ -3487,8 +3653,17 @@ static inline int scst_mgmt_cmd_get_fn(struct scst_mgmt_cmd *mcmd)
 	return mcmd->fn;
 }
 
+static inline void scst_mgmt_cmd_set_status(struct scst_mgmt_cmd *mcmd,
+	int status)
+{
+	/* Don't replace existing, i.e. the first, not success status */
+	if ((mcmd->status == SCST_MGMT_STATUS_SUCCESS) &&
+	    (status != SCST_MGMT_STATUS_RECEIVED_STAGE_COMPLETED))
+		mcmd->status = status;
+}
+
 /*
- * Called by dev handler's task_mgmt_fn() to notify SCST core that mcmd
+ * Called by dev handler's task_mgmt_fn_*() to notify SCST core that mcmd
  * is going to complete asynchronously.
  */
 void scst_prepare_async_mcmd(struct scst_mgmt_cmd *mcmd);
@@ -3558,8 +3733,6 @@ void scst_aen_done(struct scst_aen *aen);
  * define the backported macro's because OFED has already defined these.
  */
 
-#ifndef __BACKPORT_LINUX_SCATTERLIST_H_TO_2_6_23__
-
 static inline bool sg_is_chain(struct scatterlist *sg)
 {
 	return false;
@@ -3570,15 +3743,19 @@ static inline struct scatterlist *sg_chain_ptr(struct scatterlist *sg)
 	return NULL;
 }
 
+#ifndef sg_page
 static inline struct page *sg_page(struct scatterlist *sg)
 {
 	return sg->page;
 }
+#endif
 
 static inline void *sg_virt(struct scatterlist *sg)
 {
 	return page_address(sg_page(sg)) + sg->offset;
 }
+
+#ifndef __BACKPORT_LINUX_SCATTERLIST_H_TO_2_6_23__
 
 static inline void sg_init_table(struct scatterlist *sgl, unsigned int nents)
 {
@@ -3598,14 +3775,37 @@ static inline void sg_set_page(struct scatterlist *sg, struct page *page,
 	sg->length = len;
 }
 
-static inline struct scatterlist *sg_next(struct scatterlist *sg)
+#endif /* __BACKPORT_LINUX_SCATTERLIST_H_TO_2_6_23__ */
+
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24) */
+
+static inline struct scatterlist *__sg_next_inline(struct scatterlist *sg)
 {
 	sg++;
+	if (unlikely(sg_is_chain(sg)))
+		sg = sg_chain_ptr(sg);
+
 	return sg;
 }
 
-#endif /* __BACKPORT_LINUX_SCATTERLIST_H_TO_2_6_23__ */
+static inline struct scatterlist *sg_next_inline(struct scatterlist *sg)
+{
+	if (sg_is_last(sg))
+		return NULL;
 
+	return __sg_next_inline(sg);
+}
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24)
+#ifndef __BACKPORT_LINUX_SCATTERLIST_H_TO_2_6_23__
+
+#ifndef for_each_sg
+/* See also commit 96b418c960af0d5c7185ff5c4af9376eb37ac9d3 */
+#define for_each_sg(sglist, sg, nr, __i)       \
+	for (__i = 0, sg = (sglist); __i < (nr); __i++, sg = sg_next_inline(sg))
+#endif
+
+#endif /* __BACKPORT_LINUX_SCATTERLIST_H_TO_2_6_23__ */
 #endif /* LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24) */
 
 static inline void sg_clear(struct scatterlist *sg)
@@ -3647,16 +3847,13 @@ static inline int __scst_get_buf(struct scst_cmd *cmd, int sg_cnt,
 		goto out;
 	}
 
-	if (unlikely(sg_is_chain(sg)))
-		sg = sg_chain_ptr(sg);
-
 	*buf = page_address(sg_page(sg));
 	*buf += sg->offset;
 
 	res = sg->length;
 
 	cmd->get_sg_buf_entry_num++;
-	cmd->get_sg_buf_cur_sg_entry = ++sg;
+	cmd->get_sg_buf_cur_sg_entry = __sg_next_inline(sg);
 
 out:
 	return res;
@@ -3753,15 +3950,12 @@ static inline int __scst_get_sg_page(struct scst_cmd *cmd, int sg_cnt,
 		goto out;
 	}
 
-	if (unlikely(sg_is_chain(sg)))
-		sg = sg_chain_ptr(sg);
-
 	*page = sg_page(sg);
 	*offset = sg->offset;
 	res = sg->length;
 
 	cmd->get_sg_buf_entry_num++;
-	cmd->get_sg_buf_cur_sg_entry = ++sg;
+	cmd->get_sg_buf_cur_sg_entry = __sg_next_inline(sg);
 
 out:
 	return res;
@@ -3836,14 +4030,17 @@ static inline int scst_get_out_buf_count(struct scst_cmd *cmd)
 }
 
 int scst_get_buf_full(struct scst_cmd *cmd, uint8_t **buf);
+int scst_get_buf_full_sense(struct scst_cmd *cmd, uint8_t **buf);
 void scst_put_buf_full(struct scst_cmd *cmd, uint8_t *buf);
+
+static inline gfp_t scst_cmd_get_gfp_flags(struct scst_cmd *cmd)
+{
+	return cmd->noio_mem_alloc ? GFP_NOIO : GFP_KERNEL;
+}
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 23) && !defined(BACKPORT_LINUX_WORKQUEUE_TO_2_6_19)
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 20))
 static inline int cancel_delayed_work_sync(struct delayed_work *work)
-#else
-static inline int cancel_delayed_work_sync(struct work_struct *work)
-#endif
 {
 	int res;
 
@@ -3851,6 +4048,23 @@ static inline int cancel_delayed_work_sync(struct work_struct *work)
 	flush_scheduled_work();
 	return res;
 }
+#else
+/*
+ * While cancel_delayed_work_sync() has not been defined in the vanilla kernel
+ * 2.6.18 nor in 2.6.19 nor in RHEL/CentOS 5.0..5.5, a definition is available
+ * in RHEL/CentOS 5.6. Unfortunately that definition is incompatible with what
+ * we need. So define cancel_delayed_work() as a macro such that it overrides
+ * the RHEL/CentOS 5.6 inline function definition in <linux/workqueue.h>.
+ */
+#define cancel_delayed_work_sync(work)		\
+({						\
+	int res;				\
+						\
+	res = cancel_delayed_work((work));	\
+	flush_scheduled_work();			\
+	res;					\
+})
+#endif
 #endif
 
 #ifdef CONFIG_DEBUG_LOCK_ALLOC
@@ -3860,7 +4074,14 @@ extern struct lockdep_map scst_suspend_dep_map;
 #else
 #define scst_assert_activity_suspended() do { } while (0)
 #endif
-int scst_suspend_activity(bool interruptible);
+
+/* Default suspending timeout for user interface actions */
+#define SCST_SUSPEND_TIMEOUT_USER	(90 * HZ)
+
+/* No timeout in scst_suspend_activity() */
+#define SCST_SUSPEND_TIMEOUT_UNLIMITED	0
+
+int scst_suspend_activity(unsigned long timeout);
 void scst_resume_activity(void);
 
 void scst_process_active_cmd(struct scst_cmd *cmd, bool atomic);
@@ -3868,16 +4089,24 @@ void scst_process_active_cmd(struct scst_cmd *cmd, bool atomic);
 void scst_post_parse(struct scst_cmd *cmd);
 void scst_post_alloc_data_buf(struct scst_cmd *cmd);
 
-int scst_check_local_events(struct scst_cmd *cmd);
+int __scst_check_local_events(struct scst_cmd *cmd, bool preempt_tests_only);
 
-static inline int scst_pre_check_local_events(struct scst_cmd *cmd)
+/**
+ * scst_check_local_events() - check if there are any local SCSI events
+ *
+ * See description of __scst_check_local_events().
+ *
+ * Dev handlers implementing internal queuing in their exec() callback should
+ * call this function just before the actual command's execution (i.e.
+ * after it's taken from the internal queue).
+ */
+static inline int scst_check_local_events(struct scst_cmd *cmd)
 {
-	int res = scst_check_local_events(cmd);
-	cmd->check_local_events_once_done = 1;
-	return res;
+	return __scst_check_local_events(cmd, true);
 }
 
-int scst_set_cmd_abnormal_done_state(struct scst_cmd *cmd);
+int scst_get_cmd_abnormal_done_state(const struct scst_cmd *cmd);
+void scst_set_cmd_abnormal_done_state(struct scst_cmd *cmd);
 
 struct scst_trace_log {
 	unsigned int val;
@@ -3962,6 +4191,9 @@ static inline struct kobject *scst_sysfs_get_tgtt_kobj(
 	return &tgtt->tgtt_kobj;
 }
 
+int scst_create_tgtt_attr(struct scst_tgt_template *tgtt,
+	struct kobj_attribute *attribute);
+
 /*
  * Returns target's root sysfs kobject.
  * The driver can create own files/directories/links here.
@@ -3971,6 +4203,9 @@ static inline struct kobject *scst_sysfs_get_tgt_kobj(
 {
 	return &tgt->tgt_kobj;
 }
+
+int scst_create_tgt_attr(struct scst_tgt *tgt,
+	struct kobj_attribute *attribute);
 
 /*
  * Returns device handler's root sysfs kobject.
@@ -3982,6 +4217,9 @@ static inline struct kobject *scst_sysfs_get_devt_kobj(
 	return &devt->devt_kobj;
 }
 
+int scst_create_devt_attr(struct scst_dev_type *devt,
+	struct kobj_attribute *attribute);
+
 /*
  * Returns device's root sysfs kobject.
  * The driver can create own files/directories/links here.
@@ -3991,6 +4229,9 @@ static inline struct kobject *scst_sysfs_get_dev_kobj(
 {
 	return &dev->dev_kobj;
 }
+
+int scst_create_dev_attr(struct scst_device *dev,
+	struct kobj_attribute *attribute);
 
 /*
  * Returns session's root sysfs kobject.
@@ -4017,6 +4258,12 @@ int scst_alloc_set_sense(struct scst_cmd *cmd, int atomic,
 int scst_set_sense(uint8_t *buffer, int len, bool d_sense,
 	int key, int asc, int ascq);
 
+#define SCST_INVAL_FIELD_BIT_OFFS_VALID		0x8000
+int scst_set_invalid_field_in_cdb(struct scst_cmd *cmd, int field_offs,
+	int bit_offs);
+int scst_set_invalid_field_in_parm_list(struct scst_cmd *cmd, int field_offs,
+	int bit_offs);
+
 bool scst_is_ua_sense(const uint8_t *sense, int len);
 
 bool scst_analyze_sense(const uint8_t *sense, int len,
@@ -4029,61 +4276,27 @@ void scst_set_resp_data_len(struct scst_cmd *cmd, int resp_data_len);
 void scst_cmd_get(struct scst_cmd *cmd);
 void scst_cmd_put(struct scst_cmd *cmd);
 
-struct scatterlist *scst_alloc(int size, gfp_t gfp_mask, int *count);
-void scst_free(struct scatterlist *sg, int count);
-
-void scst_add_thr_data(struct scst_tgt_dev *tgt_dev,
-	struct scst_thr_data_hdr *data,
-	void (*free_fn) (struct scst_thr_data_hdr *data));
-void scst_del_all_thr_data(struct scst_tgt_dev *tgt_dev);
-void scst_dev_del_all_thr_data(struct scst_device *dev);
-struct scst_thr_data_hdr *__scst_find_thr_data(struct scst_tgt_dev *tgt_dev,
-	struct task_struct *tsk);
-
-/* Finds local to the current thread data. Returns NULL, if they not found. */
-static inline struct scst_thr_data_hdr *scst_find_thr_data(
-	struct scst_tgt_dev *tgt_dev)
-{
-	return __scst_find_thr_data(tgt_dev, current);
-}
-
-/* Increase ref counter for the thread data */
-static inline void scst_thr_data_get(struct scst_thr_data_hdr *data)
-{
-	atomic_inc(&data->ref);
-}
-
-/* Decrease ref counter for the thread data */
-static inline void scst_thr_data_put(struct scst_thr_data_hdr *data)
-{
-	if (atomic_dec_and_test(&data->ref))
-		data->free_fn(data);
-}
+struct scatterlist *scst_alloc_sg(int size, gfp_t gfp_mask, int *count);
+void scst_free_sg(struct scatterlist *sg, int count);
 
 int scst_calc_block_shift(int sector_size);
-int scst_sbc_generic_parse(struct scst_cmd *cmd,
-	int (*get_block_shift)(struct scst_cmd *cmd));
-int scst_cdrom_generic_parse(struct scst_cmd *cmd,
-	int (*get_block_shift)(struct scst_cmd *cmd));
-int scst_modisk_generic_parse(struct scst_cmd *cmd,
-	int (*get_block_shift)(struct scst_cmd *cmd));
-int scst_tape_generic_parse(struct scst_cmd *cmd,
-	int (*get_block_size)(struct scst_cmd *cmd));
-int scst_changer_generic_parse(struct scst_cmd *cmd,
-	int (*nothing)(struct scst_cmd *cmd));
-int scst_processor_generic_parse(struct scst_cmd *cmd,
-	int (*nothing)(struct scst_cmd *cmd));
-int scst_raid_generic_parse(struct scst_cmd *cmd,
-	int (*nothing)(struct scst_cmd *cmd));
+int scst_sbc_generic_parse(struct scst_cmd *cmd);
+int scst_cdrom_generic_parse(struct scst_cmd *cmd);
+int scst_modisk_generic_parse(struct scst_cmd *cmd);
+int scst_tape_generic_parse(struct scst_cmd *cmd);
+int scst_changer_generic_parse(struct scst_cmd *cmd);
+int scst_processor_generic_parse(struct scst_cmd *cmd);
+int scst_raid_generic_parse(struct scst_cmd *cmd);
 
 int scst_block_generic_dev_done(struct scst_cmd *cmd,
 	void (*set_block_shift)(struct scst_cmd *cmd, int block_shift));
 int scst_tape_generic_dev_done(struct scst_cmd *cmd,
 	void (*set_block_size)(struct scst_cmd *cmd, int block_size));
 
-int scst_obtain_device_parameters(struct scst_device *dev);
+int scst_obtain_device_parameters(struct scst_device *dev,
+	const uint8_t *mode_select_cdb);
 
-void scst_reassign_persistent_sess_states(struct scst_session *new_sess,
+void scst_reassign_retained_sess_states(struct scst_session *new_sess,
 	struct scst_session *old_sess);
 
 int scst_get_max_lun_commands(struct scst_session *sess, uint64_t lun);
@@ -4093,15 +4306,87 @@ int scst_get_max_lun_commands(struct scst_session *sess, uint64_t lun);
  * allows exclusive wake ups of threads in LIFO order. We need it to let (yet)
  * unneeded threads sleep and not pollute CPU cache by their stacks.
  */
-static inline void add_wait_queue_exclusive_head(wait_queue_head_t *q,
-	wait_queue_t *wait)
+static inline void prepare_to_wait_exclusive_head(wait_queue_head_t *q,
+						  wait_queue_t *wait, int state)
 {
 	unsigned long flags;
 
 	wait->flags |= WQ_FLAG_EXCLUSIVE;
 	spin_lock_irqsave(&q->lock, flags);
-	__add_wait_queue(q, wait);
+	if (list_empty(&wait->task_list))
+		__add_wait_queue(q, wait);
+	set_current_state(state);
 	spin_unlock_irqrestore(&q->lock, flags);
+}
+
+/**
+ * wait_event_locked() - Wait until a condition becomes true.
+ * @wq: Wait queue to wait on if @condition is false.
+ * @condition: Condition to wait for. Can be any C expression.
+ * @lock_type: One of lock, lock_bh or lock_irq.
+ * @lock: A spinlock.
+ *
+ * Caller must hold lock of type @lock_type on @lock.
+ */
+#define wait_event_locked(wq, condition, lock_type, lock)		\
+if (!(condition)) {							\
+	DEFINE_WAIT(__wait);						\
+									\
+	do {								\
+		prepare_to_wait_exclusive_head(&(wq), &__wait,		\
+					       TASK_INTERRUPTIBLE);	\
+		if (condition)						\
+			break;						\
+		spin_un ## lock_type(&(lock));				\
+		schedule();						\
+		spin_ ## lock_type(&(lock));				\
+	} while (!(condition));						\
+	finish_wait(&(wq), &__wait);					\
+}
+
+#if defined(RHEL_MAJOR) && RHEL_MAJOR -0 <= 5
+static inline uint16_t get_unaligned_be16(const void *p)
+{
+	return be16_to_cpu(get_unaligned((__be16 *)p));
+}
+
+static inline void put_unaligned_be16(uint16_t i, void *p)
+{
+	put_unaligned(cpu_to_be16(i), (__be16 *)p);
+}
+
+static inline uint32_t get_unaligned_be32(const void *p)
+{
+	return be32_to_cpu(get_unaligned((__be32 *)p));
+}
+
+static inline void put_unaligned_be32(uint32_t i, void *p)
+{
+	put_unaligned(cpu_to_be32(i), (__be32 *)p);
+}
+
+static inline uint64_t get_unaligned_be64(const void *p)
+{
+	return be64_to_cpu(get_unaligned((__be64 *)p));
+}
+
+static inline void put_unaligned_be64(uint64_t i, void *p)
+{
+	put_unaligned(cpu_to_be64(i), (__be64 *)p);
+}
+#endif
+
+/* Only use get_unaligned_be24() if reading p - 1 is allowed. */
+static inline uint32_t get_unaligned_be24(const uint8_t *const p)
+{
+	return get_unaligned_be32(p - 1) & 0xffffffU;
+}
+
+static inline void put_unaligned_be24(const uint32_t v, uint8_t *const p)
+{
+	p[0] = v >> 16;
+	p[1] = v >>  8;
+	p[2] = v >>  0;
 }
 
 #ifndef CONFIG_SCST_PROC
@@ -4216,5 +4501,15 @@ void scst_pass_through_cmd_done(void *data, char *sense, int result, int resid);
 int scst_scsi_exec_async(struct scst_cmd *cmd, void *data,
 	void (*done)(void *data, char *sense, int result, int resid));
 #endif
+
+struct scst_data_descriptor {
+	uint64_t sdd_lba;
+	uint64_t sdd_blocks;
+};
+
+void scst_write_same(struct scst_cmd *cmd);
+
+__be64 scst_pack_lun(const uint64_t lun, enum scst_lun_addr_method addr_method);
+uint64_t scst_unpack_lun(const uint8_t *lun, int len);
 
 #endif /* __SCST_H */

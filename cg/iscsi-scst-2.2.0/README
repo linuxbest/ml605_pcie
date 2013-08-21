@@ -1,8 +1,8 @@
 iSCSI SCST target driver
 ========================
 
-Version 2.1.0
--------------
+Version 3.0.0, XX XXXXX 2013
+----------------------------
 
 ISCSI-SCST is a deeply reworked fork of iSCSI Enterprise Target (IET)
 (http://iscsitarget.sourceforge.net). Reasons of the fork were:
@@ -107,6 +107,14 @@ or
  - Unapply this patch and use iSCSI-SCST without it. Also report this
    problem to the SCST mailing list scst-devel@lists.sourceforge.net.
 
+
+IMPORTANT: This patch does not support compound pages, so not working with
+=========  network drivers using them. Sings of that is either when
+	   iSCSI-SCST keeps closing connections, because no reply from
+	   initiator for too long time, or system crashes on NULL
+	   pointer dereference in iscsi_get_page_callback. You can find
+	   list of such drivers by searching in drivers/net for
+	   __GFP_COMP word in their source code.
 
 Usage
 -----
@@ -693,6 +701,40 @@ both iSCSI-SCST targets will look like:
 `-- version
 
 
+Configuring iscsi-scst via scstadmin
+------------------------------------
+
+All iscsi-scst parameters that were configured in the previous section via the
+sysfs interface can also be set via scstadmin. Here is an example that shows
+how to configure the IP address of the iSNSServer and to enable iSNS access
+control at the same time:
+
+# scstadmin -noprompt -set_drv_attr iscsi -attributes iSNSServer="192.168.1.16 AccessControl"
+
+Collecting current configuration: done.
+
+
+-> Making requested changes.
+        -> Done, 0 change(s) made.
+
+All done.
+
+# scstadmin -list_drv_attr iscsi
+
+Collecting current configuration: done.
+
+        Attribute      Value                       Writable      KEY
+        ------------------------------------------------------------
+        iSNSServer     127.0.0.1 AccessControl     Yes           Yes
+
+        Dynamic attributes available
+        ----------------------------
+        OutgoingUser
+        IncomingUser
+
+All done.
+
+
 Advanced initiators access control
 ----------------------------------
 
@@ -789,9 +831,9 @@ most Linux distributions both those logs are put to /var/log/messages
 file.
 
 Then, it might be helpful to increase level of logging. For kernel
-modules you should make the debug build, by either running "make
-release2debug" if you work with SCST SVN tree, or by enabling the
-corresponding debug symbols (see below).
+modules you should make the debug build, by either running "make 2debug"
+if you work with SCST SVN tree, or by enabling the corresponding
+debug symbols (see below).
 
 If after looking on the logs the reason of your problem is still unclear
 for you, report to SCST mailing list scst-devel@lists.sourceforge.net.
@@ -912,6 +954,44 @@ But some out of tree drivers (some versions of DRBD and Intel e1000 are
 reported to do so) use own pages referencing on the TX path, so they
 should be modified the same way as above as well. (No need to modify RX
 path, because put_page_callback logic used by SCST only on the TX path.)
+
+In case of DRBD, if you don't do this modification, you can specify
+disable_sendpage parameter for drbd module. But in this case it might be
+better for performance simply not apply put_page_callback patch.
+
+
+Background information about zero-copy data sending
+---------------------------------------------------
+
+As explained above the most efficient operation of the iSCSI-SCST target
+driver is achieved when the following two conditions are met:
+* Data is sent from target to initiator in a zero-copy fashion.
+* Data buffers are cached for reuse (by the so-called sgv pool). 
+Unfortunately the zero-copy API in the Linux kernel (proto.sendpage() /
+tcp_sendpage()) does not yet support completion notifications. Hence the
+put_page_callback patch which adds completion notification support to
+tcp_sendpage(). However, since the put_page_callback patch increases the size
+of the page structure in the Linux kernel that patch is considered
+unacceptable for integration in the mainline kernel [1]. Another approach,
+called skb paged fragment destructors, might get merged in the mainline kernel
+in the future. Version five of that patch series has been posted in May 2012
+[2].
+
+Notes:
+* The current implementation of scst_user is such that iSCSI-SCST only sends
+  data allocated by scst_user in a zero-copy fashion if the put_page_callback
+  patch has been applied. This holds even if scst_user did not use the sgv
+  pool to allocate a data buffer.
+* Zero-copy sending is only possible with network interface drivers that
+  support scatter/gather and checksumming (NETIF_F_SG and NETIF_F_ALL_CSUM
+  respectively). 
+
+References:
+[1] James Bottomley, Linux Kernel Mailing List, December 2008,
+    http://lkml.org/lkml/2008/12/11/213.
+[2] Ian Campbell, [PATCH v5 0/9] skb paged fragment destructors, May 3 2012,
+    linux-netdev, http://marc.info/?l=linux-netdev&m=133605705111948&w=2.
+
 
 Credits
 -------

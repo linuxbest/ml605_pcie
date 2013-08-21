@@ -1,9 +1,9 @@
 /*
  *  scst_mem.h
  *
- *  Copyright (C) 2006 - 2011 Vladislav Bolkhovitin <vst@vlnb.net>
+ *  Copyright (C) 2006 - 2013 Vladislav Bolkhovitin <vst@vlnb.net>
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -70,7 +70,12 @@ struct sgv_pool_alloc_fns {
 		void *priv);
 	void (*free_pages_fn)(struct scatterlist *sg, int sg_count,
 		void *priv);
-};
+}
+#ifdef CONSTIFY_PLUGIN
+/* Avoid that the Grsecurity gcc constify_plugin constifies this structure. */
+__attribute__((no_const))
+#endif
+;
 
 /*
  * SGV pool

@@ -3,7 +3,7 @@
  *
  *  Copyright (C) 2009 - 2010 Alexey Obitotskiy <alexeyo1@open-e.com>
  *  Copyright (C) 2009 - 2010 Open-E, Inc.
- *  Copyright (C) 2009 - 2011 Vladislav Bolkhovitin <vst@vlnb.net>
+ *  Copyright (C) 2009 - 2013 Vladislav Bolkhovitin <vst@vlnb.net>
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -79,7 +79,7 @@ static inline int tid_size(const uint8_t *tid)
 	sBUG_ON(tid == NULL);
 
 	if ((tid[0] & 0x0f) == SCSI_TRANSPORTID_PROTOCOLID_ISCSI)
-		return be16_to_cpu(get_unaligned((__be16 *)&tid[2])) + 4;
+		return get_unaligned_be16(&tid[2]) + 4;
 	else
 		return TID_COMMON_SIZE;
 }
@@ -229,7 +229,8 @@ void scst_pr_dump_prs(struct scst_device *dev, bool force)
 				"(reg %p, tgt_dev %p)", i++,
 				debug_transport_id_to_initiator_name(
 					reg->transport_id),
-				reg->rel_tgt_id, reg->key, reg, reg->tgt_dev);
+				reg->rel_tgt_id, be64_to_cpu(reg->key), reg,
+				reg->tgt_dev);
 		}
 	}
 
@@ -240,8 +241,9 @@ void scst_pr_dump_prs(struct scst_device *dev, bool force)
 				"scope %x, type %x, reg %p, tgt_dev %p)",
 				debug_transport_id_to_initiator_name(
 							holder->transport_id),
-				holder->rel_tgt_id, holder->key, dev->pr_scope,
-				dev->pr_type, holder, holder->tgt_dev);
+				holder->rel_tgt_id, be64_to_cpu(holder->key),
+				dev->pr_scope, dev->pr_type, holder,
+				holder->tgt_dev);
 		else
 			PRINT_INFO("All registrants are reservation holders "
 				"(scope %x, type %x)", dev->pr_scope,
@@ -265,7 +267,7 @@ static void scst_pr_find_registrants_list_all(struct scst_device *dev,
 
 	TRACE_PR("Finding all registered records for device '%s' "
 		"with exclude reg key %016llx",
-		dev->virt_name, exclude_reg->key);
+		dev->virt_name, be64_to_cpu(exclude_reg->key));
 
 	list_for_each_entry(reg, &dev->dev_registrants_list,
 				dev_registrants_list_entry) {
@@ -273,7 +275,7 @@ static void scst_pr_find_registrants_list_all(struct scst_device *dev,
 			continue;
 		TRACE_PR("Adding registrant %s/%d (%p) to find list (key %016llx)",
 			debug_transport_id_to_initiator_name(reg->transport_id),
-			reg->rel_tgt_id, reg, reg->key);
+			reg->rel_tgt_id, reg, be64_to_cpu(reg->key));
 		list_add_tail(&reg->aux_list_entry, list);
 	}
 
@@ -290,7 +292,7 @@ static void scst_pr_find_registrants_list_key(struct scst_device *dev,
 	TRACE_ENTRY();
 
 	TRACE_PR("Finding registrants for device '%s' with key %016llx",
-		dev->virt_name, key);
+		dev->virt_name, be64_to_cpu(key));
 
 	list_for_each_entry(reg, &dev->dev_registrants_list,
 				dev_registrants_list_entry) {
@@ -299,7 +301,8 @@ static void scst_pr_find_registrants_list_key(struct scst_device *dev,
 				"list (key %016llx)",
 				debug_transport_id_to_initiator_name(
 					reg->transport_id),
-				reg->rel_tgt_id, reg->tgt_dev, key);
+				reg->rel_tgt_id, reg->tgt_dev,
+				be64_to_cpu(key));
 			list_add_tail(&reg->aux_list_entry, list);
 		}
 	}
@@ -406,13 +409,13 @@ static struct scst_dev_registrant *scst_pr_add_registrant(
 		goto out;
 	}
 
-	reg->transport_id = kmalloc(tid_size(transport_id), gfp_flags);
+	reg->transport_id = kmemdup(transport_id, tid_size(transport_id),
+				    gfp_flags);
 	if (reg->transport_id == NULL) {
 		PRINT_ERROR("%s", "Unable to allocate initiator port "
 			"transport id");
 		goto out_free;
 	}
-	memcpy(reg->transport_id, transport_id, tid_size(transport_id));
 
 	reg->rel_tgt_id = rel_tgt_id;
 	reg->key = key;
@@ -464,7 +467,8 @@ static void scst_pr_remove_registrant(struct scst_device *dev,
 
 	TRACE_PR("Removing registrant %s/%d (reg %p, tgt_dev %p, key %016llx, "
 		"dev %s)", debug_transport_id_to_initiator_name(reg->transport_id),
-		reg->rel_tgt_id, reg, reg->tgt_dev, reg->key, dev->virt_name);
+		reg->rel_tgt_id, reg, reg->tgt_dev, be64_to_cpu(reg->key),
+		dev->virt_name);
 
 	list_del(&reg->dev_registrants_list_entry);
 
@@ -495,7 +499,7 @@ static void scst_pr_send_ua_reg(struct scst_device *dev,
 	TRACE_PR("Queueing UA [%x %x %x]: registrant %s/%d (%p), tgt_dev %p, "
 		"key %016llx", ua[2], ua[12], ua[13],
 		debug_transport_id_to_initiator_name(reg->transport_id),
-		reg->rel_tgt_id, reg, reg->tgt_dev, reg->key);
+		reg->rel_tgt_id, reg, reg->tgt_dev, be64_to_cpu(reg->key));
 
 	if (reg->tgt_dev)
 		scst_check_set_UA(reg->tgt_dev, ua, sizeof(ua), 0);
@@ -536,7 +540,7 @@ static void scst_pr_abort_reg(struct scst_device *dev,
 	if (reg->tgt_dev == NULL) {
 		TRACE_PR("Registrant %s/%d (%p, key 0x%016llx) has no session",
 			debug_transport_id_to_initiator_name(reg->transport_id),
-			reg->rel_tgt_id, reg, reg->key);
+			reg->rel_tgt_id, reg, be64_to_cpu(reg->key));
 		goto out;
 	}
 
@@ -546,12 +550,13 @@ static void scst_pr_abort_reg(struct scst_device *dev,
 		"tgt_dev %p, sess %p)",
 		atomic_read(&reg->tgt_dev->tgt_dev_cmd_count),
 		debug_transport_id_to_initiator_name(reg->transport_id),
-		reg->rel_tgt_id, reg, reg->key, reg->tgt_dev, sess);
+		reg->rel_tgt_id, reg, be64_to_cpu(reg->key), reg->tgt_dev,
+		sess);
 
 	packed_lun = scst_pack_lun(reg->tgt_dev->lun, sess->acg->addr_method);
 
 	rc = scst_rx_mgmt_fn_lun(sess, SCST_PR_ABORT_ALL,
-		(uint8_t *)&packed_lun, sizeof(packed_lun), SCST_NON_ATOMIC,
+		&packed_lun, sizeof(packed_lun), SCST_NON_ATOMIC,
 		pr_cmd);
 	if (rc != 0) {
 		/*
@@ -568,51 +573,6 @@ out:
 }
 
 #ifndef CONFIG_SCST_PROC
-
-/* Abstract vfs_unlink() for different kernel versions (as possible) */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 39)
-static inline void scst_pr_vfs_unlink_and_put(struct nameidata *nd)
-{
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,25)
-	vfs_unlink(nd->dentry->d_parent->d_inode, nd->dentry);
-	dput(nd->dentry);
-	mntput(nd->mnt);
-#else
-	vfs_unlink(nd->path.dentry->d_parent->d_inode,
-		nd->path.dentry);
-	path_put(&nd->path);
-#endif
-}
-#else
-static inline void scst_pr_vfs_unlink_and_put(struct path *path)
-{
-	vfs_unlink(path->dentry->d_parent->d_inode, path->dentry);
-	path_put(path);
-}
-#endif
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 39)
-static inline void scst_pr_path_put(struct nameidata *nd)
-{
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,25)
-	dput(nd->dentry);
-	mntput(nd->mnt);
-#else
-	path_put(&nd->path);
-#endif
-}
-#endif
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
-static int scst_pr_vfs_fsync(struct file *file, loff_t loff, loff_t len)
-{
-	int res;
-
-	res = sync_page_range(file->f_dentry->d_inode, file->f_mapping,
-			loff, len);
-	return res;
-}
-#endif
 
 /* Called under scst_mutex */
 static int scst_pr_do_load_device_file(struct scst_device *dev,
@@ -811,159 +771,15 @@ out:
 	return res;
 }
 
-static int scst_pr_copy_file(const char *src, const char *dest)
-{
-	int res = 0;
-	struct inode *inode;
-	loff_t file_size, pos;
-	uint8_t *buf = NULL;
-	struct file *file_src = NULL, *file_dest = NULL;
-	mm_segment_t old_fs = get_fs();
-
-	TRACE_ENTRY();
-
-	if (src == NULL || dest == NULL) {
-		res = -EINVAL;
-		PRINT_ERROR("%s", "Invalid persistent files path - backup "
-			"skipped");
-		goto out;
-	}
-
-	TRACE_PR("Copying '%s' into '%s'", src, dest);
-
-	set_fs(KERNEL_DS);
-
-	file_src = filp_open(src, O_RDONLY, 0);
-	if (IS_ERR(file_src)) {
-		res = PTR_ERR(file_src);
-		TRACE_PR("Unable to open file '%s' - error %d", src,
-			res);
-		goto out_free;
-	}
-
-	file_dest = filp_open(dest, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	if (IS_ERR(file_dest)) {
-		res = PTR_ERR(file_dest);
-		TRACE_PR("Unable to open backup file '%s' - error %d", dest,
-			res);
-		goto out_close;
-	}
-
-	inode = file_src->f_dentry->d_inode;
-
-	if (S_ISREG(inode->i_mode))
-		/* Nothing to do */;
-	else if (S_ISBLK(inode->i_mode))
-		inode = inode->i_bdev->bd_inode;
-	else {
-		PRINT_ERROR("Invalid file mode 0x%x", inode->i_mode);
-		res = -EINVAL;
-		set_fs(old_fs);
-		goto out_skip;
-	}
-
-	file_size = inode->i_size;
-
-	buf = vmalloc(file_size);
-	if (buf == NULL) {
-		res = -ENOMEM;
-		PRINT_ERROR("%s", "Unable to allocate temporary buffer");
-		goto out_skip;
-	}
-
-	pos = 0;
-	res = vfs_read(file_src, (void __force __user *)buf, file_size, &pos);
-	if (res != file_size) {
-		PRINT_ERROR("Unable to read file '%s' - error %d", src, res);
-		goto out_skip;
-	}
-
-	pos = 0;
-	res = vfs_write(file_dest, (void __force __user *)buf, file_size, &pos);
-	if (res != file_size) {
-		PRINT_ERROR("Unable to write to '%s' - error %d", dest, res);
-		goto out_skip;
-	}
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
-	res = scst_pr_vfs_fsync(file_dest, 0, file_size);
-#elif LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 35)
-	res = vfs_fsync(file_dest, file_dest->f_path.dentry, 0);
-#else
-	res = vfs_fsync(file_dest, 0);
-#endif
-	if (res != 0) {
-		PRINT_ERROR("fsync() of the backup PR file failed: %d", res);
-		goto out_skip;
-	}
-
-out_skip:
-	filp_close(file_dest, NULL);
-
-out_close:
-	filp_close(file_src, NULL);
-
-out_free:
-	if (buf != NULL)
-		vfree(buf);
-
-	set_fs(old_fs);
-
-out:
-	TRACE_EXIT_RES(res);
-	return res;
-}
-
 static void scst_pr_remove_device_files(struct scst_tgt_dev *tgt_dev)
 {
 	int res = 0;
 	struct scst_device *dev = tgt_dev->dev;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 39)
-	struct nameidata nd;
-#else
-	struct path path;
-#endif
-	mm_segment_t old_fs = get_fs();
 
 	TRACE_ENTRY();
 
-	set_fs(KERNEL_DS);
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 39)
-	res = dev->pr_file_name ? path_lookup(dev->pr_file_name, 0, &nd) :
-		-ENOENT;
-	if (!res)
-		scst_pr_vfs_unlink_and_put(&nd);
-	else
-		TRACE_DBG("Unable to lookup file '%s' - error %d",
-			dev->pr_file_name, res);
-
-	res = dev->pr_file_name1 ? path_lookup(dev->pr_file_name1, 0, &nd) :
-		-ENOENT;
-	if (!res)
-		scst_pr_vfs_unlink_and_put(&nd);
-	else
-		TRACE_DBG("Unable to lookup file '%s' - error %d",
-			dev->pr_file_name1, res);
-#else
-	res = dev->pr_file_name ? kern_path(dev->pr_file_name, 0, &path) :
-		-ENOENT;
-	if (!res)
-		scst_pr_vfs_unlink_and_put(&path);
-	else
-		TRACE_DBG("Unable to lookup file '%s' - error %d",
-			dev->pr_file_name, res);
-
-	res = dev->pr_file_name1 ? kern_path(dev->pr_file_name1, 0, &path) :
-		-ENOENT;
-	if (!res)
-		scst_pr_vfs_unlink_and_put(&path);
-	else
-		TRACE_DBG("Unable to lookup file '%s' - error %d",
-			dev->pr_file_name1, res);
-#endif
-
-	set_fs(old_fs);
+	res = dev->pr_file_name ? scst_remove_file(dev->pr_file_name) : -ENOENT;
+	res = dev->pr_file_name1 ? scst_remove_file(dev->pr_file_name1) : -ENOENT;
 
 	TRACE_EXIT();
 	return;
@@ -980,6 +796,7 @@ void scst_pr_sync_device_file(struct scst_tgt_dev *tgt_dev, struct scst_cmd *cmd
 	uint64_t sign;
 	uint64_t version;
 	uint8_t pr_is_set, aptpl;
+	struct scst_dev_registrant *reg;
 
 	TRACE_ENTRY();
 
@@ -988,7 +805,7 @@ void scst_pr_sync_device_file(struct scst_tgt_dev *tgt_dev, struct scst_cmd *cmd
 		goto out;
 	}
 
-	scst_pr_copy_file(dev->pr_file_name, dev->pr_file_name1);
+	scst_copy_file(dev->pr_file_name, dev->pr_file_name1);
 
 	set_fs(KERNEL_DS);
 
@@ -1046,44 +863,41 @@ void scst_pr_sync_device_file(struct scst_tgt_dev *tgt_dev, struct scst_cmd *cmd
 	/*
 	 * registration records
 	 */
-	if (!list_empty(&dev->dev_registrants_list)) {
-		struct scst_dev_registrant *reg;
+	list_for_each_entry(reg, &dev->dev_registrants_list,
+			    dev_registrants_list_entry) {
+		uint8_t is_holder = 0;
+		int size;
 
-		list_for_each_entry(reg, &dev->dev_registrants_list,
-					dev_registrants_list_entry) {
-			uint8_t is_holder = 0;
-			int size;
+		is_holder = (dev->pr_holder == reg);
 
-			is_holder = (dev->pr_holder == reg);
+		res = vfs_write(file, (void __force __user *)&is_holder,
+				sizeof(is_holder), &pos);
+		if (res != sizeof(is_holder))
+			goto write_error;
 
-			res = vfs_write(file, (void __force __user *)&is_holder, sizeof(is_holder),
-					&pos);
-			if (res != sizeof(is_holder))
-				goto write_error;
+		size = tid_size(reg->transport_id);
+		res = vfs_write(file, (void __force __user *)reg->transport_id,
+				size, &pos);
+		if (res != size)
+			goto write_error;
 
-			size = tid_size(reg->transport_id);
-			res = vfs_write(file, (void __force __user *)reg->transport_id, size, &pos);
-			if (res != size)
-				goto write_error;
+		res = vfs_write(file, (void __force __user *)&reg->key,
+				sizeof(reg->key), &pos);
+		if (res != sizeof(reg->key))
+			goto write_error;
 
-			res = vfs_write(file, (void __force __user *)&reg->key,
-					sizeof(reg->key), &pos);
-			if (res != sizeof(reg->key))
-				goto write_error;
-
-			res = vfs_write(file, (void __force __user *)&reg->rel_tgt_id,
-					sizeof(reg->rel_tgt_id), &pos);
-			if (res != sizeof(reg->rel_tgt_id))
-				goto write_error;
-		}
+		res = vfs_write(file, (void __force __user *)&reg->rel_tgt_id,
+				sizeof(reg->rel_tgt_id), &pos);
+		if (res != sizeof(reg->rel_tgt_id))
+			goto write_error;
 	}
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
-	res = scst_pr_vfs_fsync(file, 0, pos);
+	res = scst_vfs_fsync(file, 0, pos);
 #elif LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 35)
-	res = vfs_fsync(file, file->f_path.dentry, 0);
+	res = vfs_fsync(file, file->f_path.dentry, 1);
 #else
-	res = vfs_fsync(file, 0);
+	res = vfs_fsync(file, 1);
 #endif
 	if (res != 0) {
 		PRINT_ERROR("fsync() of the PR file failed: %d", res);
@@ -1097,11 +911,11 @@ void scst_pr_sync_device_file(struct scst_tgt_dev *tgt_dev, struct scst_cmd *cmd
 		goto write_error;
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
-	res = scst_pr_vfs_fsync(file, 0, sizeof(sign));
+	res = scst_vfs_fsync(file, 0, sizeof(sign));
 #elif LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 35)
-	res = vfs_fsync(file, file->f_path.dentry, 0);
+	res = vfs_fsync(file, file->f_path.dentry, 1);
 #else
-	res = vfs_fsync(file, 0);
+	res = vfs_fsync(file, 1);
 #endif
 	if (res != 0) {
 		PRINT_ERROR("fsync() of the PR file failed: %d", res);
@@ -1121,14 +935,14 @@ out:
 			"(target %s, initiator %s, device %s)",
 			tgt_dev->sess->tgt->tgt_name,
 			tgt_dev->sess->initiator_name, dev->virt_name);
-#if 0	/*
-	 * Looks like it's safer to return SUCCESS and expect operator's
-	 * intervention to be able to save the PR's state next time, than
-	 * to return HARDWARE ERROR and screw up all the interaction with
-	 * the affected initiator.
-	 */
-	if (cmd != NULL)
-		scst_set_cmd_error(cmd, SCST_LOAD_SENSE(scst_sense_hardw_error));
+#if 0 /*
+       * Looks like it's safer to return SUCCESS and expect operator's
+       * intervention to be able to save the PR's state next time, than
+       * to return HARDWARE ERROR and screw up all the interaction with
+       * the affected initiator.
+       */
+		if (cmd != NULL)
+			scst_set_cmd_error(cmd, SCST_LOAD_SENSE(scst_sense_hardw_error));
 #endif
 	}
 
@@ -1147,7 +961,7 @@ write_error_close:
 
 		rc = path_lookup(dev->pr_file_name, 0,	&nd);
 		if (!rc)
-			scst_pr_vfs_unlink_and_put(&nd);
+			scst_vfs_unlink_and_put(&nd);
 		else
 			TRACE_PR("Unable to lookup '%s' - error %d",
 				dev->pr_file_name, rc);
@@ -1159,7 +973,7 @@ write_error_close:
 
 		rc = kern_path(dev->pr_file_name, 0, &path);
 		if (!rc)
-			scst_pr_vfs_unlink_and_put(&path);
+			scst_vfs_unlink_and_put(&path);
 		else
 			TRACE_PR("Unable to lookup '%s' - error %d",
 				dev->pr_file_name, rc);
@@ -1186,7 +1000,7 @@ static int scst_pr_check_pr_path(void)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 39)
 	res = path_lookup(SCST_PR_DIR, 0, &nd);
 	if (res == 0)
-		scst_pr_path_put(&nd);
+		scst_path_put(&nd);
 #else
 	res = kern_path(SCST_PR_DIR, 0, &path);
 	if (res == 0)
@@ -1212,32 +1026,25 @@ out_setfs:
 int scst_pr_init_dev(struct scst_device *dev)
 {
 	int res = 0;
-	uint8_t q;
-	int name_len;
 
 	TRACE_ENTRY();
 
-	name_len = snprintf(&q, sizeof(q), "%s/%s", SCST_PR_DIR, dev->virt_name) + 1;
-	dev->pr_file_name = kmalloc(name_len, GFP_KERNEL);
+	dev->pr_file_name = kasprintf(GFP_KERNEL, "%s/%s", SCST_PR_DIR,
+				      dev->virt_name);
 	if (dev->pr_file_name == NULL) {
 		PRINT_ERROR("Allocation of device '%s' file path failed",
 			dev->virt_name);
 		res = -ENOMEM;
 		goto out;
-	} else
-		snprintf(dev->pr_file_name, name_len, "%s/%s", SCST_PR_DIR,
-			dev->virt_name);
-
-	name_len = snprintf(&q, sizeof(q), "%s/%s.1", SCST_PR_DIR, dev->virt_name) + 1;
-	dev->pr_file_name1 = kmalloc(name_len, GFP_KERNEL);
+	}
+	dev->pr_file_name1 = kasprintf(GFP_KERNEL, "%s/%s.1", SCST_PR_DIR,
+				       dev->virt_name);
 	if (dev->pr_file_name1 == NULL) {
 		PRINT_ERROR("Allocation of device '%s' backup file path failed",
 			dev->virt_name);
 		res = -ENOMEM;
 		goto out_free_name;
-	} else
-		snprintf(dev->pr_file_name1, name_len, "%s/%s.1", SCST_PR_DIR,
-			dev->virt_name);
+	}
 
 #ifndef CONFIG_SCST_PROC
 	res = scst_pr_check_pr_path();
@@ -1362,7 +1169,8 @@ static int scst_pr_register_with_spec_i_pt(struct scst_cmd *cmd,
 	struct list_head *rollback_list)
 {
 	int res = 0;
-	int offset, ext_size;
+	int offset;
+	unsigned int ext_size;
 	__be64 action_key;
 	struct scst_device *dev = cmd->dev;
 	struct scst_dev_registrant *reg;
@@ -1370,7 +1178,7 @@ static int scst_pr_register_with_spec_i_pt(struct scst_cmd *cmd,
 
 	action_key = get_unaligned((__be64 *)&buffer[8]);
 
-	ext_size = be32_to_cpu(get_unaligned((__be32 *)&buffer[24]));
+	ext_size = get_unaligned_be32(&buffer[24]);
 	if ((ext_size + 28) > buffer_size) {
 		TRACE_PR("Invalid buffer size %d (max %d)", buffer_size,
 			ext_size + 28);
@@ -1387,8 +1195,7 @@ static int scst_pr_register_with_spec_i_pt(struct scst_cmd *cmd,
 		if ((offset + tid_size(transport_id)) > ext_size) {
 			TRACE_PR("Invalid transport_id size %d (max %d)",
 				tid_size(transport_id), ext_size - offset);
-			scst_set_cmd_error(cmd,
-				SCST_LOAD_SENSE(scst_sense_invalid_field_in_parm_list));
+			scst_set_invalid_field_in_parm_list(cmd, 24, 0);
 			res = -EINVAL;
 			goto out;
 		}
@@ -1410,8 +1217,8 @@ static int scst_pr_register_with_spec_i_pt(struct scst_cmd *cmd,
 			TRACE_PR("Wildcard iSCSI TransportID %s",
 				&transport_id[4]);
 			/*
-			 * We can't use scst_mutex here, because of the
-			 * circular locking dependency with dev_pr_mutex.
+			 * We can't use scst_mutex here because the caller
+			 * already holds dev_pr_mutex.
 			 */
 			spin_lock_bh(&dev->dev_lock);
 			list_for_each_entry(t, &dev->dev_tgt_dev_list,
@@ -1518,8 +1325,8 @@ static void scst_pr_unregister_all_tg_pt(struct scst_device *dev,
 	TRACE_ENTRY();
 
 	/*
-	 * We can't use scst_mutex here, because of the circular locking
-	 * dependency with dev_pr_mutex.
+	 * We can't use scst_mutex here since the caller already holds
+	 * dev_pr_mutex.
 	 */
 	mutex_lock(&scst_mutex2);
 
@@ -1605,8 +1412,8 @@ static int scst_pr_register_all_tg_pt(struct scst_cmd *cmd, uint8_t *buffer,
 	TRACE_ENTRY();
 
 	/*
-	 * We can't use scst_mutex here, because of the circular locking
-	 * dependency with dev_pr_mutex.
+	 * We can't use scst_mutex here because the caller already holds
+	 * dev_pr_mutex.
 	 */
 	mutex_lock(&scst_mutex2);
 
@@ -1711,8 +1518,8 @@ void scst_pr_register(struct scst_cmd *cmd, uint8_t *buffer, int buffer_size)
 #ifdef CONFIG_SCST_PROC
 	if (aptpl) {
 		TRACE_PR("%s", "APTL not supported");
-		scst_set_cmd_error(cmd,
-			SCST_LOAD_SENSE(scst_sense_invalid_field_in_parm_list));
+		scst_set_invalid_field_in_parm_list(cmd, 20,
+				SCST_INVAL_FIELD_BIT_OFFS_VALID | 0);
 		goto out;
 	}
 #endif
@@ -1722,7 +1529,8 @@ void scst_pr_register(struct scst_cmd *cmd, uint8_t *buffer, int buffer_size)
 	TRACE_PR("Register: initiator %s/%d (%p), key %0llx, action_key %0llx "
 		"(tgt_dev %p)",
 		debug_transport_id_to_initiator_name(sess->transport_id),
-		sess->tgt->rel_tgt_id, reg, key, action_key, tgt_dev);
+		sess->tgt->rel_tgt_id, reg, be64_to_cpu(key),
+		be64_to_cpu(action_key), tgt_dev);
 
 	if (reg == NULL) {
 		TRACE_PR("tgt_dev %p is not registered yet - registering",
@@ -1742,7 +1550,8 @@ void scst_pr_register(struct scst_cmd *cmd, uint8_t *buffer, int buffer_size)
 	} else {
 		if (reg->key != key) {
 			TRACE_PR("tgt_dev %p already registered - reservation "
-				"key %0llx mismatch", tgt_dev, reg->key);
+				"key %0llx mismatch", tgt_dev,
+				be64_to_cpu(reg->key));
 			scst_set_cmd_error_status(cmd,
 				SAM_STAT_RESERVATION_CONFLICT);
 			goto out;
@@ -1801,8 +1610,8 @@ void scst_pr_register_and_ignore(struct scst_cmd *cmd, uint8_t *buffer,
 #ifdef CONFIG_SCST_PROC
 	if (aptpl) {
 		TRACE_PR("%s", "APTL not supported");
-		scst_set_cmd_error(cmd,
-			SCST_LOAD_SENSE(scst_sense_invalid_field_in_parm_list));
+		scst_set_invalid_field_in_parm_list(cmd, 20,
+				SCST_INVAL_FIELD_BIT_OFFS_VALID | 0);
 		goto out;
 	}
 #endif
@@ -1812,7 +1621,8 @@ void scst_pr_register_and_ignore(struct scst_cmd *cmd, uint8_t *buffer,
 	TRACE_PR("Register and ignore: initiator %s/%d (%p), action_key "
 		"%016llx (tgt_dev %p)",
 		debug_transport_id_to_initiator_name(sess->transport_id),
-		sess->tgt->rel_tgt_id, reg, action_key, tgt_dev);
+		sess->tgt->rel_tgt_id, reg, be64_to_cpu(action_key),
+		tgt_dev);
 
 	if (reg == NULL) {
 		TRACE_PR("Tgt_dev %p is not registered yet - trying to "
@@ -1852,7 +1662,7 @@ void scst_pr_register_and_move(struct scst_cmd *cmd, uint8_t *buffer,
 {
 	int aptpl;
 	int unreg;
-	int tid_buffer_size;
+	unsigned int tid_buffer_size;
 	__be64 key, action_key;
 	struct scst_device *dev = cmd->dev;
 	struct scst_tgt_dev *tgt_dev = cmd->tgt_dev;
@@ -1868,13 +1678,13 @@ void scst_pr_register_and_move(struct scst_cmd *cmd, uint8_t *buffer,
 	key = get_unaligned((__be64 *)&buffer[0]);
 	action_key = get_unaligned((__be64 *)&buffer[8]);
 	unreg = (buffer[17] >> 1) & 0x01;
-	tid_buffer_size = be32_to_cpu(get_unaligned((__be32 *)&buffer[20]));
+	tid_buffer_size = get_unaligned_be32(&buffer[20]);
 
 #ifdef CONFIG_SCST_PROC
 	if (aptpl) {
 		TRACE_PR("%s", "APTL not supported");
-		scst_set_cmd_error(cmd,
-			SCST_LOAD_SENSE(scst_sense_invalid_field_in_parm_list));
+		scst_set_invalid_field_in_parm_list(cmd, 17,
+				SCST_INVAL_FIELD_BIT_OFFS_VALID | 0);
 		goto out;
 	}
 #endif
@@ -1900,7 +1710,8 @@ void scst_pr_register_and_move(struct scst_cmd *cmd, uint8_t *buffer,
 		TRACE_PR("Registrant's %s/%d (%p) key %016llx mismatch with "
 			"%016llx (tgt_dev %p)",
 			debug_transport_id_to_initiator_name(reg->transport_id),
-			reg->rel_tgt_id, reg, reg->key, key, tgt_dev);
+			reg->rel_tgt_id, reg, be64_to_cpu(reg->key),
+			be64_to_cpu(key), tgt_dev);
 		scst_set_cmd_error_status(cmd, SAM_STAT_RESERVATION_CONFLICT);
 		goto out;
 	}
@@ -1927,14 +1738,13 @@ void scst_pr_register_and_move(struct scst_cmd *cmd, uint8_t *buffer,
 
 	if (action_key == 0) {
 		TRACE_PR("%s", "Action key must be non-zero");
-		scst_set_cmd_error(cmd,
-			SCST_LOAD_SENSE(scst_sense_invalid_field_in_cdb));
+		scst_set_invalid_field_in_cdb(cmd, 8, 0);
 		goto out;
 	}
 
 	transport_id = sess->transport_id;
 	transport_id_move = (uint8_t *)&buffer[24];
-	rel_tgt_id_move = be16_to_cpu(get_unaligned((__be16 *)&buffer[18]));
+	rel_tgt_id_move = get_unaligned_be16(&buffer[18]);
 
 	if ((tid_size(transport_id_move) + 24) > buffer_size) {
 		TRACE_PR("Invalid buffer size %d (%d)",
@@ -1956,8 +1766,7 @@ void scst_pr_register_and_move(struct scst_cmd *cmd, uint8_t *buffer,
 
 	if (tid_equal(transport_id, transport_id_move)) {
 		TRACE_PR("%s", "Equal transport id's");
-		scst_set_cmd_error(cmd,
-			SCST_LOAD_SENSE(scst_sense_invalid_field_in_parm_list));
+		scst_set_invalid_field_in_parm_list(cmd, 24, 0);
 		goto out;
 	}
 
@@ -1979,8 +1788,8 @@ void scst_pr_register_and_move(struct scst_cmd *cmd, uint8_t *buffer,
 		debug_transport_id_to_initiator_name(reg->transport_id),
 		reg->rel_tgt_id, reg, reg->tgt_dev,
 		debug_transport_id_to_initiator_name(transport_id_move),
-		rel_tgt_id_move, reg_move, reg_move->tgt_dev, action_key,
-		unreg);
+		rel_tgt_id_move, reg_move, reg_move->tgt_dev,
+		be64_to_cpu(action_key), unreg);
 
 	/* Move the holder */
 	scst_pr_set_holder(dev, reg_move, dev->pr_scope, dev->pr_type);
@@ -2011,7 +1820,7 @@ void scst_pr_reserve(struct scst_cmd *cmd, uint8_t *buffer, int buffer_size)
 	TRACE_ENTRY();
 
 	key = get_unaligned((__be64 *)&buffer[0]);
-	scope = (cmd->cdb[2] & 0x0f) >> 4;
+	scope = cmd->cdb[2] >> 4;
 	type = cmd->cdb[2] & 0x0f;
 
 	if (buffer_size != 24) {
@@ -2023,15 +1832,15 @@ void scst_pr_reserve(struct scst_cmd *cmd, uint8_t *buffer, int buffer_size)
 
 	if (!scst_pr_type_valid(type)) {
 		TRACE_PR("Invalid reservation type %d", type);
-		scst_set_cmd_error(cmd,
-			SCST_LOAD_SENSE(scst_sense_invalid_field_in_cdb));
+		scst_set_invalid_field_in_cdb(cmd, 2,
+			SCST_INVAL_FIELD_BIT_OFFS_VALID | 0);
 		goto out;
 	}
 
-	if (((cmd->cdb[2] & 0x0f) >> 4) != SCOPE_LU) {
+	if (scope != SCOPE_LU) {
 		TRACE_PR("Invalid reservation scope %d", scope);
-		scst_set_cmd_error(cmd,
-			SCST_LOAD_SENSE(scst_sense_invalid_field_in_cdb));
+		scst_set_invalid_field_in_cdb(cmd, 2,
+			SCST_INVAL_FIELD_BIT_OFFS_VALID | 4);
 		goto out;
 	}
 
@@ -2040,12 +1849,13 @@ void scst_pr_reserve(struct scst_cmd *cmd, uint8_t *buffer, int buffer_size)
 	TRACE_PR("Reserve: initiator %s/%d (%p), key %016llx, scope %d, "
 		"type %d (tgt_dev %p)",
 		debug_transport_id_to_initiator_name(cmd->sess->transport_id),
-		cmd->sess->tgt->rel_tgt_id, reg, key, scope, type, tgt_dev);
+		cmd->sess->tgt->rel_tgt_id, reg, be64_to_cpu(key), scope,
+		type, tgt_dev);
 
 	/* We already checked reg is not NULL */
 	if (reg->key != key) {
 		TRACE_PR("Registrant's %p key %016llx mismatch with %016llx",
-			reg, reg->key, key);
+			reg, be64_to_cpu(reg->key), be64_to_cpu(key));
 		scst_set_cmd_error_status(cmd, SAM_STAT_RESERVATION_CONFLICT);
 		goto out;
 	}
@@ -2097,7 +1907,7 @@ void scst_pr_release(struct scst_cmd *cmd, uint8_t *buffer, int buffer_size)
 	TRACE_ENTRY();
 
 	key = get_unaligned((__be64 *)&buffer[0]);
-	scope = (cmd->cdb[2] & 0x0f) >> 4;
+	scope = cmd->cdb[2] >> 4;
 	type = cmd->cdb[2] & 0x0f;
 
 	if (buffer_size != 24) {
@@ -2117,12 +1927,13 @@ void scst_pr_release(struct scst_cmd *cmd, uint8_t *buffer, int buffer_size)
 	TRACE_PR("Release: initiator %s/%d (%p), key %016llx, scope %d, type "
 		"%d (tgt_dev %p)", debug_transport_id_to_initiator_name(
 					cmd->sess->transport_id),
-		cmd->sess->tgt->rel_tgt_id, reg, key, scope, type, tgt_dev);
+		cmd->sess->tgt->rel_tgt_id, reg, be64_to_cpu(key), scope,
+		type, tgt_dev);
 
 	/* We already checked reg is not NULL */
 	if (reg->key != key) {
 		TRACE_PR("Registrant's %p key %016llx mismatch with %016llx",
-			reg, reg->key, key);
+			reg, be64_to_cpu(reg->key), be64_to_cpu(key));
 		scst_set_cmd_error_status(cmd, SAM_STAT_RESERVATION_CONFLICT);
 		goto out;
 	}
@@ -2183,12 +1994,12 @@ void scst_pr_clear(struct scst_cmd *cmd, uint8_t *buffer, int buffer_size)
 
 	TRACE_PR("Clear: initiator %s/%d (%p), key %016llx (tgt_dev %p)",
 		debug_transport_id_to_initiator_name(cmd->sess->transport_id),
-		cmd->sess->tgt->rel_tgt_id, reg, key, tgt_dev);
+		cmd->sess->tgt->rel_tgt_id, reg, be64_to_cpu(key), tgt_dev);
 
 	/* We already checked reg is not NULL */
 	if (reg->key != key) {
 		TRACE_PR("Registrant's %p key %016llx mismatch with %016llx",
-			reg, reg->key, key);
+			reg, be64_to_cpu(reg->key), be64_to_cpu(key));
 		scst_set_cmd_error_status(cmd, SAM_STAT_RESERVATION_CONFLICT);
 		goto out;
 	}
@@ -2224,11 +2035,6 @@ static void scst_pr_do_preempt(struct scst_cmd *cmd, uint8_t *buffer,
 
 	TRACE_ENTRY();
 
-	key = get_unaligned((__be64 *)&buffer[0]);
-	action_key = get_unaligned((__be64 *)&buffer[8]);
-	scope = (cmd->cdb[2] & 0x0f) >> 4;
-	type = cmd->cdb[2] & 0x0f;
-
 	if (buffer_size != 24) {
 		TRACE_PR("Invalid buffer size %d", buffer_size);
 		scst_set_cmd_error(cmd,
@@ -2236,10 +2042,15 @@ static void scst_pr_do_preempt(struct scst_cmd *cmd, uint8_t *buffer,
 		goto out;
 	}
 
+	key = get_unaligned((__be64 *)&buffer[0]);
+	action_key = get_unaligned((__be64 *)&buffer[8]);
+	scope = cmd->cdb[2] >> 4;
+	type = cmd->cdb[2] & 0x0f;
+
 	if (!scst_pr_type_valid(type)) {
 		TRACE_PR("Invalid reservation type %d", type);
-		scst_set_cmd_error(cmd,
-			SCST_LOAD_SENSE(scst_sense_invalid_field_in_cdb));
+		scst_set_invalid_field_in_cdb(cmd, 1,
+			SCST_INVAL_FIELD_BIT_OFFS_VALID | 0);
 		goto out;
 	}
 
@@ -2249,13 +2060,13 @@ static void scst_pr_do_preempt(struct scst_cmd *cmd, uint8_t *buffer,
 		"%016llx, scope %x type %x (tgt_dev %p)",
 		abort ? " and abort" : "",
 		debug_transport_id_to_initiator_name(cmd->sess->transport_id),
-		cmd->sess->tgt->rel_tgt_id, reg, key, action_key, scope, type,
-		tgt_dev);
+		cmd->sess->tgt->rel_tgt_id, reg, be64_to_cpu(key),
+		be64_to_cpu(action_key), scope, type, tgt_dev);
 
 	/* We already checked reg is not NULL */
 	if (reg->key != key) {
 		TRACE_PR("Registrant's %p key %016llx mismatch with %016llx",
-			reg, reg->key, key);
+			reg, be64_to_cpu(reg->key), be64_to_cpu(key));
 		scst_set_cmd_error_status(cmd, SAM_STAT_RESERVATION_CONFLICT);
 		goto out;
 	}
@@ -2315,8 +2126,7 @@ static void scst_pr_do_preempt(struct scst_cmd *cmd, uint8_t *buffer,
 
 	if (dev->pr_holder->key != action_key) {
 		if (action_key == 0) {
-			scst_set_cmd_error(cmd, SCST_LOAD_SENSE(
-				scst_sense_invalid_field_in_parm_list));
+			scst_set_invalid_field_in_parm_list(cmd, 8, 0);
 			goto out;
 		} else {
 			scst_pr_find_registrants_list_key(dev, action_key,
@@ -2371,7 +2181,7 @@ out:
 	return;
 
 out_error:
-	TRACE_PR("Invalid key %016llx", action_key);
+	TRACE_PR("Invalid key %016llx", be64_to_cpu(action_key));
 	scst_set_cmd_error_status(cmd, SAM_STAT_RESERVATION_CONFLICT);
 	goto out;
 }
@@ -2602,7 +2412,7 @@ void scst_pr_read_keys(struct scst_cmd *cmd, uint8_t *buffer, int buffer_size)
 	TRACE_PR("Read Keys (dev %s): PRGen %d", dev->virt_name,
 		dev->pr_generation);
 
-	put_unaligned(cpu_to_be32(dev->pr_generation), (__be32 *)&buffer[0]);
+	put_unaligned_be32(dev->pr_generation, &buffer[0]);
 
 	offset = 8;
 	size = 0;
@@ -2625,7 +2435,7 @@ void scst_pr_read_keys(struct scst_cmd *cmd, uint8_t *buffer, int buffer_size)
 		size += 8;
 	}
 
-	put_unaligned(cpu_to_be32(size), (__be32 *)&buffer[4]);
+	put_unaligned_be32(size, &buffer[4]);
 
 skip:
 	scst_set_resp_data_len(cmd, offset);
@@ -2652,7 +2462,7 @@ void scst_pr_read_reservation(struct scst_cmd *cmd, uint8_t *buffer,
 
 	memset(b, 0, sizeof(b));
 
-	put_unaligned(cpu_to_be32(dev->pr_generation), (__be32 *)&b[0]);
+	put_unaligned_be32(dev->pr_generation, &b[0]);
 
 	if (!dev->pr_is_set) {
 		TRACE_PR("Read Reservation: no reservations for dev %s",
@@ -2668,7 +2478,7 @@ void scst_pr_read_reservation(struct scst_cmd *cmd, uint8_t *buffer,
 
 		TRACE_PR("Read Reservation: dev %s, holder %p, key 0x%llx, "
 			"scope %d, type %d", dev->virt_name, dev->pr_holder,
-			key, dev->pr_scope, dev->pr_type);
+			be64_to_cpu(key), dev->pr_scope, dev->pr_type);
 
 		b[4] =
 		b[5] =
@@ -2721,7 +2531,7 @@ void scst_pr_report_caps(struct scst_cmd *cmd, uint8_t *buffer, int buffer_size)
 	buffer[1] = 8;
 
 	buffer[2] = crh << 4 | sip_c << 3 | atp_c << 2 | ptpl_c;
-	buffer[3] = (1 << 7) | (dev->pr_aptpl > 0 ? 1 : 0);
+	buffer[3] = (1 << 7) | (4 << 4) | (dev->pr_aptpl > 0 ? 1 : 0);
 
 	/* All commands supported */
 	buffer[4] = 0xEA;
@@ -2749,7 +2559,7 @@ void scst_pr_read_full_status(struct scst_cmd *cmd, uint8_t *buffer,
 	if (buffer_size < 8)
 		goto skip;
 
-	put_unaligned(cpu_to_be32(dev->pr_generation), (__be32 *)&buffer[0]);
+	put_unaligned_be32(dev->pr_generation, &buffer[0]);
 	offset += 8;
 
 	size = 0;
@@ -2773,10 +2583,9 @@ void scst_pr_read_full_status(struct scst_cmd *cmd, uint8_t *buffer,
 				buffer[offset + 13] = (dev->pr_scope << 4) | dev->pr_type;
 			}
 
-			put_unaligned(cpu_to_be16(reg->rel_tgt_id),
-				(__be16 *)&buffer[offset + 18]);
-			put_unaligned(cpu_to_be32(ts),
-				(__be32 *)&buffer[offset + 20]);
+			put_unaligned_be16(reg->rel_tgt_id,
+					   &buffer[offset + 18]);
+			put_unaligned_be32(ts, &buffer[offset + 20]);
 
 			memcpy(&buffer[offset + 24], reg->transport_id, ts);
 
@@ -2785,7 +2594,7 @@ void scst_pr_read_full_status(struct scst_cmd *cmd, uint8_t *buffer,
 		size += rec_len;
 	}
 
-	put_unaligned(cpu_to_be32(size), (__be32 *)&buffer[4]);
+	put_unaligned_be32(size, &buffer[4]);
 
 skip:
 	scst_set_resp_data_len(cmd, offset);

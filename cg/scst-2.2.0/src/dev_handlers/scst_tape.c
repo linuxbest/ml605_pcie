@@ -1,10 +1,10 @@
 /*
  *  scst_tape.c
  *
- *  Copyright (C) 2004 - 2011 Vladislav Bolkhovitin <vst@vlnb.net>
+ *  Copyright (C) 2004 - 2013 Vladislav Bolkhovitin <vst@vlnb.net>
  *  Copyright (C) 2004 - 2005 Leonid Stoljar
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  SCSI tape (type 1) dev handler
  *  &
@@ -26,6 +26,7 @@
 #include <linux/init.h>
 #include <scsi/scsi_host.h>
 #include <linux/slab.h>
+#include <asm/unaligned.h>
 
 #define LOG_PREFIX           "dev_tape"
 
@@ -36,8 +37,8 @@
 #endif
 #include "scst_dev_handler.h"
 
-# define TAPE_NAME           "dev_tape"
-# define TAPE_PERF_NAME      "dev_tape_perf"
+#define TAPE_NAME		"dev_tape"
+#define TAPE_PERF_NAME		"dev_tape_perf"
 
 #define TAPE_RETRIES		2
 
@@ -45,10 +46,6 @@
 
 /* The fixed bit in READ/WRITE/VERIFY */
 #define SILI_BIT		2
-
-struct tape_params {
-	int block_size;
-};
 
 static int tape_attach(struct scst_device *);
 static void tape_detach(struct scst_device *);
@@ -158,7 +155,6 @@ static int tape_attach(struct scst_device *dev)
 	struct scsi_mode_data data;
 	const int buffer_size = 512;
 	uint8_t *buffer = NULL;
-	struct tape_params *params;
 
 	TRACE_ENTRY();
 
@@ -169,25 +165,18 @@ static int tape_attach(struct scst_device *dev)
 		goto out;
 	}
 
-	params = kzalloc(sizeof(*params), GFP_KERNEL);
-	if (params == NULL) {
-		PRINT_ERROR("Unable to allocate struct tape_params (size %zd)",
-			sizeof(*params));
-		res = -ENOMEM;
-		goto out;
-	}
-
-	params->block_size = TAPE_DEF_BLOCK_SIZE;
+	dev->block_size = TAPE_DEF_BLOCK_SIZE;
+	dev->block_shift = -1; /* not used */
 
 	buffer = kmalloc(buffer_size, GFP_KERNEL);
 	if (!buffer) {
 		PRINT_ERROR("Buffer memory allocation (size %d) failure",
 			buffer_size);
 		res = -ENOMEM;
-		goto out_free_req;
+		goto out;
 	}
 
-	retries = SCST_DEV_UA_RETRIES;
+	retries = SCST_DEV_RETRIES_ON_UA;
 	do {
 		TRACE_DBG("%s", "Doing TEST_UNIT_READY");
 		rc = scsi_test_unit_ready(dev->scsi_dev,
@@ -218,27 +207,26 @@ static int tape_attach(struct scst_device *dev)
 
 	if (rc == 0) {
 		int medium_type, mode, speed, density;
-		if (buffer[3] == 8) {
-			params->block_size = ((buffer[9] << 16) |
-					    (buffer[10] << 8) |
-					    (buffer[11] << 0));
-		} else
-			params->block_size = TAPE_DEF_BLOCK_SIZE;
+		if (buffer[3] == 8)
+			dev->block_size = get_unaligned_be24(&buffer[9]);
+		else
+			dev->block_size = TAPE_DEF_BLOCK_SIZE;
 		medium_type = buffer[1];
 		mode = (buffer[2] & 0x70) >> 4;
 		speed = buffer[2] & 0x0f;
 		density = buffer[4];
 		TRACE_DBG("Tape: lun %d. bs %d. type 0x%02x mode 0x%02x "
 		      "speed 0x%02x dens 0x%02x", dev->scsi_dev->lun,
-		      params->block_size, medium_type, mode, speed, density);
+		      dev->block_size, medium_type, mode, speed, density);
 	} else {
 		PRINT_ERROR("MODE_SENSE failed: %x", rc);
 		res = -ENODEV;
 		goto out_free_buf;
 	}
+	dev->block_shift = -1; /* not used */
 
 obtain:
-	res = scst_obtain_device_parameters(dev);
+	res = scst_obtain_device_parameters(dev, NULL);
 	if (res != 0) {
 		PRINT_ERROR("Failed to obtain control parameters for device "
 			"%s", dev->virt_name);
@@ -248,12 +236,6 @@ obtain:
 out_free_buf:
 	kfree(buffer);
 
-out_free_req:
-	if (res == 0)
-		dev->dh_priv = params;
-	else
-		kfree(params);
-
 out:
 	TRACE_EXIT_RES(res);
 	return res;
@@ -261,47 +243,34 @@ out:
 
 static void tape_detach(struct scst_device *dev)
 {
-	struct tape_params *params =
-		(struct tape_params *)dev->dh_priv;
-
-	TRACE_ENTRY();
-
-	kfree(params);
-	dev->dh_priv = NULL;
-
-	TRACE_EXIT();
+	/* Nothing to do */
 	return;
-}
-
-static int tape_get_block_size(struct scst_cmd *cmd)
-{
-	struct tape_params *params = (struct tape_params *)cmd->dev->dh_priv;
-	/*
-	 * No need for locks here, since *_detach() can not be called,
-	 * when there are existing commands.
-	 */
-	return params->block_size;
 }
 
 static int tape_parse(struct scst_cmd *cmd)
 {
-	int res = SCST_CMD_STATE_DEFAULT;
+	int res = SCST_CMD_STATE_DEFAULT, rc;
 
-	scst_tape_generic_parse(cmd, tape_get_block_size);
+	rc = scst_tape_generic_parse(cmd);
+	if (rc != 0) {
+		res = scst_get_cmd_abnormal_done_state(cmd);
+		goto out;
+	}
 
 	cmd->retries = SCST_PASSTHROUGH_RETRIES;
-
+out:
 	return res;
 }
 
 static void tape_set_block_size(struct scst_cmd *cmd, int block_size)
 {
-	struct tape_params *params = (struct tape_params *)cmd->dev->dh_priv;
+	struct scst_device *dev = cmd->dev;
 	/*
 	 * No need for locks here, since *_detach() can not be called, when
 	 * there are existing commands.
 	 */
-	params->block_size = block_size;
+	dev->block_size = block_size;
+	dev->block_shift = -1; /* not used */
 	return;
 }
 
@@ -316,14 +285,12 @@ static int tape_done(struct scst_cmd *cmd)
 	if ((status == SAM_STAT_GOOD) || (status == SAM_STAT_CONDITION_MET))
 		res = scst_tape_generic_dev_done(cmd, tape_set_block_size);
 	else if ((status == SAM_STAT_CHECK_CONDITION) &&
-		   SCST_SENSE_VALID(cmd->sense)) {
-		struct tape_params *params;
+		   scst_sense_valid(cmd->sense)) {
+		TRACE_DBG("Extended sense %x", scst_sense_response_code(cmd->sense));
 
-		TRACE_DBG("Extended sense %x", cmd->sense[0] & 0x7F);
-
-		if ((cmd->sense[0] & 0x7F) != 0x70) {
+		if (scst_sense_response_code(cmd->sense) != 0x70) {
 			PRINT_ERROR("Sense format 0x%x is not supported",
-				cmd->sense[0] & 0x7F);
+				scst_sense_response_code(cmd->sense));
 			scst_set_cmd_error(cmd,
 				SCST_LOAD_SENSE(scst_sense_hardw_error));
 			goto out;
@@ -332,19 +299,14 @@ static int tape_done(struct scst_cmd *cmd)
 		if (opcode == READ_6 && !(cmd->cdb[1] & SILI_BIT) &&
 		    (cmd->sense[2] & 0xe0)) {
 			/* EOF, EOM, or ILI */
-			int TransferLength, Residue = 0;
+			unsigned int TransferLength, Residue = 0;
 			if ((cmd->sense[2] & 0x0f) == BLANK_CHECK)
 				/* No need for EOM in this case */
 				cmd->sense[2] &= 0xcf;
-			TransferLength = ((cmd->cdb[2] << 16) |
-					  (cmd->cdb[3] << 8) | cmd->cdb[4]);
+			TransferLength = get_unaligned_be24(&cmd->cdb[2]);
 			/* Compute the residual count */
-			if ((cmd->sense[0] & 0x80) != 0) {
-				Residue = ((cmd->sense[3] << 24) |
-					   (cmd->sense[4] << 16) |
-					   (cmd->sense[5] << 8) |
-					   cmd->sense[6]);
-			}
+			if ((cmd->sense[0] & 0x80) != 0)
+				Residue = get_unaligned_be32(&cmd->sense[3]);
 			TRACE_DBG("Checking the sense key "
 				"sn[2]=%x cmd->cdb[0,1]=%x,%x TransLen/Resid"
 				" %d/%d", (int)cmd->sense[2], cmd->cdb[0],
@@ -357,9 +319,7 @@ static int tape_done(struct scst_cmd *cmd)
 					 * *_detach() can not be called, when
 					 * there are existing commands.
 					 */
-					params = (struct tape_params *)
-						 cmd->dev->dh_priv;
-					resp_data_len *= params->block_size;
+					resp_data_len *= cmd->dev->block_size;
 				}
 				scst_set_resp_data_len(cmd, resp_data_len);
 			}
@@ -376,14 +336,10 @@ out:
 
 static int tape_perf_exec(struct scst_cmd *cmd)
 {
-	int res = SCST_EXEC_NOT_COMPLETED, rc;
+	int res = SCST_EXEC_NOT_COMPLETED;
 	int opcode = cmd->cdb[0];
 
 	TRACE_ENTRY();
-
-	rc = scst_check_local_events(cmd);
-	if (unlikely(rc != 0))
-		goto out_done;
 
 	cmd->status = 0;
 	cmd->msg_status = 0;

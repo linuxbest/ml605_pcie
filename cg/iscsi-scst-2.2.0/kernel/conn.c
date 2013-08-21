@@ -1,8 +1,8 @@
 /*
  *  Copyright (C) 2002 - 2003 Ardis Technolgies <roman@ardistech.com>
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -275,7 +275,7 @@ static int conn_sysfs_add(struct iscsi_conn *conn)
 
 restart:
 	list_for_each_entry(c, &session->conn_list, conn_list_entry) {
-		if (strcmp(addr, kobject_name(&conn->conn_kobj)) == 0) {
+		if (strcmp(addr, kobject_name(&c->conn_kobj)) == 0) {
 			char c_addr[64];
 
 			iscsi_get_initiator_ip(conn, c_addr, sizeof(c_addr));
@@ -527,7 +527,7 @@ static void conn_rsp_timer_fn(unsigned long arg)
 
 	if (!list_empty(&conn->write_timeout_list)) {
 		unsigned long timeout_time;
-		cmnd = list_entry(conn->write_timeout_list.next,
+		cmnd = list_first_entry(&conn->write_timeout_list,
 				struct iscsi_cmnd, write_timeout_list_entry);
 
 		timeout_time = j + iscsi_get_timeout(cmnd) + ISCSI_ADD_SCHED_TIME;
@@ -833,7 +833,7 @@ int conn_free(struct iscsi_conn *conn)
 
 	free_page((unsigned long)conn->read_iov);
 
-	kfree(conn);
+	kmem_cache_free(iscsi_conn_cache, conn);
 
 	if (list_empty(&session->conn_list)) {
 		sBUG_ON(session->sess_reinst_successor != NULL);
@@ -850,7 +850,7 @@ static int iscsi_conn_alloc(struct iscsi_session *session,
 	struct iscsi_conn *conn;
 	int res = 0;
 
-	conn = kzalloc(sizeof(*conn), GFP_KERNEL);
+	conn = kmem_cache_zalloc(iscsi_conn_cache, GFP_KERNEL);
 	if (!conn) {
 		res = -ENOMEM;
 		goto out_err;
@@ -941,7 +941,7 @@ out_free_iov:
 	free_page((unsigned long)conn->read_iov);
 
 out_err_free_conn:
-	kfree(conn);
+	kmem_cache_free(iscsi_conn_cache, conn);
 
 out_err:
 	goto out;
@@ -1007,13 +1007,13 @@ int __del_conn(struct iscsi_session *session, struct iscsi_kern_conn_info *info)
 void iscsi_extracheck_is_rd_thread(struct iscsi_conn *conn)
 {
 	if (unlikely(current != conn->rd_task)) {
-		printk(KERN_EMERG "conn %p rd_task != current %p (pid %d)\n",
-			conn, current, current->pid);
+		pr_emerg("conn %p rd_task != current %p (pid %d)\n",
+			 conn, current, current->pid);
 		while (in_softirq())
 			local_bh_enable();
-		printk(KERN_EMERG "rd_state %x\n", conn->rd_state);
-		printk(KERN_EMERG "rd_task %p\n", conn->rd_task);
-		printk(KERN_EMERG "rd_task->pid %d\n", conn->rd_task->pid);
+		pr_emerg("rd_state %x\n", conn->rd_state);
+		pr_emerg("rd_task %p\n", conn->rd_task);
+		pr_emerg("rd_task->pid %d\n", conn->rd_task->pid);
 		BUG();
 	}
 }
@@ -1021,13 +1021,13 @@ void iscsi_extracheck_is_rd_thread(struct iscsi_conn *conn)
 void iscsi_extracheck_is_wr_thread(struct iscsi_conn *conn)
 {
 	if (unlikely(current != conn->wr_task)) {
-		printk(KERN_EMERG "conn %p wr_task != current %p (pid %d)\n",
-			conn, current, current->pid);
+		pr_emerg("conn %p wr_task != current %p (pid %d)\n",
+			 conn, current, current->pid);
 		while (in_softirq())
 			local_bh_enable();
-		printk(KERN_EMERG "wr_state %x\n", conn->wr_state);
-		printk(KERN_EMERG "wr_task %p\n", conn->wr_task);
-		printk(KERN_EMERG "wr_task->pid %d\n", conn->wr_task->pid);
+		pr_emerg("wr_state %x\n", conn->wr_state);
+		pr_emerg("wr_task %p\n", conn->wr_task);
+		pr_emerg("wr_task->pid %d\n", conn->wr_task->pid);
 		BUG();
 	}
 }

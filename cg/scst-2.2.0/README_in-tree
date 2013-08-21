@@ -410,11 +410,12 @@ Every target should have at least the following entries:
    connections. 0 by default.
 
  - addr_method - used LUNs addressing method. Possible values:
-   "Peripheral" and "Flat". Most initiators work well with Peripheral
-   addressing method (default), but some (HP-UX, for instance) may
-   require Flat method. This attribute is also available in the
-   initiators security groups, so you can assign the addressing method
-   on per-initiator basis.
+   "Peripheral", "Flat" or "LUN". Most initiators work well with
+   Peripheral addressing method (default), but some (HP-UX, for instance)
+   may require the Flat method or the LUN method (e.g. IBM systems). This
+   attribute is also available in the initiators security groups, so you
+   can assign the addressing method on per-initiator basis. See also the
+   "Logical unit addressing (LUN)" section in SAM-5 for more information.
 
  - cpu_mask - defines CPU affinity mask for threads serving this target.
    For threads serving LUNs it is used only for devices with
@@ -747,6 +748,12 @@ cache. The following parameters possible for vdisk_fileio:
  - removable - with this flag set the device is reported to remote
    initiators as removable.
 
+ - rotational - if set, this device reported as rotational. Otherwise,
+   it is reported as non-rotational (SSD, etc.)
+
+ - zero_copy - if set, then this device uses zero copy access to the
+   page cache. At the moment, only read side zero copy is implemented.
+
 Handler vdisk_blockio provides BLOCKIO mode to create virtual devices.
 This mode performs direct block I/O with a block device, bypassing the
 page cache for all operations. This mode works ideally with high-end
@@ -755,8 +762,8 @@ between application and disk or need the large block throughput. See
 below for more info.
 
 The following parameters possible for vdisk_blockio: filename,
-blocksize, nv_cache, read_only, removable, thin_provisioned. See
-vdisk_fileio above for description of those parameters.
+blocksize, nv_cache, read_only, removable, rotational, thin_provisioned.
+See vdisk_fileio above for description of those parameters.
 
 Handler vdisk_nullio provides NULLIO mode to create virtual devices. In
 this mode no real I/O is done, but success returned to initiators.
@@ -764,6 +771,15 @@ Intended to be used for performance measurements at the same way as
 "*_perf" handlers. The following parameters possible for vdisk_nullio:
 blocksize, read_only, removable. See vdisk_fileio above for description
 of those parameters.
+
+vdisk_nullio also has extra attribute:
+
+ - dummy - if this flag is set, LUNs corresponding to this device will
+   not appear at the initiator side. This is because SCST will set the
+   PERIPHERAL QUALIFIER qualifier field to 1 (not connected) and the
+   PERIPHERAL DEVICE TYPE to 0x1f (no device) in the INQUIRY response.
+   See also SPC-4 for more information. It is designed to be used as a
+   "dummy" placeholder on LUN 0, if LUN 0 is not desired.
 
 Handler vcdrom allows emulation of a virtual CDROM device using an ISO
 file as backend. It doesn't have any parameters.
@@ -792,9 +808,11 @@ Each vdisk_fileio's device has the following attributes in
  - nv_cache - contains NV_CACHE status of this virtual device.
 
  - thin_provisioned - contains thin provisioning status of this virtual
-   device
+   device.
 
  - removable - contains removable status of this virtual device.
+
+ - rotational - contains rotational status of this virtual device.
 
  - size_mb - contains size of this virtual device in MB.
 
@@ -831,6 +849,7 @@ For example:
 |-- read_only
 |-- removable
 |-- resync_size
+|-- rotational
 |-- size_mb
 |-- t10_dev_id
 |-- thin_provisioned
@@ -842,14 +861,14 @@ For example:
 
 Each vdisk_blockio's device has the following attributes in
 /sys/kernel/scst_tgt/devices/device_name: blocksize, filename, nv_cache,
-read_only, removable, resync_size, size_mb, t10_dev_id,
+read_only, removable, resync_size, rotational, size_mb, t10_dev_id,
 thin_provisioned, threads_num, threads_pool_type, type, usn. See above
 description of those parameters.
 
 Each vdisk_nullio's device has the following attributes in
 /sys/kernel/scst_tgt/devices/device_name: blocksize, read_only,
 removable, size_mb, t10_dev_id, threads_num, threads_pool_type, type,
-usn. See above description of those parameters.
+usn, dummy. See above description of those parameters.
 
 Each vcdrom's device has the following attributes in
 /sys/kernel/scst_tgt/devices/device_name: filename, size_mb,
@@ -955,7 +974,8 @@ with files with names the same as the names of the corresponding
 devices. Also this directory contains backup versions of those files
 with suffix ".1". Those backup files are used in case of power or other
 failure to prevent Persistent Reservation information from corruption
-during update.
+during update. It is safe to assume that each of those files can be up
+to 1KB big.
 
 The Persistent Reservations available on all transports implementing
 get_initiator_port_transport_id() callback. Transports not implementing
@@ -1197,7 +1217,7 @@ In order to get the maximum performance you should:
 
 1. For SCST:
 
- - Disable in Makefile CONFIG_SCST_STRICT_SERIALIZING, CONFIG_SCST_EXTRACHECKS,
+ - Disable CONFIG_SCST_STRICT_SERIALIZING, CONFIG_SCST_EXTRACHECKS,
    CONFIG_SCST_TRACING, CONFIG_SCST_DEBUG*, CONFIG_SCST_STRICT_SECURITY,
    CONFIG_SCST_MEASURE_LATENCY
 

@@ -1,8 +1,8 @@
 /*
  *  Copyright (C) 2002 - 2003 Ardis Technolgies <roman@ardistech.com>
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@
 #define ISCSI_VERSION			0
 
 #ifndef __packed
-#define __packed __attribute__ ((packed))
+#error The macro __packed has not been defined.
 #endif
 
 /* iSCSI command PDU header. See also section 10.3 in RFC 3720. */
@@ -517,7 +517,7 @@ struct iscsi_nop_in_hdr {
 } __packed;
 
 #define ISCSI_RESERVED_TAG_CPU32 (0xffffffffU)
-#define ISCSI_RESERVED_TAG (__constant_cpu_to_be32(ISCSI_RESERVED_TAG_CPU32))
+#define ISCSI_RESERVED_TAG (cpu_to_be32(ISCSI_RESERVED_TAG_CPU32))
 
 #define cmnd_hdr(cmnd) ((struct iscsi_scsi_cmd_hdr *) (&((cmnd)->pdu.bhs)))
 #define cmnd_opcode(cmnd) ((cmnd)->pdu.bhs.opcode & ISCSI_OPCODE_MASK)

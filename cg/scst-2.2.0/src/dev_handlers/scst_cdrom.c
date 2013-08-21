@@ -1,10 +1,10 @@
 /*
  *  scst_cdrom.c
  *
- *  Copyright (C) 2004 - 2011 Vladislav Bolkhovitin <vst@vlnb.net>
+ *  Copyright (C) 2004 - 2013 Vladislav Bolkhovitin <vst@vlnb.net>
  *  Copyright (C) 2004 - 2005 Leonid Stoljar
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  SCSI CDROM (type 5) dev handler
  *
@@ -22,6 +22,7 @@
 #include <linux/cdrom.h>
 #include <scsi/scsi_host.h>
 #include <linux/slab.h>
+#include <asm/unaligned.h>
 
 #define LOG_PREFIX	"dev_cdrom"
 
@@ -35,10 +36,6 @@
 #define CDROM_NAME	"dev_cdrom"
 
 #define CDROM_DEF_BLOCK_SHIFT	11
-
-struct cdrom_params {
-	int block_shift;
-};
 
 static int cdrom_attach(struct scst_device *);
 static void cdrom_detach(struct scst_device *);
@@ -70,7 +67,6 @@ static int cdrom_attach(struct scst_device *dev)
 	int retries;
 	unsigned char sense_buffer[SCSI_SENSE_BUFFERSIZE];
 	enum dma_data_direction data_dir;
-	struct cdrom_params *params;
 
 	TRACE_ENTRY();
 
@@ -81,20 +77,12 @@ static int cdrom_attach(struct scst_device *dev)
 		goto out;
 	}
 
-	params = kzalloc(sizeof(*params), GFP_KERNEL);
-	if (params == NULL) {
-		PRINT_ERROR("Unable to allocate struct cdrom_params (size %zd)",
-			sizeof(*params));
-		res = -ENOMEM;
-		goto out;
-	}
-
 	buffer = kmalloc(buffer_size, GFP_KERNEL);
 	if (!buffer) {
 		PRINT_ERROR("Buffer memory allocation (size %d) failure",
 			buffer_size);
 		res = -ENOMEM;
-		goto out_free_params;
+		goto out;
 	}
 
 	/* Clear any existing UA's and get cdrom capacity (cdrom block size) */
@@ -102,7 +90,7 @@ static int cdrom_attach(struct scst_device *dev)
 	cmd[0] = READ_CAPACITY;
 	cmd[1] = (dev->scsi_dev->scsi_level <= SCSI_2) ?
 	    ((dev->scsi_dev->lun << 5) & 0xe0) : 0;
-	retries = SCST_DEV_UA_RETRIES;
+	retries = SCST_DEV_RETRIES_ON_UA;
 	while (1) {
 		memset(buffer, 0, buffer_size);
 		memset(sense_buffer, 0, sizeof(sense_buffer));
@@ -127,32 +115,31 @@ static int cdrom_attach(struct scst_device *dev)
 
 		if (!--retries) {
 			PRINT_ERROR("UA not cleared after %d retries",
-				SCST_DEV_UA_RETRIES);
-			params->block_shift = CDROM_DEF_BLOCK_SHIFT;
+				SCST_DEV_RETRIES_ON_UA);
+			dev->block_shift = CDROM_DEF_BLOCK_SHIFT;
 			res = -ENODEV;
 			goto out_free_buf;
 		}
 	}
 
 	if (rc == 0) {
-		int sector_size = ((buffer[4] << 24) | (buffer[5] << 16) |
-				      (buffer[6] << 8) | (buffer[7] << 0));
+		uint32_t sector_size = get_unaligned_be32(&buffer[4]);
 		if (sector_size == 0)
-			params->block_shift = CDROM_DEF_BLOCK_SHIFT;
+			dev->block_shift = CDROM_DEF_BLOCK_SHIFT;
 		else
-			params->block_shift =
-				scst_calc_block_shift(sector_size);
+			dev->block_shift = scst_calc_block_shift(sector_size);
 		TRACE_DBG("Sector size is %i scsi_level %d(SCSI_2 %d)",
 			sector_size, dev->scsi_dev->scsi_level, SCSI_2);
 	} else {
-		params->block_shift = CDROM_DEF_BLOCK_SHIFT;
+		dev->block_shift = CDROM_DEF_BLOCK_SHIFT;
 		TRACE(TRACE_MINOR, "Read capacity failed: %x, using default "
-			"sector size %d", rc, params->block_shift);
+			"sector size %d", rc, dev->block_shift);
 		PRINT_BUFF_FLAG(TRACE_MINOR, "Returned sense", sense_buffer,
 			sizeof(sense_buffer));
 	}
+	dev->block_size = 1 << dev->block_shift;
 
-	res = scst_obtain_device_parameters(dev);
+	res = scst_obtain_device_parameters(dev, NULL);
 	if (res != 0) {
 		PRINT_ERROR("Failed to obtain control parameters for device "
 			"%s", dev->virt_name);
@@ -162,12 +149,6 @@ static int cdrom_attach(struct scst_device *dev)
 out_free_buf:
 	kfree(buffer);
 
-out_free_params:
-	if (res == 0)
-		dev->dh_priv = params;
-	else
-		kfree(params);
-
 out:
 	TRACE_EXIT();
 	return res;
@@ -175,50 +156,37 @@ out:
 
 static void cdrom_detach(struct scst_device *dev)
 {
-	struct cdrom_params *params =
-		(struct cdrom_params *)dev->dh_priv;
-
-	TRACE_ENTRY();
-
-	kfree(params);
-	dev->dh_priv = NULL;
-
-	TRACE_EXIT();
+	/* Nothing to do */
 	return;
-}
-
-static int cdrom_get_block_shift(struct scst_cmd *cmd)
-{
-	struct cdrom_params *params = (struct cdrom_params *)cmd->dev->dh_priv;
-	/*
-	 * No need for locks here, since *_detach() can not be
-	 * called, when there are existing commands.
-	 */
-	return params->block_shift;
 }
 
 static int cdrom_parse(struct scst_cmd *cmd)
 {
-	int res = SCST_CMD_STATE_DEFAULT;
+	int res = SCST_CMD_STATE_DEFAULT, rc;
 
-	scst_cdrom_generic_parse(cmd, cdrom_get_block_shift);
+	rc = scst_cdrom_generic_parse(cmd);
+	if (rc != 0) {
+		res = scst_get_cmd_abnormal_done_state(cmd);
+		goto out;
+	}
 
 	cmd->retries = SCST_PASSTHROUGH_RETRIES;
-
+out:
 	return res;
 }
 
 static void cdrom_set_block_shift(struct scst_cmd *cmd, int block_shift)
 {
-	struct cdrom_params *params = (struct cdrom_params *)cmd->dev->dh_priv;
+	struct scst_device *dev = cmd->dev;
 	/*
 	 * No need for locks here, since *_detach() can not be
 	 * called, when there are existing commands.
 	 */
 	if (block_shift != 0)
-		params->block_shift = block_shift;
+		dev->block_shift = block_shift;
 	else
-		params->block_shift = CDROM_DEF_BLOCK_SHIFT;
+		dev->block_shift = CDROM_DEF_BLOCK_SHIFT;
+	dev->block_size = 1 << dev->block_shift;
 	return;
 }
 

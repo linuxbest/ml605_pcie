@@ -1,8 +1,8 @@
 /*
  *  Copyright (C) 2002 - 2003 Ardis Technolgies <roman@ardistech.com>
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -28,6 +28,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <ifaddrs.h>
+#include <unistd.h>
 
 #include "iscsid.h"
 
@@ -338,16 +339,24 @@ int target_del(u32 tid, u32 cookie)
 	if (!target)
 		return -ENOENT;
 
-	list_del(&target->tlist);
+	while (1) {
+		/* We might need to handle session(s) removal event(s) from the kernel */
+		while (handle_iscsi_events(nl_fd, false) == 0);
 
-	/* We might need to handle session(s) removal event(s) from the kernel */
-	while (handle_iscsi_events(nl_fd, false) == 0);
+		if (list_empty(&target->sessions_list))
+			break;
 
-	if (!list_empty(&target->sessions_list)) {
-		log_error("%s: target %u still has sessions\n", __FUNCTION__,
-			  tid);
-		exit(-1);
+		/* We have not yet received session(s) removal event(s), so keep waiting */
+		log_debug(1, "Target %d has sessions, keep waiting", tid);
+		usleep(50000);
 	}
+
+	/*
+	 * Remove target from the list after waiting for all sessions
+	 * deleted, because we are looking for this target in list during
+	 * each session delete.
+	 */
+	list_del(&target->tlist);
 
 	if (target->tgt_enabled)
 		isns_target_deregister(target->name);

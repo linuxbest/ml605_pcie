@@ -2,9 +2,9 @@
  *  Network threads.
  *
  *  Copyright (C) 2004 - 2005 FUJITA Tomonori <tomof@acm.org>
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -20,7 +20,7 @@
 #include <linux/file.h>
 #include <linux/kthread.h>
 #include <linux/delay.h>
-#include <net/tcp.h>
+#include <net/tcp_states.h>
 
 #include "iscsi.h"
 #include "digest.h"
@@ -325,14 +325,13 @@ void iscsi_task_mgmt_affected_cmds_done(struct scst_mgmt_cmd *scst_mcmd)
 
 	switch (fn) {
 	case SCST_NEXUS_LOSS_SESS:
-	case SCST_ABORT_ALL_TASKS_SESS:
 	{
 		struct iscsi_conn *conn = (struct iscsi_conn *)priv;
 		struct iscsi_session *sess = conn->session;
 		struct iscsi_conn *c;
 
 		if (sess->sess_reinst_successor != NULL)
-			scst_reassign_persistent_sess_states(
+			scst_reassign_retained_sess_states(
 				sess->sess_reinst_successor->scst_sess,
 				sess->scst_sess);
 
@@ -367,6 +366,11 @@ void iscsi_task_mgmt_affected_cmds_done(struct scst_mgmt_cmd *scst_mcmd)
 		complete_all(&conn->ready_to_free);
 		break;
 	}
+	case SCST_ABORT_ALL_TASKS_SESS:
+	case SCST_ABORT_ALL_TASKS:
+	case SCST_NEXUS_LOSS:
+		sBUG_ON(1);
+		break;
 	default:
 		/* Nothing to do */
 		break;
@@ -383,9 +387,10 @@ static void close_conn(struct iscsi_conn *conn)
 	typeof(jiffies) start_waiting = jiffies;
 	typeof(jiffies) shut_start_waiting = start_waiting;
 	bool pending_reported = 0, wait_expired = 0, shut_expired = 0;
-	bool reinst;
 	uint32_t tid, cid;
 	uint64_t sid;
+	int rc;
+	int lun = 0;
 
 #define CONN_PENDING_TIMEOUT	((typeof(jiffies))10*HZ)
 #define CONN_WAIT_TIMEOUT	((typeof(jiffies))10*HZ)
@@ -412,30 +417,14 @@ static void close_conn(struct iscsi_conn *conn)
 	mutex_lock(&session->target->target_mutex);
 
 	set_bit(ISCSI_CONN_SHUTTINGDOWN, &conn->conn_aflags);
-	reinst = (conn->conn_reinst_successor != NULL);
 
 	mutex_unlock(&session->target->target_mutex);
 
-	if (reinst) {
-		int rc;
-		int lun = 0;
-
-		/* Abort all outstanding commands */
-		rc = scst_rx_mgmt_fn_lun(session->scst_sess,
-			SCST_ABORT_ALL_TASKS_SESS, (uint8_t *)&lun, sizeof(lun),
-			SCST_NON_ATOMIC, conn);
-		if (rc != 0)
-			PRINT_ERROR("SCST_ABORT_ALL_TASKS_SESS failed %d", rc);
-	} else {
-		int rc;
-		int lun = 0;
-
-		rc = scst_rx_mgmt_fn_lun(session->scst_sess,
-			SCST_NEXUS_LOSS_SESS, (uint8_t *)&lun, sizeof(lun),
-			SCST_NON_ATOMIC, conn);
-		if (rc != 0)
-			PRINT_ERROR("SCST_NEXUS_LOSS_SESS failed %d", rc);
-	}
+	rc = scst_rx_mgmt_fn_lun(session->scst_sess,
+		SCST_NEXUS_LOSS_SESS, &lun, sizeof(lun),
+		SCST_NON_ATOMIC, conn);
+	if (rc != 0)
+		PRINT_ERROR("SCST_NEXUS_LOSS_SESS failed %d", rc);
 
 	if (conn->read_state != RX_INIT_BHS) {
 		struct iscsi_cmnd *cmnd = conn->read_cmnd;
@@ -653,7 +642,7 @@ static struct iscsi_cmnd *iscsi_get_send_cmnd(struct iscsi_conn *conn)
 
 	spin_lock_bh(&conn->write_list_lock);
 	if (!list_empty(&conn->write_list)) {
-		cmnd = list_entry(conn->write_list.next, struct iscsi_cmnd,
+		cmnd = list_first_entry(&conn->write_list, struct iscsi_cmnd,
 				write_list_entry);
 		cmd_del_from_write_list(cmnd);
 		cmnd->write_processing_started = 1;
@@ -1028,7 +1017,7 @@ static void scst_do_job_rd(struct iscsi_thread_pool *p)
 
 	while (!list_empty(&p->rd_list)) {
 		int closed = 0, rc;
-		struct iscsi_conn *conn = list_entry(p->rd_list.next,
+		struct iscsi_conn *conn = list_first_entry(&p->rd_list,
 			typeof(*conn), rd_list_entry);
 
 		list_del(&conn->rd_list_entry);
@@ -1095,22 +1084,8 @@ int istrd(void *arg)
 
 	spin_lock_bh(&p->rd_lock);
 	while (!kthread_should_stop()) {
-		wait_queue_t wait;
-		init_waitqueue_entry(&wait, current);
-
-		if (!test_rd_list(p)) {
-			add_wait_queue_exclusive_head(&p->rd_waitQ, &wait);
-			for (;;) {
-				set_current_state(TASK_INTERRUPTIBLE);
-				if (test_rd_list(p))
-					break;
-				spin_unlock_bh(&p->rd_lock);
-				schedule();
-				spin_lock_bh(&p->rd_lock);
-			}
-			set_current_state(TASK_RUNNING);
-			remove_wait_queue(&p->rd_waitQ, &wait);
-		}
+		wait_event_locked(p->rd_waitQ, test_rd_list(p), lock_bh,
+				  p->rd_lock);
 		scst_do_job_rd(p);
 	}
 	spin_unlock_bh(&p->rd_lock);
@@ -1185,6 +1160,7 @@ void iscsi_put_page_callback(struct page *page)
 
 static void check_net_priv(struct iscsi_cmnd *cmd, struct page *page)
 {
+	smp_rmb(); /* to sync with __iscsi_get_page_callback() */
 	if ((atomic_read(&cmd->net_ref_cnt) == 1) && (page->net_priv == cmd)) {
 		TRACE_DBG("sendpage() not called get_page(), zeroing net_priv "
 			"%p (page %p)", page->net_priv, page);
@@ -1361,9 +1337,9 @@ retry:
 					 (struct iovec __force __user *)iop,
 					 count, &off);
 			set_fs(oldfs);
-			TRACE_WRITE("sid %#Lx, cid %u, res %d, iov_len %ld",
+			TRACE_WRITE("sid %#Lx, cid %u, res %d, iov_len %zd",
 				    (long long unsigned int)conn->session->sid,
-				    conn->cid, res, (long)iop->iov_len);
+				    conn->cid, res, iop->iov_len);
 			if (unlikely(res <= 0)) {
 				if (res == -EAGAIN) {
 					conn->write_iop = iop;
@@ -1564,9 +1540,10 @@ out_res:
 
 out_err:
 #ifndef CONFIG_SCST_DEBUG
-	if (!conn->closing)
-#endif
+	if (!conn->closing) {
+#else
 	{
+#endif
 		PRINT_ERROR("error %d at sid:cid %#Lx:%u, cmnd %p", res,
 			    (long long unsigned int)conn->session->sid,
 			    conn->cid, conn->write_cmnd);
@@ -1593,9 +1570,10 @@ static int exit_tx(struct iscsi_conn *conn, int res)
 		break;
 	default:
 #ifndef CONFIG_SCST_DEBUG
-		if (!conn->closing)
-#endif
+		if (!conn->closing) {
+#else
 		{
+#endif
 			PRINT_ERROR("Sending data failed: initiator %s, "
 				"write_size %d, write_state %d, res %d",
 				conn->session->initiator_name,
@@ -1796,7 +1774,7 @@ static void scst_do_job_wr(struct iscsi_thread_pool *p)
 
 	while (!list_empty(&p->wr_list)) {
 		int rc;
-		struct iscsi_conn *conn = list_entry(p->wr_list.next,
+		struct iscsi_conn *conn = list_first_entry(&p->wr_list,
 			typeof(*conn), wr_list_entry);
 
 		TRACE_DBG("conn %p, wr_state %x, wr_space_ready %d, "
@@ -1866,22 +1844,8 @@ int istwr(void *arg)
 
 	spin_lock_bh(&p->wr_lock);
 	while (!kthread_should_stop()) {
-		wait_queue_t wait;
-		init_waitqueue_entry(&wait, current);
-
-		if (!test_wr_list(p)) {
-			add_wait_queue_exclusive_head(&p->wr_waitQ, &wait);
-			for (;;) {
-				set_current_state(TASK_INTERRUPTIBLE);
-				if (test_wr_list(p))
-					break;
-				spin_unlock_bh(&p->wr_lock);
-				schedule();
-				spin_lock_bh(&p->wr_lock);
-			}
-			set_current_state(TASK_RUNNING);
-			remove_wait_queue(&p->wr_waitQ, &wait);
-		}
+		wait_event_locked(p->wr_waitQ, test_wr_list(p), lock_bh,
+				  p->wr_lock);
 		scst_do_job_wr(p);
 	}
 	spin_unlock_bh(&p->wr_lock);

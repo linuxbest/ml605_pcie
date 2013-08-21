@@ -1,8 +1,8 @@
 /*
  *  Copyright (C) 2002 - 2003 Ardis Technolgies <roman@ardistech.com>
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -77,7 +77,8 @@ struct iscsi_thread_pool {
 	struct list_head rd_list;
 	wait_queue_head_t rd_waitQ;
 
-	spinlock_t wr_lock;
+	/* It's used by another thread, hence aligned */
+	spinlock_t wr_lock ____cacheline_aligned_in_smp;
 	struct list_head wr_list;
 	wait_queue_head_t wr_waitQ;
 
@@ -221,7 +222,7 @@ struct iscsi_conn {
 	 * All 2 protected by wr_lock. Modified independently to the
 	 * above field, hence the alignment.
 	 */
-	unsigned short wr_state __attribute__((aligned(sizeof(long))));
+	unsigned short wr_state __aligned(sizeof(long));
 	unsigned short wr_space_ready:1;
 
 	struct list_head wr_list_entry;
@@ -384,6 +385,7 @@ struct iscsi_cmnd {
 	 * req_cmnd_release() supposed to be called only once.
 	 */
 	unsigned int data_out_in_data_receiving:1;
+	unsigned int force_release_done:1;
 #ifdef CONFIG_SCST_EXTRACHECKS
 	unsigned int on_rx_digest_list:1;
 	unsigned int release_called:1;
@@ -464,8 +466,7 @@ struct iscsi_cmnd {
 			 * modified independently to the above field, hence the
 			 * alignment.
 			 */
-			int not_processed_rsp_cnt
-				 __attribute__((aligned(sizeof(long))));
+			int not_processed_rsp_cnt __aligned(sizeof(long));
 		};
 
 		/* Response only fields */
@@ -516,6 +517,9 @@ extern struct mutex target_mgmt_mutex;
 
 extern int ctr_open_state;
 extern const struct file_operations ctr_fops;
+
+extern struct kmem_cache *iscsi_conn_cache;
+extern struct kmem_cache *iscsi_sess_cache;
 
 /* iscsi.c */
 extern struct iscsi_cmnd *cmnd_alloc(struct iscsi_conn *,

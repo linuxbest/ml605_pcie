@@ -1,8 +1,8 @@
 /*
  *  Copyright (C) 2002 - 2003 Ardis Technolgies <roman@ardistech.com>
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -43,7 +43,7 @@ static int iscsi_session_alloc(struct iscsi_target *target,
 	struct iscsi_session *session;
 	char *name = NULL;
 
-	session = kzalloc(sizeof(*session), GFP_KERNEL);
+	session = kmem_cache_zalloc(iscsi_sess_cache, GFP_KERNEL);
 	if (!session)
 		return -ENOMEM;
 
@@ -114,7 +114,7 @@ err_unreg:
 err:
 	if (session) {
 		kfree(session->initiator_name);
-		kfree(session);
+		kmem_cache_free(iscsi_sess_cache, session);
 #ifdef CONFIG_SCST_PROC
 		kfree(name);
 #endif
@@ -277,7 +277,7 @@ out_err_unlock:
 static void __session_free(struct iscsi_session *session)
 {
 	kfree(session->initiator_name);
-	kfree(session);
+	kmem_cache_free(iscsi_sess_cache, session);
 }
 
 static void iscsi_unreg_sess_done(struct scst_session *scst_sess)
@@ -540,37 +540,6 @@ static ssize_t iscsi_sess_reinstating_show(struct kobject *kobj,
 static struct kobj_attribute iscsi_sess_attr_reinstating =
 	__ATTR(reinstating, S_IRUGO, iscsi_sess_reinstating_show, NULL);
 
-static ssize_t iscsi_sess_force_close_store(struct kobject *kobj,
-	struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	int res;
-	struct scst_session *scst_sess;
-	struct iscsi_session *sess;
-
-	TRACE_ENTRY();
-
-	scst_sess = container_of(kobj, struct scst_session, sess_kobj);
-	sess = (struct iscsi_session *)scst_sess_get_tgt_priv(scst_sess);
-
-	if (mutex_lock_interruptible(&sess->target->target_mutex) != 0) {
-		res = -EINTR;
-		goto out;
-	}
-
-	iscsi_sess_force_close(sess);
-
-	mutex_unlock(&sess->target->target_mutex);
-
-	res = count;
-
-out:
-	TRACE_EXIT_RES(res);
-	return res;
-}
-
-static struct kobj_attribute iscsi_sess_attr_force_close =
-	__ATTR(force_close, S_IWUSR, NULL, iscsi_sess_force_close_store);
-
 const struct attribute *iscsi_sess_attrs[] = {
 	&iscsi_sess_attr_initial_r2t.attr,
 	&iscsi_sess_attr_immediate_data.attr,
@@ -583,7 +552,6 @@ const struct attribute *iscsi_sess_attrs[] = {
 	&iscsi_sess_attr_data_digest.attr,
 	&iscsi_attr_sess_sid.attr,
 	&iscsi_sess_attr_reinstating.attr,
-	&iscsi_sess_attr_force_close.attr,
 	NULL,
 };
 

@@ -1,8 +1,8 @@
 /*
  *  Copyright (C) 2005 FUJITA Tomonori <tomof@acm.org>
- *  Copyright (C) 2007 - 2011 Vladislav Bolkhovitin
+ *  Copyright (C) 2007 - 2013 Vladislav Bolkhovitin
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -50,10 +50,8 @@ do {										\
 	changed;								\
 })
 
-#define	GET_PARAM(params, info, iparams, word)					\
-do {										\
-	(iparams)[key_##word] = (params)->word;					\
-} while (0)
+#define	GET_PARAM(params, info, iparams, word)	\
+	(iparams)[key_##word] = (params)->word
 
 const char *iscsi_get_bool_value(int val)
 {
@@ -209,8 +207,7 @@ static void tgt_params_check(struct iscsi_session *session,
 	 */
 
 	CHECK_PARAM(info, iparams, queued_cmnds, MIN_NR_QUEUED_CMNDS,
-		min_t(int, MAX_NR_QUEUED_CMNDS,
-		      scst_get_max_lun_commands(session->scst_sess, NO_SUCH_LUN)));
+		MAX_NR_QUEUED_CMNDS);
 	CHECK_PARAM(info, iparams, rsp_timeout, MIN_RSP_TIMEOUT,
 		MAX_RSP_TIMEOUT);
 	CHECK_PARAM(info, iparams, nop_in_interval, MIN_NOP_IN_INTERVAL,

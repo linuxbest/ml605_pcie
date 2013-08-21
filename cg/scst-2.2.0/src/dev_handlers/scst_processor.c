@@ -1,10 +1,10 @@
 /*
  *  scst_processor.c
  *
- *  Copyright (C) 2004 - 2011 Vladislav Bolkhovitin <vst@vlnb.net>
+ *  Copyright (C) 2004 - 2013 Vladislav Bolkhovitin <vst@vlnb.net>
  *  Copyright (C) 2004 - 2005 Leonid Stoljar
  *  Copyright (C) 2007 - 2010 ID7 Ltd.
- *  Copyright (C) 2010 - 2011 SCST Ltd.
+ *  Copyright (C) 2010 - 2013 SCST Ltd.
  *
  *  SCSI medium processor (type 3) dev handler
  *
@@ -80,7 +80,7 @@ static int processor_attach(struct scst_device *dev)
 		goto out;
 	}
 
-	retries = SCST_DEV_UA_RETRIES;
+	retries = SCST_DEV_RETRIES_ON_UA;
 	do {
 		TRACE_DBG("%s", "Doing TEST_UNIT_READY");
 		rc = scsi_test_unit_ready(dev->scsi_dev,
@@ -98,7 +98,7 @@ static int processor_attach(struct scst_device *dev)
 		/* Let's try not to be too smart and continue processing */
 	}
 
-	res = scst_obtain_device_parameters(dev);
+	res = scst_obtain_device_parameters(dev, NULL);
 	if (res != 0) {
 		PRINT_ERROR("Failed to obtain control parameters for device "
 			"%s", dev->virt_name);
@@ -122,12 +122,16 @@ void processor_detach(struct scst_device *dev)
 
 static int processor_parse(struct scst_cmd *cmd)
 {
-	int res = SCST_CMD_STATE_DEFAULT;
+	int res = SCST_CMD_STATE_DEFAULT, rc;
 
-	scst_processor_generic_parse(cmd, NULL);
+	rc = scst_processor_generic_parse(cmd);
+	if (rc != 0) {
+		res = scst_get_cmd_abnormal_done_state(cmd);
+		goto out;
+	}
 
 	cmd->retries = SCST_PASSTHROUGH_RETRIES;
-
+out:
 	return res;
 }
 

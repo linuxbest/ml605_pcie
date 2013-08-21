@@ -3,7 +3,7 @@
  *
  *  Copyright (C) 2009 - 2010 Alexey Obitotskiy <alexeyo1@open-e.com>
  *  Copyright (C) 2009 - 2010 Open-E, Inc.
- *  Copyright (C) 2009 - 2011 Vladislav Bolkhovitin <vst@vlnb.net>
+ *  Copyright (C) 2009 - 2013 Vladislav Bolkhovitin <vst@vlnb.net>
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -20,7 +20,13 @@
 #define SCST_PRES_H_
 
 #include <linux/delay.h>
+#ifdef INSIDE_KERNEL_TREE
+#include <scst/scst_debug.h>
+#else
+#include "scst_debug.h"
+#endif
 
+/* PERSISTENT RESERVE OUT service action code */
 #define PR_REGISTER				0x00
 #define PR_RESERVE				0x01
 #define PR_RELEASE				0x02
@@ -30,11 +36,13 @@
 #define PR_REGISTER_AND_IGNORE			0x06
 #define PR_REGISTER_AND_MOVE			0x07
 
+/* PERSISTENT RESERVE IN service action code */
 #define PR_READ_KEYS				0x00
 #define PR_READ_RESERVATION			0x01
 #define PR_REPORT_CAPS				0x02
 #define PR_READ_FULL_STATUS			0x03
 
+/* Persistent reservation TYPE field */
 #define TYPE_UNSPECIFIED			(-1)
 #define TYPE_WRITE_EXCLUSIVE			0x01
 #define TYPE_EXCLUSIVE_ACCESS			0x03
@@ -43,6 +51,7 @@
 #define TYPE_WRITE_EXCLUSIVE_ALL_REG		0x07
 #define TYPE_EXCLUSIVE_ACCESS_ALL_REG		0x08
 
+/* Persistent reservation SCOPE field */
 #define SCOPE_LU				0x00
 
 static inline void scst_inc_pr_readers_count(struct scst_cmd *cmd,
@@ -75,10 +84,9 @@ static inline void scst_dec_pr_readers_count(struct scst_cmd *cmd,
 	struct scst_device *dev = cmd->dev;
 
 	if (unlikely(!cmd->dec_pr_readers_count_needed)) {
-		PRINT_ERROR("scst_check_local_events() should not be called "
-			"twice (cmd %p, op %x)! Use "
-			"scst_pre_check_local_events() instead.", cmd,
-			cmd->cdb[0]);
+		PRINT_ERROR("__scst_check_local_events(x, false) should not "
+			"be called twice (cmd %p, op %x)! Use "
+			"scst_check_local_events() instead.", cmd, cmd->cdb[0]);
 		WARN_ON(1);
 		goto out;
 	}
@@ -100,14 +108,6 @@ static inline void scst_dec_pr_readers_count(struct scst_cmd *cmd,
 
 out:
 	EXTRACHECKS_BUG_ON(dev->pr_readers_count < 0);
-	return;
-}
-
-static inline void scst_reset_requeued_cmd(struct scst_cmd *cmd)
-{
-	TRACE_DBG("Reset requeued cmd %p (op %x)", cmd, cmd->cdb[0]);
-	scst_inc_pr_readers_count(cmd, false);
-	cmd->check_local_events_once_done = 0;
 	return;
 }
 
