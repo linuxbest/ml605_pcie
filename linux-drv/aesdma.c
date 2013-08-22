@@ -31,8 +31,8 @@
 	if (dev) pr_debug("%s:%d " fmt, __func__, __LINE__, ##arg)
 
 #define DRIVER_NAME "AES10G"
-#define TX_BD_NUM 16
-#define RX_BD_NUM 16
+#define TX_BD_NUM 8192
+#define RX_BD_NUM 8192
 
 static char *git_version = GITVERSION;
 
