@@ -60,6 +60,8 @@
 #include "scst.h"
 #endif
 
+#include "aesdma.h"
+
 #if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
 
 #define TRACE_ORDER	0x80000000
