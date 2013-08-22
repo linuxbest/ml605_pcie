@@ -3715,6 +3715,17 @@ struct scst_aes_work {
 
 static void blockio_check_finish(struct scst_blockio_work *blockio_work);
 
+static void aes_cleanup(struct scst_aes_work *aes)
+{
+	int i;
+	struct scatterlist *sg = aes->blockio_work->write ?
+		aes->dst_sg : aes->src_sg;
+	for (i = 0; i < aes->sg_cnt; i ++) {
+		__free_page(sg_page(sg));
+	}
+	kfree(aes);
+}
+
 static void aes_write_work_fn(struct work_struct *work)
 {
 	struct scst_aes_work *aes_work = 
@@ -3759,6 +3770,7 @@ static void blockio_write_aes_cb(void *priv)
 static void blockio_read_aes_cb(void *priv)
 {
 	struct scst_blockio_work *blockio_work = priv;
+	aes_cleanup(blockio_work->aes_work);
 	blockio_work->cmd->completed = 1;
 	blockio_work->cmd->scst_cmd_done(blockio_work->cmd,
 			SCST_CMD_STATE_DEFAULT, scst_estimate_context());
@@ -3783,9 +3795,13 @@ static void blockio_check_finish(struct scst_blockio_work *blockio_work)
 	struct vdisk_cmd_params *p = blockio_work->param;
 	/* Decrement the bios in processing, and if zero signal completion */
 	if (atomic_dec_and_test(&blockio_work->bios_inflight)) {
-		if (p->aes && blockio_work->write == 0) {
-			blockio_aes_submit(blockio_work);
-			return;
+		if (p->aes) {
+			if (blockio_work->write == 0) {
+				blockio_aes_submit(blockio_work);
+				return;
+			} else {
+				aes_cleanup(blockio_work->aes_work);
+			}
 		}
 		blockio_work->cmd->completed = 1;
 		blockio_work->cmd->scst_cmd_done(blockio_work->cmd,
