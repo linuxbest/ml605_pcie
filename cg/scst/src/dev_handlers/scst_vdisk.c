@@ -199,7 +199,7 @@ struct vdisk_cmd_params {
 	struct iovec small_iv[4];
 	struct scst_cmd *cmd;
 	loff_t loff;
-	int fua;
+	int fua, aes;
 	bool use_zero_copy;
 };
 
@@ -3694,12 +3694,104 @@ out_nomem:
 struct scst_blockio_work {
 	atomic_t bios_inflight;
 	struct scst_cmd *cmd;
+	struct vdisk_cmd_params *param;
+	int write;
+	atomic_t aes_inflight;
 };
+
+static void blockio_aes_done(struct scst_blockio_work *blockio_work)
+{
+	blockio_work->cmd->completed = 1;
+	blockio_work->cmd->scst_cmd_done(blockio_work->cmd,
+			SCST_CMD_STATE_DEFAULT, scst_estimate_context());
+	kmem_cache_free(blockio_work_cachep, blockio_work);
+}
+
+struct scst_aes_work {
+	struct scst_blockio_work *blockio_work;
+	struct scatterlist sg[32];
+	int sg_cnt, biosz;
+	struct scst_aes_work *next;
+};
+
+static void blockio_aes_check_finish(struct scst_blockio_work *blockio_work)
+{
+	if (atomic_dec_and_test(&blockio_work->bios_inflight)) {
+		blockio_check_finish(blockio_work);
+	}
+}
+
+static void blockio_aes_cb(void *priv)
+{
+	struct scst_aes_work *aes = priv;
+	struct scst_blockio_work *blockio_work = aes->blockio_work;
+	kfree(aes);
+	blockio_aes_check_finish(blockio_work);
+}
+
+static void blockio_aes_submit(struct scst_blockio_work *blockio_work)
+{
+	struct scst_aes_work *bio, *hbio = NULL, *tbio = NULL;
+	int max_nr_vecs = 32, length, offset, need_new_bio = NULL, bios = 0;
+	struct page *page;
+
+	struct vdisk_cmd_params *p = blockio_work->param;
+	struct scst_cmd *cmd = p->cmd;
+
+	length = scst_get_sg_page_first(cmd, &page, &offset);
+	while (length > 0) {
+
+		if (need_new_bio) {
+			bio = kmalloc(GFP_ATOMIC, sizeof(*bio));
+			if (bio == NULL) {
+				PRINT_ERROR("Failed to create bio for aes data (cmd %p)", 
+						cmd);
+				goto out_no_bio;
+			}
+			bios ++;
+			bio->blockio_work = blockio_work;
+			bio->sg_cnt = 0;
+			bio->biosz  = 0;
+			bio->next   = NULL;
+
+			if (!hbio)
+				hbio = tbio = bio;
+			else
+				tbio = tbio->next = bio;
+		}
+		if (bio->sg_cnt == 32) {
+			need_new_bio = 1;
+			continue;
+		}
+		sg_set_page(&bio->sg[bio->sg_cnt], page, length, offset);
+		bio->sg_cnt ++;
+		
+		scst_put_sg_page(cmd, page, offset);
+		length = scst_get_sg_page_next(cmd, &page, &offset);
+	}
+
+	/* +1 to prevent erroneous too early command completion */
+	atomic_set(&blockio_work->aes_inflight, bios+1);
+
+	while (hbio) {
+		bio = hbio;
+		hbio = hbio->next;
+		bio->next = NULL;
+		aes_submit();
+	}
+	
+	blockio_aes_check_finish(blockio_work);
+}
 
 static inline void blockio_check_finish(struct scst_blockio_work *blockio_work)
 {
+	struct vdisk_cmd_params *p = blockio_work->param;
 	/* Decrement the bios in processing, and if zero signal completion */
 	if (atomic_dec_and_test(&blockio_work->bios_inflight)) {
+		if (p->aes && blockio_work->write == 0) {
+			blockio_aes_submit(blockio_work);
+			return;
+		}
 		blockio_work->cmd->completed = 1;
 		blockio_work->cmd->scst_cmd_done(blockio_work->cmd,
 			SCST_CMD_STATE_DEFAULT, scst_estimate_context());
@@ -3802,6 +3894,8 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 #endif
 
 	blockio_work->cmd = cmd;
+	blockio_work->param = p;
+	blockio_work->write = write;
 
 	if (q)
 		max_nr_vecs = min(bio_get_nr_vecs(bdev), BIO_MAX_PAGES);
@@ -3921,6 +4015,11 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
 	blk_start_plug(&plug);
 #endif
+
+	if (p->aes && write) {
+		blockio_aes_submit(blockio_work);
+		goto out;
+	}
 
 	while (hbio) {
 		bio = hbio;
