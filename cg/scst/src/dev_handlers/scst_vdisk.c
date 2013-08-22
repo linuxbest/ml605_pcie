@@ -164,6 +164,7 @@ struct scst_vdisk_dev {
 	unsigned int thin_provisioned_manually_set:1;
 	unsigned int dev_thin_provisioned:1;
 	unsigned int rotational:1;
+	unsigned int aes:1;
 
 	struct file *fd;
 	struct block_device *bdev;
@@ -199,7 +200,7 @@ struct vdisk_cmd_params {
 	struct iovec small_iv[4];
 	struct scst_cmd *cmd;
 	loff_t loff;
-	int fua, aes;
+	int fua;
 	bool use_zero_copy;
 };
 
@@ -327,6 +328,10 @@ static ssize_t vdev_sysfs_usn_show(struct kobject *kobj,
 	struct kobj_attribute *attr, char *buf);
 static ssize_t vdev_zero_copy_show(struct kobject *kobj,
 	struct kobj_attribute *attr, char *buf);
+static ssize_t vdev_aes_enable_show(struct kobject *kobj,
+	struct kobj_attribute *attr, char *buf);
+static ssize_t vdev_aes_enable_store(struct kobject *kobj,
+	struct kobj_attribute *attr, const char *buf, size_t count);
 
 static ssize_t vcdrom_sysfs_filename_store(struct kobject *kobj,
 	struct kobj_attribute *attr, const char *buf, size_t count);
@@ -362,6 +367,8 @@ static struct kobj_attribute vdev_usn_attr =
 	__ATTR(usn, S_IWUSR|S_IRUGO, vdev_sysfs_usn_show, vdev_sysfs_usn_store);
 static struct kobj_attribute vdev_zero_copy_attr =
 	__ATTR(zero_copy, S_IRUGO, vdev_zero_copy_show, NULL);
+static struct kobj_attribute vdev_aes_enable_attr =
+	__ATTR(aes_enable, S_IRUGO, vdev_aes_enable_show, vdev_aes_enable_store);
 
 static struct kobj_attribute vcdrom_filename_attr =
 	__ATTR(filename, S_IRUGO|S_IWUSR, vdev_sysfs_filename_show,
@@ -398,6 +405,7 @@ static const struct attribute *vdisk_blockio_attrs[] = {
 	&vdev_t10_dev_id_attr.attr,
 	&vdev_usn_attr.attr,
 	&vdisk_tp_attr.attr,
+	&vdev_aes_enable_attr.attr,
 	NULL,
 };
 
@@ -3732,7 +3740,6 @@ static void aes_write_work_fn(struct work_struct *work)
 		container_of(work, struct scst_aes_work, work);
 	struct bio *bio = NULL, *hbio = aes_work->hbio;
 	int write = aes_work->blockio_work->write;
-	struct request_queue *q = aes_work->q;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
 	struct blk_plug plug;
@@ -3751,8 +3758,8 @@ static void aes_write_work_fn(struct work_struct *work)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
 	blk_finish_plug(&plug);
 #else
-	if (q && q->unplug_fn)
-		q->unplug_fn(q);
+	if (aes_work->q && aes_work->q->unplug_fn)
+		aes_work->q->unplug_fn(q);
 #endif
 
 	blockio_check_finish(aes_work->blockio_work);
@@ -3793,9 +3800,11 @@ static void blockio_aes_submit(struct scst_blockio_work *blockio_work)
 static void blockio_check_finish(struct scst_blockio_work *blockio_work)
 {
 	struct vdisk_cmd_params *p = blockio_work->param;
+	struct scst_cmd *cmd = p->cmd;
+	struct scst_vdisk_dev *virt_dev = cmd->dev->dh_priv;
 	/* Decrement the bios in processing, and if zero signal completion */
 	if (atomic_dec_and_test(&blockio_work->bios_inflight)) {
-		if (p->aes) {
+		if (virt_dev->aes) {
 			if (blockio_work->write == 0) {
 				blockio_aes_submit(blockio_work);
 				return;
@@ -4055,7 +4064,7 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 	/* +1 to prevent erroneous too early command completion */
 	atomic_set(&blockio_work->bios_inflight, bios+1);
 
-	if (p->aes && write) {
+	if (virt_dev->aes && write) {
 		aes_work->hbio = hbio;
 		blockio_aes_submit(blockio_work);
 		goto out;
@@ -5769,6 +5778,46 @@ static ssize_t vdev_zero_copy_show(struct kobject *kobj,
 
 	TRACE_EXIT_RES(pos);
 	return pos;
+}
+
+static ssize_t vdev_aes_enable_show(struct kobject *kobj,
+	struct kobj_attribute *attr, char *buf)
+{
+	int pos = 0;
+	struct scst_device *dev;
+	struct scst_vdisk_dev *virt_dev;
+
+	TRACE_ENTRY();
+
+	dev = container_of(kobj, struct scst_device, dev_kobj);
+	virt_dev = dev->dh_priv;
+
+	pos = sprintf(buf, "%d\n%s", virt_dev->aes,
+		      virt_dev->aes ? SCST_SYSFS_KEY_MARK "\n" : "");
+
+	TRACE_EXIT_RES(pos);
+	return pos;
+}
+
+static ssize_t vdev_aes_enable_store(struct kobject *kobj,
+	struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int res = count;
+	struct scst_device *dev;
+	struct scst_vdisk_dev *virt_dev;
+	char *p = (char *)buf;
+
+	TRACE_ENTRY();
+
+	dev = container_of(kobj, struct scst_device, dev_kobj);
+	virt_dev = dev->dh_priv;
+
+	write_lock(&vdisk_serial_rwlock);
+	virt_dev->aes = simple_strtoul(p, &p, 10) != 0;
+	write_unlock(&vdisk_serial_rwlock);
+
+	TRACE_EXIT_RES(res);
+	return res;
 }
 
 #else /* CONFIG_SCST_PROC */
