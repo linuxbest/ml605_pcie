@@ -297,6 +297,18 @@ static struct aes_desc *aes_alloc_desc(struct aes_dev *dev)
 	return sw;
 }
 
+static void aes_unmap_buf(struct aes_dev *dma, dma_buf_t *buf, int dir)
+{
+	switch (buf->type) {
+	case DMA_TYPE_ADDR:
+		dma_unmap_single(&dma->pdev->dev, buf->addr.dma, buf->addr.len, dir);
+		break;
+	case DMA_TYPE_SG:
+		dma_unmap_sg(&dma->pdev->dev, buf->sg.sg, buf->sg.cnt, dir);
+		break;
+	}
+}
+
 static void aes_free_desc(struct kref *kref)
 {
 	struct aes_desc *sw = container_of(kref, struct aes_desc, kref);
@@ -305,6 +317,9 @@ static void aes_free_desc(struct kref *kref)
 
 	dev_trace(&dma->pdev->dev, "dev %p, sw %p, %d\n", 
 			dma, sw, dma->desc_free);
+
+	aes_unmap_buf(dma, &sw->src_buf, DMA_TO_DEVICE);
+	aes_unmap_buf(dma, &sw->dst_buf, DMA_FROM_DEVICE);
 
 	if (sw->cb) {
 		sw->cb(sw->priv);
@@ -367,9 +382,39 @@ static int _aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
 	return XAxiDma_BdRingToHw(ring, tcnt, first_bd_ptr, 0);
 }
 
+static int  aes_desc_to_hw(struct aes_dev *dma, struct aes_desc *sw)
+{
+	int res;
+	unsigned long flags;
+
+	/* aes_desc_to_hw rx/tx */
+	spin_lock_irqsave(&rx_lock, flags);
+	res = _aes_desc_to_hw(dma, &sw->dst_buf, &sw->rx_BdPtr,
+			XAxiDma_GetRxRing(&dma->AxiDma, 0), "RX", sw);
+	spin_unlock_irqrestore(&rx_lock, flags);
+	if (res != 0) {
+		dev_err(&dma->pdev->dev, "desc_to_hw dst err %d\n", res);
+		return res;
+	}
+
+	spin_lock_irqsave(&tx_lock, flags);
+	res = _aes_desc_to_hw(dma, &sw->src_buf, &sw->tx_BdPtr,
+			XAxiDma_GetTxRing(&dma->AxiDma), "TX", sw);
+	spin_unlock_irqrestore(&tx_lock, flags);
+	if (res != 0) {
+		dev_err(&dma->pdev->dev, "desc_to_hw src err %d\n", res);
+		return res;
+	}
+	
+	kref_put(&sw->kref, aes_free_desc);
+
+	return 0;
+}
+
 static void aes_self_cb(void *priv)
 {
 	struct completion *done = priv;
+	pr_debug("%s: done\n", __func__);
 	complete(done);
 }
 
@@ -406,26 +451,14 @@ static int aes_self_test(struct aes_dev *dma)
 	dma_buf_addr_init(&sw->src_buf, src_dma, 512);
 	dma_buf_addr_init(&sw->dst_buf, dst_dma, PAGE_SIZE);
 
-	/* aes_desc_to_hw rx/tx */
-	spin_lock_irqsave(&rx_lock, flags);
-	res = _aes_desc_to_hw(dma, &sw->dst_buf, &sw->rx_BdPtr,
-			XAxiDma_GetRxRing(&dma->AxiDma, 0), "RX", sw);
-	spin_unlock_irqrestore(&rx_lock, flags);
-	if (res != 0)
-		return res;
-
-	spin_lock_irqsave(&tx_lock, flags);
-	res = _aes_desc_to_hw(dma, &sw->src_buf, &sw->tx_BdPtr,
-			XAxiDma_GetTxRing(&dma->AxiDma), "TX", sw);
-	spin_unlock_irqrestore(&tx_lock, flags);
-	if (res != 0)
-		return res;
-
-	kref_put(&sw->kref, aes_free_desc);
+	aes_desc_to_hw(dma, sw);
 	wait_for_completion(&done);
 
+#if 0
+	/* moving into aes_free_desc now, we need better way to handle it */
 	dma_unmap_single(&dma->pdev->dev, src_dma, PAGE_SIZE, DMA_TO_DEVICE);
 	dma_unmap_single(&dma->pdev->dev, dst_dma, PAGE_SIZE, DMA_FROM_DEVICE);
+#endif
 
 	print_hex_dump(KERN_DEBUG, "TX ", DUMP_PREFIX_ADDRESS, 16, 1,
 			src, 256, 1);
@@ -786,6 +819,49 @@ out:
 	return res;
 }
 
+/* TODO only support one pcie device for now */
+static struct aes_dev *_dma;
+typedef void (*aes_cb_t)(void *priv);
+
+static int aes_submit(struct scatterlist *src_sg, int src_cnt, int src_sz,
+		struct scatterlist *dst_sg, int dst_cnt, int dst_sz,
+		aes_cb_t cb, char *priv, uint32_t *key)
+{	
+	struct aes_desc *sw;
+	struct aes_dev *dma = _dma;
+	int cnt;
+	unsigned long flags;
+
+	pr_debug("%s: _dma %p\n", __func__, _dma);
+	if (_dma == NULL)
+		return -ENODEV;
+
+	cnt = dma_map_sg(&dma->pdev->dev, src_sg, src_cnt, DMA_TO_DEVICE);
+	if (cnt == 0) {
+		dev_err(&dma->pdev->dev, "dma_map_sg src failed, %d,%d\n",
+				src_cnt, cnt);
+		return -ENOMEM;
+	}
+	cnt = dma_map_sg(&dma->pdev->dev, dst_sg, dst_cnt, DMA_FROM_DEVICE);
+	if (cnt == 0) {
+		dev_err(&dma->pdev->dev, "dma_map_sg dst failed, %d,%d\n",
+				dst_cnt, cnt);
+		return -ENOMEM;
+	}
+	sw = aes_alloc_desc(dma);
+	dev_trace(&dma->pdev->dev, "dev %p, sw %p, src %p/%d, dst %p/%d\n",
+			dma, sw, src_sg, src_cnt, dst_sg, dst_cnt);
+	sw->cb = cb;
+	sw->priv = priv;
+
+	dma_buf_sg_init(&sw->src_buf, src_sg, src_cnt, src_sz);
+	dma_buf_sg_init(&sw->dst_buf, dst_sg, dst_cnt, dst_sz);
+
+	return aes_desc_to_hw(dma, sw);
+}
+
+EXPORT_SYMBOL(aes_submit);
+
 static int aes_probe(struct pci_dev *pdev, 
 		const struct pci_device_id *id)
 {
@@ -890,6 +966,7 @@ static int aes_probe(struct pci_dev *pdev,
 	}
 
 	aes_self_test(dma);
+	_dma = dma;
 
 	return 0;
 
