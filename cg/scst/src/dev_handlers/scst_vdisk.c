@@ -368,7 +368,7 @@ static struct kobj_attribute vdev_usn_attr =
 static struct kobj_attribute vdev_zero_copy_attr =
 	__ATTR(zero_copy, S_IRUGO, vdev_zero_copy_show, NULL);
 static struct kobj_attribute vdev_aes_enable_attr =
-	__ATTR(aes_enable, S_IRUGO, vdev_aes_enable_show, vdev_aes_enable_store);
+	__ATTR(aes_enable, S_IWUSR|S_IRUGO, vdev_aes_enable_show, vdev_aes_enable_store);
 
 static struct kobj_attribute vcdrom_filename_attr =
 	__ATTR(filename, S_IRUGO|S_IWUSR, vdev_sysfs_filename_show,
