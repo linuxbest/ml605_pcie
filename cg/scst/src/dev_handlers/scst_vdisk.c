@@ -3728,10 +3728,12 @@ static void aes_cleanup(struct scst_aes_work *aes)
 	int i;
 	struct scatterlist *sg = aes->blockio_work->write ?
 		aes->dst_sg : aes->src_sg;
+	TRACE_ENTRY();
 	for (i = 0; i < aes->sg_cnt; i ++) {
 		__free_page(sg_page(sg));
 	}
 	kfree(aes);
+	TRACE_EXIT();
 }
 
 static void aes_write_work_fn(struct work_struct *work)
@@ -3744,6 +3746,8 @@ static void aes_write_work_fn(struct work_struct *work)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
 	struct blk_plug plug;
 #endif
+
+	TRACE_ENTRY();
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
 	blk_start_plug(&plug);
@@ -3763,6 +3767,7 @@ static void aes_write_work_fn(struct work_struct *work)
 #endif
 
 	blockio_check_finish(aes_work->blockio_work);
+	TRACE_EXIT();
 }
 
 static struct workqueue_struct *aes_write_wq;
@@ -3770,18 +3775,22 @@ static struct workqueue_struct *aes_write_wq;
 static void blockio_write_aes_cb(void *priv)
 {
 	struct scst_blockio_work *blockio_work = priv;
+	TRACE_ENTRY();
 	INIT_WORK(&blockio_work->aes_work->work, aes_write_work_fn);
 	queue_work(aes_write_wq, &blockio_work->aes_work->work);
+	TRACE_EXIT();
 }
 
 static void blockio_read_aes_cb(void *priv)
 {
 	struct scst_blockio_work *blockio_work = priv;
+	TRACE_ENTRY();
 	aes_cleanup(blockio_work->aes_work);
 	blockio_work->cmd->completed = 1;
 	blockio_work->cmd->scst_cmd_done(blockio_work->cmd,
 			SCST_CMD_STATE_DEFAULT, scst_estimate_context());
 	kmem_cache_free(blockio_work_cachep, blockio_work);
+	TRACE_EXIT();
 }
 
 static void blockio_aes_submit(struct scst_blockio_work *blockio_work)
@@ -3790,11 +3799,13 @@ static void blockio_aes_submit(struct scst_blockio_work *blockio_work)
 	uint32_t key[8] = {0}; /* TODO */
 	void (*cb)(void *priv);
 
+	TRACE_ENTRY();
 	cb = blockio_work->write ? blockio_write_aes_cb : blockio_read_aes_cb;
 
 	aes_submit(aes->src_sg, aes->sg_cnt, aes->sg_size,
 			aes->dst_sg, aes->sg_cnt, aes->sg_size,
 			cb, (void *)blockio_work, key);
+	TRACE_EXIT();
 }
 
 static void blockio_check_finish(struct scst_blockio_work *blockio_work)
@@ -3888,7 +3899,7 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 	struct bio *bio = NULL, *hbio = NULL, *tbio = NULL;
 	int need_new_bio;
 	struct scst_blockio_work *blockio_work;
-	struct scst_aes_work *aes_work;
+	struct scst_aes_work *aes_work = NULL;
 	int bios = 0;
 	gfp_t gfp_mask = scst_cmd_get_gfp_flags(cmd);
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
@@ -3918,17 +3929,20 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 	blockio_work->param = p;
 	blockio_work->write = write;
 
-	aes_work = kmalloc(gfp_mask, sizeof(*aes_work));
-	if (aes_work == NULL) {
-		PRINT_ERROR("Failed to create aes for data segment (cmd %p",
-				cmd);
-		goto out_no_bio;
+	if (virt_dev->aes) {
+		aes_work = kmalloc(gfp_mask, sizeof(*aes_work));
+		if (aes_work == NULL) {
+			PRINT_ERROR("Failed to create aes for data segment (cmd %p",
+					cmd);
+			goto out_no_bio;
+		}
+		aes_work->blockio_work = blockio_work;
+		blockio_work->aes_work = aes_work;
+		aes_work->sg_cnt = 0;
+		aes_work->sg_size = 0;
+		aes_work->q = q;
+		TRACE_DBG("aes_work %p, blockio_work %p", aes_work, blockio_work);
 	}
-	aes_work->blockio_work = blockio_work;
-	blockio_work->aes_work = aes_work;
-	aes_work->sg_cnt = 0;
-	aes_work->sg_size = 0;
-	aes_work->q = q;
 
 	if (q)
 		max_nr_vecs = min(bio_get_nr_vecs(bdev), BIO_MAX_PAGES);
@@ -4020,9 +4034,10 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 			}
 
 			bytes = min_t(unsigned int, len, PAGE_SIZE - off);
-			
-			if (write) {
+		
+			if (virt_dev->aes) 
 				ag = alloc_page(gfp_mask);
+			if (virt_dev->aes && write) {
 				rc = bio_add_page(bio, ag, bytes, off);
 			} else {
 				rc = bio_add_page(bio, pg, bytes, off);
@@ -4037,16 +4052,19 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 				continue;
 			}
 
-			if (write) {
-				sg_set_page(&aes_work->src_sg[aes_work->sg_cnt], pg, bytes, off);
-				sg_set_page(&aes_work->dst_sg[aes_work->sg_cnt], ag, bytes, off);
-			} else {
-				sg_set_page(&aes_work->src_sg[aes_work->sg_cnt], ag, bytes, off);
-				sg_set_page(&aes_work->dst_sg[aes_work->sg_cnt], pg, bytes, off);
+			if (virt_dev->aes) {
+				TRACE_DBG("aes_work %p, sg %d, ag %p, bytes %d, off %d",
+						aes_work, aes_work->sg_cnt, ag, bytes, off);
+				if (write) {
+					sg_set_page(&aes_work->src_sg[aes_work->sg_cnt], pg, bytes, off);
+					sg_set_page(&aes_work->dst_sg[aes_work->sg_cnt], ag, bytes, off);
+				} else {
+					sg_set_page(&aes_work->src_sg[aes_work->sg_cnt], ag, bytes, off);
+					sg_set_page(&aes_work->dst_sg[aes_work->sg_cnt], pg, bytes, off);
+				}
+				aes_work->sg_cnt ++;
+				aes_work->sg_size += bytes;
 			}
-
-			aes_work->sg_cnt ++;
-			aes_work->sg_size += bytes;
 
 			pg++;
 			thislen += bytes;
