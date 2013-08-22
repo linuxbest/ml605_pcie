@@ -25,6 +25,8 @@
 #include "xaxidma_hw.h"
 #include "xdebug.h"
 
+#include "aesdma.h"
+
 #define dev_trace(dev, fmt, arg...) \
 	if (dev) pr_debug("%s:%d " fmt, __func__, __LINE__, ##arg)
 
@@ -821,9 +823,8 @@ out:
 
 /* TODO only support one pcie device for now */
 static struct aes_dev *_dma;
-typedef void (*aes_cb_t)(void *priv);
 
-static int aes_submit(struct scatterlist *src_sg, int src_cnt, int src_sz,
+int aes_submit(struct scatterlist *src_sg, int src_cnt, int src_sz,
 		struct scatterlist *dst_sg, int dst_cnt, int dst_sz,
 		aes_cb_t cb, char *priv, uint32_t *key)
 {	
