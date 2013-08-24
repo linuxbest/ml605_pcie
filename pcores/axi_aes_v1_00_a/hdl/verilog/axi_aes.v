@@ -46,26 +46,26 @@
 `timescale 1 ps / 100 fs
 module axi_aes (/*AUTOARG*/
    // Outputs
-   s_axi_lite_wready, s_axi_lite_rvalid, s_axi_lite_rresp,
-   s_axi_lite_rdata, s_axi_lite_bvalid, s_axi_lite_bresp,
-   s_axi_lite_awready, s_axi_lite_arready, m_axis_mm2s_cntrl_tready,
+   s_axis_s2mm_sts_tvalid, s_axis_s2mm_sts_tlast,
+   s_axis_s2mm_sts_tkeep, s_axis_s2mm_sts_tdata, s_axi_lite_wready,
+   s_axi_lite_rvalid, s_axi_lite_rresp, s_axi_lite_rdata,
+   s_axi_lite_bvalid, s_axi_lite_bresp, s_axi_lite_awready,
+   s_axi_lite_arready, m_axis_mm2s_cntrl_tready, aes_sts_ready,
    m_axis_mm2s_tready, s_axis_s2mm_tdata, s_axis_s2mm_tkeep,
    s_axis_s2mm_tvalid, s_axis_s2mm_tlast, s_axis_s2mm_tuser,
-   s_axis_s2mm_tid, s_axis_s2mm_tdest, s_axis_s2mm_sts_tdata,
-   s_axis_s2mm_sts_tkeep, s_axis_s2mm_sts_tvalid,
-   s_axis_s2mm_sts_tlast, axi_intr,
+   s_axis_s2mm_tid, s_axis_s2mm_tdest, axi_intr,
    // Inputs
-   s_axi_lite_wvalid, s_axi_lite_wdata, s_axi_lite_rready,
-   s_axi_lite_bready, s_axi_lite_awvalid, s_axi_lite_awaddr,
-   s_axi_lite_arvalid, s_axi_lite_araddr, mm2s_cntrl_reset_out_n,
+   s_axis_s2mm_sts_tready, s_axi_lite_wvalid, s_axi_lite_wdata,
+   s_axi_lite_rready, s_axi_lite_bready, s_axi_lite_awvalid,
+   s_axi_lite_awaddr, s_axi_lite_arvalid, s_axi_lite_araddr,
+   s2mm_sts_reset_out_n, mm2s_cntrl_reset_out_n,
    m_axis_mm2s_cntrl_tvalid, m_axis_mm2s_cntrl_tlast,
    m_axis_mm2s_cntrl_tkeep, m_axis_mm2s_cntrl_tdata, s_axi_lite_aclk,
    m_axi_mm2s_aclk, m_axi_s2mm_aclk, axi_resetn,
    mm2s_prmry_reset_out_n, m_axis_mm2s_tdata, m_axis_mm2s_tkeep,
    m_axis_mm2s_tvalid, m_axis_mm2s_tlast, m_axis_mm2s_tuser,
    m_axis_mm2s_tid, m_axis_mm2s_tdest, s2mm_prmry_reset_out_n,
-   s_axis_s2mm_tready, s2mm_sts_reset_out_n, s_axis_s2mm_sts_tready,
-   s2mm_intr, mm2s_intr
+   s_axis_s2mm_tready, s2mm_intr, mm2s_intr
    );
    parameter C_FAMILY = "virtex6";
    parameter C_INSTANCE = "axi_aes_0";
@@ -86,6 +86,7 @@ module axi_aes (/*AUTOARG*/
    input		m_axis_mm2s_cntrl_tlast;// To mm2s_cntrl of mm2s_cntrl.v
    input		m_axis_mm2s_cntrl_tvalid;// To mm2s_cntrl of mm2s_cntrl.v
    input		mm2s_cntrl_reset_out_n;	// To mm2s_cntrl of mm2s_cntrl.v
+   input		s2mm_sts_reset_out_n;	// To aes_sts_fsm of aes_sts_fsm.v
    input [C_S_AXI_LITE_ADDR_WIDTH-1:0] s_axi_lite_araddr;// To axi_lite_slave of axi_lite_slave.v
    input		s_axi_lite_arvalid;	// To axi_lite_slave of axi_lite_slave.v
    input [C_S_AXI_LITE_ADDR_WIDTH-1:0] s_axi_lite_awaddr;// To axi_lite_slave of axi_lite_slave.v
@@ -94,10 +95,12 @@ module axi_aes (/*AUTOARG*/
    input		s_axi_lite_rready;	// To axi_lite_slave of axi_lite_slave.v
    input [C_S_AXI_LITE_DATA_WIDTH-1:0] s_axi_lite_wdata;// To axi_lite_slave of axi_lite_slave.v
    input		s_axi_lite_wvalid;	// To axi_lite_slave of axi_lite_slave.v
+   input		s_axis_s2mm_sts_tready;	// To aes_sts_fsm of aes_sts_fsm.v
    // End of automatics
 
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
+   output		aes_sts_ready;		// From aes_sts_fsm of aes_sts_fsm.v
    output		m_axis_mm2s_cntrl_tready;// From mm2s_cntrl of mm2s_cntrl.v
    output		s_axi_lite_arready;	// From axi_lite_slave of axi_lite_slave.v
    output		s_axi_lite_awready;	// From axi_lite_slave of axi_lite_slave.v
@@ -107,6 +110,10 @@ module axi_aes (/*AUTOARG*/
    output [1:0]		s_axi_lite_rresp;	// From axi_lite_slave of axi_lite_slave.v
    output		s_axi_lite_rvalid;	// From axi_lite_slave of axi_lite_slave.v
    output		s_axi_lite_wready;	// From axi_lite_slave of axi_lite_slave.v
+   output [C_S_AXIS_S2MM_STS_TDATA_WIDTH-1:0] s_axis_s2mm_sts_tdata;// From aes_sts_fsm of aes_sts_fsm.v
+   output [(C_S_AXIS_S2MM_STS_TDATA_WIDTH/8)-1:0] s_axis_s2mm_sts_tkeep;// From aes_sts_fsm of aes_sts_fsm.v
+   output		s_axis_s2mm_sts_tlast;	// From aes_sts_fsm of aes_sts_fsm.v
+   output		s_axis_s2mm_sts_tvalid;	// From aes_sts_fsm of aes_sts_fsm.v
    // End of automatics
 
    input s_axi_lite_aclk;
@@ -134,14 +141,6 @@ module axi_aes (/*AUTOARG*/
    output [4:0] 				   s_axis_s2mm_tid;
    output [4:0] 				   s_axis_s2mm_tdest;
    input 					   s_axis_s2mm_tready;
-   
-   input 					   s2mm_sts_reset_out_n;
-   output [C_S_AXIS_S2MM_STS_TDATA_WIDTH-1:0] 	   s_axis_s2mm_sts_tdata;
-   output [(C_S_AXIS_S2MM_STS_TDATA_WIDTH/8)-1:0]  s_axis_s2mm_sts_tkeep;
-   output 					   s_axis_s2mm_sts_tvalid;
-   output 					   s_axis_s2mm_sts_tlast;
-   input 					   s_axis_s2mm_sts_tready;
-
 
    input 					   s2mm_intr;
    input 					   mm2s_intr;
@@ -149,6 +148,15 @@ module axi_aes (/*AUTOARG*/
    /***************************************************************************/
    /*AUTOREG*/
 
+   /*AUTOWIRE*/
+   // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   wire [31:0]		aes_sts_dbg;		// From aes_sts_fsm of aes_sts_fsm.v
+   // End of automatics
+   
+   reg 						   aes_s2mm_sof;
+   reg 						   aes_s2mm_eof;
+   wire 					   aes_sts_ready;
+   
    axi_lite_slave # (/*AUTOINSTPARAM*/
 		     // Parameters
 		     .C_S_AXI_LITE_ADDR_WIDTH(C_S_AXI_LITE_ADDR_WIDTH),
@@ -173,7 +181,8 @@ module axi_aes (/*AUTOARG*/
 		   .s_axi_lite_bready	(s_axi_lite_bready),
 		   .s_axi_lite_arvalid	(s_axi_lite_arvalid),
 		   .s_axi_lite_araddr	(s_axi_lite_araddr[C_S_AXI_LITE_ADDR_WIDTH-1:0]),
-		   .s_axi_lite_rready	(s_axi_lite_rready));
+		   .s_axi_lite_rready	(s_axi_lite_rready),
+		   .aes_sts_dbg		(aes_sts_dbg[31:0]));
 
    mm2s_cntrl #(/*AUTOINSTPARAM*/
 		// Parameters
@@ -188,6 +197,26 @@ module axi_aes (/*AUTOARG*/
 		.m_axis_mm2s_cntrl_tvalid(m_axis_mm2s_cntrl_tvalid),
 		.m_axis_mm2s_cntrl_tlast(m_axis_mm2s_cntrl_tlast));
 
+   aes_sts_fsm #(/*AUTOINSTPARAM*/
+		 // Parameters
+		 .C_S_AXIS_S2MM_STS_TDATA_WIDTH(C_S_AXIS_S2MM_STS_TDATA_WIDTH),
+		 .C_FAMILY		(C_FAMILY))
+   aes_sts_fsm  (/*AUTOINST*/
+		 // Outputs
+		 .s_axis_s2mm_sts_tdata	(s_axis_s2mm_sts_tdata[C_S_AXIS_S2MM_STS_TDATA_WIDTH-1:0]),
+		 .s_axis_s2mm_sts_tkeep	(s_axis_s2mm_sts_tkeep[(C_S_AXIS_S2MM_STS_TDATA_WIDTH/8)-1:0]),
+		 .s_axis_s2mm_sts_tvalid(s_axis_s2mm_sts_tvalid),
+		 .s_axis_s2mm_sts_tlast	(s_axis_s2mm_sts_tlast),
+		 .aes_sts_ready		(aes_sts_ready),
+		 .aes_sts_dbg		(aes_sts_dbg[31:0]),
+		 // Inputs
+		 .m_axi_mm2s_aclk	(m_axi_mm2s_aclk),
+		 .m_axi_s2mm_aclk	(m_axi_s2mm_aclk),
+		 .s2mm_sts_reset_out_n	(s2mm_sts_reset_out_n),
+		 .s_axis_s2mm_sts_tready(s_axis_s2mm_sts_tready),
+		 .aes_s2mm_sof		(aes_s2mm_sof),
+		 .aes_s2mm_eof		(aes_s2mm_eof));
+   
    reg [127:0] 					   aes_din;
    reg [255:0] 					   aes_key;
    always @(posedge m_axi_mm2s_aclk)
@@ -208,11 +237,6 @@ module axi_aes (/*AUTOARG*/
 	     aes_din <= #1 m_axis_mm2s_tdata;
 	  end
      end // always @ (posedge m_axi_mm2s_aclk)
-   reg mm2s_handshake_d1;
-   always @(posedge m_axi_mm2s_aclk)
-     begin
-	mm2s_handshake_d1 <= #1 mm2s_handshake;
-     end
 
    wire [127:0] aes_out_i;
    wire [127:0] aes_out_w;
@@ -270,71 +294,8 @@ module axi_aes (/*AUTOARG*/
 	     .full     (),
 	     .empty    (aes_rd_empty),
 	     .prog_full(aes_rd_full));
-   assign m_axis_mm2s_tready = ~aes_rd_full;
+   assign m_axis_mm2s_tready = ~aes_rd_full & aes_sts_ready;
    assign s_axis_s2mm_tvalid = ~aes_rd_empty;
-   /***************************************************************************/
-   localparam C_STS_CNT = 4'h5;
-   reg [3:0] 				sts_cnt;
-   reg 					sts_wr_en;
-   reg 					sts_wr_last;
-   reg [31:0] 				sts_wr_din;
-   always @(posedge m_axi_mm2s_aclk)
-     begin
-	if (~mm2s_prmry_reset_out_n)
-	  begin
-	     sts_cnt <= #1 0;
-	  end
-	else if (s_axis_s2mm_tready & s_axis_s2mm_tvalid & s_axis_s2mm_tlast)
-	  begin
-	     sts_cnt <= #1 C_STS_CNT;
-	  end
-	else if (sts_wr_en && sts_cnt != 0)
-	  begin
-	     sts_cnt <= #1 sts_cnt - 1'b1;
-	  end
-     end // always @ (posedge m_axi_mm2s_aclk)
-   always @(posedge m_axi_mm2s_aclk)
-     begin
-	if (sts_cnt == C_STS_CNT && ~sts_wr_en)
-	  begin
-	     sts_wr_din <= #1 32'h5000_0000;
-	  end
-	else
-	  begin
-	     sts_wr_din <= #1 32'h0;
-	  end
-     end // always @ (posedge m_axi_mm2s_aclk)
-   always @(posedge m_axi_mm2s_aclk)
-     begin
-	sts_wr_en   <= #1 sts_cnt != 0;
-	sts_wr_last <= #1 sts_cnt == 1;
-     end
-   wire sts_rd_empty;
-
-   wire [C_S_AXIS_S2MM_STS_TDATA_WIDTH-1:0] s_axis_s2mm_sts_tdata;
-   wire 				    s_axis_s2mm_sts_tlast;
-   axi_async_fifo #(.C_FAMILY              (C_FAMILY),
-		    .C_FIFO_DEPTH          (256),
-		    .C_PROG_FULL_THRESH    (128),
-		    .C_DATA_WIDTH          (33),
-		    .C_PTR_WIDTH           (8),
-		    .C_MEMORY_TYPE         (1),
-		    .C_COMMON_CLOCK        (1),
-		    .C_IMPLEMENTATION_TYPE (0),
-		    .C_SYNCHRONIZER_STAGE  (2))
-   sts_fifo (.rst      (~mm2s_prmry_reset_out_n),
-	     .wr_clk   (m_axi_mm2s_aclk),
-	     .rd_clk   (m_axi_mm2s_aclk),
-	     .sync_clk (m_axi_mm2s_aclk),
-	     .din      ({sts_wr_last, sts_wr_din}),
-	     .wr_en    (sts_wr_en),
-	     .rd_en    (s_axis_s2mm_sts_tready & s_axis_s2mm_sts_tvalid),
-	     .dout     ({s_axis_s2mm_sts_tlast, s_axis_s2mm_sts_tdata}),
-	     .full     (),
-	     .empty    (sts_rd_empty),
-	     .prog_full());
-   assign s_axis_s2mm_sts_tvalid = ~sts_rd_empty;
-   assign s_axis_s2mm_sts_tkeep  = 4'hf;   
    /***************************************************************************/
    assign s_axis_s2mm_tdest = 0;
    assign s_axis_s2mm_tuser = 0;
@@ -344,6 +305,24 @@ module axi_aes (/*AUTOARG*/
    assign axi_intr = s2mm_intr | mm2s_intr;
    
    /***************************************************************************/
+   reg 					s2mm_sof;
+   always @(posedge m_axi_mm2s_aclk)
+     begin
+	if (~mm2s_prmry_reset_out_n || 
+	    (s_axis_s2mm_tready & s_axis_s2mm_tvalid & s_axis_s2mm_tlast))
+	  begin
+	     s2mm_sof <= #1 1'b1;
+	  end
+	else if (s2mm_sof & s_axis_s2mm_tready & s_axis_s2mm_tvalid)
+	  begin
+	     s2mm_sof <= #1 1'b0;
+	  end
+     end // always @ (posedge m_axi_mm2s_aclk)
+   always @(posedge m_axi_mm2s_aclk)
+     begin
+	aes_s2mm_sof <= #1 s_axis_s2mm_tready & s_axis_s2mm_tvalid & s2mm_sof;
+	aes_s2mm_eof <= #1 s_axis_s2mm_tready & s_axis_s2mm_tvalid & s_axis_s2mm_tlast;
+     end
 endmodule // axi_aes
 // 
 // axi_aes.v ends here

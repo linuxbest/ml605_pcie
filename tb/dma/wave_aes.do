@@ -1,5 +1,6 @@
 set binopt {-logic}
 set hexopt {-literal -hex}
+set ascopt {-literal -ascii}
 if { [info exists PathSeparator] } { set ps $PathSeparator } else { set ps "/" }
 if { ![info exists aespath] } { set aespath "/dma_tb_tb${ps}dut/axi_aes_0/axi_aes_0" }
 
@@ -73,6 +74,23 @@ if { ![info exists aespath] } { set aespath "/dma_tb_tb${ps}dut/axi_aes_0/axi_ae
  eval add wave -noupdate $binopt $aespath${ps}sfifo_o
  eval add wave -noupdate $binopt $aespath${ps}lfifo_o
  
+ eval add wave -noupdate -divider {"aes sts fms"}
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}m_axi_mm2s_aclk
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}s2mm_prmry_reset_out_n
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}state
+ eval add wave -noupdate $ascopt $aespath${ps}aes_sts_fsm${ps}state_ascii
+ 
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}aes_s2mm_sof
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}aes_s2mm_eof
+ 
+ eval add wave -noupdate $hexopt $aespath${ps}aes_sts_fsm${ps}sts_cnt
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}sts_eof_fi
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}sts_eof_fo
+ 
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}sts_wr_en
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}sts_wr_last
+ eval add wave -noupdate $hexopt $aespath${ps}aes_sts_fsm${ps}sts_wr_din
+ 
  eval add wave -noupdate -divider {"aes out fifo"}
  eval add wave -noupdate $binopt $aespath${ps}aes_fifo${ps}wr_clk
  eval add wave -noupdate $binopt $aespath${ps}aes_fifo${ps}rst
@@ -87,22 +105,18 @@ if { ![info exists aespath] } { set aespath "/dma_tb_tb${ps}dut/axi_aes_0/axi_ae
  eval add wave -noupdate $binopt $aespath${ps}aes_fifo${ps}prog_full
  
  eval add wave -noupdate -divider {"aes sts fifo"}
- eval add wave -noupdate $binopt $aespath${ps}sts_fifo${ps}wr_clk
- eval add wave -noupdate $binopt $aespath${ps}sts_fifo${ps}rst
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}sts_fifo${ps}wr_clk
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}sts_fifo${ps}rst
 
- eval add wave -noupdate $hexopt $aespath${ps}sts_fifo${ps}din
- eval add wave -noupdate $binopt $aespath${ps}sts_fifo${ps}wr_en
+ eval add wave -noupdate $hexopt $aespath${ps}aes_sts_fsm${ps}sts_fifo${ps}din
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}sts_fifo${ps}wr_en
  
- eval add wave -noupdate $binopt $aespath${ps}sts_fifo${ps}rd_en
- eval add wave -noupdate $hexopt $aespath${ps}sts_fifo${ps}dout
- eval add wave -noupdate $binopt $aespath${ps}sts_fifo${ps}full
- eval add wave -noupdate $binopt $aespath${ps}sts_fifo${ps}empty
- eval add wave -noupdate $binopt $aespath${ps}sts_fifo${ps}prog_full
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}sts_fifo${ps}rd_en
+ eval add wave -noupdate $hexopt $aespath${ps}aes_sts_fsm${ps}sts_fifo${ps}dout
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}sts_fifo${ps}full
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}sts_fifo${ps}empty
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}sts_fifo${ps}prog_full
 
- eval add wave -noupdate $hexopt $aespath${ps}sts_cnt
- eval add wave -noupdate $binopt $aespath${ps}sts_wr_en
- eval add wave -noupdate $hexopt $aespath${ps}sts_wr_din
- 
 if { ![info exists dmapath] } { set dmapath "/dma_tb_tb${ps}dut/axi_dma_0/axi_dma_0" }
 eval add wave -noupdate -divider {"axi dma data move"}
 eval add wave -noupdate $binopt $dmapath${ps}I_PRMRY_DATAMOVER${ps}m_axi_mm2s_aclk

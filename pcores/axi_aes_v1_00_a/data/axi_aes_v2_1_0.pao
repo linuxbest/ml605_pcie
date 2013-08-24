@@ -1,4 +1,5 @@
 lib axi_aes_v1_00_a axi_aes.v        verilog
+lib axi_aes_v1_00_a aes_sts_fsm.v    verilog
 lib axi_aes_v1_00_a mm2s_cntrl.v     verilog
 lib axi_aes_v1_00_a axi_lite_slave.v verilog
 lib axi_aes_v1_00_a axi_lite_write.v verilog

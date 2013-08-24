@@ -52,7 +52,8 @@ module axi_lite_slave (/*AUTOARG*/
    // Inputs
    s_axi_lite_aclk, axi_resetn, s_axi_lite_awvalid, s_axi_lite_awaddr,
    s_axi_lite_wvalid, s_axi_lite_wdata, s_axi_lite_bready,
-   s_axi_lite_arvalid, s_axi_lite_araddr, s_axi_lite_rready
+   s_axi_lite_arvalid, s_axi_lite_araddr, s_axi_lite_rready,
+   aes_sts_dbg
    );
    parameter C_S_AXI_LITE_ADDR_WIDTH = 10;
    parameter C_S_AXI_LITE_DATA_WIDTH = 32;
@@ -81,6 +82,7 @@ module axi_lite_slave (/*AUTOARG*/
    output [C_S_AXI_LITE_DATA_WIDTH-1:0] s_axi_lite_rdata;
    output [1:0] 			s_axi_lite_rresp;
 
+   input [31:0] 			aes_sts_dbg;
    /***************************************************************************/
    /*AUTOREG*/
    // Beginning of automatic regs (for this module's undeclared outputs)
@@ -217,9 +219,26 @@ module axi_lite_slave (/*AUTOARG*/
    always @(*)
      begin
 	rdata_i = 32'h0;
-	case (addr[2:1])
-	  2'h0: rdata_i = 32'hdead_beef;
-	  2'h1: rdata_i = 32'h0102_0304;
+	case (addr[6:2])
+	  5'h0: rdata_i = aes_sts_dbg;
+	  5'h1: rdata_i = 32'h1;
+	  5'h2: rdata_i = 32'h2;
+	  5'h3: rdata_i = 32'h3;
+
+	  5'h4: rdata_i = 32'h4;
+	  5'h5: rdata_i = 32'h5;
+	  5'h6: rdata_i = 32'h6;
+	  5'h7: rdata_i = 32'h7;
+
+	  5'h8: rdata_i = 32'h8;
+	  5'h9: rdata_i = 32'h9;
+	  5'ha: rdata_i = 32'ha;
+	  5'hb: rdata_i = 32'hb;
+
+	  5'hc: rdata_i = 32'hc;
+	  5'hd: rdata_i = 32'hd;
+	  5'he: rdata_i = 32'he;
+	  5'hf: rdata_i = 32'hdead_beef;
 	endcase
      end
 endmodule
