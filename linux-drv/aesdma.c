@@ -33,6 +33,7 @@
 #define DRIVER_NAME "AES10G"
 #define TX_BD_NUM 8192
 #define RX_BD_NUM 8192
+#define AES_TIMEOUT 10 * HZ
 
 static char *git_version = GITVERSION;
 
@@ -73,6 +74,9 @@ struct aes_dev {
 
 	struct list_head desc_head;
 	int desc_free;
+
+	struct timer_list timer;
+	struct list_head hw_head;
 };
 
 static struct kmem_cache *aes_desc_cache;
@@ -257,7 +261,25 @@ struct aes_desc {
 	dma_buf_t dst_buf;
 	void *priv;
 	void (*cb)(void *priv);
+	unsigned long deadline, jiffies;
+	struct list_head hw_entry;
 };
+
+static void ring_dump(XAxiDma_BdRing *bd_ring, char *prefix);
+
+static void aes_freeze(struct aes_dev *dma)
+{
+	ring_dump(XAxiDma_GetRxRing(&dma->AxiDma, 0), "RX");
+	ring_dump(XAxiDma_GetTxRing(&dma->AxiDma), "TX");
+}
+
+static void aes_timeout(unsigned long data)
+{
+	struct aes_dev *dma = (void *)data;
+
+	aes_freeze(dma);
+	del_timer(&dma->timer);
+}
 
 static void AxiDma_Stop(u32 base)
 {
@@ -309,6 +331,7 @@ static void aes_unmap_buf(struct aes_dev *dma, dma_buf_t *buf, int dir)
 		dma_unmap_sg(&dma->pdev->dev, buf->sg.sg, buf->sg.cnt, dir);
 		break;
 	}
+	dma_buf_clean(buf);
 }
 
 static void aes_free_desc(struct kref *kref)
@@ -319,6 +342,17 @@ static void aes_free_desc(struct kref *kref)
 
 	dev_trace(&dma->pdev->dev, "dev %p, sw %p, %d\n", 
 			dma, sw, dma->desc_free);
+
+	spin_lock_irqsave(&dma->hw_lock, flags);
+	if (!list_empty(&dma->hw_head)) {
+		struct aes_desc *next_sw = container_of(dma->hw_head.next, 
+				struct aes_desc, hw_entry);
+		if (time_before(dma->timer.expires, next_sw->deadline))
+			mod_timer(&dma->timer, next_sw->deadline);
+	} else {
+		del_timer(&dma->timer);
+	}
+	spin_unlock_irqrestore(&dma->hw_lock, flags);
 
 	aes_unmap_buf(dma, &sw->src_buf, DMA_TO_DEVICE);
 	aes_unmap_buf(dma, &sw->dst_buf, DMA_FROM_DEVICE);
@@ -332,10 +366,7 @@ static void aes_free_desc(struct kref *kref)
 	list_add_tail(&sw->desc_entry, &dma->desc_head);
 	dma->desc_free ++;
 	spin_unlock_irqrestore(&dma->hw_lock, flags);
-	
 }
-
-static void ring_dump(XAxiDma_BdRing *bd_ring, char *prefix);
 
 static int _aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
 	XAxiDma_Bd **bd, XAxiDma_BdRing *ring, char *name, struct aes_desc *sw)
@@ -387,7 +418,18 @@ static int _aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
 static int  aes_desc_to_hw(struct aes_dev *dma, struct aes_desc *sw)
 {
 	int res;
-	unsigned long flags;
+	unsigned long flags, expiry;
+
+	/* prepare the timeout handle */
+	sw->deadline = jiffies + AES_TIMEOUT;
+	sw->jiffies = jiffies;
+	expiry = round_jiffies_up(sw->deadline);
+	spin_lock_irqsave(&dma->hw_lock, flags);
+	if (!timer_pending(&dma->timer) || time_before(sw->deadline,
+				dma->timer.expires))
+		mod_timer(&dma->timer, expiry);
+	list_add_tail(&sw->hw_entry, &dma->hw_head);
+	spin_unlock_irqrestore(&dma->hw_lock, flags);
 
 	/* aes_desc_to_hw rx/tx */
 	spin_lock_irqsave(&rx_lock, flags);
@@ -425,8 +467,7 @@ static int aes_self_test(struct aes_dev *dma)
 	char *src, *dst;
 	dma_addr_t src_dma, dst_dma;
 	struct aes_desc *sw;
-	int res, i;
-	unsigned long flags;
+	int i;
 	struct completion done;
 
 	/* alloc test memory */
@@ -537,14 +578,18 @@ static int aes_desc_init(struct aes_dev *dma)
 		return res;
 
 	INIT_LIST_HEAD(&dma->desc_head);
+	INIT_LIST_HEAD(&dma->hw_head);
 	dma->desc_free = 0;
+
+	init_timer(&dma->timer);
+	dma->timer.data = (unsigned long)dma;
+	dma->timer.function = aes_timeout;
 
 	return 0;
 }
 
 static void ring_dump(XAxiDma_BdRing *bd_ring, char *prefix)
 {
-	unsigned long flags;
 	int num_bds = bd_ring->AllCnt;
 	u32 *cur_bd_ptr = (u32 *) bd_ring->FirstBdAddr;
 	int idx;
@@ -832,7 +877,6 @@ int aes_submit(struct scatterlist *src_sg, int src_cnt, int src_sz,
 	struct aes_desc *sw;
 	struct aes_dev *dma = _dma;
 	int cnt;
-	unsigned long flags;
 
 	pr_debug("%s: _dma %p\n", __func__, _dma);
 	if (_dma == NULL)
