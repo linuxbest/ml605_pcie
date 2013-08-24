@@ -183,7 +183,7 @@ module aes_sts_fsm (/*AUTOARG*/
 	     .full     (),
 	     .empty    (sts_rd_empty),
 	     .prog_full());
-   assign s_axis_s2mm_sts_tvalid = ~sts_rd_empty;
+   assign s_axis_s2mm_sts_tvalid = ~sts_rd_empty && state == S_DONE;
    assign s_axis_s2mm_sts_tkeep  = 4'hf;
 
    assign aes_sts_dbg[7:0] = state;
