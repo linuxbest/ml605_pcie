@@ -265,17 +265,24 @@ struct aes_desc {
 	struct list_head hw_entry;
 };
 
-static void ring_dump(XAxiDma_BdRing *bd_ring, char *prefix);
+static void aes_ring_dump(XAxiDma_BdRing *bd_ring, char *prefix);
 
 static void aes_freeze(struct aes_dev *dma)
 {
-	ring_dump(XAxiDma_GetRxRing(&dma->AxiDma, 0), "RX");
-	ring_dump(XAxiDma_GetTxRing(&dma->AxiDma), "TX");
+	struct aes_desc *sw;
+
+	list_for_each_entry(sw, &dma->hw_head, hw_entry) {
+		dev_info(&dma->pdev->dev, "sw %p", sw);
+	}
+	aes_ring_dump(XAxiDma_GetRxRing(&dma->AxiDma, 0), "RX");
+	aes_ring_dump(XAxiDma_GetTxRing(&dma->AxiDma), "TX");
 }
 
 static void aes_timeout(unsigned long data)
 {
 	struct aes_dev *dma = (void *)data;
+
+	dev_info(&dma->pdev->dev, "hw timeout.\n");
 
 	aes_freeze(dma);
 	del_timer(&dma->timer);
@@ -344,6 +351,7 @@ static void aes_free_desc(struct kref *kref)
 			dma, sw, dma->desc_free);
 
 	spin_lock_irqsave(&dma->hw_lock, flags);
+	list_del(&sw->hw_entry);
 	if (!list_empty(&dma->hw_head)) {
 		struct aes_desc *next_sw = container_of(dma->hw_head.next, 
 				struct aes_desc, hw_entry);
@@ -403,6 +411,7 @@ static int _aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
 		tcnt ++;
 		len = dma_buf_next(dbuf, &addr);
 		bd_ptr = XAxiDma_mBdRingNext(ring, bd_ptr);
+		kref_get(&sw->kref);
 	} while (len > 0);
 
 	if (first_bd_ptr == last_bd_ptr) 
@@ -410,7 +419,6 @@ static int _aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
 	else
 		XAxiDma_BdSetCtrl(last_bd_ptr, XAXIDMA_BD_CTRL_TXEOF_MASK);
 	XAxiDma_BdSetCtrl(first_bd_ptr, sts);
-	kref_get(&sw->kref);
 
 	return XAxiDma_BdRingToHw(ring, tcnt, first_bd_ptr, 0);
 }
@@ -425,8 +433,7 @@ static int  aes_desc_to_hw(struct aes_dev *dma, struct aes_desc *sw)
 	sw->jiffies = jiffies;
 	expiry = round_jiffies_up(sw->deadline);
 	spin_lock_irqsave(&dma->hw_lock, flags);
-	if (!timer_pending(&dma->timer) || time_before(sw->deadline,
-				dma->timer.expires))
+	if (!timer_pending(&dma->timer) || time_before(sw->deadline, dma->timer.expires))
 		mod_timer(&dma->timer, expiry);
 	list_add_tail(&sw->hw_entry, &dma->hw_head);
 	spin_unlock_irqrestore(&dma->hw_lock, flags);
@@ -507,8 +514,6 @@ static int aes_self_test(struct aes_dev *dma)
 			src, 256, 1);
 	print_hex_dump(KERN_DEBUG, "RX ", DUMP_PREFIX_ADDRESS, 16, 1,
 			dst, 256, 1);
-	ring_dump(XAxiDma_GetRxRing(&dma->AxiDma, 0), "RX");
-	ring_dump(XAxiDma_GetTxRing(&dma->AxiDma), "TX");
 
 	return 0;
 }
@@ -588,7 +593,7 @@ static int aes_desc_init(struct aes_dev *dma)
 	return 0;
 }
 
-static void ring_dump(XAxiDma_BdRing *bd_ring, char *prefix)
+static void aes_ring_dump(XAxiDma_BdRing *bd_ring, char *prefix)
 {
 	int num_bds = bd_ring->AllCnt;
 	u32 *cur_bd_ptr = (u32 *) bd_ring->FirstBdAddr;
@@ -638,6 +643,8 @@ static void ring_dump(XAxiDma_BdRing *bd_ring, char *prefix)
 	printk("Idx  NextBD  BuffAddr   CRTL    STATUS    APP0     APP1     APP2     APP3     APP4      ID\n");
 	printk("--- -------- -------- -------- -------- -------- -------- -------- -------- -------- --------\n");
 	for (idx = 0; idx < num_bds; idx++) {
+        if (cur_bd_ptr[XAXIDMA_BD_STS_OFFSET / sizeof(*cur_bd_ptr)] ||
+            cur_bd_ptr[XAXIDMA_BD_ID_OFFSET / sizeof(*cur_bd_ptr)])
 	printk("%3d %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x\n",
 		idx,
 		cur_bd_ptr[XAXIDMA_BD_NDESC_OFFSET / sizeof(*cur_bd_ptr)],
@@ -652,7 +659,7 @@ static void ring_dump(XAxiDma_BdRing *bd_ring, char *prefix)
 		cur_bd_ptr[XAXIDMA_BD_ID_OFFSET / sizeof(*cur_bd_ptr)]);
 		cur_bd_ptr += bd_ring->Separation / sizeof(int);
 	}
-	printk("--------------------------------------- Done ---------------------------------------\n");	
+	printk("--------------------------------------- Done ---------------------------------------\n");
 	/*spin_unlock_irqrestore(&ETH_spinlock, flags);*/
 }
 
@@ -778,8 +785,8 @@ static int aes_tx_isr(struct aes_dev *dma, u32 sts)
 	XAxiDma_mBdRingAckIrq(ring, sts);
 	if (sts & XAXIDMA_ERR_ALL_MASK) {
 		dev_err(&dma->pdev->dev, "TXIRQ error sts %08x\n", sts);
-		ring_dump(rx_ring, "RX");
-		ring_dump(ring,    "TX");
+		aes_ring_dump(rx_ring, "RX");
+		aes_ring_dump(ring,    "TX");
 		/* TODO */
 		return IRQ_HANDLED;
 	}
@@ -814,8 +821,8 @@ static int aes_rx_isr(struct aes_dev *dma, u32 sts)
 	XAxiDma_mBdRingAckIrq(ring, sts);
 	if (sts & XAXIDMA_ERR_ALL_MASK) {
 		dev_err(&dma->pdev->dev, "RXIRQ error sts %08x\n", sts);
-		ring_dump(ring,    "RX");
-		ring_dump(tx_ring, "TX");
+		aes_ring_dump(ring,    "RX");
+		aes_ring_dump(tx_ring, "TX");
 		/* TODO */
 		return IRQ_HANDLED;
 	}
