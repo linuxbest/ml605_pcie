@@ -3729,7 +3729,8 @@ static void aes_cleanup(struct scst_aes_work *aes)
 	struct scatterlist *sg = aes->blockio_work->write ?
 		aes->dst_sg : aes->src_sg;
 	TRACE_ENTRY();
-	for (i = 0; i < aes->sg_cnt; i ++) {
+	for (i = 0; i < aes->sg_cnt; i ++, sg++) {
+		TRACE_DBG("aes page %p, free", sg_page(sg));
 		__free_page(sg_page(sg));
 	}
 	kfree(aes);
@@ -3811,8 +3812,9 @@ static void blockio_aes_submit(struct scst_blockio_work *blockio_work)
 static void blockio_check_finish(struct scst_blockio_work *blockio_work)
 {
 	struct vdisk_cmd_params *p = blockio_work->param;
-	struct scst_cmd *cmd = p->cmd;
+	struct scst_cmd *cmd = blockio_work->cmd;
 	struct scst_vdisk_dev *virt_dev = cmd->dev->dh_priv;
+	TRACE_DBG("param %p, cmd %p, vdev %p", p, cmd, virt_dev);
 	/* Decrement the bios in processing, and if zero signal completion */
 	if (atomic_dec_and_test(&blockio_work->bios_inflight)) {
 		if (virt_dev->aes) {
@@ -3930,7 +3932,7 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 	blockio_work->write = write;
 
 	if (virt_dev->aes) {
-		aes_work = kmalloc(gfp_mask, sizeof(*aes_work));
+		aes_work = kzalloc(gfp_mask, sizeof(*aes_work));
 		if (aes_work == NULL) {
 			PRINT_ERROR("Failed to create aes for data segment (cmd %p",
 					cmd);
@@ -4035,8 +4037,10 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 
 			bytes = min_t(unsigned int, len, PAGE_SIZE - off);
 		
-			if (virt_dev->aes) 
+			if (virt_dev->aes) {
 				ag = alloc_page(gfp_mask);
+				TRACE_DBG("aes page %p, alloc", ag);
+			}
 			if (virt_dev->aes && write) {
 				rc = bio_add_page(bio, ag, bytes, off);
 			} else {
@@ -4047,8 +4051,10 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 				need_new_bio = 1;
 				lba_start0 += thislen >> block_shift;
 				thislen = 0;
-				if (ag)
+				if (ag) {
+					TRACE_DBG("aes page %p, free", ag);
 					__free_page(ag);
+				}
 				continue;
 			}
 
@@ -4077,6 +4083,11 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 
 		scst_put_sg_page(cmd, page, offset);
 		length = scst_get_sg_page_next(cmd, &page, &offset);
+	}
+
+	if (aes_work) {
+		sg_mark_end(&aes_work->src_sg[aes_work->sg_cnt]);
+		sg_mark_end(&aes_work->dst_sg[aes_work->sg_cnt]);
 	}
 
 	/* +1 to prevent erroneous too early command completion */

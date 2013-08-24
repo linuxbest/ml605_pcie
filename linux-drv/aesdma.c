@@ -370,7 +370,6 @@ static int _aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
 		XAxiDma_BdSetId(bd_ptr, (u32)sw);
 
 		tcnt ++;
-		kref_get(&sw->kref);
 		len = dma_buf_next(dbuf, &addr);
 		bd_ptr = XAxiDma_mBdRingNext(ring, bd_ptr);
 	} while (len > 0);
@@ -380,7 +379,8 @@ static int _aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
 	else
 		XAxiDma_BdSetCtrl(last_bd_ptr, XAXIDMA_BD_CTRL_TXEOF_MASK);
 	XAxiDma_BdSetCtrl(first_bd_ptr, sts);
-		
+	kref_get(&sw->kref);
+
 	return XAxiDma_BdRingToHw(ring, tcnt, first_bd_ptr, 0);
 }
 
@@ -492,6 +492,7 @@ static int aes_init_channel(struct aes_dev *dma, XAxiDma_BdRing *ring,
 
 	free_bd_cnt = XAxiDma_mBdRingGetFreeCnt(ring);
 	for (i = 0; i < free_bd_cnt; i ++) {
+		/* TODO */
 	}
 
 	return 0;
@@ -837,12 +838,14 @@ int aes_submit(struct scatterlist *src_sg, int src_cnt, int src_sz,
 	if (_dma == NULL)
 		return -ENODEV;
 
+	dev_trace(&dma->pdev->dev, "ssg %p, %d\n", src_sg, src_cnt);
 	cnt = dma_map_sg(&dma->pdev->dev, src_sg, src_cnt, DMA_TO_DEVICE);
 	if (cnt == 0) {
 		dev_err(&dma->pdev->dev, "dma_map_sg src failed, %d,%d\n",
 				src_cnt, cnt);
 		return -ENOMEM;
 	}
+	dev_trace(&dma->pdev->dev, "dsg %p, %d\n", dst_sg, dst_cnt);
 	cnt = dma_map_sg(&dma->pdev->dev, dst_sg, dst_cnt, DMA_FROM_DEVICE);
 	if (cnt == 0) {
 		dev_err(&dma->pdev->dev, "dma_map_sg dst failed, %d,%d\n",
