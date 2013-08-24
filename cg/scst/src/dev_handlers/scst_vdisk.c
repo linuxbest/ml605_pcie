@@ -3712,8 +3712,7 @@ struct scst_blockio_work {
 
 struct scst_aes_work {
 	struct scst_blockio_work *blockio_work;
-	struct scatterlist src_sg[256];     /* support 1MB */
-	struct scatterlist dst_sg[256];     /* support 1MB */
+	struct sg_table src_tbl, dst_tbl;
 	int sg_cnt, sg_size;
 	struct work_struct work;
 	
@@ -3727,12 +3726,14 @@ static void aes_cleanup(struct scst_aes_work *aes)
 {
 	int i;
 	struct scatterlist *sg = aes->blockio_work->write ?
-		aes->dst_sg : aes->src_sg;
+		aes->dst_tbl.sgl : aes->src_tbl.sgl;
 	TRACE_ENTRY();
-	for (i = 0; i < aes->sg_cnt; i ++, sg++) {
+	for (i = 0; i < aes->sg_cnt; i ++, sg = sg_next(sg)) {
 		TRACE_DBG("aes page %p, free", sg_page(sg));
 		__free_page(sg_page(sg));
 	}
+	sg_free_table(&aes->src_tbl);
+	sg_free_table(&aes->dst_tbl);
 	kfree(aes);
 	TRACE_EXIT();
 }
@@ -3803,8 +3804,8 @@ static void blockio_aes_submit(struct scst_blockio_work *blockio_work)
 	TRACE_ENTRY();
 	cb = blockio_work->write ? blockio_write_aes_cb : blockio_read_aes_cb;
 
-	aes_submit(aes->src_sg, aes->sg_cnt, aes->sg_size,
-			aes->dst_sg, aes->sg_cnt, aes->sg_size,
+	aes_submit(aes->src_tbl.sgl, aes->sg_cnt, aes->sg_size,
+			aes->dst_tbl.sgl, aes->sg_cnt, aes->sg_size,
 			cb, (void *)blockio_work, key);
 	TRACE_EXIT();
 }
@@ -3907,6 +3908,7 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)
 	struct blk_plug plug;
 #endif
+	struct scatterlist *ssg = NULL, *dsg = NULL;
 
 	TRACE_ENTRY();
 
@@ -3943,7 +3945,11 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 		aes_work->sg_cnt = 0;
 		aes_work->sg_size = 0;
 		aes_work->q = q;
+		sg_alloc_table(&aes_work->src_tbl, 256, gfp_mask);
+		sg_alloc_table(&aes_work->dst_tbl, 256, gfp_mask);
 		TRACE_DBG("aes_work %p, blockio_work %p", aes_work, blockio_work);
+		ssg = aes_work->src_tbl.sgl;
+		dsg = aes_work->dst_tbl.sgl;
 	}
 
 	if (q)
@@ -4062,12 +4068,14 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 				TRACE_DBG("aes_work %p, sg %d, ag %p, bytes %d, off %d",
 						aes_work, aes_work->sg_cnt, ag, bytes, off);
 				if (write) {
-					sg_set_page(&aes_work->src_sg[aes_work->sg_cnt], pg, bytes, off);
-					sg_set_page(&aes_work->dst_sg[aes_work->sg_cnt], ag, bytes, off);
+					sg_set_page(ssg, pg, bytes, off);
+					sg_set_page(dsg, ag, bytes, off);
 				} else {
-					sg_set_page(&aes_work->src_sg[aes_work->sg_cnt], ag, bytes, off);
-					sg_set_page(&aes_work->dst_sg[aes_work->sg_cnt], pg, bytes, off);
+					sg_set_page(ssg, ag, bytes, off);
+					sg_set_page(dsg, pg, bytes, off);
 				}
+				ssg = sg_next(ssg);
+				dsg = sg_next(dsg);
 				aes_work->sg_cnt ++;
 				aes_work->sg_size += bytes;
 			}
@@ -4084,10 +4092,9 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 		scst_put_sg_page(cmd, page, offset);
 		length = scst_get_sg_page_next(cmd, &page, &offset);
 	}
-
 	if (aes_work) {
-		sg_mark_end(&aes_work->src_sg[aes_work->sg_cnt]);
-		sg_mark_end(&aes_work->dst_sg[aes_work->sg_cnt]);
+		sg_mark_end(ssg);
+		sg_mark_end(dsg);
 	}
 
 	/* +1 to prevent erroneous too early command completion */
