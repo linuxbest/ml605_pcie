@@ -270,7 +270,18 @@ static void aes_ring_dump(XAxiDma_BdRing *bd_ring, char *prefix);
 static void aes_freeze(struct aes_dev *dma)
 {
 	struct aes_desc *sw;
+	int i;
 
+	for (i = 0; i < 32;  i += 4) {
+		printk("r%02d: %08x "
+                       "r%02d: %08x "
+                       "r%02d: %08x "
+                       "r%02d: %08x\n",
+		       i,   readl(dma->reg + 0x1000 + i*4),
+		       i+1, readl(dma->reg + 0x1000 + (i+1)*4),
+		       i+2, readl(dma->reg + 0x1000 + (i+2)*4),
+		       i+3, readl(dma->reg + 0x1000 + (i+3)*4));
+	}
 	list_for_each_entry(sw, &dma->hw_head, hw_entry) {
 		dev_info(&dma->pdev->dev, "sw %p", sw);
 	}
