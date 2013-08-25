@@ -75,7 +75,7 @@ struct aes_dev {
 	struct list_head desc_head;
 	int desc_free;
 
-	struct timer_list timer;
+	struct timer_list timer, poll_timer;
 	struct list_head hw_head;
 };
 
@@ -555,6 +555,8 @@ static int aes_init_channel(struct aes_dev *dma, XAxiDma_BdRing *ring,
 	return 0;
 }
 
+static void aes_poll_isr(unsigned long data);
+
 static int aes_desc_init(struct aes_dev *dma)
 {
 	int recvsize, sendsize;
@@ -600,6 +602,11 @@ static int aes_desc_init(struct aes_dev *dma)
 	init_timer(&dma->timer);
 	dma->timer.data = (unsigned long)dma;
 	dma->timer.function = aes_timeout;
+
+	/* TODO */
+	init_timer(&dma->poll_timer);
+	dma->poll_timer.data = (unsigned long)dma;
+	dma->poll_timer.function = aes_poll_isr;
 
 	return 0;
 }
@@ -803,10 +810,8 @@ static int aes_tx_isr(struct aes_dev *dma, u32 sts)
 	}
 
 	if (sts & (XAXIDMA_IRQ_DELAY_MASK | XAXIDMA_IRQ_IOC_MASK)) {
-		unsigned long flags;
 		struct list_head *cur_dma;
 
-		spin_lock_irqsave(&tx_bh_lock, flags);
 		list_for_each(cur_dma, &tx_head) {
 			if (cur_dma == &(dma->tx_entry))
 				break;
@@ -816,8 +821,6 @@ static int aes_tx_isr(struct aes_dev *dma, u32 sts)
 			XAxiDma_mBdRingIntDisable(ring, XAXIDMA_IRQ_ALL_MASK);
 			tasklet_schedule(&tx_bh);
 		}
-		
-		spin_unlock_irqrestore(&tx_bh_lock, flags);
 	}
 
 	return IRQ_HANDLED;
@@ -839,10 +842,8 @@ static int aes_rx_isr(struct aes_dev *dma, u32 sts)
 	}
 
 	if (sts & (XAXIDMA_IRQ_DELAY_MASK | XAXIDMA_IRQ_IOC_MASK)) {
-		unsigned long flags;
 		struct list_head *cur_dma;
 
-		spin_lock_irqsave(&rx_bh_lock, flags);
 		list_for_each(cur_dma, &rx_head) {
 			if (cur_dma == &(dma->rx_entry))
 				break;
@@ -852,8 +853,6 @@ static int aes_rx_isr(struct aes_dev *dma, u32 sts)
 			XAxiDma_mBdRingIntDisable(ring, XAXIDMA_IRQ_ALL_MASK);
 			tasklet_schedule(&rx_bh);
 		}
-		
-		spin_unlock_irqrestore(&rx_bh_lock, flags);
 	}
 
 	return IRQ_HANDLED;
@@ -865,24 +864,36 @@ static irqreturn_t aes_isr(int irq, void *dev_id)
 	XAxiDma_BdRing *RxRing, *TxRing;
 	u32 IrqStsTx, IrqStsRx;
 	irqreturn_t res = IRQ_NONE;
+	unsigned long flags;
 
 	RxRing = XAxiDma_GetRxRing(&dma->AxiDma, 0);
 	TxRing = XAxiDma_GetTxRing(&dma->AxiDma);
 	IrqStsTx = XAxiDma_ReadReg(TxRing->ChanBase, XAXIDMA_SR_OFFSET);
 	IrqStsRx = XAxiDma_ReadReg(RxRing->ChanBase, XAXIDMA_SR_OFFSET);
 
-	dev_trace(&dma->pdev->dev, "IrqSts: %08x/%08x.\n",IrqStsTx, IrqStsRx);
 	if (((IrqStsTx | IrqStsRx) & XAXIDMA_IRQ_ALL_MASK) == 0) 
 		goto out;
+	dev_trace(&dma->pdev->dev, "IrqSts: %08x/%08x.\n",IrqStsTx, IrqStsRx);
 
-	if (IrqStsTx & XAXIDMA_IRQ_ALL_MASK) 
+	spin_lock_irqsave(&tx_bh_lock, flags);
+	if (IrqStsTx & XAXIDMA_IRQ_ALL_MASK)
 		res = aes_tx_isr(dma, IrqStsTx);
+	spin_unlock_irqrestore(&tx_bh_lock, flags);
 
-	if (IrqStsRx & XAXIDMA_IRQ_ALL_MASK) 
+	spin_lock_irqsave(&rx_bh_lock, flags);
+	if (IrqStsRx & XAXIDMA_IRQ_ALL_MASK)
 		res = aes_rx_isr(dma, IrqStsRx);
+	spin_unlock_irqrestore(&rx_bh_lock, flags);
 
 out:
 	return res;
+}
+
+static void aes_poll_isr(unsigned long data)
+{
+	struct aes_dev *dma = (void *)data;
+	aes_isr(0, dma);
+	mod_timer(&dma->poll_timer, jiffies + (1 * HZ));
 }
 
 /* TODO only support one pcie device for now */
@@ -1033,6 +1044,9 @@ static int aes_probe(struct pci_dev *pdev,
 
 	aes_self_test(dma);
 	_dma = dma;
+
+	/* TODO */
+	mod_timer(&dma->poll_timer, jiffies + (1 * HZ));
 
 	return 0;
 

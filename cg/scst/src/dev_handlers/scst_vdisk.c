@@ -4047,7 +4047,7 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 				ag = alloc_page(gfp_mask);
 				TRACE_DBG("aes page %p, alloc", ag);
 			}
-			if (virt_dev->aes && write) {
+			if (virt_dev->aes) {
 				rc = bio_add_page(bio, ag, bytes, off);
 			} else {
 				rc = bio_add_page(bio, pg, bytes, off);
