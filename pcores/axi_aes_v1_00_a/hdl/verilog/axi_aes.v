@@ -294,7 +294,7 @@ module axi_aes (/*AUTOARG*/
 	     .full     (),
 	     .empty    (aes_rd_empty),
 	     .prog_full(aes_rd_full));
-   assign m_axis_mm2s_tready = ~aes_rd_full & aes_sts_ready;
+   assign m_axis_mm2s_tready = ~aes_rd_full;
    assign s_axis_s2mm_tvalid = ~aes_rd_empty;
    /***************************************************************************/
    assign s_axis_s2mm_tdest = 0;
