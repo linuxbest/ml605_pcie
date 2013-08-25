@@ -721,7 +721,7 @@ static void tx_handle_bh(unsigned long p)
 
 				XAxiDma_BdSetId(BdCurPtr, NULL);
 				BdCurPtr = XAxiDma_mBdRingNext(ring, BdCurPtr);
-				bd_processed = 0;
+				bd_processed --;
 			} while (bd_processed > 0);
 
 			res = XAxiDma_BdRingFree(ring, bd_processed_save, BdPtr);
@@ -769,7 +769,7 @@ static void rx_handle_bh(unsigned long p)
 
 				XAxiDma_BdSetId(BdCurPtr, NULL);
 				BdCurPtr = XAxiDma_mBdRingNext(ring, BdCurPtr);
-				bd_processed = 0;
+				bd_processed --;
 			} while (bd_processed > 0);
 
 			res = XAxiDma_BdRingFree(ring, bd_processed_save, BdPtr);
