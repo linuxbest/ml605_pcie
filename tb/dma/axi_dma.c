@@ -84,8 +84,8 @@ int osChip_init(uint32_t base)
 	rsg = (struct sg *)(base0 + 0x1040);
 	memset(rsg, 0, 0x40);
 	rsg->nextdesc = 0x1080;
-	rsg->buffer   = 0x100000;
-	rsg->ctrl     = 512;       /* LEN */
+	rsg->buffer   = 0x200000;
+	rsg->ctrl     = 4096;       /* LEN */
 	rsg->ctrl    |= 0x08000000; /* SOF */
 	rsg->ctrl    |= 0x04000000; /* EOF */
 
