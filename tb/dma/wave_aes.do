@@ -73,6 +73,7 @@ if { ![info exists aespath] } { set aespath "/dma_tb_tb${ps}dut/axi_aes_0/axi_ae
  eval add wave -noupdate $hexopt $aespath${ps}aes_out
  eval add wave -noupdate $binopt $aespath${ps}sfifo_o
  eval add wave -noupdate $binopt $aespath${ps}lfifo_o
+ eval add wave -noupdate $binopt $aespath${ps}s2mm_sof
  
  eval add wave -noupdate -divider {"aes sts fms"}
  eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}m_axi_mm2s_aclk
@@ -80,12 +81,12 @@ if { ![info exists aespath] } { set aespath "/dma_tb_tb${ps}dut/axi_aes_0/axi_ae
  eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}state
  eval add wave -noupdate $ascopt $aespath${ps}aes_sts_fsm${ps}state_ascii
  
- eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}aes_s2mm_sof
- eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}aes_s2mm_eof
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}aes_s2mm_eof_empty
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}aes_s2mm_eof_full
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}aes_s2mm_eof_rd
  
  eval add wave -noupdate $hexopt $aespath${ps}aes_sts_fsm${ps}sts_cnt
  eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}sts_eof_fi
- eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}sts_eof_fo
  
  eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}sts_wr_en
  eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}sts_wr_last

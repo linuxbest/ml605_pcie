@@ -48,10 +48,10 @@ module aes_sts_fsm (/*AUTOARG*/
    // Outputs
    s_axis_s2mm_sts_tdata, s_axis_s2mm_sts_tkeep,
    s_axis_s2mm_sts_tvalid, s_axis_s2mm_sts_tlast, aes_sts_ready,
-   aes_sts_dbg,
+   aes_s2mm_eof_rd, aes_sts_dbg,
    // Inputs
    m_axi_mm2s_aclk, m_axi_s2mm_aclk, s2mm_sts_reset_out_n,
-   s_axis_s2mm_sts_tready, aes_s2mm_sof, aes_s2mm_eof
+   s_axis_s2mm_sts_tready, aes_s2mm_eof_empty, aes_s2mm_eof_full
    );
    parameter C_S_AXIS_S2MM_STS_TDATA_WIDTH = 32;
    parameter C_FAMILY = "virtex6";
@@ -67,9 +67,10 @@ module aes_sts_fsm (/*AUTOARG*/
    input 					   s_axis_s2mm_sts_tready;
 
    output 					   aes_sts_ready;
-   input 					   aes_s2mm_sof;
-   input 					   aes_s2mm_eof;
-
+   input 					   aes_s2mm_eof_empty;
+   input 					   aes_s2mm_eof_full;
+   output 					   aes_s2mm_eof_rd;
+   
    output [31:0] 				   aes_sts_dbg;
    /***************************************************************************/
    /*AUTOREG*/
@@ -105,11 +106,11 @@ module aes_sts_fsm (/*AUTOARG*/
      begin
 	state_ns = state;
 	case (state)
-	  S_IDLE: if (aes_s2mm_sof)
+	  S_IDLE: if (~aes_s2mm_eof_empty)
 	    begin
 	       state_ns = S_DATA;
 	    end
-	  S_DATA: if (aes_s2mm_eof)
+	  S_DATA:
 	    begin
 	       state_ns = S_EOF;
 	    end
@@ -142,7 +143,7 @@ module aes_sts_fsm (/*AUTOARG*/
    assign sts_eof_fi = sts_cnt == 0;
    always @(posedge m_axi_mm2s_aclk)
      begin
-	if (state == S_DATA && aes_s2mm_eof)
+	if (state == S_DATA)
 	  begin
 	     sts_wr_din <= #1 32'h5000_0000;
 	  end
@@ -154,10 +155,10 @@ module aes_sts_fsm (/*AUTOARG*/
    wire sts_wr_full;
    always @(posedge m_axi_mm2s_aclk)
      begin
-	sts_wr_en   <= #1 (state == S_DATA && aes_s2mm_eof) | (state == S_EOF);
-	sts_wr_last <= #1 (state == S_EOF  && sts_eof_fi);
-	aes_sts_ready<= #1 ~sts_wr_full;
+	sts_wr_en   <= #1 (state == S_DATA) | (state == S_EOF);
+	sts_wr_last <= #1 (state == S_EOF && sts_eof_fi);
      end
+   assign aes_s2mm_eof_rd = sts_wr_last;
    wire sts_rd_empty;
    axi_async_fifo #(.C_FAMILY              (C_FAMILY),
 		    .C_FIFO_DEPTH          (256),

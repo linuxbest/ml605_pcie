@@ -51,9 +51,9 @@ module axi_aes (/*AUTOARG*/
    s_axi_lite_rvalid, s_axi_lite_rresp, s_axi_lite_rdata,
    s_axi_lite_bvalid, s_axi_lite_bresp, s_axi_lite_awready,
    s_axi_lite_arready, m_axis_mm2s_cntrl_tready, aes_sts_ready,
-   m_axis_mm2s_tready, s_axis_s2mm_tdata, s_axis_s2mm_tkeep,
-   s_axis_s2mm_tvalid, s_axis_s2mm_tlast, s_axis_s2mm_tuser,
-   s_axis_s2mm_tid, s_axis_s2mm_tdest, axi_intr,
+   aes_s2mm_eof_rd, m_axis_mm2s_tready, s_axis_s2mm_tdata,
+   s_axis_s2mm_tkeep, s_axis_s2mm_tvalid, s_axis_s2mm_tlast,
+   s_axis_s2mm_tuser, s_axis_s2mm_tid, s_axis_s2mm_tdest, axi_intr,
    // Inputs
    s_axis_s2mm_sts_tready, s_axi_lite_wvalid, s_axi_lite_wdata,
    s_axi_lite_rready, s_axi_lite_bready, s_axi_lite_awvalid,
@@ -100,6 +100,7 @@ module axi_aes (/*AUTOARG*/
 
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
+   output		aes_s2mm_eof_rd;	// From aes_sts_fsm of aes_sts_fsm.v
    output		aes_sts_ready;		// From aes_sts_fsm of aes_sts_fsm.v
    output		m_axis_mm2s_cntrl_tready;// From mm2s_cntrl of mm2s_cntrl.v
    output		s_axi_lite_arready;	// From axi_lite_slave of axi_lite_slave.v
@@ -155,7 +156,10 @@ module axi_aes (/*AUTOARG*/
    
    reg 						   aes_s2mm_sof;
    reg 						   aes_s2mm_eof;
-   wire 					   aes_sts_ready;
+   
+   wire 					   aes_s2mm_eof_empty;
+   wire 					   aes_s2mm_eof_full;
+   wire 					   aes_s2mm_eof_rd;
    
    axi_lite_slave # (/*AUTOINSTPARAM*/
 		     // Parameters
@@ -208,14 +212,15 @@ module axi_aes (/*AUTOARG*/
 		 .s_axis_s2mm_sts_tvalid(s_axis_s2mm_sts_tvalid),
 		 .s_axis_s2mm_sts_tlast	(s_axis_s2mm_sts_tlast),
 		 .aes_sts_ready		(aes_sts_ready),
+		 .aes_s2mm_eof_rd	(aes_s2mm_eof_rd),
 		 .aes_sts_dbg		(aes_sts_dbg[31:0]),
 		 // Inputs
 		 .m_axi_mm2s_aclk	(m_axi_mm2s_aclk),
 		 .m_axi_s2mm_aclk	(m_axi_s2mm_aclk),
 		 .s2mm_sts_reset_out_n	(s2mm_sts_reset_out_n),
 		 .s_axis_s2mm_sts_tready(s_axis_s2mm_sts_tready),
-		 .aes_s2mm_sof		(aes_s2mm_sof),
-		 .aes_s2mm_eof		(aes_s2mm_eof));
+		 .aes_s2mm_eof_empty	(aes_s2mm_eof_empty),
+		 .aes_s2mm_eof_full	(aes_s2mm_eof_full));
    
    reg [127:0] 					   aes_din;
    reg [255:0] 					   aes_key;
@@ -294,7 +299,7 @@ module axi_aes (/*AUTOARG*/
 	     .full     (),
 	     .empty    (aes_rd_empty),
 	     .prog_full(aes_rd_full));
-   assign m_axis_mm2s_tready = ~aes_rd_full;
+   assign m_axis_mm2s_tready = ~aes_rd_full && ~aes_s2mm_eof_full;
    assign s_axis_s2mm_tvalid = ~aes_rd_empty;
    /***************************************************************************/
    assign s_axis_s2mm_tdest = 0;
@@ -303,7 +308,6 @@ module axi_aes (/*AUTOARG*/
    assign s_axis_s2mm_tkeep = 16'hffff;
 
    assign axi_intr = s2mm_intr | mm2s_intr;
-   
    /***************************************************************************/
    reg 					s2mm_sof;
    always @(posedge m_axi_mm2s_aclk)
@@ -323,6 +327,26 @@ module axi_aes (/*AUTOARG*/
 	aes_s2mm_sof <= #1 s_axis_s2mm_tready & s_axis_s2mm_tvalid & s2mm_sof;
 	aes_s2mm_eof <= #1 s_axis_s2mm_tready & s_axis_s2mm_tvalid & s_axis_s2mm_tlast;
      end
+   axi_async_fifo #(.C_FAMILY              (C_FAMILY),
+		    .C_FIFO_DEPTH          (256),
+		    .C_PROG_FULL_THRESH    (128),
+		    .C_DATA_WIDTH          (9),
+		    .C_PTR_WIDTH           (8),
+		    .C_MEMORY_TYPE         (1),
+		    .C_COMMON_CLOCK        (1),
+		    .C_IMPLEMENTATION_TYPE (0),
+		    .C_SYNCHRONIZER_STAGE  (2))
+   eof_fifo (.rst      (~mm2s_prmry_reset_out_n),
+	     .wr_clk   (m_axi_mm2s_aclk),
+	     .rd_clk   (m_axi_mm2s_aclk),
+	     .sync_clk (m_axi_mm2s_aclk),
+	     .din      (9'h0),
+	     .wr_en    (aes_s2mm_eof),
+	     .rd_en    (aes_s2mm_eof_rd),
+	     .dout     (),
+	     .full     (),
+	     .empty    (aes_s2mm_eof_empty),
+	     .prog_full(aes_s2mm_eof_full));
 endmodule // axi_aes
 // 
 // axi_aes.v ends here
