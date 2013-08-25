@@ -169,7 +169,7 @@ module aes_sts_fsm (/*AUTOARG*/
 		    .C_COMMON_CLOCK        (1),
 		    .C_IMPLEMENTATION_TYPE (0),
 		    .C_SYNCHRONIZER_STAGE  (2))
-   sts_fifo (.rst      (~s2mm_prmry_reset_out_n),
+   sts_fifo (.rst      (~s2mm_sts_reset_out_n),
 	     .wr_clk   (m_axi_mm2s_aclk),
 	     .rd_clk   (m_axi_mm2s_aclk),
 	     .sync_clk (m_axi_mm2s_aclk),
