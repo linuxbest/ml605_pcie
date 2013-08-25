@@ -53,7 +53,7 @@ module axi_aes (/*AUTOARG*/
    s_axi_lite_rvalid, s_axi_lite_rresp, s_axi_lite_rdata,
    s_axi_lite_bvalid, s_axi_lite_bresp, s_axi_lite_awready,
    s_axi_lite_arready, m_axis_mm2s_tready, m_axis_mm2s_cntrl_tready,
-   aes_sts_ready, axi_intr,
+   axi_intr,
    // Inputs
    s_axis_s2mm_tready, s_axis_s2mm_sts_tready, s_axi_lite_wvalid,
    s_axi_lite_wdata, s_axi_lite_rready, s_axi_lite_bready,
@@ -109,7 +109,6 @@ module axi_aes (/*AUTOARG*/
 
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
-   output		aes_sts_ready;		// From aes_sts_fsm of aes_sts_fsm.v
    output		m_axis_mm2s_cntrl_tready;// From mm2s_cntrl of mm2s_cntrl.v
    output		m_axis_mm2s_tready;	// From aes_mm2s of aes_mm2s.v
    output		s_axi_lite_arready;	// From axi_lite_slave of axi_lite_slave.v
@@ -202,7 +201,6 @@ module axi_aes (/*AUTOARG*/
 		 .s_axis_s2mm_sts_tkeep	(s_axis_s2mm_sts_tkeep[(C_S_AXIS_S2MM_STS_TDATA_WIDTH/8)-1:0]),
 		 .s_axis_s2mm_sts_tvalid(s_axis_s2mm_sts_tvalid),
 		 .s_axis_s2mm_sts_tlast	(s_axis_s2mm_sts_tlast),
-		 .aes_sts_ready		(aes_sts_ready),
 		 .aes_s2mm_eof_rd	(aes_s2mm_eof_rd),
 		 .aes_sts_dbg		(aes_sts_dbg[31:0]),
 		 // Inputs

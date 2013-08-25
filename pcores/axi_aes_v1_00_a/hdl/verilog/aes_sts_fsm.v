@@ -47,8 +47,8 @@
 module aes_sts_fsm (/*AUTOARG*/
    // Outputs
    s_axis_s2mm_sts_tdata, s_axis_s2mm_sts_tkeep,
-   s_axis_s2mm_sts_tvalid, s_axis_s2mm_sts_tlast, aes_sts_ready,
-   aes_s2mm_eof_rd, aes_sts_dbg,
+   s_axis_s2mm_sts_tvalid, s_axis_s2mm_sts_tlast, aes_s2mm_eof_rd,
+   aes_sts_dbg,
    // Inputs
    m_axi_mm2s_aclk, m_axi_s2mm_aclk, s2mm_sts_reset_out_n,
    s_axis_s2mm_sts_tready, aes_s2mm_eof_empty, aes_s2mm_eof_full
@@ -66,7 +66,6 @@ module aes_sts_fsm (/*AUTOARG*/
    output 					   s_axis_s2mm_sts_tlast;
    input 					   s_axis_s2mm_sts_tready;
 
-   output 					   aes_sts_ready;
    input 					   aes_s2mm_eof_empty;
    input 					   aes_s2mm_eof_full;
    output 					   aes_s2mm_eof_rd;
@@ -74,9 +73,6 @@ module aes_sts_fsm (/*AUTOARG*/
    output [31:0] 				   aes_sts_dbg;
    /***************************************************************************/
    /*AUTOREG*/
-   // Beginning of automatic regs (for this module's undeclared outputs)
-   reg			aes_sts_ready;
-   // End of automatics
 
 
    wire [C_S_AXIS_S2MM_STS_TDATA_WIDTH-1:0] s_axis_s2mm_sts_tdata;
