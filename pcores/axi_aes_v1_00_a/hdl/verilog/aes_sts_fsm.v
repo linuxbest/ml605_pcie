@@ -101,7 +101,6 @@ module aes_sts_fsm (/*AUTOARG*/
 	  end
      end // always @ (posedge m_axi_mm2s_aclk)
    wire sts_eof_fi;
-   reg 	sts_eof_fo;
    always @(*)
      begin
 	state_ns = state;
@@ -118,7 +117,7 @@ module aes_sts_fsm (/*AUTOARG*/
 	    begin
 	       state_ns = S_DONE;
 	    end
-	  S_DONE: if (sts_eof_fo)
+	  S_DONE:
 	    begin
 	       state_ns = S_IDLE;
 	    end
@@ -152,15 +151,12 @@ module aes_sts_fsm (/*AUTOARG*/
 	     sts_wr_din <= #1 32'h0;
 	  end
      end // always @ (posedge m_axi_mm2s_aclk)
+   wire sts_wr_full;
    always @(posedge m_axi_mm2s_aclk)
      begin
 	sts_wr_en   <= #1 (state == S_DATA && aes_s2mm_eof) | (state == S_EOF);
 	sts_wr_last <= #1 (state == S_EOF  && sts_eof_fi);
-	aes_sts_ready<= #1 state == S_IDLE || state == S_DATA;
-	sts_eof_fo  <= #1 (state == S_DONE &&
-			   s_axis_s2mm_sts_tvalid &&
-			   s_axis_s2mm_sts_tready &&
-			   s_axis_s2mm_sts_tlast);
+	aes_sts_ready<= #1 ~sts_wr_full;
      end
    wire sts_rd_empty;
    axi_async_fifo #(.C_FAMILY              (C_FAMILY),
@@ -182,8 +178,8 @@ module aes_sts_fsm (/*AUTOARG*/
 	     .dout     ({s_axis_s2mm_sts_tlast,  s_axis_s2mm_sts_tdata}),
 	     .full     (),
 	     .empty    (sts_rd_empty),
-	     .prog_full());
-   assign s_axis_s2mm_sts_tvalid = ~sts_rd_empty && state == S_DONE;
+	     .prog_full(sts_wr_full));
+   assign s_axis_s2mm_sts_tvalid = ~sts_rd_empty;
    assign s_axis_s2mm_sts_tkeep  = 4'hf;
 
    assign aes_sts_dbg[7:0] = state;
