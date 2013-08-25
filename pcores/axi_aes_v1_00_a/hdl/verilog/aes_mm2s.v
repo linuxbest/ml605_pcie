@@ -95,24 +95,27 @@ module aes_mm2s(/*AUTOARG*/
    /*AUTOREG*/
 
    reg [127:0] 					   aes_din;
-   reg [255:0] 					   aes_key;
+   reg 						   aes_din_valid;
+   reg [31:0] 					   aes_key;
+   wire 					   mm2s_handshake;
    always @(posedge m_axi_mm2s_aclk)
      begin
-	aes_key <= #1 256'h00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000;
-     end
-
-   wire mm2s_handshake;
-   assign mm2s_handshake = m_axis_mm2s_tvalid && m_axis_mm2s_tready;
-   always @(posedge m_axi_mm2s_aclk)
-     begin
-	if (~mm2s_prmry_reset_out_n)
+	if (~mm2s_prmry_reset_out_n ||
+	    (mm2s_handshake && m_axis_mm2s_tlast))
 	  begin
-	     aes_din <= #1 128'h0;
+	     aes_key <= #1 0;
 	  end
 	else if (mm2s_handshake)
 	  begin
-	     aes_din <= #1 m_axis_mm2s_tdata;
+	     aes_key <= #1 aes_key + 1'b1;
 	  end
+     end
+
+   assign mm2s_handshake = m_axis_mm2s_tvalid && m_axis_mm2s_tready;
+   always @(posedge m_axi_mm2s_aclk)
+     begin
+	aes_din       <= #1 m_axis_mm2s_tdata;
+	aes_din_valid <= #1 mm2s_handshake;
      end // always @ (posedge m_axi_mm2s_aclk)
 
    wire [127:0] aes_din_i;
@@ -124,18 +127,18 @@ module aes_mm2s(/*AUTOARG*/
 	aes_out <= #1 aes_out_w;
      end
    aes_256 aes_256(.clk  (m_axi_mm2s_aclk),
-		   .state(aes_din_i),
-		   .key  (aes_key),
+		   .state({128'h0, aes_key}),
+		   .key  (256'h0),
 		   .out  (aes_out_i));
    genvar i;
    generate
       for (i = 0; i < 128; i = i + 8) begin: swap_aes_out
 	 assign aes_out_w[127-i:120-i] = aes_out_i[i+7:i];
-	 assign aes_din_i[127-i:120-i] = aes_din[i+7:i];
       end
    endgenerate
+   assign aes_din_i = aes_din;
    
-   localparam C_SNUM = 29;
+   localparam C_SNUM = 28;
    reg [C_SNUM:0] sfifo_r;
    reg [C_SNUM:0] lfifo_r;
    reg sfifo_o;
@@ -149,10 +152,43 @@ module aes_mm2s(/*AUTOARG*/
 	lfifo_o <= #1  lfifo_r[C_SNUM];
      end
 
+   wire din_rd_last;
+   wire [127:0] din_rd_data;
+   axi_async_fifo #(.C_FAMILY              (C_FAMILY),
+		    .C_FIFO_DEPTH          (256),
+		    .C_PROG_FULL_THRESH    (128),
+		    .C_DATA_WIDTH          (129),
+		    .C_PTR_WIDTH           (8),
+		    .C_MEMORY_TYPE         (1),
+		    .C_COMMON_CLOCK        (1),
+		    .C_IMPLEMENTATION_TYPE (0),
+		    .C_SYNCHRONIZER_STAGE  (2))
+   din_fifo (.rst      (~mm2s_prmry_reset_out_n),
+	     .wr_clk   (m_axi_mm2s_aclk),
+	     .rd_clk   (m_axi_mm2s_aclk),
+	     .sync_clk (m_axi_mm2s_aclk),
+	     .din      ({m_axis_mm2s_tlast, aes_din_i}),
+	     .wr_en    (aes_din_valid),
+	     .rd_en    (sfifo_o),
+	     .dout     ({din_rd_last, din_rd_data}),
+	     .full     (),
+	     .empty    (),
+	     .prog_full());
+
+   reg 		lfifo_o_d1;
+   reg [127:0] 	aes_out_d1;
+   reg 		sfifo_o_d1;
+   always @(posedge m_axi_mm2s_aclk)
+     begin
+	lfifo_o_d1 <= #1 lfifo_o;
+	aes_out_d1 <= #1 aes_out ^ din_rd_data;
+	sfifo_o_d1 <= #1 sfifo_o;
+     end
    wire aes_rd_full;
    wire aes_rd_empty;
    wire [C_S_AXIS_S2MM_TDATA_WIDTH-1:0] s_axis_s2mm_tdata;
-   wire 				s_axis_s2mm_tlast;   
+   wire 				s_axis_s2mm_tlast;
+   
    axi_async_fifo #(.C_FAMILY              (C_FAMILY),
 		    .C_FIFO_DEPTH          (256),
 		    .C_PROG_FULL_THRESH    (128),
@@ -166,8 +202,8 @@ module aes_mm2s(/*AUTOARG*/
 	     .wr_clk   (m_axi_mm2s_aclk),
 	     .rd_clk   (m_axi_mm2s_aclk),
 	     .sync_clk (m_axi_mm2s_aclk),
-	     .din      ({lfifo_o, aes_out}),
-	     .wr_en    (sfifo_o),
+	     .din      ({lfifo_o_d1, aes_out_d1}),
+	     .wr_en    (sfifo_o_d1),
 	     .rd_en    (s_axis_s2mm_tready & s_axis_s2mm_tvalid),
 	     .dout     ({s_axis_s2mm_tlast, s_axis_s2mm_tdata}),
 	     .full     (),

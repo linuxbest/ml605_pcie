@@ -117,15 +117,17 @@ int osChip_init(uint32_t base)
 			break;
 	}
 
-	uint32_t dst_good[4096];
+	uint32_t dst_good[4096] = {0};
 	uint32_t key[8] = {0x00000000, 0x00000000, 0x00000000, 0x00000000,
 		           0x00000000, 0x00000000, 0x00000000, 0x00000000};
-	
-	memcpy((char *)dst_good, (char *)src, 4096);
 	encrypt_256_key_expand_inline_no_branch(dst_good, key);
-	
+
+	dst_good[7] = 0x01000000;
+	encrypt_256_key_expand_inline_no_branch(&dst_good[4], key);
+
 	for (i = 0; i < 8; i ++) {
-		printf("%04x: %08x, %08x\n", i, dst[i], dst_good[i]);
+		printf("%04x: %08x/%08x, %08x/%08x\n",
+				i, dst[i], src[i], dst_good[i], dst_good[i] ^ src[i]);
 	}
 
 	return 0;
