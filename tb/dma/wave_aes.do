@@ -77,7 +77,7 @@ if { ![info exists aespath] } { set aespath "/dma_tb_tb${ps}dut/axi_aes_0/axi_ae
  
  eval add wave -noupdate -divider {"aes sts fms"}
  eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}m_axi_mm2s_aclk
- eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}s2mm_prmry_reset_out_n
+ eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}s2mm_sts_reset_out_n
  eval add wave -noupdate $binopt $aespath${ps}aes_sts_fsm${ps}state
  eval add wave -noupdate $ascopt $aespath${ps}aes_sts_fsm${ps}state_ascii
  
