@@ -3934,6 +3934,7 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 	blockio_work->write = write;
 
 	if (virt_dev->aes) {
+		int err;
 		aes_work = kzalloc(gfp_mask, sizeof(*aes_work));
 		if (aes_work == NULL) {
 			PRINT_ERROR("Failed to create aes for data segment (cmd %p",
@@ -3945,8 +3946,14 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 		aes_work->sg_cnt = 0;
 		aes_work->sg_size = 0;
 		aes_work->q = q;
-		sg_alloc_table(&aes_work->src_tbl, 256, gfp_mask);
-		sg_alloc_table(&aes_work->dst_tbl, 256, gfp_mask);
+		err = sg_alloc_table(&aes_work->src_tbl, 2048, gfp_mask);
+		if (err != 0) {
+			PRINT_ERROR("sg alloc src tbl failed");
+		}
+		err = sg_alloc_table(&aes_work->dst_tbl, 2048, gfp_mask);
+		if (err != 0) {
+			PRINT_ERROR("sg alloc dst tbl failed");
+		}
 		TRACE_DBG("aes_work %p, blockio_work %p", aes_work, blockio_work);
 		ssg = aes_work->src_tbl.sgl;
 		dsg = aes_work->dst_tbl.sgl;
@@ -4046,6 +4053,9 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 			if (virt_dev->aes) {
 				ag = alloc_page(gfp_mask);
 				TRACE_DBG("aes page %p, alloc", ag);
+				if (ag == NULL) {
+					PRINT_ERROR("aes page alloc failed");
+				}
 			}
 			if (virt_dev->aes) {
 				rc = bio_add_page(bio, ag, bytes, off);

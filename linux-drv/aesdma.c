@@ -893,7 +893,7 @@ static void aes_poll_isr(unsigned long data)
 {
 	struct aes_dev *dma = (void *)data;
 	aes_isr(0, dma);
-	mod_timer(&dma->poll_timer, jiffies + (1 * HZ));
+	mod_timer(&dma->poll_timer, jiffies + 1);
 }
 
 /* TODO only support one pcie device for now */
@@ -1042,8 +1042,8 @@ static int aes_probe(struct pci_dev *pdev,
 		goto err_ioremap;
 	}
 
-	XAxiDma_BdRingSetCoalesce(XAxiDma_GetTxRing(&dma->AxiDma),    32, 254);
-	XAxiDma_BdRingSetCoalesce(XAxiDma_GetRxRing(&dma->AxiDma, 0), 32, 254);
+	XAxiDma_BdRingSetCoalesce(XAxiDma_GetTxRing(&dma->AxiDma),    24, 254);
+	XAxiDma_BdRingSetCoalesce(XAxiDma_GetRxRing(&dma->AxiDma, 0), 12, 254);
 
 	aes_self_test(dma);
 	_dma = dma;
