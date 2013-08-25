@@ -31,8 +31,8 @@
 	if (dev) pr_debug("%s:%d " fmt, __func__, __LINE__, ##arg)
 
 #define DRIVER_NAME "AES10G"
-#define TX_BD_NUM 8192
-#define RX_BD_NUM 8192
+#define TX_BD_NUM 16384
+#define RX_BD_NUM 16384
 #define AES_TIMEOUT 10 * HZ
 
 static char *git_version = GITVERSION;
@@ -1041,6 +1041,9 @@ static int aes_probe(struct pci_dev *pdev,
 		dev_err(&pdev->dev, "start tx ring failed %d\n", err);
 		goto err_ioremap;
 	}
+
+	XAxiDma_BdRingSetCoalesce(XAxiDma_GetTxRing(&dma->AxiDma),    32, 254);
+	XAxiDma_BdRingSetCoalesce(XAxiDma_GetRxRing(&dma->AxiDma, 0), 32, 254);
 
 	aes_self_test(dma);
 	_dma = dma;
