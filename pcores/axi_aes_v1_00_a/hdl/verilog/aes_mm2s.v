@@ -115,6 +115,7 @@ module aes_mm2s(/*AUTOARG*/
 	  end
      end // always @ (posedge m_axi_mm2s_aclk)
 
+   wire [127:0] aes_din_i;
    wire [127:0] aes_out_i;
    wire [127:0] aes_out_w;
    reg [127:0] 	aes_out;
@@ -123,13 +124,14 @@ module aes_mm2s(/*AUTOARG*/
 	aes_out <= #1 aes_out_w;
      end
    aes_256 aes_256(.clk  (m_axi_mm2s_aclk),
-		   .state(aes_din),
+		   .state(aes_din_i),
 		   .key  (aes_key),
 		   .out  (aes_out_i));
    genvar i;
    generate
       for (i = 0; i < 128; i = i + 8) begin: swap_aes_out
 	 assign aes_out_w[127-i:120-i] = aes_out_i[i+7:i];
+	 assign aes_din_i[127-i:120-i] = aes_din[i+7:i];
       end
    endgenerate
    
