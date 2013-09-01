@@ -96,18 +96,18 @@ module aes_mm2s(/*AUTOARG*/
 
    reg [127:0] 					   aes_din;
    reg 						   aes_din_valid;
-   reg [31:0] 					   aes_key;
+   reg [5:0] 					   aes_ctr;
    wire 					   mm2s_handshake;
    always @(posedge m_axi_mm2s_aclk)
      begin
 	if (~mm2s_prmry_reset_out_n ||
 	    (mm2s_handshake && m_axis_mm2s_tlast))
 	  begin
-	     aes_key <= #1 0;
+	     aes_ctr <= #1 0;
 	  end
 	else if (mm2s_handshake)
 	  begin
-	     aes_key <= #1 aes_key + 1'b1;
+	     aes_ctr <= #1 aes_ctr + 1'b1;
 	  end
      end
 
@@ -121,13 +121,16 @@ module aes_mm2s(/*AUTOARG*/
    wire [127:0] aes_din_i;
    wire [127:0] aes_out_i;
    wire [127:0] aes_out_w;
+   wire [255:0] aes_state;
+   assign aes_state = aes_ctr;
+   
    reg [127:0] 	aes_out;
    always @(posedge m_axi_mm2s_aclk)
      begin
 	aes_out <= #1 aes_out_w;
      end
    aes_256 aes_256(.clk  (m_axi_mm2s_aclk),
-		   .state({128'h0, aes_key}),
+		   .state(aes_state),
 		   .key  (256'h0),
 		   .out  (aes_out_i));
    genvar i;
