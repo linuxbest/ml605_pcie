@@ -31,8 +31,8 @@
 	if (dev) pr_debug("%s:%d " fmt, __func__, __LINE__, ##arg)
 
 #define DRIVER_NAME "AES10G"
-#define TX_BD_NUM 16384
-#define RX_BD_NUM 16384
+#define TX_BD_NUM 65536
+#define RX_BD_NUM 65536
 #define AES_TIMEOUT 10 * HZ
 
 static char *git_version = GITVERSION;
@@ -319,7 +319,7 @@ static struct aes_desc *aes_alloc_desc(struct aes_dev *dev)
 	int reused = 0;
 
 	spin_lock_irqsave(&dev->hw_lock, flags);
-	if (dev->desc_free > RX_BD_NUM) {
+	if (!list_empty(&dev->desc_head)) {
 		struct list_head *list = &dev->desc_head;
 		sw = list_entry(list->next, struct aes_desc, desc_entry);
 		list_del(&sw->desc_entry);
@@ -371,6 +371,8 @@ static void aes_free_desc(struct kref *kref)
 	} else {
 		del_timer(&dma->timer);
 	}
+	list_add_tail(&sw->desc_entry, &dma->desc_head);
+	dma->desc_free ++;
 	spin_unlock_irqrestore(&dma->hw_lock, flags);
 
 	aes_unmap_buf(dma, &sw->src_buf, DMA_TO_DEVICE);
@@ -380,11 +382,6 @@ static void aes_free_desc(struct kref *kref)
 		sw->cb(sw->priv);
 		sw->cb = NULL;
 	}
-
-	spin_lock_irqsave(&dma->hw_lock, flags);
-	list_add_tail(&sw->desc_entry, &dma->desc_head);
-	dma->desc_free ++;
-	spin_unlock_irqrestore(&dma->hw_lock, flags);
 }
 
 static int _aes_desc_to_hw(struct aes_dev *dma, dma_buf_t *dbuf,
@@ -560,7 +557,7 @@ static void aes_poll_isr(unsigned long data);
 static int aes_desc_init(struct aes_dev *dma)
 {
 	int recvsize, sendsize;
-	int res;
+	int res, i;
 	int RingIndex = 0;
 	XAxiDma_BdRing *RxRingPtr, *TxRingPtr;
 
@@ -607,6 +604,13 @@ static int aes_desc_init(struct aes_dev *dma)
 	init_timer(&dma->poll_timer);
 	dma->poll_timer.data = (unsigned long)dma;
 	dma->poll_timer.function = aes_poll_isr;
+
+	for (i = 0; i < TX_BD_NUM; i ++) {
+		struct aes_desc *sw;
+		sw = kmem_cache_alloc(aes_desc_cache, GFP_ATOMIC);
+		list_add_tail(&sw->desc_entry, &dma->desc_head);
+		dma->desc_free ++;
+	}
 
 	return 0;
 }
