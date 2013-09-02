@@ -48,7 +48,7 @@ int osChip_init(uint32_t base)
 	if (base0 == NULL) 
 		return -1;
 
-	uint32_t *dst  = (uint32_t *)(base0 + 0x200000);
+	uint8_t *dst  = (uint8_t *)(base0 + 0x200000);
 	for (i = 0; i < 1024; i ++) {
 		dst[i] = i;
 	}
@@ -69,7 +69,7 @@ int osChip_init(uint32_t base)
 	dsg->ctrl    |= 0x04000000; /* EOF */
 
 
-	uint32_t *src = (uint32_t *)(base0 + 0x100000);
+	uint8_t *src = (uint8_t *)(base0 + 0x100000);
 	for (i = 0; i < 4096; i ++) {
 		src[i] = i;
 	}
@@ -119,15 +119,20 @@ int osChip_init(uint32_t base)
 
 	uint32_t dst_good[4096] = {0};
 	uint32_t key[8] = {0x00000000, 0x00000000, 0x00000000, 0x00000000,
-		           0x00000000, 0x00000000, 0x00000000, 0x00000000};
-	encrypt_256_key_expand_inline_no_branch(dst_good, key);
+		0x00000000, 0x00000000, 0x00000000, 0x00000000};
 
-	dst_good[7] = 0x01000000;
-	encrypt_256_key_expand_inline_no_branch(&dst_good[4], key);
+	for (i = 0; i < 4096; i += 4) {
+		dst_good[i] = (i/4) & 0x1f;
+		encrypt_256_key_expand_inline_no_branch(&dst_good[i], key);
+	}
 
-	for (i = 0; i < 8; i ++) {
-		printf("%04x: %08x/%08x, %08x/%08x\n",
-				i, dst[i], src[i], dst_good[i], dst_good[i] ^ src[i]);
+	uint32_t *src_u32 = (uint32_t *)src;
+	uint32_t *dst_u32 = (uint32_t *)dst;
+	for (i = 0; i < 256; i ++) {
+		uint32_t dst_ok = dst_good[i] ^ src_u32[i];
+		printf("%04x: %08x/%08x, %08x/%08x, %s\n",
+				i, dst_u32[i], src_u32[i], dst_good[i], dst_ok,
+				dst_u32[i] == dst_ok ? "O" : "E");
 	}
 
 	return 0;

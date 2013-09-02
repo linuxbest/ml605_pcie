@@ -96,7 +96,7 @@ module aes_mm2s(/*AUTOARG*/
 
    reg [127:0] 					   aes_din;
    reg 						   aes_din_valid;
-   reg [5:0] 					   aes_ctr;
+   reg [4:0] 					   aes_ctr;
    wire 					   mm2s_handshake;
    always @(posedge m_axi_mm2s_aclk)
      begin
@@ -121,8 +121,9 @@ module aes_mm2s(/*AUTOARG*/
    wire [127:0] aes_din_i;
    wire [127:0] aes_out_i;
    wire [127:0] aes_out_w;
-   wire [255:0] aes_state;
-   assign aes_state = aes_ctr;
+   wire [127:0] aes_state;
+   wire [127:0] aes_ctr_i;
+   assign aes_ctr_i = aes_ctr;
    
    reg [127:0] 	aes_out;
    always @(posedge m_axi_mm2s_aclk)
@@ -137,6 +138,7 @@ module aes_mm2s(/*AUTOARG*/
    generate
       for (i = 0; i < 128; i = i + 8) begin: swap_aes_out
 	 assign aes_out_w[127-i:120-i] = aes_out_i[i+7:i];
+	 assign aes_state[127-i:120-i] = aes_ctr_i[i+7:i];
       end
    endgenerate
    assign aes_din_i = aes_din;
