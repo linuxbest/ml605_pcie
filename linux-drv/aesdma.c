@@ -3,7 +3,7 @@
  
  Hu Gang <linuxbest@gmail.com> 
 *******************************************************************************/
-//#define DEBUG 1
+#define DEBUG 1
 #include <linux/hardirq.h>
 #include <linux/interrupt.h>
 #include <linux/module.h>
@@ -339,6 +339,16 @@ static struct aes_desc *aes_alloc_desc(struct aes_dev *dev)
 	return sw;
 }
 
+static void aes_clean_desc(struct aes_dev *dev)
+{
+	while (!list_empty(&dev->desc_head)) {
+		struct aes_desc *sw = list_first_entry(&dev->desc_head,
+				typeof(*sw), desc_entry);
+		list_del(&sw->desc_entry);
+		kmem_cache_free(aes_desc_cache, sw);
+	}
+}
+
 static void aes_unmap_buf(struct aes_dev *dma, dma_buf_t *buf, int dir)
 {
 	switch (buf->type) {
@@ -506,7 +516,7 @@ static int aes_self_test(struct aes_dev *dma)
 	sw->priv = (void *)&done;
 
 	/* dma_buf_addr_init tx/rx */
-	dma_buf_addr_init(&sw->src_buf, src_dma, 512);
+	dma_buf_addr_init(&sw->src_buf, src_dma, PAGE_SIZE);
 	dma_buf_addr_init(&sw->dst_buf, dst_dma, PAGE_SIZE);
 
 	aes_desc_to_hw(dma, sw);
@@ -519,9 +529,9 @@ static int aes_self_test(struct aes_dev *dma)
 #endif
 
 	print_hex_dump(KERN_DEBUG, "TX ", DUMP_PREFIX_ADDRESS, 16, 1,
-			src, 256, 1);
+			src, 1024, 1);
 	print_hex_dump(KERN_DEBUG, "RX ", DUMP_PREFIX_ADDRESS, 16, 1,
-			dst, 256, 1);
+			dst, 1024, 1);
 
 	return 0;
 }
@@ -1074,12 +1084,15 @@ static void aes_remove(struct pci_dev *pdev)
 	XAxiDma_mBdRingIntDisable(XAxiDma_GetTxRing(&dma->AxiDma), XAXIDMA_IRQ_ALL_MASK);
 	XAxiDma_mBdRingIntDisable(XAxiDma_GetRxRing(&dma->AxiDma, 0), XAXIDMA_IRQ_ALL_MASK);
 
+	del_timer(&dma->poll_timer);
+	del_timer(&dma->timer);
 	AxiDma_Stop(dma->reg);
 	free_irq(pdev->irq, dma);
 	iounmap(dma->reg);
 	pci_release_regions(pdev);
 	pci_set_drvdata(pdev, NULL);
 	pci_disable_device(pdev);
+	aes_clean_desc(dma);
 }
 
 static struct pci_driver aes_driver = {
