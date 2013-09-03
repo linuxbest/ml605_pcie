@@ -3,7 +3,7 @@
  
  Hu Gang <linuxbest@gmail.com> 
 *******************************************************************************/
-#define DEBUG 1
+//#define DEBUG 1
 #include <linux/hardirq.h>
 #include <linux/interrupt.h>
 #include <linux/module.h>
@@ -368,13 +368,13 @@ static void aes_free_desc(struct kref *kref)
 	struct aes_dev *dma = sw->dma;
 	unsigned long flags;
 
-	dev_trace(&dma->pdev->dev, "dev %p, sw %p, %d\n", 
+	dev_trace(&dma->pdev->dev, "dev %p, sw %p, %d\n",
 			dma, sw, dma->desc_free);
 
 	spin_lock_irqsave(&dma->hw_lock, flags);
 	list_del(&sw->hw_entry);
 	if (!list_empty(&dma->hw_head)) {
-		struct aes_desc *next_sw = container_of(dma->hw_head.next, 
+		struct aes_desc *next_sw = container_of(dma->hw_head.next,
 				struct aes_desc, hw_entry);
 		if (time_before(dma->timer.expires, next_sw->deadline))
 			mod_timer(&dma->timer, next_sw->deadline);
