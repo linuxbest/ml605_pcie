@@ -3935,7 +3935,7 @@ static void blockio_exec_rw(struct vdisk_cmd_params *p, bool write, bool fua)
 
 	if (virt_dev->aes) {
 		int err;
-		aes_work = kzalloc(gfp_mask, sizeof(*aes_work));
+		aes_work = kzalloc(sizeof(*aes_work), gfp_mask);
 		if (aes_work == NULL) {
 			PRINT_ERROR("Failed to create aes for data segment (cmd %p",
 					cmd);
