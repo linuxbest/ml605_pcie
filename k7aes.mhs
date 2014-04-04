@@ -1,0 +1,202 @@
+
+# ##############################################################################
+# Created by Base System Builder Wizard for Xilinx EDK 14.6 Build EDK_P.68d
+# Sat Jul 27 23:53:02 2013
+# Target Board:  xilinx.com ml605 Rev D
+# Family:    virtex6
+# Device:    xc6vlx240t
+# Package:   ff1156
+# Speed Grade:  -1
+# ##############################################################################
+ PARAMETER VERSION = 2.1.0
+
+
+ PORT RESET = RESET, DIR = I, SIGIS = RST, RST_POLARITY = 0
+ PORT CLK = CLK, DIR = I, SIGIS = CLK, CLK_FREQ = 100000000
+ PORT PCI_Express_pci_exp_txp = PCI_Express_pci_exp_txp, DIR = O, VEC = [7:0]
+ PORT PCI_Express_pci_exp_txn = PCI_Express_pci_exp_txn, DIR = O, VEC = [7:0]
+ PORT PCI_Express_pci_exp_rxp = PCI_Express_pci_exp_rxp, DIR = I, VEC = [7:0]
+ PORT PCI_Express_pci_exp_rxn = PCI_Express_pci_exp_rxn, DIR = I, VEC = [7:0]
+ PORT PCIe_Diff_Clk_P = PCIe_Diff_Clk_P, DIR = I, SIGIS = CLK, CLK_FREQ = 100000000
+ PORT PCIe_Diff_Clk_N = PCIe_Diff_Clk_N, DIR = I
+ PORT PCIe_perstn = PCIe_perstn, DIR = I, SIGIS = RST
+
+
+BEGIN util_vector_logic
+ PARAMETER INSTANCE = util_and_logic_0
+ PARAMETER HW_VER = 1.00.a
+ PARAMETER C_SIZE = 1
+ PORT OP1 = PCIe_MMCM_Lock
+ PORT OP2 = clk_gen_locked
+ PORT RES = proc_sys_reset_0_Dcm_locked
+END
+
+BEGIN proc_sys_reset
+ PARAMETER INSTANCE = proc_sys_reset_0
+ PARAMETER HW_VER = 3.00.a
+ PARAMETER C_EXT_RESET_HIGH = 0
+ PARAMETER C_AUX_RESET_HIGH = 0
+ PORT Dcm_locked = proc_sys_reset_0_Dcm_locked
+ PORT Slowest_sync_clk = clk_100_0000MHzMMCM0
+ PORT Interconnect_aresetn = proc_sys_reset_0_Interconnect_aresetn
+ PORT Ext_Reset_In = RESET
+ PORT BUS_STRUCT_RESET = proc_sys_reset_0_BUS_STRUCT_RESET
+ PORT Aux_Reset_In = PCIe_perstn
+END
+
+BEGIN clock_generator
+ PARAMETER INSTANCE = clock_generator_0
+ PARAMETER HW_VER = 4.03.a
+ PARAMETER C_CLKIN_FREQ = 200000000
+ PARAMETER C_CLKOUT0_FREQ = 100000000
+ PARAMETER C_CLKOUT0_GROUP = MMCM0
+ PARAMETER C_CLKOUT1_FREQ = 200000000
+ PARAMETER C_CLKOUT1_GROUP = MMCM0
+ PARAMETER C_CLKOUT2_FREQ = 400000000
+ PARAMETER C_CLKOUT2_GROUP = MMCM0
+ PARAMETER C_CLKOUT3_FREQ = 400000000
+ PARAMETER C_CLKOUT3_GROUP = MMCM0
+ PARAMETER C_CLKOUT3_BUF = FALSE
+ PARAMETER C_CLKOUT3_VARIABLE_PHASE = TRUE
+ PARAMETER C_EXT_RESET_HIGH = 0
+ PORT LOCKED = clk_gen_locked
+ PORT CLKOUT0 = clk_100_0000MHzMMCM0
+ PORT RST = RESET
+ PORT CLKOUT3 = clk_400_0000MHzMMCM0_nobuf_varphase
+ PORT CLKOUT2 = clk_400_0000MHzMMCM0
+ PORT CLKOUT1 = clk_200_0000MHzMMCM0
+ PORT CLKIN = CLK
+ PORT PSCLK = clk_200_0000MHzMMCM0
+END
+
+BEGIN axi_interconnect
+ PARAMETER INSTANCE = axi4lite_0
+ PARAMETER HW_VER = 1.06.a
+ PARAMETER C_INTERCONNECT_CONNECTIVITY_MODE = 0
+ PORT INTERCONNECT_ARESETN = proc_sys_reset_0_Interconnect_aresetn
+ PORT INTERCONNECT_ACLK = clk_100_0000MHzMMCM0
+END
+
+BEGIN axi_interconnect
+ PARAMETER INSTANCE = axi4_0
+ PARAMETER HW_VER = 1.06.a
+ PORT interconnect_aclk = clk_100_0000MHzMMCM0
+ PORT INTERCONNECT_ARESETN = proc_sys_reset_0_Interconnect_aresetn
+END
+
+BEGIN util_ds_buf
+ PARAMETER INSTANCE = PCIe_Diff_Clk_I
+ PARAMETER HW_VER = 1.01.a
+ PARAMETER C_BUF_TYPE = IBUFDSGTXE
+ PORT IBUF_DS_P = PCIe_Diff_Clk_P
+ PORT IBUF_DS_N = PCIe_Diff_Clk_N
+ PORT IBUF_OUT = PCIe_Diff_Clk
+END
+
+BEGIN axi_pcie
+ PARAMETER INSTANCE = PCI_Express
+ PARAMETER HW_VER = 1.08.a
+ PARAMETER C_S_AXI_ID_WIDTH = 4
+ PARAMETER C_S_AXI_DATA_WIDTH = 128
+ PARAMETER C_M_AXI_DATA_WIDTH = 128
+ PARAMETER C_NO_OF_LANES = 8
+ PARAMETER C_MAX_LINK_SPEED = 0
+ PARAMETER C_DEVICE_ID = 0x0505
+ PARAMETER C_VENDOR_ID = 0x10EE
+ PARAMETER C_CLASS_CODE = 0x058000
+ PARAMETER C_REV_ID = 0x8
+ PARAMETER C_REF_CLK_FREQ = 0
+ PARAMETER C_PCIE_CAP_SLOT_IMPLEMENTED = 0
+ PARAMETER C_INTERRUPT_PIN = 1
+ PARAMETER C_COMP_TIMEOUT = 1
+ PARAMETER C_INCLUDE_RC = 0
+ PARAMETER C_S_AXI_SUPPORTS_NARROW_BURST = 1
+ PARAMETER C_INCLUDE_BAROFFSET_REG = 0
+ PARAMETER C_AXIBAR_NUM = 1
+ PARAMETER C_AXIBAR2PCIEBAR_0 = 0x00000000
+ PARAMETER C_AXIBAR_AS_0 = 0
+ PARAMETER C_AXIBAR_0 = 0xffffffff
+ PARAMETER C_AXIBAR_HIGHADDR_0 = 0x00000000
+ PARAMETER C_PCIEBAR_NUM = 1
+ PARAMETER C_PCIEBAR_AS = 0
+ PARAMETER C_PCIEBAR_LEN_0 = 16
+ PARAMETER C_PCIEBAR2AXIBAR_0 = 0xC4000000
+ PARAMETER C_S_AXI_CTL_ACLK_FREQ_HZ = 125000000
+ PARAMETER C_AXI_ACLK_FREQ_HZ = 125000000
+ PARAMETER C_FAMILY = virtex6
+ PARAMETER C_INTERCONNECT_S_AXI_MASTERS = axi_dma_0.M_AXI_SG & axi_dma_0.M_AXI_MM2S & axi_dma_0.M_AXI_S2MM
+ PARAMETER C_BASEADDR = 0x72e00000
+ PARAMETER C_HIGHADDR = 0x72e0ffff
+ BUS_INTERFACE S_AXI_CTL = axi4lite_0
+ BUS_INTERFACE M_AXI = axi4lite_0
+ BUS_INTERFACE S_AXI = axi4_0
+ PORT pci_exp_txp = PCI_Express_pci_exp_txp
+ PORT pci_exp_txn = PCI_Express_pci_exp_txn
+ PORT pci_exp_rxp = PCI_Express_pci_exp_rxp
+ PORT pci_exp_rxn = PCI_Express_pci_exp_rxn
+ PORT axi_ctl_aclk = axi_ctl_aclk_out
+ PORT axi_aclk = axi_aclk_out
+ PORT axi_aclk_out = axi_aclk_out
+ PORT axi_ctl_aclk_out = axi_ctl_aclk_out
+ PORT REFCLK = PCIe_Diff_Clk
+ PORT mmcm_lock = PCIe_MMCM_Lock
+ PORT INTX_MSI_Request = axi_aes_intr_0
+END
+
+BEGIN axi_dma
+ PARAMETER INSTANCE = axi_dma_0
+ PARAMETER HW_VER = 6.03.a
+ PARAMETER C_BASEADDR = 0xC4000000
+ PARAMETER C_HIGHADDR = 0xC4000fff
+ PARAMETER C_M_AXI_MM2S_DATA_WIDTH = 128
+ PARAMETER C_M_AXIS_MM2S_TDATA_WIDTH = 128
+ PARAMETER C_MM2S_BURST_SIZE = 256
+ PARAMETER C_M_AXI_S2MM_DATA_WIDTH = 128
+ PARAMETER C_S_AXIS_S2MM_TDATA_WIDTH = 128
+ PARAMETER C_S2MM_BURST_SIZE = 256
+ PARAMETER C_SG_USE_STSAPP_LENGTH = 0
+ PARAMETER C_SG_LENGTH_WIDTH = 23
+ PARAMETER C_SG_INCLUDE_DESC_QUEUE = 1
+ BUS_INTERFACE S_AXI_LITE = axi4lite_0
+ BUS_INTERFACE M_AXI_SG = axi4_0
+ BUS_INTERFACE M_AXI_MM2S = axi4_0
+ BUS_INTERFACE M_AXI_S2MM = axi4_0
+ BUS_INTERFACE M_AXIS_MM2S = M_AXIS_MM2S_0
+ BUS_INTERFACE S_AXIS_S2MM = S_AXIS_S2MM_0
+ BUS_INTERFACE M_AXIS_MM2S_CNTRL = M_AXIS_MM2S_CNTRL_0
+ BUS_INTERFACE S_AXIS_S2MM_STS = S_AXIS_S2MM_STS_0
+ PORT s_axi_lite_aclk = clk_100_0000MHzMMCM0
+ PORT m_axi_sg_aclk = clk_100_0000MHzMMCM0
+ PORT m_axi_mm2s_aclk = clk_100_0000MHzMMCM0
+ PORT m_axi_s2mm_aclk = clk_100_0000MHzMMCM0
+ PORT mm2s_prmry_reset_out_n = mm2s_prmry_reset_out_n_0
+ PORT mm2s_cntrl_reset_out_n = mm2s_cntrl_reset_out_n_0
+ PORT s2mm_prmry_reset_out_n = s2mm_prmry_reset_out_n_0
+ PORT s2mm_sts_reset_out_n = s2mm_sts_reset_out_n_0
+ PORT mm2s_introut = mm2s_intr_0
+ PORT s2mm_introut = s2mm_intr_0
+END
+
+BEGIN axi_aes
+ PARAMETER INSTANCE = axi_aes_0
+ PARAMETER HW_VER = 1.00.a
+ PARAMETER C_BASEADDR = 0xC4001000
+ PARAMETER C_HIGHADDR = 0xC4001fff
+ PARAMETER C_M_AXIS_MM2S_TDATA_WIDTH = 128
+ PARAMETER C_S_AXIS_S2MM_TDATA_WIDTH = 128
+ BUS_INTERFACE S_AXI_LITE = axi4lite_0
+ BUS_INTERFACE M_AXIS_MM2S = M_AXIS_MM2S_0
+ BUS_INTERFACE S_AXIS_S2MM = S_AXIS_S2MM_0
+ BUS_INTERFACE M_AXIS_MM2S_CNTRL = M_AXIS_MM2S_CNTRL_0
+ BUS_INTERFACE S_AXIS_S2MM_STS = S_AXIS_S2MM_STS_0
+ PORT s_axi_lite_aclk = clk_100_0000MHzMMCM0
+ PORT m_axi_mm2s_aclk = clk_100_0000MHzMMCM0
+ PORT m_axi_s2mm_aclk = clk_100_0000MHzMMCM0
+ PORT mm2s_prmry_reset_out_n = mm2s_prmry_reset_out_n_0
+ PORT mm2s_cntrl_reset_out_n = mm2s_cntrl_reset_out_n_0
+ PORT s2mm_prmry_reset_out_n = s2mm_prmry_reset_out_n_0
+ PORT s2mm_sts_reset_out_n = s2mm_sts_reset_out_n_0
+ PORT mm2s_intr = mm2s_intr_0
+ PORT s2mm_intr = s2mm_intr_0
+ PORT axi_intr = axi_aes_intr_0
+END

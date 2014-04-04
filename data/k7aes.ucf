@@ -1,0 +1,122 @@
+#
+# pin constraints
+#
+NET CLK   LOC = "AG10" |  IOSTANDARD = "SSTL15";
+NET RESET LOC = "R19"  |  IOSTANDARD = "LCMOS25" | PULLUP | TIG;
+#
+# additional constraints
+#
+
+NET "CLK" TNM_NET = sys_clk_pin;
+TIMESPEC TS_sys_clk_pin = PERIOD sys_clk_pin 100000 kHz;
+#
+# PERSTN (input) signal.  The perstn signal should be
+# obtained from the PCI Express interface if possible.  For
+# slot based form factors, a perstn reset signal is usually
+# present on the connector.  For cable based form factors, a
+# perstn signal may not be available.  In this case, the
+# system reset signal must be generated locally by some form of
+# supervisory circuit.  You may change the IOSTANDARD and LOC
+# to suit your requirements and VCCO voltage banking rules.
+#
+
+NET "PCIe_perstn" LOC = "Y20" | IOSTANDARD = LVCMOS25 | PULLUP | NODELAY | TIG;
+
+
+
+#
+# SYS clock 100 MHz (input) signal. The PCIE_CLK_QO_P and PCIE_CLK_QO_N
+# signals are the PCI Express reference clock. Kintex-7 GT
+# Transceiver architecture requires the use of a dedicated clock
+# resources (FPGA input pins) associated with each GT Transceiver.
+# To use these pins an IBUFDS primitive (GEN_IBUFDS_GTE2) is
+# instantiated in user's design.
+# Please refer to the Kintex-7 GT Transceiver User Guide
+# (UG) for guidelines regarding clock resource selection.
+#
+INST "*/PCIe_Diff_Clk_I/USE_IBUFDS_GTE2.GEN_IBUFDS_GTE2[0].IBUFDS_GTE2_I" LOC = IBUFDS_GTE2_X0Y2;
+#NET  PCIe_Clk_QO_P       LOC = "L8";
+#NET  PCIe_Clk_QO_N       LOC = "L7";
+
+#
+# Transceiver instance placement.  This constraint selects the
+# transceivers to be used, which also dictates the pinout for the
+# transmit and receive differential pairs.  Please refer to the
+# Kintex-7 GT Transceiver User Guide (UG) for more information.
+#
+
+INST "*pcie_7x*/*gt_top_i/pipe_wrapper_i/pipe_lane[0].gt_wrapper_i/gtx_channel.gtxe2_channel_i" LOC = GTXE2_CHANNEL_X0Y7;
+INST "*pcie_7x*/*gt_top_i/pipe_wrapper_i/pipe_lane[1].gt_wrapper_i/gtx_channel.gtxe2_channel_i" LOC = GTXE2_CHANNEL_X0Y6;
+INST "*pcie_7x*/*gt_top_i/pipe_wrapper_i/pipe_lane[2].gt_wrapper_i/gtx_channel.gtxe2_channel_i" LOC = GTXE2_CHANNEL_X0Y5;
+INST "*pcie_7x*/*gt_top_i/pipe_wrapper_i/pipe_lane[3].gt_wrapper_i/gtx_channel.gtxe2_channel_i" LOC = GTXE2_CHANNEL_X0Y4;
+INST "*pcie_7x*/*gt_top_i/pipe_wrapper_i/pipe_lane[4].gt_wrapper_i/gtx_channel.gtxe2_channel_i" LOC = GTXE2_CHANNEL_X0Y3;
+INST "*pcie_7x*/*gt_top_i/pipe_wrapper_i/pipe_lane[5].gt_wrapper_i/gtx_channel.gtxe2_channel_i" LOC = GTXE2_CHANNEL_X0Y2;
+INST "*pcie_7x*/*gt_top_i/pipe_wrapper_i/pipe_lane[6].gt_wrapper_i/gtx_channel.gtxe2_channel_i" LOC = GTXE2_CHANNEL_X0Y1;
+INST "*pcie_7x*/*gt_top_i/pipe_wrapper_i/pipe_lane[7].gt_wrapper_i/gtx_channel.gtxe2_channel_i" LOC = GTXE2_CHANNEL_X0Y0;
+
+#
+# PCI Express Block placement. This constraint selects the PCI Express
+# Block to be used.
+#
+INST "*pcie_7x*/pcie_top_i/pcie_7x_i/pcie_block_i" LOC = PCIE_X0Y0;
+
+
+# No MMCM placment constraint.
+
+
+# Add BlockRAM placement constraints.
+
+INST "*pcie_7x*/pcie_top_i/pcie_7x_i/pcie_bram_top/pcie_brams_rx/brams[1].ram/use_tdp.ramb36/bram36_tdp_bl.bram36_tdp_bl" LOC = RAMB36_X4Y35 ;
+INST "*pcie_7x*/pcie_top_i/pcie_7x_i/pcie_bram_top/pcie_brams_rx/brams[0].ram/use_tdp.ramb36/bram36_tdp_bl.bram36_tdp_bl" LOC = RAMB36_X4Y34 ;
+INST "*pcie_7x*/pcie_top_i/pcie_7x_i/pcie_bram_top/pcie_brams_tx/brams[0].ram/use_tdp.ramb36/bram36_tdp_bl.bram36_tdp_bl" LOC = RAMB36_X4Y33 ;
+INST "*pcie_7x*/pcie_top_i/pcie_7x_i/pcie_bram_top/pcie_brams_tx/brams[1].ram/use_tdp.ramb36/bram36_tdp_bl.bram36_tdp_bl" LOC = RAMB36_X4Y32 ;
+
+
+
+
+###############################################################################
+#
+# Timing Constraints
+#
+###############################################################################
+
+
+# 100 MHz Reference Clock
+NET "PCIe_Diff_Clk" TNM_NET = "SYSCLK" ;
+
+# 250MHz Refclk
+# TIMESPEC "TS_SYSCLK"  = PERIOD "SYSCLK" 250.00 MHz HIGH 50 % ;
+# 100MHz Refclk
+TIMESPEC "TS_SYSCLK"  = PERIOD "SYSCLK" 100.00 MHz HIGH 50 % ;
+
+
+NET "*pipe_clock_i/clk_125mhz" 	TNM_NET = "CLK_125" ;
+NET "*pipe_clock_i/clk_250mhz" 	TNM_NET = "CLK_250" ;
+NET "*pipe_clock_i/userclk1" 	TNM_NET = "CLK_USERCLK" ;
+NET "*pipe_clock_i/userclk2" 	TNM_NET = "CLK_USERCLK2" ;
+
+TIMESPEC "TS_CLK_125"  = PERIOD "CLK_125" TS_SYSCLK*1.25 HIGH 50 % PRIORITY 1 ;
+TIMESPEC "TS_CLK_250" = PERIOD "CLK_250" TS_SYSCLK*2.5 HIGH 50 % PRIORITY 2;
+TIMESPEC "TS_CLK_USERCLK" = PERIOD "CLK_USERCLK" TS_SYSCLK*1.25 HIGH 50 %;
+TIMESPEC "TS_CLK_USERCLK2" = PERIOD "CLK_USERCLK2" TS_SYSCLK*1.25 HIGH 50 %;
+
+
+
+# (updated constraints from CoreGen)
+# K7
+
+PIN "*pipe_clock_i/mmcm_i.RST" TIG;
+NET "*pipe_clock_i/pclk_sel" TIG;
+NET "*pipe_clock_i/clk_125mhz" TIG;
+
+#NET "*pcie_7x*/*gt_top_i/pipe_wrapper_i/user_resetdone*" TIG;
+#NET "*pcie_7x*/*gt_top_i/pipe_wrapper_i/pipe_lane[0].pipe_rate_i/*" TIG;
+#NET "*pcie_7x*/*gt_top_i/pipe_wrapper_i/pipe_lane[1].pipe_rate_i/*" TIG;
+#NET "*pcie_7x*/*gt_top_i/pipe_wrapper_i/pipe_reset_i/cpllreset" TIG;
+
+
+# New Constraints
+
+NET "*/sig_blk_dcontrol<12>" TIG;
+NET "*/sig_blk_dcontrol<13>" TIG;
+NET "*/sig_blk_dcontrol<14>" TIG;
