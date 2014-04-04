@@ -2,7 +2,7 @@
 # pin constraints
 #
 NET CLK   LOC = "AG10" |  IOSTANDARD = "SSTL15";
-NET RESET LOC = "R19"  |  IOSTANDARD = "LCMOS25" | PULLUP | TIG;
+NET RESET LOC = "R19"  |  IOSTANDARD = "LVCMOS25" | PULLUP | TIG;
 #
 # additional constraints
 #
