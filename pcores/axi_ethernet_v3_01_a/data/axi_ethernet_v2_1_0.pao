@@ -1,0 +1,111 @@
+################################################################################
+##
+## Copyright (c) 1995-2002 Xilinx, Inc.  All rights reserved.  Xilinx, Inc.
+##
+## axi_ethernet.pao
+##
+## Peripheral Analyze Order
+##
+################################################################################
+#
+#
+#
+#-----  PROCESSOR COMMON LIBRARY COMPONENTS  -----------------------------------
+#
+lib proc_common_v3_00_a all
+#
+# --- AXI Lite IPIF library ----------------------------------------------------
+#
+lib axi_lite_ipif_v1_01_a all
+#
+# --- Soft TEMAC library -------------------------------------------------------
+#
+lib axi_ethernet_soft_temac_wrap_v3_01_a all
+#
+# --- Ethernet AVB library -----------------------------------------------------
+#
+#lib axi_ethernet_avb_wrap_v3_01_a all
+#
+# --- Ethernet PCS PMA library -------------------------------------------------
+#
+lib axi_ethernet_pcs_pma_wrap_v3_01_a all
+#
+#-----  AXI ETHERNET COMPONENTS  -----------------------------------------------
+#
+lib axi_ethernet_v3_01_a  actv_hi_reset_clk_cross.vhd   vhdl
+lib axi_ethernet_v3_01_a  actv_hi_pulse_clk_cross.vhd   vhdl
+lib axi_ethernet_v3_01_a  bus_and_enable_clk_cross.vhd   vhdl
+lib axi_ethernet_v3_01_a  bus_clk_cross.vhd   vhdl
+lib axi_ethernet_v3_01_a  reg_cr.vhd   vhdl
+lib axi_ethernet_v3_01_a  reg_ie.vhd   vhdl
+lib axi_ethernet_v3_01_a  reg_ifgp.vhd   vhdl
+lib axi_ethernet_v3_01_a  reg_ip.vhd   vhdl
+lib axi_ethernet_v3_01_a  reg_is.vhd   vhdl
+lib axi_ethernet_v3_01_a  reg_tp.vhd   vhdl
+lib axi_ethernet_v3_01_a  reg_32b.vhd   vhdl
+lib axi_ethernet_v3_01_a  reg_16bl.vhd   vhdl
+lib axi_ethernet_v3_01_a  registers.vhd   vhdl
+lib axi_ethernet_v3_01_a  reset_sync.vhd  vhdl
+lib axi_ethernet_v3_01_a  sync_reset.vhd  vhdl
+lib axi_ethernet_v3_01_a  axi_ethernet_v3_01_a_sync_block.v  verilog
+lib axi_ethernet_v3_01_a  double_reset.vhd   vhdl
+lib axi_ethernet_v3_01_a  v6_gtxwizard_gtx_1000bx.vhd   vhdl
+lib axi_ethernet_v3_01_a  v6_gtxwizard_1000bx.vhd   vhdl
+lib axi_ethernet_v3_01_a  v6_gtxwizard_gtx_sgmii.vhd   vhdl
+lib axi_ethernet_v3_01_a  v6_gtxwizard_sgmii.vhd   vhdl
+lib axi_ethernet_v3_01_a  rx_elastic_buffer.vhd   vhdl
+lib axi_ethernet_v3_01_a  axi_ethernet_v3_01_a_v6_address_compare.v   verilog
+lib axi_ethernet_v3_01_a  axi_ethernet_v3_01_a_v6_address_filter.v   verilog
+lib axi_ethernet_v3_01_a  axi_ethernet_v3_01_a_v6_address_filter_wrap.v   verilog
+lib axi_ethernet_v3_01_a  axi_ethernet_v3_01_a_v6_address_compare_16.v   verilog
+lib axi_ethernet_v3_01_a  axi_ethernet_v3_01_a_v6_address_filter_16.v   verilog
+lib axi_ethernet_v3_01_a  axi_ethernet_v3_01_a_v6_address_filter_wrap_16.v   verilog
+lib axi_ethernet_v3_01_a  increment_controller.vhd   vhdl
+lib axi_ethernet_v3_01_a  pre_accumulator.vhd   vhdl
+lib axi_ethernet_v3_01_a  statistics_core.vhd   vhdl
+lib axi_ethernet_v3_01_a  axi_ethernet_v3_01_a_v6_ipic_mux.v verilog
+lib axi_ethernet_v3_01_a  axi_ethernet_v3_01_a_v6_ipic_host_if.v   verilog
+lib axi_ethernet_v3_01_a  axi_ethernet_v3_01_a_v6_tx_axi_intf.v verilog
+lib axi_ethernet_v3_01_a  axi_ethernet_v3_01_a_v6_rx_axi_intf.v   verilog
+lib axi_ethernet_v3_01_a  axi_ethernet_v3_01_a_pausereq_shim.v   verilog
+lib axi_ethernet_v3_01_a  fcs_blk.vhd   vhdl
+lib axi_ethernet_v3_01_a  emac_wrapper.vhd vhdl
+lib axi_ethernet_v3_01_a  v6_emac_v2_2.vhd   vhdl
+lib axi_ethernet_v3_01_a  vector_decode.vhd   vhdl
+lib axi_ethernet_v3_01_a  v6_gtxwizard_top_1000bx.vhd   vhdl
+lib axi_ethernet_v3_01_a  v6_gtxwizard_top_sgmii.vhd   vhdl
+lib axi_ethernet_v3_01_a  mii_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  rgmii_v2_0_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  gmii_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  v6_emac_block_1000bx.vhd   vhdl
+lib axi_ethernet_v3_01_a  v6_emac_block_sgmii.vhd   vhdl
+lib axi_ethernet_v3_01_a  v6_emac_block_rgmii.vhd vhdl
+lib axi_ethernet_v3_01_a  v6_emac_block_mii.vhd   vhdl
+lib axi_ethernet_v3_01_a  v6_emac_block_gmii.vhd   vhdl
+lib axi_ethernet_v3_01_a  v6_temac_wrap.vhd   vhdl
+lib axi_ethernet_v3_01_a  addr_response_shim.vhd   vhdl
+lib axi_ethernet_v3_01_a  bus2ghi.vhd   vhdl
+lib axi_ethernet_v3_01_a  reset_combiner.vhd   vhdl
+lib axi_ethernet_v3_01_a  axi_ethernet_v3_01_a_tx_axi_intf.v  verilog
+lib axi_ethernet_v3_01_a  tx_emac_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  tx_mem_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  tx_vlan_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  tx_csum_full_calc_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  tx_csum_full_fsm.vhd   vhdl
+lib axi_ethernet_v3_01_a  tx_csum_full_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  tx_csum_partial_calc_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  tx_csum_partial_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  tx_csum_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  tx_basic_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  tx_axistream_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  tx_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  rx_axistream_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  rx_mem_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  rx_csum_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  rx_emac_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  rx_emac_if_vlan.vhd   vhdl
+lib axi_ethernet_v3_01_a  rx_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  embedded_top.vhd   vhdl
+lib axi_ethernet_v3_01_a  axi_ethernet.vhd   vhdl
+#
+# --- End of list ------------------------------

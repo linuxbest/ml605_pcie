@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<!--
+########################################################################
+##
+## Copyright (c) 2005 Xilinx, Inc.  All rights reserved.
+##
+########################################################################
+-->
+
+<!DOCTYPE doc SYSTEM "../../ipdialog.dtd" [
+<!ENTITY C_DEVICE ' 
+<widget id="C_DEVICE">
+    <key>C_DEVICE</key>
+    <label>Device </label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_FAMILY ' 
+<widget id="C_FAMILY">
+    <key>C_FAMILY</key>
+    <label>Device Family</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_S_AXI_ACLK_FREQ_HZ ' 
+<widget id="C_S_AXI_ACLK_FREQ_HZ">
+    <key>C_S_AXI_ACLK_FREQ_HZ</key>
+    <label>AXI Clock Freq in HZ</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_AXI_STR_TXC_ACLK_FREQ_HZ ' 
+<widget id="C_AXI_STR_TXC_ACLK_FREQ_HZ">
+	<key>C_AXI_STR_TXC_ACLK_FREQ_HZ</key>
+	<label>AXI Stream Tx Clock Freq</label>
+	<tip></tip>
+</widget>
+'>
+<!ENTITY C_BASEADDR ' 
+<widget id="C_BASEADDR">
+	<key>C_BASEADDR</key>
+	<label>Base Address</label>
+	<tip></tip>
+</widget>
+'>
+<!ENTITY C_HIGHADDR ' 
+<widget id="C_HIGHADDR">
+	<key>C_HIGHADDR</key>
+	<label>High Address</label>
+	<tip></tip>
+</widget>
+'>
+<!ENTITY C_TRANS ' 
+<widget id="C_TRANS">
+    <key>C_TRANS</key>
+    <label>Spartan 6 Transceiver Side</label>
+    <tip>Only used for Spartan 6 SGMII and 1000BASE-X designs</tip>
+</widget>
+'>
+<!ENTITY C_PHYADDR ' 
+<widget id="C_PHYADDR">
+    <key>C_PHYADDR</key>
+    <label>PHY Address</label>
+    <tip>Do not use 00000 or 11111</tip>
+</widget>
+'>
+<!ENTITY C_INCLUDE_IO ' 
+<widget id="C_INCLUDE_IO">
+    <key>C_INCLUDE_IO</key>
+    <label>Include IO and BUFG as Needed for the PHY Interface Selected</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_USE_GTH ' 
+<widget id="C_USE_GTH ">
+    <key>C_USE_GTH </key>
+    <label>Use GTH transceiver as Needed for the Virtex-7 series PHY Interface</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_TYPE ' 
+<widget id="C_TYPE">
+    <key>C_TYPE</key>
+    <label>Type of TEMAC</label>
+    <tip>C_TYPE value of 0= 10/100 Mbps Soft-lic required and C_PHY_TYPE must be = 0 (MII), 1= 10/100/1000 Mbps Soft-lic required, 2= V6 Hard</tip>
+</widget>
+'>
+<!ENTITY C_PHY_TYPE ' 
+<widget id="C_PHY_TYPE">
+    <key>C_PHY_TYPE</key>
+    <label>Physical Interface Type</label>
+    <tip>C_PHY_TYPE must be = 0 (MII) when C_TYPE is set = 0 (10/100 Mbps soft-lic required)</tip>
+</widget>
+'>
+<!ENTITY C_HALFDUP ' 
+<widget id="C_HALFDUP">
+    <key>C_HALFDUP</key>
+    <label>Enable Half Duplex mode</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_TXMEM ' 
+<widget id="C_TXMEM">
+    <key>C_TXMEM</key>
+    <label>TX Memory Depth</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_RXMEM ' 
+<widget id="C_RXMEM">
+    <key>C_RXMEM</key>
+    <label>RX Memory Depth</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_TXCSUM ' 
+<widget id="C_TXCSUM">
+    <key>C_TXCSUM</key>
+    <label>Enable TX Checksum Offload</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_RXCSUM ' 
+<widget id="C_RXCSUM">
+    <key>C_RXCSUM</key>
+    <label>Enable RX Checksum Offload</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_TXVLAN_TRAN ' 
+<widget id="C_TXVLAN_TRAN">
+    <key>C_TXVLAN_TRAN</key>
+    <label>Transmit VLAN translation</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_RXVLAN_TRAN ' 
+<widget id="C_RXVLAN_TRAN">
+    <key>C_RXVLAN_TRAN</key>
+    <label>Receive VLAN translation</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_TXVLAN_TAG ' 
+<widget id="C_TXVLAN_TAG">
+    <key>C_TXVLAN_TAG</key>
+    <label>Transmit VLAN tagging</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_RXVLAN_TAG ' 
+<widget id="C_RXVLAN_TAG">
+    <key>C_RXVLAN_TAG</key>
+    <label>Receive VLAN tagging</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_TXVLAN_STRP ' 
+<widget id="C_TXVLAN_STRP">
+    <key>C_TXVLAN_STRP</key>
+    <label>Transmit VLAN stripping</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_RXVLAN_STRP ' 
+<widget id="C_RXVLAN_STRP">
+    <key>C_RXVLAN_STRP</key>
+    <label>Receive VLAN stripping</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_MCAST_EXTEND ' 
+<widget id="C_MCAST_EXTEND">
+    <key>C_MCAST_EXTEND</key>
+    <label>Receive Extended Multicast Address Filtering</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_STATS ' 
+<widget id="C_STATS">
+	<key>C_STATS</key>
+	<label>Statistics Counters</label>
+	<tip></tip>
+</widget>
+'>
+<!ENTITY C_AVB ' 
+<widget id="C_AVB">
+    <key>C_AVB</key>
+    <label>Audio Video Bridging (AVB) - license required</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_SIMULATION ' 
+<widget id="C_SIMULATION">
+    <key>C_SIMULATION</key>
+    <label>Simulation Mode</label>
+    <tip>Only set to 1 when simulating</tip>
+</widget>
+'>
+<!ENTITY C_S_AXI_ADDR_WIDTH ' 
+<widget id="C_S_AXI_ADDR_WIDTH">
+    <key>C_S_AXI_ADDR_WIDTH</key>
+    <label>AXI Address Width </label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_S_AXI_DATA_WIDTH ' 
+<widget id="C_S_AXI_DATA_WIDTH">
+    <key>C_S_AXI_DATA_WIDTH</key>
+    <label>AXI Data Width </label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_S_AXI_ID_WIDTH ' 
+<widget id="C_S_AXI_ID_WIDTH">
+    <key>C_S_AXI_ID_WIDTH</key>
+    <label>AXI ID Width </label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_S_AXI_PROTOCOL ' 
+<widget id="C_S_AXI_PROTOCOL">
+    <key>C_S_AXI_PROTOCOL</key>
+    <label>AXI Protocol</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_AXI_STR_TXC_PROTOCOL ' 
+<widget id="C_AXI_STR_TXC_PROTOCOL">
+    <key>C_AXI_STR_TXC_PROTOCOL</key>
+    <label>AXI Stream Protocol</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_AXI_STR_TXD_PROTOCOL ' 
+<widget id="C_AXI_STR_TXD_PROTOCOL">
+    <key>C_AXI_STR_TXD_PROTOCOL</key>
+    <label>AXI Stream Protocol</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_AXI_STR_RXS_PROTOCOL ' 
+<widget id="C_AXI_STR_RXS_PROTOCOL">
+    <key>C_AXI_STR_RXS_PROTOCOL</key>
+    <label>AXI Stream Protocol</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_AXI_STR_RXD_PROTOCOL ' 
+<widget id="C_AXI_STR_RXD_PROTOCOL">
+    <key>C_AXI_STR_RXD_PROTOCOL</key>
+    <label>AXI Stream Protocol</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_AXI_STR_AVBTX_PROTOCOL ' 
+<widget id="C_AXI_STR_AVBTX_PROTOCOL">
+    <key>C_AXI_STR_AVBTX_PROTOCOL</key>
+    <label>AXI Stream Protocol</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_AXI_STR_AVBRX_PROTOCOL ' 
+<widget id="C_AXI_STR_AVBRX_PROTOCOL">
+    <key>C_AXI_STR_AVBRX_PROTOCOL</key>
+    <label>AXI Stream Protocol</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_STATS_WIDTH ' 
+<widget id="C_STATS_WIDTH">
+    <key>C_STATS_WIDTH</key>
+    <label>C_STATS_WIDTH</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_AXI_STR_TXC_TDATA_WIDTH ' 
+<widget id="C_AXI_STR_TXC_TDATA_WIDTH">
+    <key>C_AXI_STR_TXC_TDATA_WIDTH</key>
+    <label>AXI Stream Bus Width</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_AXI_STR_TXD_TDATA_WIDTH ' 
+<widget id="C_AXI_STR_TXD_TDATA_WIDTH">
+    <key>C_AXI_STR_TXD_TDATA_WIDTH</key>
+    <label>AXI Stream Bus Width</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_AXI_STR_RXS_TDATA_WIDTH ' 
+<widget id="C_AXI_STR_RXS_TDATA_WIDTH">
+    <key>C_AXI_STR_RXS_TDATA_WIDTH</key>
+    <label>AXI Stream Bus Width</label>
+    <tip></tip>
+</widget>
+'>
+<!ENTITY C_AXI_STR_RXD_TDATA_WIDTH ' 
+<widget id="C_AXI_STR_RXD_TDATA_WIDTH">
+    <key>C_AXI_STR_RXD_TDATA_WIDTH</key>
+    <label>AXI Stream Bus Width</label>
+    <tip></tip>
+</widget>
+'>
+
+]>
+
+<doc>
+    <view id="User">
+        <display>User</display>
+        <group id="All">
+            <display>All</display>
+            <item>&C_TRANS;</item>
+            <item>&C_PHYADDR;</item>
+            <item>&C_INCLUDE_IO;</item>
+            <item>&C_TYPE;</item>
+            <item>&C_PHY_TYPE;</item>
+            <item>&C_HALFDUP;</item>
+            <item>&C_TXMEM;</item>
+            <item>&C_RXMEM;</item>
+            <item>&C_TXCSUM;</item>
+            <item>&C_RXCSUM;</item>
+            <item>&C_TXVLAN_TRAN;</item>
+            <item>&C_RXVLAN_TRAN;</item>
+            <item>&C_TXVLAN_STRP;</item>
+            <item>&C_RXVLAN_STRP;</item>
+            <item>&C_TXVLAN_TAG;</item>
+            <item>&C_RXVLAN_TAG;</item>
+            <item>&C_MCAST_EXTEND;</item>
+            <item>&C_STATS;</item>
+            <item>&C_AVB;</item>
+        </group>
+        <group id="Hidden">
+            <display>Hidden</display>
+            <item>&C_DEVICE;</item>
+            <item>&C_USE_GTH;</item>
+            <item>&C_FAMILY;</item>
+            <item>&C_S_AXI_ACLK_FREQ_HZ;</item>
+            <item>&C_AXI_STR_TXC_ACLK_FREQ_HZ;</item>
+            <item>&C_BASEADDR;</item>
+            <item>&C_HIGHADDR;</item>
+            <item>&C_SIMULATION;</item>
+            <item>&C_S_AXI_ADDR_WIDTH;</item>
+            <item>&C_S_AXI_DATA_WIDTH;</item>
+            <item>&C_S_AXI_ID_WIDTH;</item>
+            <item>&C_S_AXI_PROTOCOL;</item>
+            <item>&C_AXI_STR_TXC_PROTOCOL;</item>
+            <item>&C_AXI_STR_TXD_PROTOCOL;</item>
+            <item>&C_AXI_STR_RXS_PROTOCOL;</item>
+            <item>&C_AXI_STR_RXD_PROTOCOL;</item>
+            <item>&C_AXI_STR_AVBTX_PROTOCOL;</item>
+            <item>&C_AXI_STR_AVBRX_PROTOCOL;</item>
+            <item>&C_STATS_WIDTH;</item>
+            <item>&C_AXI_STR_TXC_TDATA_WIDTH;</item>
+            <item>&C_AXI_STR_TXD_TDATA_WIDTH;</item>
+            <item>&C_AXI_STR_RXS_TDATA_WIDTH;</item>
+            <item>&C_AXI_STR_RXD_TDATA_WIDTH;</item>
+        </group>
+    </view>
+    <view id="Wizard">
+        <display>Wizard</display>
+        <group id="All">
+            <display>All</display>
+            <item>&G_USE_INTERRUPT;</item>
+            <item>&G_USE_DMA;</item>
+        </group>
+    </view>
+</doc>
