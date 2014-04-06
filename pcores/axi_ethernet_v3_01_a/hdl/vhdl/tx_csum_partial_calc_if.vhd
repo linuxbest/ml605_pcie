@@ -119,7 +119,7 @@ entity tx_csum_partial_calc_if is
     C_FAMILY                  : string                      := "virtex6";
     C_TXCSUM                  : integer range 0 to 2        := 0;
     C_S_AXI_DATA_WIDTH        : integer range 32 to 32      := 32;
-    c_TxD_addrb_width         : integer range  0 to 13      := 10
+    c_TxD_addrb_width         : integer range  0 to 12      := 9
   );
   port (
     AXI_STR_TXC_ACLK           : in  std_logic;                                       --  AXI-Stream Transmit Control Clock
@@ -143,12 +143,12 @@ entity tx_csum_partial_calc_if is
     inc_txd_wr_addr            : in  std_logic;                                       --  Incraments the Wr address
     inc_txd_addr_one           : in  std_logic;                                       --  Incraments the Wr address at the end
     non_xilinx_ip_pulse        : in  std_logic;                                       --  Not Supported
-    axi_str_txd_tdata_dly1     : in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0); --  AXI-Stream Transmit Memory Data
+    axi_str_txd_tdata_dly1     : in  std_logic_vector(63 downto 0); 		      --  AXI-Stream Transmit Memory Data
 
     do_csum                    : out std_logic;                                       --  Enable to do CSUM
     csum_result                : out std_logic_vector(15 downto 0);                   --  Final CSUM result valid with csum_en
     csum_en                    : out std_logic;                                       --  Final CSUM resullt is valid
-    csum_we                    : out std_logic_vector(3 downto 0);                    --  Memory Write Enables for 16-bit access
+    csum_we                    : out std_logic_vector(7 downto 0);                    --  Memory Write Enables for 16-bit access
     csum_cmplt                 : out std_logic                                        --  Current CSUM calculation is complete
   );
 
@@ -168,7 +168,7 @@ signal csum_result_int       : std_logic_vector(15 downto 0);
 
 signal csum_3_2              : std_logic_vector(16 downto 0);
 signal csum_1_0              : std_logic_vector(16 downto 0);
-signal csum_we_int           : std_logic_vector( 3 downto 0);
+signal csum_we_int           : std_logic_vector(7 downto 0);
 signal csum_en_int           : std_logic;
 signal inc_txd_addr_one_dly1 : std_logic;
 signal inc_txd_addr_one_dly2 : std_logic;
@@ -333,9 +333,9 @@ end process;
   csum_result_int <= x"FFFF" when (inc_txd_addr_one_dly4 = '1' and csum_1_0 = x"FFFF") else
                      not csum_1_0(15 downto 0);
 
-  csum_we_int <= "1100" when inc_txd_addr_one_dly4 = '1' and csum_insert_bytes(1) = '1' else
-                 "0011" when inc_txd_addr_one_dly4 = '1' and csum_insert_bytes(1) = '0' else
-                 "0000";
+  csum_we_int <= "00001100" when inc_txd_addr_one_dly4 = '1' and csum_insert_bytes(1) = '1' else
+                 "00000011" when inc_txd_addr_one_dly4 = '1' and csum_insert_bytes(1) = '0' else
+                 "00000000";
 
   csum_en_int <= '1' when (do_csum_int = '1' and inc_txd_addr_one_dly4 = '1') else
                  '0';

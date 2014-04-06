@@ -119,14 +119,14 @@ use axi_ethernet_v3_01_a.all;
 entity tx_csum_full_fsm is
   generic (
     C_S_AXI_DATA_WIDTH     : integer range 32 to 32     := 32;
-    c_TxD_addrb_width      : integer range  0 to 13     := 10
+    c_TxD_addrb_width      : integer range  0 to 12     := 9
   );
   port (
 
     AXI_STR_TXD_ACLK  : in  std_logic;                                        --  Clock
     reset2axi_str_txd : in  std_logic;                                        --  Reset
 
-    txd_strbs         : in  std_logic_vector(3 downto 0);                     --  AXI-Stream Tx Data Strobes
+    txd_strbs         : in  std_logic_vector(7 downto 0);                     --  AXI-Stream Tx Data Strobes
     do_csum           : in  std_logic;                                        --  axi_flag must = 0xA for this to be enabled
     abort_csum        : out std_logic;                                        --  All conditions were not met to complete csum
     txd_tlast         : in  std_logic;                                        --  AXI-Stream Tx Data Last
@@ -135,17 +135,21 @@ entity tx_csum_full_fsm is
     clr_csums         : out std_logic;                                        --  Clear CSUM flags and calculations
     tcp_ptcl          : out std_logic;                                        --  TCP Protocol Indicator
     udp_ptcl          : out std_logic;                                        --  UDP Protocol Indicator
+    en_ipv4_hdr_b76   : out std_logic_vector( 1 downto 0);                    --  bytes 7 and 6 of din
+    en_ipv4_hdr_b54   : out std_logic_vector( 1 downto 0);                    --  bytes 5 and 4 of din
     en_ipv4_hdr_b32   : out std_logic_vector( 1 downto 0);                    --  bytes 3 and 2 of din
     en_ipv4_hdr_b10   : out std_logic_vector( 1 downto 0);                    --  bytes 1 and 0 of din
     last_ipv4_hdr_cnt : out std_logic;                                        --  last data for IPv4 Header Calculation
+    fsm_csum_en_b76   : out std_logic_vector( 1 downto 0);                    --  bytes 7 and 6 of din
+    fsm_csum_en_b54   : out std_logic_vector( 1 downto 0);                    --  bytes 5 and 4 of din
     fsm_csum_en_b32   : out std_logic_vector( 1 downto 0);                    --  bytes 3 and 2 of din
     fsm_csum_en_b10   : out std_logic_vector( 1 downto 0);                    --  bytes 1 and 0 of din
     add_psdo_wd       : out std_logic;                                        --  last data for TCP/UDP Calculation
     ptcl_csum_cmplt   : in  std_logic;                                        --  indicates the TCP/UDP csum calculation is complete
-    zeroes_en         : out std_logic_vector( 1 downto 0);                    --  stalls the CSUM calculations for one clock so
+    zeroes_en         : out std_logic_vector( 3 downto 0);                    --  stalls the CSUM calculations for one clock so
                                                                               --  Zeroes do not need muxed in
-    din               : in  std_logic_vector(C_S_AXI_DATA_WIDTH-1  downto 0); --  AXI Stream Tx Data
-    csum_din          : out std_logic_vector(C_S_AXI_DATA_WIDTH-1  downto 0); --  Mux out of pseudo data or axi_str_txd_tdata_dly0
+    din               : in  std_logic_vector(63  downto 0); 		      --  AXI Stream Tx Data
+    csum_din          : out std_logic_vector(63  downto 0); 		      --  Mux out of pseudo data or axi_str_txd_tdata_dly0
     do_ipv4hdr        : out std_logic;                                        --  only do the ipv4 header csum
     not_tcp_udp       : out std_logic;                                        --  only do the ipv4 header csum - no TCP/UDP protocol
     do_full_csum      : out std_logic;                                        --  do the ipv4 headr and TCP/UDP csum
@@ -153,11 +157,11 @@ entity tx_csum_full_fsm is
     wr_hdr_csum       : out std_logic;                                        --  Enable to Write the Header CSUM to Memory
     wr_ptcl_csum      : out std_logic;                                        --  Enable to Write the EthII/Snap Ipv4 TCP/UDP CSUM
 
-    csum_strt_addr    : in  std_logic_vector(c_TxD_addrb_width-1   downto 0); --  Start Address to start the CSUM ccalculation
+    csum_strt_addr    : in  std_logic_vector(c_TxD_addrb_width-1   downto 0); --  Start Address to start the CSUM calculation
     csum_ipv4_hdr_addr: out std_logic_vector(c_TxD_addrb_width-1   downto 0); --  IPv4 Header Start Address
-    csum_ipv4_hdr_we  : out std_logic_vector( 3 downto 0);                    --  IPv4 Header Write Enable to Memory
+    csum_ipv4_hdr_we  : out std_logic_vector(7 downto 0);                     --  IPv4 Header Write Enable to Memory
     csum_ptcl_addr    : out std_logic_vector(c_TxD_addrb_width-1   downto 0); --  Address to Write the EthII/Snap Ipv4 TCP/UDP CSUM
-    csum_ptcl_we      : out std_logic_vector( 3 downto 0)                     --  Enables to Write the EthII/Snap Ipv4 TCP/UDP CSUM
+    csum_ptcl_we      : out std_logic_vector(7 downto 0)                      --  Enables to Write the EthII/Snap Ipv4 TCP/UDP CSUM
 
 
   );
@@ -170,16 +174,13 @@ end tx_csum_full_fsm;
 
 architecture rtl of tx_csum_full_fsm is
 
-  signal din_big_end           : std_logic_vector(0 to C_S_AXI_DATA_WIDTH-1);
+  signal din_big_end           : std_logic_vector(0 to 63);
 
   type   FULL_CSUM_FSM_TYPE is (
            IDLE,
-           DST,     --  Destination Address
            DST_SRC, --  Destination and Source Address
-           SRC,     --  Source Address
-           IDF,     --  Identify Frame Type
+           SRC_IDF, --  Source Address, Identify Frame Type
            SNAP,    --  SNAP Frame
-           OUI,     --  SNAP OUI
            IPV4_HDR,--  IPv4 Header
            PCOL_HDR,--  Protocol of the packet - TCP or UDP
            DATA,    --  Data
@@ -198,8 +199,8 @@ architecture rtl of tx_csum_full_fsm is
   signal en_ipv4_hdr_cnt      : std_logic;
   signal en_ipv4_hdr_b10_int  : std_logic_vector(1 downto 0);
   signal en_ipv4_hdr_b32_int  : std_logic_vector(1 downto 0);
-
-
+  signal en_ipv4_hdr_b54_int  : std_logic_vector(1 downto 0);
+  signal en_ipv4_hdr_b76_int  : std_logic_vector(1 downto 0);
 
   signal clr_hdr_cnt          : std_logic;
   signal last_ipv4_hdr_cnt_int: std_logic;
@@ -210,13 +211,15 @@ architecture rtl of tx_csum_full_fsm is
   signal calc_frm_length      : std_logic;
   signal frm_length           : std_logic_vector(0 to 15);
   signal fsm_csum_en          : std_logic;
+  signal fsm_csum_en_b76_int  : std_logic_vector(1 downto 0);
+  signal fsm_csum_en_b54_int  : std_logic_vector(1 downto 0);
   signal fsm_csum_en_b32_int  : std_logic_vector(1 downto 0);
   signal fsm_csum_en_b10_int  : std_logic_vector(1 downto 0);
 
   signal csum_ipv4_hdr_addr_int : std_logic_vector(c_TxD_addrb_width-1   downto 0);
-  signal csum_ipv4_hdr_we_int : std_logic_vector( 3 downto 0);
+  signal csum_ipv4_hdr_we_int : std_logic_vector( 7 downto 0);
   signal csum_ptcl_addr_int   : std_logic_vector(c_TxD_addrb_width-1   downto 0);
-  signal csum_ptcl_we_int     : std_logic_vector( 3 downto 0);
+  signal csum_ptcl_we_int     : std_logic_vector( 7 downto 0);
 
   signal store_sa_da          : std_logic;
   signal sa0                  : std_logic_vector(15 downto 0); --Source Address Half word - Little End
@@ -231,8 +234,6 @@ architecture rtl of tx_csum_full_fsm is
   signal eth2                 : std_logic;
   signal set_snap             : std_logic;
   signal snap_hit             : std_logic;
-  signal set_oui_hit          : std_logic;
-  signal oui_hit              : std_logic;
   signal set_vlan             : std_logic;
   signal vlan                 : std_logic;
   signal set_ipv4             : std_logic;
@@ -248,8 +249,8 @@ architecture rtl of tx_csum_full_fsm is
 
   signal do_full_csum_int     : std_logic;
   signal add_psdo_wd_int      : std_logic;
-  signal pseudo_data          : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
-  signal zeroes_en_int        : std_logic_vector(1 downto 0);
+  signal pseudo_data          : std_logic_vector(63 downto 0);
+  signal zeroes_en_int        : std_logic_vector(3 downto 0);
 
   signal abort_csum_int       : std_logic;
 
@@ -265,9 +266,13 @@ architecture rtl of tx_csum_full_fsm is
     not_tcp_udp         <= not_tcp_udp_int;
     do_full_csum        <= do_full_csum_int;
 
+    en_ipv4_hdr_b76     <= en_ipv4_hdr_b76_int;
+    en_ipv4_hdr_b54     <= en_ipv4_hdr_b54_int;
     en_ipv4_hdr_b32     <= en_ipv4_hdr_b32_int;
     en_ipv4_hdr_b10     <= en_ipv4_hdr_b10_int;
     last_ipv4_hdr_cnt   <= last_ipv4_hdr_cnt_int;
+    fsm_csum_en_b76     <= fsm_csum_en_b76_int;
+    fsm_csum_en_b54     <= fsm_csum_en_b54_int;
     fsm_csum_en_b32     <= fsm_csum_en_b32_int;
     fsm_csum_en_b10     <= fsm_csum_en_b10_int;
     add_psdo_wd         <= add_psdo_wd_int;
@@ -283,7 +288,10 @@ architecture rtl of tx_csum_full_fsm is
     din_big_end( 8 to 15) <= din(15 downto  8);
     din_big_end(16 to 23) <= din(23 downto 16);
     din_big_end(24 to 31) <= din(31 downto 24);
-
+    din_big_end(32 to 39) <= din(39 downto 32);
+    din_big_end(40 to 47) <= din(47 downto 40);
+    din_big_end(48 to 55) <= din(55 downto 48);
+    din_big_end(56 to 63) <= din(63 downto 56);
 
 
     -----------------------------------------------------------------------
@@ -291,7 +299,7 @@ architecture rtl of tx_csum_full_fsm is
     -----------------------------------------------------------------------
     FSM_FULL_CSUM_CMB : process(fcsum_wr_cs,csum_calc_en,do_csum,
       din,din_big_end,
-      vlan,hdr_cnt,ipv4,eth2,snap_hit,oui_hit,
+      vlan,hdr_cnt,ipv4,eth2,snap_hit,
       udp_ptcl_int,tcp_ptcl_int,fragment,
       txd_tlast,ptcl_csum_cmplt,txd_strbs,hdr_csum_cmplt,
       not_tcp_udp_int,do_ipv4_int
@@ -303,6 +311,8 @@ architecture rtl of tx_csum_full_fsm is
       en_ipv4_hdr_cnt      <= '0';
       en_ipv4_hdr_b10_int  <= "00";
       en_ipv4_hdr_b32_int  <= "00";
+      en_ipv4_hdr_b54_int  <= "00";
+      en_ipv4_hdr_b76_int  <= "00";
 
       last_ipv4_hdr_cnt_int<= '0';
       en_pcol_hdr_cnt      <= '0';
@@ -310,6 +320,8 @@ architecture rtl of tx_csum_full_fsm is
       store_version        <= '0';
       calc_frm_length      <= '0';
       fsm_csum_en          <= '0';
+      fsm_csum_en_b76_int  <= "00";
+      fsm_csum_en_b54_int  <= "00";
       fsm_csum_en_b32_int  <= "00";
       fsm_csum_en_b10_int  <= "00";
 
@@ -320,14 +332,13 @@ architecture rtl of tx_csum_full_fsm is
 
       set_eth2             <= '0';
       set_snap             <= '0';
-      set_oui_hit          <= '0';
       set_vlan             <= '0';
       set_ipv4             <= '0';
       set_ptcl             <= '0';
       set_ipv4hdr_only     <= '0';
 
       set_fragment         <= '0';
-      zeroes_en_int        <= "00";
+      zeroes_en_int        <= "0000";
 
       add_psdo_wd_int      <= '0';
 
@@ -342,25 +353,11 @@ architecture rtl of tx_csum_full_fsm is
           --  If csum calc is aborted because all conditions are not met
           --    (not IPv4, not TCP, not UDP, etc) then do_csum is cleared
           --    which will prevent the FSM from starting again until the next packet
-            fcsum_wr_ns <= DST;
+            fcsum_wr_ns <= DST_SRC;
           else
             fcsum_wr_ns <= IDLE;
           end if;
-        when DST      =>
-          if csum_calc_en = '1' then
-          --  tvalid/tready are HIGH
-            fcsum_wr_ns <= DST_SRC;
-          else
-            fcsum_wr_ns <= DST;
-          end if;
         when DST_SRC  =>
-          if csum_calc_en = '1' then
-          --  tvalid/tready are HIGH
-            fcsum_wr_ns <= SRC;
-          else
-            fcsum_wr_ns <= DST_SRC;
-          end if;
-        when SRC      =>
           if txd_tlast = '1' and csum_calc_en = '1' then
             --  Tlast was received so exit
             clr_csums_int       <= '0';
@@ -369,7 +366,7 @@ architecture rtl of tx_csum_full_fsm is
                                                 --  ptcl_csum_cmplt and exit tx_csum_full_if.vhd FSMs
             fcsum_wr_ns         <= WAIT_COMPLETE;
           elsif csum_calc_en = '1' then
-            if din(15 downto 0) = X"0081" then
+            if din(47 downto 32) = X"0081" then
             --  It is VLAN
               set_vlan         <= '1';
               set_snap         <= '0';
@@ -378,9 +375,9 @@ architecture rtl of tx_csum_full_fsm is
               en_ipv4_hdr_cnt  <= '0';
               store_version    <= '0';
               set_ipv4         <= '0';
-              fcsum_wr_ns      <= IDF;
-            elsif din_big_end(0 to 15) <= X"0600" and   --Length is less than 0x600 and
-                  din(23 downto 16)  = X"AA" and din(31 downto 24) = X"AA"  then --DSAP and SSAP
+              fcsum_wr_ns      <= SRC_IDF;
+            elsif din_big_end(32 to 47) <= X"0600" and   --Length is less than 0x600 and
+                  din(55 downto 48)  = X"AA" and din(63 downto 56) = X"AA"  then --DSAP and SSAP
             --  It is SNAP
               set_vlan         <= '0';
               set_snap         <= '1';
@@ -389,9 +386,9 @@ architecture rtl of tx_csum_full_fsm is
               en_ipv4_hdr_cnt  <= '0';
               store_version    <= '0';
               set_ipv4         <= '0';
-              fcsum_wr_ns      <= IDF;  --
-            elsif din(15 downto  0) = X"0008" and -- TYPE is 0x0800 (IPv4) and
-                  din(23 downto 16) = X"45" then  -- Version = 0x4 (IPv4) and HDR Length = 5
+              fcsum_wr_ns      <= SNAP;  --
+            elsif din(47 downto 32) = X"0008" and -- TYPE is 0x0800 (IPv4) and
+                  din(55 downto 48) = X"45" then  -- Version = 0x4 (IPv4) and HDR Length = 5
             -- It is Ethernet II IPv4 with 5 word header  -- IPv4 header options are not supported
               set_vlan             <= '0';
               set_snap             <= '0';
@@ -399,7 +396,9 @@ architecture rtl of tx_csum_full_fsm is
               store_hdr_length     <= '1';  --  length of packet starting from here, to the end (+4 words for EII, +1+ vlan, +2 snap
               en_ipv4_hdr_cnt      <= '1';
               en_ipv4_hdr_b10_int  <= "00";
-              en_ipv4_hdr_b32_int  <= "11";
+              en_ipv4_hdr_b32_int  <= "00";
+              en_ipv4_hdr_b54_int  <= "00";
+              en_ipv4_hdr_b76_int  <= "11";
               store_version        <= '1';
               set_ipv4             <= '1';
               fcsum_wr_ns          <= IPV4_HDR;
@@ -413,6 +412,8 @@ architecture rtl of tx_csum_full_fsm is
               en_ipv4_hdr_cnt      <= '0';
               en_ipv4_hdr_b10_int  <= "00";
               en_ipv4_hdr_b32_int  <= "00";
+              en_ipv4_hdr_b54_int  <= "00";
+              en_ipv4_hdr_b76_int  <= "00";
               store_version        <= '0';
               set_ipv4             <= '0';
               clr_csums_int        <= '0';
@@ -427,11 +428,13 @@ architecture rtl of tx_csum_full_fsm is
             en_ipv4_hdr_cnt      <= '0';
             en_ipv4_hdr_b10_int  <= "00";
             en_ipv4_hdr_b32_int  <= "00";
+            en_ipv4_hdr_b54_int  <= "00";
+            en_ipv4_hdr_b76_int  <= "00";
             store_version        <= '0';
             set_ipv4             <= '0';
-            fcsum_wr_ns          <= SRC;
+            fcsum_wr_ns          <= DST_SRC;
           end if;
-        when IDF =>
+        when SRC_IDF =>
           if txd_tlast = '1' and csum_calc_en = '1' then
             --  Tlast was received so exit
             clr_csums_int       <= '0';
@@ -440,14 +443,16 @@ architecture rtl of tx_csum_full_fsm is
                                                 --  ptcl_csum_cmplt and exit tx_csum_full_if.vhd FSMs
             fcsum_wr_ns         <= WAIT_COMPLETE;
           elsif csum_calc_en = '1' then
-            if vlan = '1' then
               if din(15 downto 0) = X"0008" and  -- TYPE is 0x0800 (IPv4) and
                  din(23 downto 16) = X"45" then  -- Version = 0x4 (IPv4) and HDR Length = 5
                 -- It is Ethernet II IPv4 with 5 word header
+		calc_frm_length      <= '1';
                 store_hdr_length     <= '1';
                 en_ipv4_hdr_cnt      <= '1';
                 en_ipv4_hdr_b10_int  <= "00";
                 en_ipv4_hdr_b32_int  <= "11";
+                en_ipv4_hdr_b54_int  <= "11";
+                en_ipv4_hdr_b76_int  <= "11";
                 store_version        <= '1';
                 set_eth2             <= '1';
                 set_ipv4             <= '1';
@@ -462,7 +467,7 @@ architecture rtl of tx_csum_full_fsm is
                 set_eth2         <= '0';
                 set_ipv4         <= '0';
                 set_snap         <= '1';
-                fcsum_wr_ns      <= SNAP;  -- SNAP detected so check OUI
+                fcsum_wr_ns      <= SNAP;  -- SNAP detected
               else
                 store_hdr_length <= '0';
                 en_ipv4_hdr_cnt  <= '0';
@@ -474,38 +479,11 @@ architecture rtl of tx_csum_full_fsm is
                 abort_csum_int   <= '0';
                 fcsum_wr_ns      <= WAIT_TLAST;--WAIT_COMPLETE;  -- Do not do CSUM
               end if;
-            else -- eth_snap_xsap_hit = '1' then
-              if din( 7 downto  0) = X"03" and  -- Endian Swap  -- Control
-                 din(15 downto  8) = X"00" and  -- Endian Swap  -- OUI
-                 din(23 downto 16) = X"00" and  -- Endian Swap  -- OUI
-                 din(31 downto 24) = X"00" then -- Endian Swap  -- OUI
-                store_hdr_length <= '0';
-                en_ipv4_hdr_cnt  <= '0';
-                store_version    <= '0';
-                set_eth2         <= '0';
-                set_ipv4         <= '0';
-                set_snap         <= '0';
-                set_oui_hit      <= '1';
-                fcsum_wr_ns      <= OUI;
-              else
-                store_hdr_length <= '0';
-                en_ipv4_hdr_cnt  <= '0';
-                store_version    <= '0';
-                set_eth2         <= '0';
-                set_ipv4         <= '0';
-                set_snap         <= '0';
-                set_oui_hit      <= '0';
-                clr_csums_int    <= '0';
-                abort_csum_int   <= '0';
-                fcsum_wr_ns      <= WAIT_TLAST;--WAIT_COMPLETE;
-              end if;
-            end if;
           else
             set_eth2         <= '0';
             set_ipv4         <= '0';
             set_snap         <= '0';
-            set_oui_hit      <= '0';
-            fcsum_wr_ns      <= IDF;
+            fcsum_wr_ns      <= SRC_IDF;
           end if;
         when SNAP =>
           if txd_tlast = '1' and csum_calc_en = '1' then
@@ -516,157 +494,229 @@ architecture rtl of tx_csum_full_fsm is
                                                 --  ptcl_csum_cmplt and exit tx_csum_full_if.vhd FSMs
             fcsum_wr_ns         <= WAIT_COMPLETE;
           elsif csum_calc_en = '1' then
-            if din( 7 downto  0) = X"03" and  -- Control
-               din(15 downto  8) = X"00" and  -- OUI
-               din(23 downto 16) = X"00" and  -- OUI
-               din(31 downto 24) = X"00" then -- OUI
-              set_oui_hit      <= '1';
-              fcsum_wr_ns      <= OUI;
-            else --was not OUI hit or last was received so exit
-              set_oui_hit      <= '0';
-              clr_csums_int    <= '0';
-              abort_csum_int   <= '0';
-              fcsum_wr_ns      <= WAIT_TLAST;--WAIT_COMPLETE;
-            end if;
-          else
-            set_oui_hit      <= '0';
-            fcsum_wr_ns      <= SNAP;
-          end if;
-        when OUI =>
-          if txd_tlast = '1' and csum_calc_en = '1' then
-            --  Tlast was received so exit
-            clr_csums_int       <= '0';
-            abort_csum_int      <= '0';
-            add_psdo_wd_int     <= '1';         --  pseudo word is not done, but this needs to set
-                                                --  ptcl_csum_cmplt and exit tx_csum_full_if.vhd FSMs
-            fcsum_wr_ns         <= WAIT_COMPLETE;
-          elsif csum_calc_en = '1' then
-
-            if din(15 downto 0) = X"0008" and  -- TYPE is 0x0800 (IPv4) and
-               din(23 downto 16) = X"45" then    -- It is SNAP IPv4 with 5 word header
-              store_hdr_length     <= '1';
-              en_ipv4_hdr_cnt      <= '1';
-              en_ipv4_hdr_b10_int  <= "00";
-              en_ipv4_hdr_b32_int  <= "11";
-              store_version        <= '1';
-              set_ipv4             <= '1';
-              clr_csums_int        <= '0';
-              abort_csum_int       <= '0';
-              fcsum_wr_ns          <= IPV4_HDR;
-            else --  Not ipv4 so go to idle
-              store_hdr_length     <= '0';
-              en_ipv4_hdr_cnt      <= '0';
-              en_ipv4_hdr_b10_int  <= "00";
-              en_ipv4_hdr_b32_int  <= "00";
-              store_version        <= '0';
-              set_ipv4             <= '0';
-              clr_csums_int        <= '0';
-              abort_csum_int       <= '0';
-              fcsum_wr_ns          <= WAIT_TLAST;--WAIT_COMPLETE;
-            end if;
-
+	    if vlan = '1' then
+		    -- yes vlan, yes snap
+		    if din(15 downto 0) = X"0008" and    -- TYPE is 0x0800 (IPv4) and
+		       din(23 downto 16) = X"45" then    -- It is SNAP IPv4 with 5 word header
+		      store_hdr_length     <= '1';
+                      calc_frm_length      <= '1';
+		      en_ipv4_hdr_cnt      <= '1';
+		      en_ipv4_hdr_b10_int  <= "00";
+		      en_ipv4_hdr_b32_int  <= "11";
+		      en_ipv4_hdr_b54_int  <= "11";
+		      en_ipv4_hdr_b76_int  <= "11";
+		      store_version        <= '1';
+		      set_ipv4             <= '1';
+		      clr_csums_int        <= '0';
+		      abort_csum_int       <= '0';
+		      fcsum_wr_ns          <= IPV4_HDR;
+		    else --  Not ipv4 so go to idle
+		      store_hdr_length     <= '0';
+		      en_ipv4_hdr_cnt      <= '0';
+		      en_ipv4_hdr_b10_int  <= "00";
+		      en_ipv4_hdr_b32_int  <= "00";
+		      en_ipv4_hdr_b54_int  <= "00";
+		      en_ipv4_hdr_b76_int  <= "00";
+		      store_version        <= '0';
+		      set_ipv4             <= '0';
+		      clr_csums_int        <= '0';
+		      abort_csum_int       <= '0';
+		      fcsum_wr_ns          <= WAIT_TLAST;--WAIT_COMPLETE;
+		    end if;
+	    else
+		    -- no vlan, yes snap
+		    if din(47 downto 32) = X"0008" and  -- TYPE is 0x0800 (IPv4) and
+		       din(55 downto 48) = X"45" then    -- It is SNAP IPv4 with 5 word header
+		      store_hdr_length     <= '1';
+		      en_ipv4_hdr_cnt      <= '1';
+		      en_ipv4_hdr_b10_int  <= "00";
+		      en_ipv4_hdr_b32_int  <= "00";
+		      en_ipv4_hdr_b54_int  <= "00";
+		      en_ipv4_hdr_b76_int  <= "11";
+		      store_version        <= '1';
+		      set_ipv4             <= '1';
+		      clr_csums_int        <= '0';
+		      abort_csum_int       <= '0';
+		      fcsum_wr_ns          <= IPV4_HDR;
+		    else --  Not ipv4 so go to idle
+		      store_hdr_length     <= '0';
+		      en_ipv4_hdr_cnt      <= '0';
+		      en_ipv4_hdr_b10_int  <= "00";
+		      en_ipv4_hdr_b32_int  <= "00";
+		      en_ipv4_hdr_b54_int  <= "00";
+		      en_ipv4_hdr_b76_int  <= "00";
+		      store_version        <= '0';
+		      set_ipv4             <= '0';
+		      clr_csums_int        <= '0';
+		      abort_csum_int       <= '0';
+		      fcsum_wr_ns          <= WAIT_TLAST;--WAIT_COMPLETE;
+		    end if;
+	    end if; 
           else
             store_hdr_length     <= '0';
             en_ipv4_hdr_cnt      <= '0';
             en_ipv4_hdr_b10_int  <= "00";
             en_ipv4_hdr_b32_int  <= "00";
+            en_ipv4_hdr_b54_int  <= "00";
+            en_ipv4_hdr_b76_int  <= "00";
             store_version        <= '0';
             set_ipv4             <= '0';
             clr_csums_int        <= '0';
             abort_csum_int       <= '0';
-            fcsum_wr_ns          <= OUI;
+            fcsum_wr_ns          <= SNAP;
           end if;
         when IPV4_HDR =>
           if csum_calc_en = '1' then
-            case hdr_cnt is
-              when "001" => calc_frm_length     <= '1';
-                            set_ptcl            <= '0';
-                            store_sa_da         <= '0';
-                            fsm_csum_en         <= '0';
-                            en_ipv4_hdr_cnt     <= '1';
-                            en_ipv4_hdr_b10_int <= "11";
-                            en_ipv4_hdr_b32_int <= "11";
-                            clr_hdr_cnt         <= '0';
-                            fcsum_wr_ns         <= IPV4_HDR;
-              when "010" => calc_frm_length     <= '0';
-                            set_ptcl            <= '1';
-                            store_sa_da         <= '0';
-                            fsm_csum_en         <= '0';
-                            en_ipv4_hdr_cnt     <= '1';
-                            en_ipv4_hdr_b10_int <= "11";
-                            en_ipv4_hdr_b32_int <= "11";
-                            clr_hdr_cnt         <= '0';
-                            fcsum_wr_ns         <= IPV4_HDR;
-                            if --din(6) = '1' and --  Don't Fragment (DF) = '1'
-                               din(5) = '0' and --  More Fragment (MF) Flag = '0'
-                               din(4) = '0' and               -- Fragment Offset
-                               din(3 downto 0) = X"0" and     -- Fragment Offset
-                               din(15 downto  8) = X"00" then -- Fragment Offset
-                              set_fragment <= '0';
-                            else
-                              set_fragment <= '1';
-                            end if;
-              when "011" => --  mw 1220 --  if ipv4 = '1' and
-                            --  mw 1220 --     (eth2 = '1' or (snap_hit = '1' and oui_hit = '1')) then --and
-                -- two types of ipv4 frames Ethernet II and SNAP
-                            --  Check to ensure all conditions are met before
-                            --  continuing with csum
-                              calc_frm_length     <= '0';
-                              set_ptcl            <= '0';
-                              store_sa_da         <= '1';
-                              fsm_csum_en         <= '1';
-                              fsm_csum_en_b32_int <= "11";
-                              fsm_csum_en_b10_int <= "00";
-                              en_ipv4_hdr_cnt     <= '1';
-                              en_ipv4_hdr_b10_int <= "11";
-                              en_ipv4_hdr_b32_int <= "11";
-                              zeroes_en_int       <= "01";  -- Set enable for ipv4 header csum to insert zeroes into calculation
-                              clr_hdr_cnt         <= '0';
-                              clr_csums_int       <= '0';
-                              abort_csum_int      <= '0';
-                              fcsum_wr_ns         <= IPV4_HDR;
-             when "100" =>  calc_frm_length       <= '0';
-                            set_ptcl              <= '0';
-                            store_sa_da           <= '1';
-                            fsm_csum_en           <= '1';
-                            fsm_csum_en_b32_int   <= "11";
-                            fsm_csum_en_b10_int   <= "11";
-                            en_ipv4_hdr_cnt       <= '1';
-                            en_ipv4_hdr_b10_int   <= "11";
-                            en_ipv4_hdr_b32_int   <= "11";
-                            last_ipv4_hdr_cnt_int <= '0';
-                            clr_hdr_cnt           <= '1';
-                            if (tcp_ptcl_int = '1' or udp_ptcl_int = '1') and fragment = '0' then
-                              set_ipv4hdr_only <= '0';
-                              set_not_tcp_udp  <= '0';
-                              fcsum_wr_ns      <= PCOL_HDR;
-                            else -- Only perform the IPv4 Header CSUM -- Only IPv4 is set
-                              set_ipv4hdr_only <= '1';
-                              set_not_tcp_udp  <= '1';
-                              fcsum_wr_ns      <= WAIT_TLAST;--WR_HDR_ONLY;
-                           end if;
-              when others=> calc_frm_length       <= '0';
-                            set_ptcl              <= '0';
-                            store_sa_da           <= '0';
-                            fsm_csum_en           <= '0';
-                            fsm_csum_en_b32_int   <= "00";
-                            fsm_csum_en_b10_int   <= "00";
-                            en_ipv4_hdr_cnt       <= '0';
-                            en_ipv4_hdr_b10_int   <= "00";
-                            en_ipv4_hdr_b32_int   <= "00";
-                            clr_hdr_cnt           <= '0';
-                            fcsum_wr_ns           <= IPV4_HDR;
-            end case;
+		if vlan = '0' then
+		    case hdr_cnt is
+		      when "001" => calc_frm_length     <= '1';
+		                    set_ptcl            <= '1';
+		                    store_sa_da         <= '0';
+		                    fsm_csum_en         <= '0';
+		                    en_ipv4_hdr_cnt     <= '1';
+		                    en_ipv4_hdr_b10_int <= "11";
+		                    en_ipv4_hdr_b32_int <= "11";
+		        	    en_ipv4_hdr_b54_int <= "11";
+		        	    en_ipv4_hdr_b76_int <= "11";
+		                    clr_hdr_cnt         <= '0';
+		                    fcsum_wr_ns         <= IPV4_HDR;
+		                    if --din(38) = '1' and --  Don't Fragment (DF) = '1'
+		                       din(37) = '0' and --  More Fragment (MF) Flag = '0'
+		                       din(36) = '0' and               -- Fragment Offset
+		                       din(35 downto 32) = X"0" and     -- Fragment Offset
+		                       din(47 downto 40) = X"00" then -- Fragment Offset
+		                      set_fragment <= '0';
+		                    else
+		                      set_fragment <= '1';
+		                    end if;
+		      when "010" => calc_frm_length     <= '0';
+		                    set_ptcl            <= '0';
+		                    store_sa_da         <= '1';
+		                    fsm_csum_en         <= '1';
+				    fsm_csum_en_b76_int <= "11";
+		                    fsm_csum_en_b54_int <= "11";
+				    fsm_csum_en_b32_int <= "11";
+		                    fsm_csum_en_b10_int <= "11";
+		                    en_ipv4_hdr_cnt     <= '1';
+		                    en_ipv4_hdr_b10_int <= "11";
+		                    en_ipv4_hdr_b32_int <= "11";
+		        	    en_ipv4_hdr_b54_int <= "11";
+		        	    en_ipv4_hdr_b76_int <= "11";
+		                    clr_hdr_cnt         <= '1';
+		                    zeroes_en_int       <= "0001";  -- Set enable for ipv4 header csum to insert zeroes into calculation
+		                    clr_csums_int       <= '0';
+		                    abort_csum_int      <= '0';
+				    last_ipv4_hdr_cnt_int <= '0';
+		                    if (tcp_ptcl_int = '1' or udp_ptcl_int = '1') and fragment = '0' then
+		                      set_ipv4hdr_only <= '0';
+		                      set_not_tcp_udp  <= '0';
+		                      fcsum_wr_ns      <= PCOL_HDR;
+		                    else -- Only perform the IPv4 Header CSUM -- Only IPv4 is set
+		                      set_ipv4hdr_only <= '1';
+		                      set_not_tcp_udp  <= '1';
+		                      fcsum_wr_ns      <= WAIT_TLAST;--WR_HDR_ONLY;
+		                   end if;
+		      when others=> calc_frm_length       <= '0';
+		                    set_ptcl              <= '0';
+		                    store_sa_da           <= '0';
+		                    fsm_csum_en           <= '0';
+		                    fsm_csum_en_b76_int   <= "00";
+		                    fsm_csum_en_b54_int   <= "00";
+		                    fsm_csum_en_b32_int   <= "00";
+		                    fsm_csum_en_b10_int   <= "00";
+		                    en_ipv4_hdr_cnt       <= '0';
+		                    en_ipv4_hdr_b10_int   <= "00";
+		                    en_ipv4_hdr_b32_int   <= "00";
+		        	    en_ipv4_hdr_b54_int   <= "00";
+		        	    en_ipv4_hdr_b76_int   <= "00";
+		                    clr_hdr_cnt           <= '0';
+		                    fcsum_wr_ns           <= IPV4_HDR;
+		    end case;
+		else	-- vlan = '1'
+		    case hdr_cnt is
+		      when "001" => calc_frm_length     <= '0';
+		                    set_ptcl            <= '1';
+		                    store_sa_da         <= '1';
+		                    fsm_csum_en         <= '1';
+				    fsm_csum_en_b76_int <= "11";
+		                    fsm_csum_en_b54_int <= "00";
+				    fsm_csum_en_b32_int <= "00";
+		                    fsm_csum_en_b10_int <= "00";
+		                    en_ipv4_hdr_cnt     <= '1';
+		                    en_ipv4_hdr_b10_int <= "11";
+		                    en_ipv4_hdr_b32_int <= "11";
+		        	    en_ipv4_hdr_b54_int <= "11";
+		        	    en_ipv4_hdr_b76_int <= "11";
+		                    clr_hdr_cnt         <= '0';
+				    zeroes_en_int       <= "0100";
+		                    fcsum_wr_ns         <= IPV4_HDR;
+		                    if --din(6) = '1' and --  Don't Fragment (DF) = '1'
+		                       din(5) = '0' and --  More Fragment (MF) Flag = '0'
+		                       din(4) = '0' and               -- Fragment Offset
+		                       din(3 downto 0) = X"0" and     -- Fragment Offset
+		                       din(15 downto 8) = X"00" then -- Fragment Offset
+		                      set_fragment <= '0';
+		                    else
+		                      set_fragment <= '1';
+		                    end if;
+		      when "010" => calc_frm_length     <= '0';
+		                    set_ptcl            <= '0';
+		                    store_sa_da         <= '1';
+		                    fsm_csum_en         <= '1';
+				    fsm_csum_en_b76_int <= "11";
+		                    fsm_csum_en_b54_int <= "11";
+				    fsm_csum_en_b32_int <= "11";
+		                    fsm_csum_en_b10_int <= "11";
+		                    en_ipv4_hdr_cnt     <= '1';
+		                    en_ipv4_hdr_b10_int <= "11";
+		                    en_ipv4_hdr_b32_int <= "11";
+		        	    en_ipv4_hdr_b54_int <= "11";
+		        	    en_ipv4_hdr_b76_int <= "00";
+		                    clr_hdr_cnt         <= '1';
+		                    zeroes_en_int       <= "0000";  -- Set enable for ipv4 header csum to insert zeroes into calculation
+		                    clr_csums_int       <= '0';
+		                    abort_csum_int      <= '0';
+				    last_ipv4_hdr_cnt_int <= '0';
+		                    if (tcp_ptcl_int = '1' or udp_ptcl_int = '1') and fragment = '0' then
+		                      set_ipv4hdr_only <= '0';
+		                      set_not_tcp_udp  <= '0';
+		                      fcsum_wr_ns      <= PCOL_HDR;
+		                    else -- Only perform the IPv4 Header CSUM -- Only IPv4 is set
+		                      set_ipv4hdr_only <= '1';
+		                      set_not_tcp_udp  <= '1';
+		                      fcsum_wr_ns      <= WAIT_TLAST;--WR_HDR_ONLY;
+		                   end if;
+		      when others=> calc_frm_length       <= '0';
+		                    set_ptcl              <= '0';
+		                    store_sa_da           <= '0';
+		                    fsm_csum_en           <= '0';
+		                    fsm_csum_en_b76_int   <= "00";
+		                    fsm_csum_en_b54_int   <= "00";
+		                    fsm_csum_en_b32_int   <= "00";
+		                    fsm_csum_en_b10_int   <= "00";
+		                    en_ipv4_hdr_cnt       <= '0';
+		                    en_ipv4_hdr_b10_int   <= "00";
+		                    en_ipv4_hdr_b32_int   <= "00";
+		        	    en_ipv4_hdr_b54_int   <= "00";
+		        	    en_ipv4_hdr_b76_int   <= "00";
+		                    clr_hdr_cnt           <= '0';
+		                    fcsum_wr_ns           <= IPV4_HDR;
+		    end case;
+		end if;
           else
             calc_frm_length     <= '0';
             set_ptcl            <= '0';
             store_sa_da         <= '0';
             fsm_csum_en         <= '0';
+            fsm_csum_en_b76_int <= "00";
+            fsm_csum_en_b54_int <= "00";
             fsm_csum_en_b32_int <= "00";
             fsm_csum_en_b10_int <= "00";
             en_ipv4_hdr_cnt     <= '0';
             en_ipv4_hdr_b10_int <= "00";
             en_ipv4_hdr_b32_int <= "00";
+            en_ipv4_hdr_b54_int <= "00";
+            en_ipv4_hdr_b76_int <= "00";
             clr_hdr_cnt         <= '0';
             fcsum_wr_ns         <= IPV4_HDR;
           end if;
@@ -674,81 +724,109 @@ architecture rtl of tx_csum_full_fsm is
 
           if csum_calc_en = '1' then
             fsm_csum_en         <= '1';
+            fsm_csum_en_b76_int <= "11";
+            fsm_csum_en_b54_int <= "11";
             fsm_csum_en_b32_int <= "11";
             fsm_csum_en_b10_int <= "11";
             case hdr_cnt is
             --  when TCP this count will reset after "100"
             --  when udp this count will reset after "001"
               when "000" => calc_frm_length       <= '0';
-                            store_sa_da           <= '1';
+			    if vlan = '0' then
+                               store_sa_da           <= '1';
+                               en_ipv4_hdr_b10_int   <= "11";
+                            else
+			       store_sa_da           <= '0';
+			       en_ipv4_hdr_b10_int   <= "00";
+                            end if;
                             en_ipv4_hdr_cnt       <= '0';
-                            en_ipv4_hdr_b10_int   <= "11";
                             en_ipv4_hdr_b32_int   <= "00";
+                	    en_ipv4_hdr_b54_int   <= "00";
+                	    en_ipv4_hdr_b76_int   <= "00";
                             last_ipv4_hdr_cnt_int <= '1';
                             en_pcol_hdr_cnt       <= '1';
-                            zeroes_en_int         <= "00";
+                            zeroes_en_int         <= "0000";
                             fcsum_wr_ns           <= PCOL_HDR;
-              when "001" => if udp_ptcl_int = '1' then --and fragment = '0' then
+			    if udp_ptcl_int = '1' then --and fragment = '0' then
                               en_pcol_hdr_cnt <= '0';
                               clr_hdr_cnt     <= '1';
                               calc_frm_length <= '1';
-                              zeroes_en_int   <= "00";
+                              zeroes_en_int   <= "0000";
                               fcsum_wr_ns     <= DATA;
                             elsif tcp_ptcl_int = '1' then --and fragment = '0' then --has to be TCP
                               en_pcol_hdr_cnt <= '1';
                               clr_hdr_cnt     <= '0';
                               calc_frm_length <= '0';
-                              zeroes_en_int   <= "00";
+                              zeroes_en_int   <= "0000";
                               fcsum_wr_ns     <= PCOL_HDR;
                             else -- it was not IPv4, tcp/udp, and fragments /= 0
                               en_pcol_hdr_cnt <= '0';
                               clr_hdr_cnt     <= '0';
-                              zeroes_en_int   <= "00";
+                              zeroes_en_int   <= "0000";
                               clr_csums_int   <= '0';
                               abort_csum_int  <= '0';
                               fcsum_wr_ns     <= WAIT_TLAST;--WAIT_COMPLETE;
                             end if;
-              when "100" => en_pcol_hdr_cnt <= '0';
+              when "001" => en_pcol_hdr_cnt <= '0';
                             clr_hdr_cnt     <= '1';
-                            zeroes_en_int   <= "10";  -- Set enable for data csum to insert zeroes into calculation
+                            if vlan = '0' then
+                               zeroes_en_int   <= "0000";  -- Set enable for data csum to insert zeroes into calculation
+                            else
+			       zeroes_en_int   <= "1000";
+                            end if;
                             fcsum_wr_ns     <= DATA;
 
               when others=> en_pcol_hdr_cnt <= '1';
                             clr_hdr_cnt     <= '0';
-                            zeroes_en_int   <= "00";
+                            zeroes_en_int   <= "0000";
                             fcsum_wr_ns     <= PCOL_HDR;
             end case;
           else
             en_pcol_hdr_cnt     <= '0';
             clr_hdr_cnt         <= '0';
-            zeroes_en_int       <= "00";
+            zeroes_en_int       <= "0000";
             fsm_csum_en         <= '0';
+            fsm_csum_en_b76_int <= "00";
+            fsm_csum_en_b54_int <= "00";
             fsm_csum_en_b32_int <= "00";
             fsm_csum_en_b10_int <= "00";
             fcsum_wr_ns         <= PCOL_HDR;
           end if;
 
         when DATA     =>
-          if csum_calc_en = '1' and udp_ptcl_int = '1' and hdr_cnt = "000" then
-            zeroes_en_int   <= "01";
+          if csum_calc_en = '1' and tcp_ptcl_int = '1' and hdr_cnt = "000" then
+            if vlan = '0' then
+               zeroes_en_int   <= "0010";
+            end if;
+            en_pcol_hdr_cnt <= '1';
+          elsif csum_calc_en = '1' and udp_ptcl_int = '1' and hdr_cnt = "000" then
+            if vlan = '0' then
+               zeroes_en_int   <= "0001";
+            end if;
             en_pcol_hdr_cnt <= '1';
           else
-            zeroes_en_int   <= "00";
+            zeroes_en_int   <= "0000";
             en_pcol_hdr_cnt <= '0';
           end if;
 
           if txd_tlast = '1' and csum_calc_en = '1' then
             fsm_csum_en         <= '1';
+            fsm_csum_en_b76_int <= txd_strbs(7 downto 6);
+            fsm_csum_en_b54_int <= txd_strbs(5 downto 4);
             fsm_csum_en_b32_int <= txd_strbs(3 downto 2);
             fsm_csum_en_b10_int <= txd_strbs(1 downto 0);
             fcsum_wr_ns         <= WR_HDR;
           elsif txd_tlast = '0' and csum_calc_en = '1' then
             fsm_csum_en         <= '1';
+            fsm_csum_en_b76_int <= "11";
+            fsm_csum_en_b54_int <= "11";
             fsm_csum_en_b32_int <= "11";
             fsm_csum_en_b10_int <= "11";
             fcsum_wr_ns         <= DATA;
           else
             fsm_csum_en         <= '0';
+            fsm_csum_en_b76_int <= "00";
+            fsm_csum_en_b54_int <= "00";
             fsm_csum_en_b32_int <= "00";
             fsm_csum_en_b10_int <= "00";
             fcsum_wr_ns         <= DATA;
@@ -765,9 +843,11 @@ architecture rtl of tx_csum_full_fsm is
                 en_ipv4_hdr_cnt       <= '0';
                 en_ipv4_hdr_b10_int   <= "11";
                 en_ipv4_hdr_b32_int   <= "00";
+                en_ipv4_hdr_b54_int   <= "00";
+                en_ipv4_hdr_b76_int   <= "00";
                 last_ipv4_hdr_cnt_int <= '1';
                 en_pcol_hdr_cnt       <= '1';
-                zeroes_en_int         <= "00";
+                zeroes_en_int         <= "0000";
                 clr_hdr_cnt           <= '0';
                 clr_csums_int         <= '0';
                 abort_csum_int        <= '0';
@@ -777,9 +857,11 @@ architecture rtl of tx_csum_full_fsm is
                 en_ipv4_hdr_cnt       <= '0';
                 en_ipv4_hdr_b10_int   <= "00";
                 en_ipv4_hdr_b32_int   <= "00";
+                en_ipv4_hdr_b54_int   <= "00";
+                en_ipv4_hdr_b76_int   <= "00";
                 last_ipv4_hdr_cnt_int <= '0';
                 en_pcol_hdr_cnt       <= '0';
-                zeroes_en_int         <= "00";
+                zeroes_en_int         <= "0000";
                 clr_hdr_cnt           <= '0';
                 clr_csums_int         <= '0';
                 abort_csum_int        <= '0';
@@ -790,9 +872,11 @@ architecture rtl of tx_csum_full_fsm is
             en_ipv4_hdr_cnt       <= '0';
             en_ipv4_hdr_b10_int   <= "00";
             en_ipv4_hdr_b32_int   <= "00";
+            en_ipv4_hdr_b54_int   <= "00";
+            en_ipv4_hdr_b76_int   <= "00";
             last_ipv4_hdr_cnt_int <= '0';
             en_pcol_hdr_cnt       <= '0';
-            zeroes_en_int         <= "00";
+            zeroes_en_int         <= "0000";
             clr_hdr_cnt           <= '0';
             clr_csums_int         <= '0';
             abort_csum_int        <= '0';
@@ -827,7 +911,7 @@ architecture rtl of tx_csum_full_fsm is
 --              en_ipv4_hdr_b32_int   <= "00";
 --              last_ipv4_hdr_cnt_int <= '1';
 --              en_pcol_hdr_cnt       <= '1';
---              zeroes_en_int         <= "00";
+--              zeroes_en_int         <= "0000";
 --              clr_hdr_cnt           <= '0';
 --              clr_csums_int         <= '0';
 --              abort_csum_int        <= '0';
@@ -839,7 +923,7 @@ architecture rtl of tx_csum_full_fsm is
 --              en_ipv4_hdr_b32_int   <= "00";
 --              last_ipv4_hdr_cnt_int <= '0';
 --              en_pcol_hdr_cnt       <= '0';
---              zeroes_en_int         <= "00";
+--              zeroes_en_int         <= "0000";
 --              clr_hdr_cnt           <= '0';
 --              clr_csums_int         <= '0';
 --              abort_csum_int        <= '0';
@@ -871,7 +955,7 @@ architecture rtl of tx_csum_full_fsm is
 --            en_ipv4_hdr_b32_int   <= "00";
 --            last_ipv4_hdr_cnt_int <= '1';
 --            en_pcol_hdr_cnt       <= '1';
---            zeroes_en_int         <= "00";
+--            zeroes_en_int         <= "0000";
 --            clr_hdr_cnt           <= '0';
 --            clr_csums_int         <= '0';
 --            abort_csum_int        <= '0';
@@ -894,6 +978,8 @@ architecture rtl of tx_csum_full_fsm is
             clr_csums_int       <= '0';
             add_psdo_wd_int     <= '1';
             fsm_csum_en         <= '1';
+            fsm_csum_en_b76_int <= "11";
+            fsm_csum_en_b54_int <= "11";
             fsm_csum_en_b32_int <= "11";
             fsm_csum_en_b10_int <= "11";
             fcsum_wr_ns         <= WR_CSUM;
@@ -902,6 +988,8 @@ architecture rtl of tx_csum_full_fsm is
             clr_csums_int       <= '0';
             add_psdo_wd_int     <= '0';
             fsm_csum_en         <= '0';
+            fsm_csum_en_b76_int <= "00";
+            fsm_csum_en_b54_int <= "00";
             fsm_csum_en_b32_int <= "00";
             fsm_csum_en_b10_int <= "00";
             fcsum_wr_ns         <= WR_HDR;
@@ -954,8 +1042,12 @@ architecture rtl of tx_csum_full_fsm is
           hdr_length <= (others => '0');
         else
           if store_hdr_length = '1' then
-            hdr_length <= din(19 downto  16) & "00";
-            -- converted to bytes from words
+	    if vlan = '0' then
+            	hdr_length <= din(51 downto  48) & "00";
+            	-- converted to bytes from words
+	    else
+            	hdr_length <= din(19 downto  16) & "00";
+	    end if;
           else
             hdr_length <= hdr_length;
           end if;
@@ -975,7 +1067,11 @@ architecture rtl of tx_csum_full_fsm is
           version <= (others => '0');
         else
           if store_version = '1' then
-            version <= din(23 downto  20);
+	    if vlan = '0' then
+            	version <= din(55 downto  52);
+	    else
+            	version <= din(23 downto  20);
+	    end if;
           else
             version <= version;
           end if;
@@ -1019,7 +1115,12 @@ architecture rtl of tx_csum_full_fsm is
           if calc_frm_length = '1' then
           -- This is asserted for both TCP and UDP
           -- This is stored BIG Endian
-            frm_length <= din_big_end(0 to 15) - hdr_length;
+	  -- hdr_length = 20 Bytes
+	    if vlan = '0' then
+               frm_length <= din_big_end(0 to 15) - X"0014";
+	    else
+	       frm_length <= din_big_end(32 to 47) - X"0014";
+	    end if;
           else
             frm_length <= frm_length;
           end if;
@@ -1042,8 +1143,16 @@ architecture rtl of tx_csum_full_fsm is
         if reset2axi_str_txd = '1' or clr_csums_int = '1' then
           sa0 <= (others => '0');
         else
-          if store_sa_da = '1' and hdr_cnt = "011" then
-            sa0 <= din(31 downto 16);
+          if store_sa_da = '1' then
+	    if vlan = '0' then
+               if hdr_cnt = "010" then
+                  sa0 <= din(31 downto 16);
+               end if;
+            else
+               if hdr_cnt = "001" then
+                  sa0 <= din(63 downto 48);
+               end if;
+            end if;
           else
             sa0 <= sa0;
           end if;
@@ -1067,9 +1176,18 @@ architecture rtl of tx_csum_full_fsm is
           sa1 <= (others => '0');
           da0 <= (others => '0');
         else
-          if store_sa_da = '1' and hdr_cnt = "100" then
-            sa1 <= din(15 downto  0);
-            da0 <= din(31 downto 16);
+          if store_sa_da = '1' then
+            if vlan = '0' then
+               if hdr_cnt = "010" then
+            	  sa1 <= din(47 downto 32);
+                  da0 <= din(63 downto 48);
+               end if;
+            else
+               if hdr_cnt = "010" then
+            	  sa1 <= din(15 downto 0);
+                  da0 <= din(31 downto 16);
+               end if;
+	    end if;
           else
             sa1 <= sa1;
             da0 <= da0;
@@ -1093,8 +1211,16 @@ architecture rtl of tx_csum_full_fsm is
         if reset2axi_str_txd = '1' or clr_csums_int = '1' then
           da1 <= (others => '0');
         else
-          if store_sa_da = '1' and hdr_cnt = "000" then
-            da1 <= din(15 downto  0);
+          if store_sa_da = '1' then
+            if vlan = '0' then
+               if hdr_cnt = "000" then
+                  da1 <= din(15 downto  0);
+               end if;
+            else
+               if hdr_cnt = "010" then
+                  da1 <= din(47 downto 32);
+               end if;
+            end if;
           else
             da1 <= da1;
           end if;
@@ -1127,9 +1253,13 @@ architecture rtl of tx_csum_full_fsm is
         else
           if tcp_ptcl_int = '1' then
           --  put back to little endian before write to BRAM
-            pseudo_data       <= frm_length(8 to 15) & frm_length(0 to 7) &  X"06" & X"00";
+            pseudo_data       <= X"00000000" & frm_length(8 to 15) & frm_length(0 to 7) &  X"06" & X"00";
           elsif udp_ptcl_int = '1' and calc_frm_length = '1' then
-            pseudo_data       <= din(31 downto 16) & X"11" & X"00";
+            if vlan = '0' then
+               pseudo_data       <= X"00000000" & din(63 downto 48) & X"11" & X"00";
+            else
+	       pseudo_data       <= X"00000000" & din(31 downto 16) & X"11" & X"00";
+            end if;
           else
             pseudo_data       <= pseudo_data;
           end if;
@@ -1197,27 +1327,6 @@ architecture rtl of tx_csum_full_fsm is
             snap_hit <= '1';
           else
             snap_hit <= snap_hit;
-          end if;
-        end if;
-      end if;
-    end process;
-
-    ---------------------------------------------------------------------------
-    --  Set the SNAP Frame Organizationally Unique Identifier (OUI) flag
-    --  indicator which is used to determine if the Full CSUM will be
-    --  calculated.
-    ---------------------------------------------------------------------------
-    ETHERNET_SNAP_OUI_REG : process(AXI_STR_TXD_ACLK)
-    begin
-
-      if rising_edge(AXI_STR_TXD_ACLK) then
-        if reset2axi_str_txd = '1' or clr_csums_int = '1' then
-          oui_hit <= '0';
-        else
-          if set_oui_hit = '1' then
-            oui_hit <= '1';
-          else
-            oui_hit <= oui_hit;
           end if;
         end if;
       end if;
@@ -1313,8 +1422,16 @@ architecture rtl of tx_csum_full_fsm is
         if reset2axi_str_txd = '1' or clr_csums_int = '1' then
           tcp_ptcl_int <= '0';
         else
-          if set_ptcl = '1' and din(31 downto 24) = X"06" then
-            tcp_ptcl_int <= '1';
+          if set_ptcl = '1' then
+	    if vlan = '0' then
+		if din(63 downto 56) = X"06" then
+                   tcp_ptcl_int <= '1';
+		end if;
+	    else
+		if din(31 downto 24) = X"06" then
+                   tcp_ptcl_int <= '1';
+		end if;
+	    end if;
           else
             tcp_ptcl_int <= tcp_ptcl_int;
           end if;
@@ -1333,8 +1450,16 @@ architecture rtl of tx_csum_full_fsm is
         if reset2axi_str_txd = '1' or clr_csums_int = '1' then
           udp_ptcl_int <= '0';
         else
-          if set_ptcl = '1' and din(31 downto  24) = X"11" then
-            udp_ptcl_int <= '1';
+          if set_ptcl = '1' then
+	    if vlan = '0' then
+		if din(63 downto  56) = X"11" then
+                   udp_ptcl_int <= '1';
+		end if;
+	    else
+		if din(31 downto  24) = X"11" then
+                   udp_ptcl_int <= '1';
+		end if;
+	    end if;
           else
             udp_ptcl_int <= udp_ptcl_int;
           end if;
@@ -1390,17 +1515,17 @@ architecture rtl of tx_csum_full_fsm is
           csum_ipv4_hdr_we_int   <= (others => '0');
         elsif clr_hdr_cnt = '1' and store_sa_da = '1' and ipv4 = '1' then
           if vlan = '1' and eth2 = '1' then
-            csum_ipv4_hdr_addr_int <= csum_strt_addr + 7;
-            csum_ipv4_hdr_we_int   <= "0011";
-          elsif vlan = '1' and snap_hit = '1' and oui_hit = '1' then
-            csum_ipv4_hdr_addr_int <= csum_strt_addr + 9;
-            csum_ipv4_hdr_we_int   <= "0011";
+            csum_ipv4_hdr_addr_int <= csum_strt_addr + 3;
+            csum_ipv4_hdr_we_int   <= "00110000";
+          elsif vlan = '1' and snap_hit = '1' then
+            csum_ipv4_hdr_addr_int <= csum_strt_addr + 4;
+            csum_ipv4_hdr_we_int   <= "00110000";
           elsif vlan = '0' and eth2 = '1' then
-            csum_ipv4_hdr_addr_int <= csum_strt_addr + 6;
-            csum_ipv4_hdr_we_int   <= "0011";
-          elsif vlan = '0' and snap_hit = '1' and oui_hit = '1' then
-            csum_ipv4_hdr_addr_int <= csum_strt_addr + 8;
-            csum_ipv4_hdr_we_int   <= "0011";
+            csum_ipv4_hdr_addr_int <= csum_strt_addr + 3;
+            csum_ipv4_hdr_we_int   <= "00000011";
+          elsif vlan = '0' and snap_hit = '1' then
+            csum_ipv4_hdr_addr_int <= csum_strt_addr + 4;
+            csum_ipv4_hdr_we_int   <= "00000011";
           else
             csum_ipv4_hdr_addr_int <= csum_ipv4_hdr_addr_int;
             csum_ipv4_hdr_we_int   <= csum_ipv4_hdr_we_int;
@@ -1429,43 +1554,43 @@ architecture rtl of tx_csum_full_fsm is
           if vlan = '1' and eth2 = '1' and tcp_ptcl_int = '1' and
              fragment = '0' then
             do_full_csum_int       <= '1';
-            csum_ptcl_addr_int     <= csum_strt_addr + 13;
-            csum_ptcl_we_int       <= "1100";
+            csum_ptcl_addr_int     <= csum_strt_addr + 6;
+            csum_ptcl_we_int       <= "11000000";
           elsif vlan = '1' and eth2 = '1' and udp_ptcl_int = '1' and
                 fragment = '0' then
             do_full_csum_int       <= '1';
-            csum_ptcl_addr_int     <= csum_strt_addr + 11;
-            csum_ptcl_we_int       <= "0011";
-          elsif vlan = '1' and snap_hit = '1' and oui_hit = '1' and tcp_ptcl_int = '1' and
+            csum_ptcl_addr_int     <= csum_strt_addr + 5;
+            csum_ptcl_we_int       <= "00110000";
+          elsif vlan = '1' and snap_hit = '1' and tcp_ptcl_int = '1' and
                 fragment = '0' then
             do_full_csum_int       <= '1';
-            csum_ptcl_addr_int     <= csum_strt_addr + 15;
-            csum_ptcl_we_int       <= "1100";
-          elsif vlan = '1' and snap_hit = '1' and oui_hit = '1' and udp_ptcl_int = '1' and
+            csum_ptcl_addr_int     <= csum_strt_addr + 7;
+            csum_ptcl_we_int       <= "11000000";
+          elsif vlan = '1' and snap_hit = '1' and udp_ptcl_int = '1' and
                 fragment = '0' then
             do_full_csum_int       <= '1';
-            csum_ptcl_addr_int     <= csum_strt_addr + 13;
-            csum_ptcl_we_int       <= "0011";
+            csum_ptcl_addr_int     <= csum_strt_addr + 6;
+            csum_ptcl_we_int       <= "00110000";
           elsif vlan = '0' and eth2 = '1' and tcp_ptcl_int = '1' and
                 fragment = '0' then
             do_full_csum_int       <= '1';
-            csum_ptcl_addr_int     <= csum_strt_addr + 12;
-            csum_ptcl_we_int       <= "1100";
+            csum_ptcl_addr_int     <= csum_strt_addr + 6;
+            csum_ptcl_we_int       <= "00001100";
           elsif vlan = '0' and eth2 = '1' and udp_ptcl_int = '1' and
                 fragment = '0' then
             do_full_csum_int       <= '1';
-            csum_ptcl_addr_int     <= csum_strt_addr + 10;
-            csum_ptcl_we_int       <= "0011";
-          elsif vlan = '0' and snap_hit = '1' and oui_hit = '1' and tcp_ptcl_int = '1' and
+            csum_ptcl_addr_int     <= csum_strt_addr + 5;
+            csum_ptcl_we_int       <= "00000011";
+          elsif vlan = '0' and snap_hit = '1' and tcp_ptcl_int = '1' and
                 fragment = '0' then
             do_full_csum_int       <= '1';
-            csum_ptcl_addr_int     <= csum_strt_addr + 14;
-            csum_ptcl_we_int       <= "1100";
-          elsif vlan = '0' and snap_hit = '1' and oui_hit = '1' and udp_ptcl_int = '1' and
+            csum_ptcl_addr_int     <= csum_strt_addr + 7;
+            csum_ptcl_we_int       <= "00001100";
+          elsif vlan = '0' and snap_hit = '1' and udp_ptcl_int = '1' and
                 fragment = '0' then
             do_full_csum_int       <= '1';
-            csum_ptcl_addr_int     <= csum_strt_addr + 12;
-            csum_ptcl_we_int       <= "0011";
+            csum_ptcl_addr_int     <= csum_strt_addr + 6;
+            csum_ptcl_we_int       <= "00000011";
           else
             do_full_csum_int       <= do_full_csum_int;
             csum_ptcl_addr_int     <= csum_ptcl_addr_int;

@@ -113,19 +113,19 @@ entity tx_mem_if is
     C_FAMILY               : string                      := "virtex6";
 
     -- Read Port - AXI Stream TxData
-    c_TxD_write_width_a      : integer range   0 to 18     := 9;
-    c_TxD_read_width_a       : integer range   0 to 18     := 9;
-    c_TxD_write_depth_a      : integer range   0 to 32768  := 4096;
-    c_TxD_read_depth_a       : integer range   0 to 32768  := 4096;
-    c_TxD_addra_width        : integer range   0 to 15     := 10;
-    c_TxD_wea_width          : integer range   0 to 2      := 2;
+    c_TxD_write_width_a      : integer range  72 to 72     := 72;
+    c_TxD_read_width_a       : integer range  72 to 72     := 72;
+    c_TxD_write_depth_a      : integer range   0 to 4096   := 512;
+    c_TxD_read_depth_a       : integer range   0 to 4096   := 512;
+    c_TxD_addra_width        : integer range   0 to 12     := 9;
+    c_TxD_wea_width          : integer range   0 to 8      := 8;
     -- Write Port - AXI Stream TxData
-    c_TxD_write_width_b      : integer range  36 to 36     := 36;
-    c_TxD_read_width_b       : integer range  36 to 36     := 36;
-    c_TxD_write_depth_b      : integer range   0 to 8192   := 1024;
-    c_TxD_read_depth_b       : integer range   0 to 8192   := 1024;
-    c_TxD_addrb_width        : integer range   0 to 13     := 10;
-    c_TxD_web_width          : integer range   0 to 4      := 4;
+    c_TxD_write_width_b      : integer range  72 to 72     := 72;
+    c_TxD_read_width_b       : integer range  72 to 72     := 72;
+    c_TxD_write_depth_b      : integer range   0 to 4096   := 512;
+    c_TxD_read_depth_b       : integer range   0 to 4096   := 512;
+    c_TxD_addrb_width        : integer range   0 to 12     := 9;
+    c_TxD_web_width          : integer range   0 to 8      := 8;
 
     -- Read Port - AXI Stream TxControl
     c_TxC_write_width_a      : integer range  36 to 36     := 36;
@@ -421,3 +421,18 @@ begin
   );
 
 end imp;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

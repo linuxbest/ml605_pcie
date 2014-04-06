@@ -62,7 +62,7 @@ use ieee.std_logic_unsigned.all;
 
 package COMMON_PACK is
 
-   component axi_ethernet_v3_01_a_SYNC_BLOCK
+   component SYNC_BLOCK
     generic (INITIALISE  : in bit_vector(1 downto 0) := "00");
     port (
        CLK         : in  std_logic;          -- clock to be sync'ed to

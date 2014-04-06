@@ -113,9 +113,6 @@ use axi_ethernet_v3_01_a.all;
 entity tx_csum_if is
   generic (
     C_FAMILY               : string                       := "virtex6";
-    C_TYPE                 : integer range 0 to 2         := 0;
-    C_PHY_TYPE             : integer range 0 to 7         := 1;
-    C_HALFDUP              : integer range 0 to 1         := 0;
     C_TXCSUM               : integer range 0 to 2         := 0;
     C_TXMEM                : integer                      := 4096;
     C_TXVLAN_TRAN          : integer range 0 to 1         := 0;
@@ -125,12 +122,12 @@ entity tx_csum_if is
     C_S_AXI_DATA_WIDTH     : integer range 32 to 32       := 32;
 
     -- Write Port - AXI Stream TxData
-    c_TxD_write_width_b    : integer range  36 to 36     := 36;
-    c_TxD_read_width_b     : integer range  36 to 36     := 36;
-    c_TxD_write_depth_b    : integer range   0 to 8192   := 4096;
-    c_TxD_read_depth_b     : integer range   0 to 8192   := 4096;
-    c_TxD_addrb_width      : integer range   0 to 13     := 10;
-    c_TxD_web_width        : integer range   0 to 4      := 4;
+    c_TxD_write_width_b    : integer range  72 to 72     := 72;
+    c_TxD_read_width_b     : integer range  72 to 72     := 72;
+    c_TxD_write_depth_b    : integer range   0 to 4096   := 512;
+    c_TxD_read_depth_b     : integer range   0 to 4096   := 512;
+    c_TxD_addrb_width      : integer range   0 to 12     := 9;
+    c_TxD_web_width        : integer range   0 to 8      := 8;
 
     -- Write Port - AXI Stream TxControl
     c_TxC_write_width_b    : integer range   36 to 36    := 36;
@@ -150,8 +147,8 @@ entity tx_csum_if is
     AXI_STR_TXD_TVALID     : in  std_logic;                                         --  AXI-Stream Transmit Data Valid
     AXI_STR_TXD_TREADY     : out std_logic;                                         --  AXI-Stream Transmit Data Ready
     AXI_STR_TXD_TLAST      : in  std_logic;                                         --  AXI-Stream Transmit Data Last
-    AXI_STR_TXD_TSTRB      : in  std_logic_vector(3 downto 0);                      --  AXI-Stream Transmit Data Keep
-    AXI_STR_TXD_TDATA      : in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);   --  AXI-Stream Transmit Data Data
+    AXI_STR_TXD_TSTRB      : in  std_logic_vector(7 downto 0);                      --  AXI-Stream Transmit Data Keep
+    AXI_STR_TXD_TDATA      : in  std_logic_vector(63 downto 0);   		    --  AXI-Stream Transmit Data Data
     -- AXI Stream Control signals
     AXI_STR_TXC_ACLK       : in  std_logic;                                         --  AXI-Stream Transmit Control Clk
     reset2axi_str_txc      : in  std_logic;                                         --  AXI-Stream Transmit Control Reset
@@ -159,7 +156,7 @@ entity tx_csum_if is
     AXI_STR_TXC_TREADY     : out std_logic;                                         --  AXI-Stream Transmit Control Ready
     AXI_STR_TXC_TLAST      : in  std_logic;                                         --  AXI-Stream Transmit Control Last
     AXI_STR_TXC_TSTRB      : in  std_logic_vector(3 downto 0);                      --  AXI-Stream Transmit Control Keep
-    AXI_STR_TXC_TDATA      : in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);   --  AXI-Stream Transmit Control Data
+    AXI_STR_TXC_TDATA      : in  std_logic_vector(31 downto 0);   		    --  AXI-Stream Transmit Control Data
 
     -- Write Port - AXI Stream TxData
     Axi_Str_TxD_2_Mem_Din  : out std_logic_vector(c_TxD_write_width_b-1 downto 0);  --  Tx AXI-Stream Data to Memory Wr Din
@@ -195,9 +192,6 @@ begin
   --  Interface for Transmit AxiStream Data and Control; and Tx Memory
   generic map (
     C_FAMILY               => C_FAMILY,
-    C_TYPE                 => C_TYPE,
-    C_PHY_TYPE             => C_PHY_TYPE,
-    C_HALFDUP              => C_HALFDUP,
     C_TXCSUM               => C_TXCSUM,
     C_TXMEM                => C_TXMEM,
     C_TXVLAN_TRAN          => C_TXVLAN_TRAN,
@@ -275,9 +269,6 @@ begin
   --  Interface for Transmit AxiStream Data and Control; and Tx Memory
   generic map (
     C_FAMILY               => C_FAMILY,
-    C_TYPE                 => C_TYPE,
-    C_PHY_TYPE             => C_PHY_TYPE,
-    C_HALFDUP              => C_HALFDUP,
     C_TXCSUM               => C_TXCSUM,
     C_TXMEM                => C_TXMEM,
     C_TXVLAN_TRAN          => C_TXVLAN_TRAN,

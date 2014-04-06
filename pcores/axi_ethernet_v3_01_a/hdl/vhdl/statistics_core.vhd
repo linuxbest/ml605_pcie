@@ -156,13 +156,7 @@ end statistics_core;
 
 architecture rtl of statistics_core is
 
- component axi_ethernet_v3_01_a_sync_block is
-   port (
-     clk         : in  std_logic;         
-     data_in     : in  std_logic;         
-     data_out    : out std_logic          
-   );
-   end component;
+
    ---------------------------------------------------------------------
    -- Signals for the 4 "fast" statistic counters
    ---------------------------------------------------------------------
@@ -1118,7 +1112,7 @@ begin
    ---------------------------------
    
    -- Reclock the request twice on ref_clk.
-   sync_request : axi_ethernet_v3_01_a_sync_block
+   sync_request : entity axi_ethernet_v3_01_a.sync_block
    port map(
      clk         => ref_clk,      
      data_in     => request_toggle,
@@ -1246,7 +1240,7 @@ begin
    ---------------------------------
 
    -- Reclock  on bus2ip_clk.
-   sync_response : axi_ethernet_v3_01_a_sync_block
+   sync_response : entity axi_ethernet_v3_01_a.sync_block
    port map(
      clk         => bus2ip_clk,      
      data_in     => response_toggle,

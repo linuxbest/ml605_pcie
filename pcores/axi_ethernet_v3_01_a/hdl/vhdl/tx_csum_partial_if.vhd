@@ -120,9 +120,6 @@ use axi_ethernet_v3_01_a.all;
 entity tx_csum_partial_if is
   generic (
     C_FAMILY               : string                       := "virtex6";
-    C_TYPE                 : integer range 0 to 2         := 0;
-    C_PHY_TYPE             : integer range 0 to 7         := 1;
-    C_HALFDUP              : integer range 0 to 1         := 0;
     C_TXCSUM               : integer range 0 to 2         := 0;
     C_TXMEM                : integer                      := 4096;
     C_TXVLAN_TRAN          : integer range 0 to 1         := 0;
@@ -132,12 +129,12 @@ entity tx_csum_partial_if is
     C_S_AXI_DATA_WIDTH     : integer range 32 to 32       := 32;
 
     -- Write Port - AXI Stream TxData
-    c_TxD_write_width_b    : integer range  36 to 36     := 36;
-    c_TxD_read_width_b     : integer range  36 to 36     := 36;
-    c_TxD_write_depth_b    : integer range   0 to 8192   := 4096;
-    c_TxD_read_depth_b     : integer range   0 to 8192   := 4096;
-    c_TxD_addrb_width      : integer range   0 to 13     := 10;
-    c_TxD_web_width        : integer range   0 to 4      := 4;
+    c_TxD_write_width_b    : integer range  72 to 72     := 72;
+    c_TxD_read_width_b     : integer range  72 to 72     := 72;
+    c_TxD_write_depth_b    : integer range   0 to 4096   := 512;
+    c_TxD_read_depth_b     : integer range   0 to 4096   := 512;
+    c_TxD_addrb_width      : integer range   0 to 12     := 9;
+    c_TxD_web_width        : integer range   0 to 8      := 8;
 
     -- Write Port - AXI Stream TxControl
     c_TxC_write_width_b    : integer range   36 to 36    := 36;
@@ -157,8 +154,8 @@ entity tx_csum_partial_if is
     AXI_STR_TXD_TVALID     : in  std_logic;                                         --  AXI-Stream Transmit Data Valid
     AXI_STR_TXD_TREADY     : out std_logic;                                         --  AXI-Stream Transmit Data Ready
     AXI_STR_TXD_TLAST      : in  std_logic;                                         --  AXI-Stream Transmit Data Last
-    AXI_STR_TXD_TSTRB      : in  std_logic_vector(3 downto 0);                      --  AXI-Stream Transmit Data Keep
-    AXI_STR_TXD_TDATA      : in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);   --  AXI-Stream Transmit Data Data
+    AXI_STR_TXD_TSTRB      : in  std_logic_vector(7 downto 0);                      --  AXI-Stream Transmit Data Keep
+    AXI_STR_TXD_TDATA      : in  std_logic_vector(63 downto 0);   		    --  AXI-Stream Transmit Data Data
     -- AXI Stream Control signals
     AXI_STR_TXC_ACLK       : in  std_logic;                                         --  AXI-Stream Transmit Control Clk
     reset2axi_str_txc      : in  std_logic;                                         --  AXI-Stream Transmit Control Reset
@@ -166,7 +163,7 @@ entity tx_csum_partial_if is
     AXI_STR_TXC_TREADY     : out std_logic;                                         --  AXI-Stream Transmit Control Ready
     AXI_STR_TXC_TLAST      : in  std_logic;                                         --  AXI-Stream Transmit Control Last
     AXI_STR_TXC_TSTRB      : in  std_logic_vector(3 downto 0);                      --  AXI-Stream Transmit Control Keep
-    AXI_STR_TXC_TDATA      : in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);   --  AXI-Stream Transmit Control Data
+    AXI_STR_TXC_TDATA      : in  std_logic_vector(31 downto 0);   		    --  AXI-Stream Transmit Control Data
 
 
     -- Write Port - AXI Stream TxData
@@ -199,7 +196,7 @@ architecture rtl of tx_csum_partial_if is
 -------------------------------------------------------------------------------
   constant zeroes_txc                     : std_logic_vector(c_TxC_write_width_b -1 downto c_TxC_addrb_width) := (others => '0');
   constant zeroes_txd                     : std_logic_vector(c_TxC_write_width_b -1 downto c_TxD_addrb_width) := (others => '0');
-  constant zeroes_txd_2                   : std_logic_vector(c_TxC_write_width_b -1 downto c_TxD_addrb_width + 2 ) := (others => '0');
+  constant zeroes_txd_2                   : std_logic_vector(c_TxC_write_width_b -1 downto c_TxD_addrb_width + 3 ) := (others => '0');
 
   type TXC_WR_FSM_TYPE is (
                        TXC_ADDR2_WR,
@@ -251,16 +248,16 @@ architecture rtl of tx_csum_partial_if is
   signal axi_str_txc_tvalid_dly0          : std_logic;
   signal axi_str_txc_tlast_dly0           : std_logic;
 --  signal axi_str_txc_tstrb_dly0           : std_logic_vector(3 downto 0);
-  signal axi_str_txc_tdata_dly0           : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+  signal axi_str_txc_tdata_dly0           : std_logic_vector(31 downto 0);
   signal clr_txc_trdy                     : std_logic;
 
   signal axi_str_txd_tready_int           : std_logic;
   signal axi_str_txd_tready_int_dly       : std_logic;
   signal axi_str_txd_tvalid_dly0          : std_logic;
   signal axi_str_txd_tlast_dly0           : std_logic;
-  signal axi_str_txd_tstrb_dly0           : std_logic_vector(3 downto 0);
-  signal axi_str_txd_tdata_dly0           : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
-  signal axi_str_txd_tdata_dly1           : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+  signal axi_str_txd_tstrb_dly0           : std_logic_vector(7 downto 0);
+  signal axi_str_txd_tdata_dly0           : std_logic_vector(63 downto 0);
+  signal axi_str_txd_tdata_dly1           : std_logic_vector(63 downto 0);
   signal clr_txd_trdy                     : std_logic;
 
   signal set_txc_addr_0                   : std_logic;
@@ -315,13 +312,13 @@ architecture rtl of tx_csum_partial_if is
   signal set_csum_cntrl                   : std_logic;
   signal set_csum_begin_insert            : std_logic;
   signal set_csum_rsvd_init               : std_logic;
-  signal axi_flag                         : std_logic_vector( 3 downto 0);
-  signal csum_cntrl                       : std_logic_vector( 1 downto 0);
+  signal axi_flag                         : std_logic_vector(3 downto 0);
+  signal csum_cntrl                       : std_logic_vector(1 downto 0);
 
   signal set_first_packet                 : std_logic;
   signal wrote_first_packet               : std_logic;
   signal inc_txd_wr_addr                  : std_logic;
-  signal set_txd_we                       : std_logic_vector( 3 downto 0);
+  signal set_txd_we                       : std_logic_vector(7 downto 0);
   signal set_txd_en                       : std_logic;
   signal set_txd_rdy                      : std_logic;
   signal clr_txd_rdy                      : std_logic;
@@ -343,7 +340,7 @@ architecture rtl of tx_csum_partial_if is
   signal txd_mem_full                     : std_logic;
   signal txd_mem_not_full                 : std_logic;
   signal txd_mem_afull                    : std_logic;
-  signal axi_str_txd_2_mem_we_int         : std_logic_vector( 3 downto 0);
+  signal axi_str_txd_2_mem_we_int         : std_logic_vector(7 downto 0);
   signal axi_str_txd_2_mem_en_int         : std_logic;
 
   signal txd_rd_pntr                      : std_logic_vector(c_TxD_addrb_width -1 downto 0);
@@ -373,7 +370,7 @@ architecture rtl of tx_csum_partial_if is
   signal do_csum                          : std_logic;
   signal csum_result                      : std_logic_vector(15 downto 0);
   signal csum_en                          : std_logic;
-  signal csum_we                          : std_logic_vector(3 downto 0);
+  signal csum_we                          : std_logic_vector(7 downto 0);
 
   signal csum_en_dly                      : std_logic;
   signal csum_cmplt                       : std_logic;
@@ -399,7 +396,7 @@ architecture rtl of tx_csum_partial_if is
   signal update_bram_cnt                  : std_logic_vector(7 downto 0);
 
   signal enable_compare_addr0_cmplt       : std_logic;
-  signal end_addr_byte_offset             : std_logic_vector(1 downto 0);
+  signal end_addr_byte_offset             : std_logic_vector(2 downto 0);
 
 
   signal check_full                       : std_logic;
@@ -1025,10 +1022,14 @@ architecture rtl of tx_csum_partial_if is
         elsif axi_str_txd_tlast_dly0 = '1' and axi_str_txd_tvalid_dly0 = '1' and 
               axi_str_txd_tready_int_dly = '1' then
           case axi_str_txd_tstrb_dly0 is
-            when "1111" => end_addr_byte_offset <= "11";
-            when "0111" => end_addr_byte_offset <= "10";
-            when "0011" => end_addr_byte_offset <= "01";
-            when others => end_addr_byte_offset <= "00";
+            when "11111111" => end_addr_byte_offset <= "111";
+            when "01111111" => end_addr_byte_offset <= "110";
+            when "00111111" => end_addr_byte_offset <= "101";
+            when "00011111" => end_addr_byte_offset <= "100";
+            when "00001111" => end_addr_byte_offset <= "011";
+            when "00000111" => end_addr_byte_offset <= "010";
+            when "00000011" => end_addr_byte_offset <= "001";
+            when others => end_addr_byte_offset <= "000";
           end case;
         else
           end_addr_byte_offset <= end_addr_byte_offset;
@@ -1504,15 +1505,19 @@ architecture rtl of tx_csum_partial_if is
         if csum_en = '1' then
         -- Mux in the CSUM result
         --  The WE will only allow a 16 bit write to memory
-          axi_str_txd_tdata_dly1 <= csum_result(15 downto 0) & csum_result(15 downto 0);
+          axi_str_txd_tdata_dly1 <= csum_result(15 downto 0) & csum_result(15 downto 0) & csum_result(15 downto 0) & csum_result(15 downto 0);
         elsif axi_str_txd_tvalid_dly0 = '1' and axi_str_txd_tready_int_dly = '1' then
         -- Zero out invalid data so CSUM calculation is correct
           case axi_str_txd_tstrb_dly0 is
-            when "0000" => axi_str_txd_tdata_dly1  <= (others => '0');
-            when "0001" => axi_str_txd_tdata_dly1  <= X"000000" & axi_str_txd_tdata_dly0( 7 downto 0);
-            when "0011" => axi_str_txd_tdata_dly1  <= X"0000"   & axi_str_txd_tdata_dly0(15 downto 0);
-            when "0111" => axi_str_txd_tdata_dly1  <= X"00"     & axi_str_txd_tdata_dly0(23 downto 0);
-            when others => axi_str_txd_tdata_dly1  <=             axi_str_txd_tdata_dly0;
+            when "00000000" => axi_str_txd_tdata_dly1  <= (others => '0');
+            when "00000001" => axi_str_txd_tdata_dly1  <= X"00000000000000" & axi_str_txd_tdata_dly0( 7 downto 0);
+            when "00000011" => axi_str_txd_tdata_dly1  <= X"000000000000"   & axi_str_txd_tdata_dly0(15 downto 0);
+            when "00000111" => axi_str_txd_tdata_dly1  <= X"0000000000"     & axi_str_txd_tdata_dly0(23 downto 0);
+            when "00001111" => axi_str_txd_tdata_dly1  <= X"00000000"       & axi_str_txd_tdata_dly0(31 downto 0);
+            when "00011111" => axi_str_txd_tdata_dly1  <= X"000000" 	    & axi_str_txd_tdata_dly0(39 downto 0);
+            when "00111111" => axi_str_txd_tdata_dly1  <= X"0000"   	    & axi_str_txd_tdata_dly0(47 downto 0);
+            when "01111111" => axi_str_txd_tdata_dly1  <= X"00"     	    & axi_str_txd_tdata_dly0(55 downto 0);
+            when others     => axi_str_txd_tdata_dly1  <=             	      axi_str_txd_tdata_dly0;
           end case;
         else
           axi_str_txd_tdata_dly1  <= axi_str_txd_tdata_dly1;
@@ -1538,7 +1543,7 @@ architecture rtl of tx_csum_partial_if is
     begin
 
       inc_txd_wr_addr     <= '0';
-      set_txd_we          <= "0000";
+      set_txd_we          <= "00000000";
       set_txd_en          <= '0';
       set_first_packet    <= '0';
       set_txd_rdy         <= '0';
@@ -1576,7 +1581,7 @@ architecture rtl of tx_csum_partial_if is
             disable_txd_trdy    <= '0';
             txd_wr_ns           <= TXD_WRT;
           else
-            set_txd_we          <= "0000";
+            set_txd_we          <= "00000000";
             set_txd_en          <= '0';
             disable_txd_trdy    <= '0';
             txd_wr_ns           <= TXD_PRM;
@@ -1585,7 +1590,7 @@ architecture rtl of tx_csum_partial_if is
           if txd_mem_full = '1' and axi_str_txd_tready_int_dly = '0' then
           --memory is full when axi_str_txd_tready_int_dly = '0'
             inc_txd_wr_addr     <= '0';
-            set_txd_we          <= "0000";
+            set_txd_we          <= "00000000";
             set_txd_en          <= '0';
             set_first_packet    <= '0';
             clr_txd_rdy         <= '0';
@@ -1628,7 +1633,7 @@ architecture rtl of tx_csum_partial_if is
             end if;
           else
             inc_txd_wr_addr     <= '0';
-            set_txd_we          <= "0000";
+            set_txd_we          <= "00000000";
             set_txd_en          <= '0';
             set_first_packet    <= '0';
             clr_txd_rdy         <= '0';
@@ -1649,7 +1654,7 @@ architecture rtl of tx_csum_partial_if is
           --        state until the next update occurs.  The next update is guaranteed to be greater than 4 words,
           --        which will allow the full pointers to be cleared for the next packet.
           inc_txd_wr_addr     <= '0';
-          set_txd_we          <= "0000";
+          set_txd_we          <= "00000000";
           set_txd_en          <= '0';
           set_first_packet    <= '0';
           clr_txd_rdy         <= '0';
@@ -1759,7 +1764,7 @@ architecture rtl of tx_csum_partial_if is
           --        state until the next update occurs.  The next update is guaranteed to be greater than 4 words,
           --        which will allow the full pointers to be cleared for the next packet.
           inc_txd_wr_addr     <= '0';
-          set_txd_we          <= "0000";
+          set_txd_we          <= "00000000";
           set_txd_en          <= '0';
           set_first_packet    <= '0';
           clr_txd_rdy         <= '0';
@@ -2277,11 +2282,19 @@ architecture rtl of tx_csum_partial_if is
     axi_str_txd_2_mem_addr               <= axi_str_txd_2_mem_addr_int;
 
 
+    Axi_Str_TxD_2_Mem_Din(71)           <= axi_str_txd_2_mem_we_int(7);
+    Axi_Str_TxD_2_Mem_Din(62)           <= axi_str_txd_2_mem_we_int(6);
+    Axi_Str_TxD_2_Mem_Din(53)           <= axi_str_txd_2_mem_we_int(5);
+    Axi_Str_TxD_2_Mem_Din(44)           <= axi_str_txd_2_mem_we_int(4);
     Axi_Str_TxD_2_Mem_Din(35)           <= axi_str_txd_2_mem_we_int(3);
     Axi_Str_TxD_2_Mem_Din(26)           <= axi_str_txd_2_mem_we_int(2);
     Axi_Str_TxD_2_Mem_Din(17)           <= axi_str_txd_2_mem_we_int(1);
     Axi_Str_TxD_2_Mem_Din(8)            <= axi_str_txd_2_mem_we_int(0);
 
+    Axi_Str_TxD_2_Mem_Din(70 downto 63) <= axi_str_txd_tdata_dly1(63 downto 56);
+    Axi_Str_TxD_2_Mem_Din(61 downto 54) <= axi_str_txd_tdata_dly1(55 downto 48);
+    Axi_Str_TxD_2_Mem_Din(52 downto 45) <= axi_str_txd_tdata_dly1(47 downto 40);
+    Axi_Str_TxD_2_Mem_Din(43 downto 36) <= axi_str_txd_tdata_dly1(39 downto 32);
     Axi_Str_TxD_2_Mem_Din(34 downto 27) <= axi_str_txd_tdata_dly1(31 downto 24);
     Axi_Str_TxD_2_Mem_Din(25 downto 18) <= axi_str_txd_tdata_dly1(23 downto 16);
     Axi_Str_TxD_2_Mem_Din(16 downto  9) <= axi_str_txd_tdata_dly1(15 downto  8);
@@ -2321,8 +2334,8 @@ architecture rtl of tx_csum_partial_if is
           Axi_Str_TxD_2_Mem_We <= csum_we;
         else
           case set_txd_we is
-            when "0000" => Axi_Str_TxD_2_Mem_We <= "0000";
-            when others => Axi_Str_TxD_2_Mem_We <= "1111";
+            when "00000000" => Axi_Str_TxD_2_Mem_We <= "00000000";
+            when others => Axi_Str_TxD_2_Mem_We <= "11111111";
           end case;
         end if;
       end if;

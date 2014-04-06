@@ -137,18 +137,20 @@ entity tx_csum_full_calc_if is
     do_full_csum      : in  std_logic;                      --  do IPv4 Ethernet II or SNAP CSUM
 
     do_csum           : in  std_logic;                      --  Full CSUM FLAG is set
+    csum_en_b76       : in  std_logic_vector(1 downto 0);   --  enables for either IPv4 header or TCP/UDP CSUM calc bytes 7,6
+    csum_en_b54       : in  std_logic_vector(1 downto 0);   --  enables for either IPv4 header or TCP/UDP CSUM calc bytes 5,4
     csum_en_b32       : in  std_logic_vector(1 downto 0);   --  enables for either IPv4 header or TCP/UDP CSUM calc bytes 3,2
     csum_en_b10       : in  std_logic_vector(1 downto 0);   --  enables for either IPv4 header or TCP/UDP CSUM calc bytes 1,0
-    zeroes_en         : in  std_logic_vector(1 downto 0);   --  zeroes for either IPv4 header or TCP/UDP CSUM calc
+    zeroes_en         : in  std_logic_vector(3 downto 0);   --  zeroes for either IPv4 header or TCP/UDP CSUM calc
 
     data_last         : in  std_logic;                      --  last data to be included in the csum calculation
     inc_txd_addr_one  : in  std_logic;                       --  increments the Tx Data Memory Address at end of a packet
     inc_txd_addr_one_early : in  std_logic;                 --  Pulses onle clock cycle early when do_csum is enabled with
                                                             --  txd_tlast and csum_calc_en
 
-    csum_din          : in  std_logic_vector(31 downto 0);  --  Data for CSUM calculation
+    csum_din          : in  std_logic_vector(63 downto 0);  --  Data for CSUM calculation
     csum_dout         : out std_logic_vector(15 downto 0);  --  Computed CSUM Result
-    csum_we           : out std_logic_vector( 3 downto 0);  --  Tx Data Memory Write Enables to perform 16-bit write
+    csum_we           : out std_logic_vector(7 downto 0);   --  Tx Data Memory Write Enables to perform 16-bit write
     csum_cmplt        : out std_logic                       --  CSUM Calculation has completed
   );
 
@@ -156,11 +158,14 @@ end tx_csum_full_calc_if;
 
 architecture rtl of tx_csum_full_calc_if is
 
+  signal csum_7_6      : std_logic_vector(16 downto 0);
+  signal csum_5_4      : std_logic_vector(16 downto 0);
   signal csum_3_2      : std_logic_vector(16 downto 0);
   signal csum_1_0      : std_logic_vector(16 downto 0);
-  signal data_last_dly : std_logic_vector( 3 downto 0);
+  signal data_last_dly : std_logic_vector( 4 downto 0);
   signal hold          : std_logic;
   signal force_dly     : std_logic;
+  signal inc_txd_addr_one_dly: std_logic:= '0';
 
   begin
     -----------------------------------------------------------------------
@@ -175,7 +180,83 @@ architecture rtl of tx_csum_full_calc_if is
           data_last_dly <= (others => '0');
         else
           data_last_dly(0)          <= data_last;
-          data_last_dly(3 downto 1) <= data_last_dly(2 downto 0);
+          data_last_dly(4 downto 1) <= data_last_dly(3 downto 0);
+        end if;
+      end if;
+    end process;
+
+    -----------------------------------------------------------------------
+    --  Calculate the 16 bit CSUM for AXI_STR_TXD_TDATA(63 downto 48)
+    --    (bytes 7 and 6)
+    --    This 16 bits is for the TCP csum
+    -----------------------------------------------------------------------
+    BYTE_7_6_CSUM : process(clk)
+    begin
+
+      if rising_edge(clk) then
+        if reset = '1' or clr_csums = '1' then
+          csum_7_6 <= (others => '0');
+        else
+          if data_last_dly(0) = '1' then
+          --  add the carry at the end of the csum calculation
+             csum_7_6 <= '0' & csum_7_6(15 downto 0) + csum_7_6(16);
+          elsif csum_en_b76 = "01" then
+          --  continually calculate the csum for each 16 bits written to memory
+            csum_7_6 <= '0' & csum_7_6(15 downto 0) +           -- always zero out the carry and add the curren CSUM value to the next data
+                        ("00000000" & csum_din(55 downto 48)) + -- add the data to the csum
+                        csum_7_6(16);                           -- add the carry when it occurs
+
+
+          elsif csum_en_b76 = "11" and zeroes_en(3) = '0' then
+          --  when zeroes_en(3) = 1 then do not do CSUM; this is equivalent to muxing in zeroes when doing the TCP data csum calculation
+          --  continually calculate the csum for each 16 bits written to memory
+            csum_7_6 <= '0' & csum_7_6(15 downto 0) + -- always zero out the carry and add the curren CSUM value to the next data
+                        csum_din(63 downto 48) +      -- add the data to the csum
+                        csum_7_6(16);                 -- add the carry when it occurs
+          else --also handles the case when data_last = 1 and csum_en_b76 = "00"
+            csum_7_6 <= csum_7_6;
+          end if;
+        end if;
+      end if;
+    end process;
+
+    -----------------------------------------------------------------------
+    --  Calculate the 16 bit CSUM for AXI_STR_TXD_TDATA(47 downto 32)
+    --    (bytes 5 and 4)
+    --    This 16 bits is for the TCP csum
+    -----------------------------------------------------------------------
+    BYTE_5_4_CSUM : process(clk)
+    begin
+
+      if rising_edge(clk) then
+        if reset = '1' or clr_csums = '1' then
+          csum_5_4 <= (others => '0');
+        else
+	  if data_last_dly(1) = '1' then
+          --  Both csum_7_6 and csum_5_4 are calculated, but they need to be added
+          --    to each other and then checked for overflow (inc_txd_addr_one_dly2)
+             csum_5_4 <= '0' & csum_7_6(15 downto 0) + csum_5_4(15 downto 0);
+          elsif data_last_dly(0) = '1' or data_last_dly(2) = '1' then
+          --  add the carry at the end of the data written to memory or
+          --  add the carry at the end of the csum calculation
+          --    (after csum 7_6 has been added to csum(5_4))
+             csum_5_4 <= '0' & csum_5_4(15 downto 0) + csum_5_4(16);
+          elsif csum_en_b54 = "01" then
+          --  continually calculate the csum for each 16 bits written to memory
+            csum_5_4 <= '0' & csum_5_4(15 downto 0) +           -- always zero out the carry and add the curren CSUM value to the next data
+                        ("00000000" & csum_din(39 downto 32)) + -- add the data to the csum
+                        csum_5_4(16);                           -- add the carry when it occurs
+
+
+          elsif csum_en_b54 = "11" and zeroes_en(2) = '0' then
+          --  when zeroes_en(2) = 1 then do not do CSUM; this is equivalent to muxing in zeroes when doing the TCP data csum calculation
+          --  continually calculate the csum for each 16 bits written to memory
+            csum_5_4 <= '0' & csum_5_4(15 downto 0) + -- always zero out the carry and add the curren CSUM value to the next data
+                        csum_din(47 downto 32) +      -- add the data to the csum
+                        csum_5_4(16);                 -- add the carry when it occurs
+          else --also handles the case when data_last = 1 and csum_en_b54 = "00"
+            csum_5_4 <= csum_5_4;
+          end if;
         end if;
       end if;
     end process;
@@ -208,7 +289,7 @@ architecture rtl of tx_csum_full_calc_if is
             csum_3_2 <= '0' & csum_3_2(15 downto 0) + -- always zero out the carry and add the curren CSUM value to the next data
                         csum_din(31 downto 16) +      -- add the data to the csum
                         csum_3_2(16);                 -- add the carry when it occurs
-          else --also handles the case when data_last = 1 and csum_en_b32 = "00" (axi_str_txd_strb = "0011" or "0001")
+          else --also handles the case when data_last = 1 and csum_en_b32 = "00"
             csum_3_2 <= csum_3_2;
           end if;
         end if;
@@ -227,11 +308,15 @@ architecture rtl of tx_csum_full_calc_if is
         if reset = '1' or clr_csums = '1' then
           csum_1_0 <= (others => '0');
         else
-          if data_last_dly(1) = '1' then
+	  if data_last_dly(3) = '1' then
+          --  Both csum_5_4 and csum_1_0 are calculated, but they need to be added
+          --    to each other and then checked for overflow (inc_txd_addr_one_dly3)
+	     csum_1_0 <= '0' & csum_5_4(15 downto 0) + csum_1_0(15 downto 0);
+          elsif data_last_dly(1) = '1' then
           --  Both csum_3_2 and csum_1_0 are calculated, but they need to be added
           --    to each other and then checked for overflow (inc_txd_addr_one_dly2)
              csum_1_0 <= '0' & csum_3_2(15 downto 0) + csum_1_0(15 downto 0);
-          elsif data_last_dly(0) = '1' or data_last_dly(2) = '1' then
+          elsif data_last_dly(0) = '1' or data_last_dly(2) = '1' or data_last_dly(4) = '1' then
           --  add the carry at the end of the data written to memory or
           --  add the carry at the end of the csum calculation
           --    (after csum 3_2 has been added to csum(1_0))
@@ -268,11 +353,13 @@ architecture rtl of tx_csum_full_calc_if is
         if rising_edge(clk) then
           if reset = '1' or clr_csums = '1' then
             hold     <= '0';
+	    inc_txd_addr_one_dly   <= '0';
           else
-            if (inc_txd_addr_one = '1' and (do_ipv4hdr = '1' or do_full_csum = '1') and not_tcp_udp = '0') then
+	    inc_txd_addr_one_dly   <= inc_txd_addr_one;
+            if (inc_txd_addr_one_dly = '1' and (do_ipv4hdr = '1' or do_full_csum = '1') and not_tcp_udp = '0') then
             --  header CSUM or TCP/UDP CSUM is being done
               hold <= '1';
-            elsif (inc_txd_addr_one = '1' and (do_ipv4hdr = '0' and do_full_csum = '0') and not_tcp_udp = '0' and do_csum = '1') then
+            elsif (inc_txd_addr_one_dly = '1' and (do_ipv4hdr = '0' and do_full_csum = '0') and not_tcp_udp = '0' and do_csum = '1') then
             --  no header and no TCP/UDP CSUMs (>= 64bytes)
               hold <= '1';
             elsif (not_tcp_udp = '1' and data_last_dly(2) = '1' and inc_txd_addr_one_early = '0') or force_dly = '1' then
@@ -314,14 +401,14 @@ architecture rtl of tx_csum_full_calc_if is
       --  set it back to "0xFFFF".  To save a step of inversion, just check it to see if it is
       --  0xFFFF before the inversion, and if it is, then do not invert it.
 
-        csum_dout  <= x"FFFF" when (udp_ptcl = '1' and data_last_dly(3) = '1' and csum_1_0 = x"FFFF") else
+        csum_dout  <= x"FFFF" when (udp_ptcl = '1' and data_last_dly(4) = '1' and csum_1_0 = x"FFFF") else
                       not csum_1_0(15 downto 0);
 
-        csum_we    <= "1100" when data_last_dly(3) = '1' and tcp_ptcl = '1' else
-                      "0011" when data_last_dly(3) = '1' and udp_ptcl = '0' else
-                      "0000";
+        csum_we    <= "00001100" when data_last_dly(4) = '1' and tcp_ptcl = '1' else
+                      "00000011" when data_last_dly(4) = '1' and udp_ptcl = '0' else
+                      "00000000";
 
-        --csum_cmplt <= data_last_dly(3);
+        --csum_cmplt <= data_last_dly(4);
 
 
 
@@ -335,8 +422,8 @@ architecture rtl of tx_csum_full_calc_if is
               csum_cmplt <= '0';
             else
               if do_csum = '1' and do_full_csum = '1' then  --did
-                if data_last_dly(2) = '1' and do_full_csum = '1' then
-                --  this will happen simultaneously with data_last_dly(3) when performing the csum
+                if data_last_dly(4) = '1' and do_full_csum = '1' then
+                --  this will happen simultaneously with data_last_dly(5) when performing the csum
                   csum_cmplt <= '1';
                 else
                   csum_cmplt <= '0';
@@ -391,10 +478,13 @@ architecture rtl of tx_csum_full_calc_if is
 --
       --  The requirement for checksum is to invert the final value
         csum_dout  <= not csum_1_0(15 downto 0);
-        csum_we    <= "0011" when hold = '1' else
-                      "0000";
+        csum_we    <= "00000011" when hold = '1' else
+                      "00000000";
         csum_cmplt <= hold;
 
     end generate GEN_IPV4_HEADER_CSUM;
 
 end rtl;
+
+
+

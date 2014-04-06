@@ -97,7 +97,7 @@ architecture rtl of increment_controller is
    ---------------------------------------------------------------------
    -- Component: synchroniser block
    ---------------------------------------------------------------------
-   component axi_ethernet_v3_01_a_sync_block is
+   component sync_block is
    port (
      clk         : in  std_logic;         
      data_in     : in  std_logic;         
@@ -116,7 +116,7 @@ begin
 
     
    -- Reclock the increment_vector bit twice on ref_clk.
-   sync_inc_vector : axi_ethernet_v3_01_a_sync_block
+   sync_inc_vector : sync_block
    port map(
      clk         => ref_clk,      
      data_in     => increment_vector,

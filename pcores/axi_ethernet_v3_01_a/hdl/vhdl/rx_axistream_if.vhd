@@ -117,9 +117,6 @@ use proc_common_v3_00_a.proc_common_pkg.log2;
 use proc_common_v3_00_a.family_support.all;
 use proc_common_v3_00_a.all;
 
--- synopsys translate_off
-library XilinxCoreLib;
--- synopsys translate_on
 
 library unisim;
 use unisim.vcomponents.all;
@@ -132,21 +129,6 @@ use axi_ethernet_v3_01_a.all;
 -------------------------------------------------------------------------------
 -- System generics
 --  C_FAMILY              -- Xilinx FPGA Family
---
--- Ethernet generics
---  C_TYPE
---     0  Soft TEMAC capable of 10 or 100 Mbps
---     1  Soft TEMAC capable of 10, 100, or 1000 Mbps
---     2  V6 hard TEMAC capable of 10, 100, or 1000 Mbps
---  C_PHY_TYPE
---     0  MII
---     1  GMII
---     2  RGMII V1.3
---     3  RGMII V2.0
---     4  SGMII
---     5  1000Base-X PCS/PMA @ 1 Gbps
---     6  1000Base-X PCS/PMA @ 2 Gbps (C_TYPE=2 only)
---     7  1000Base-X PCS/PMA @ 2.5 Gbps (C_TYPE=2 only)
 --  C_RXD_MEM_BYTES               -- Depth of RX memory in Bytes
 --  C_RXCSUM
 --     0  No checksum offloading
@@ -155,8 +137,6 @@ use axi_ethernet_v3_01_a.all;
 --  C_RXVLAN_TRAN         -- Enable RX enhanced VLAN translation
 --  C_RXVLAN_TAG          -- Enable RX enhanced VLAN taging
 --  C_RXVLAN_STRP         -- Enable RX enhanced VLAN striping
---  C_MCAST_EXTEND        -- Enable RX extended multicast address filtering
---  C_STATS               -- Enable statistics gathering
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -181,28 +161,13 @@ use axi_ethernet_v3_01_a.all;
 --
 --    EMAC_CLIENT_RXD_LEGACY
 --    EMAC_CLIENT_RXD_VLD_LEGACY
---    EMAC_CLIENT_RX_GOODFRAME_LEGACY
---    EMAC_CLIENT_RX_BADFRAME_LEGACY
---    EMAC_CLIENT_RX_FRAMEDROP
---    LEGACY_RX_FILTER_MATCH
 --
 --    RX_CLIENT_CLK
 --    RX_CLIENT_CLK_ENBL
 --
---    EMAC_CLIENT_RX_STATS
---    EMAC_CLIENT_RX_STATS_VLD
---    EMAC_CLIENT_RX_STATS_BYTE_VLD
---    EMAC_CLIENT_RXD_VLD_2STATS
---    SOFT_EMAC_CLIENT_RX_STATS
---
 --    RTAGREGDATA
 --    TPID0REGDATA
 --    TPID1REGDATA
---    UAWLREGDATA
---    UAWUREGDATA
---    RXCLCLKMCASTADDR
---    RXCLCLKMCASTEN
---    RXCLCLKMCASTRDDATA
 --    LLINKCLKVLANADDR
 --    LLINKCLKVLANRDDATA
 --    LLINKCLKRXVLANBRAMENA
@@ -218,32 +183,17 @@ use axi_ethernet_v3_01_a.all;
 entity rx_axistream_if is
   generic (
     C_RXD_MEM_BYTES       : integer                       := 4096;
-    C_RXD_MEM_ADDR_WIDTH  : integer                       := 10;
-    C_RXS_MEM_BYTES       : integer                       := 4096;
-    C_RXS_MEM_ADDR_WIDTH  : integer                       := 10;
+    C_RXD_MEM_ADDR_WIDTH  : integer                       := 9;
+    C_RXS_MEM_BYTES       : integer                       := 2048;
+    C_RXS_MEM_ADDR_WIDTH  : integer                       := 9;
     C_FAMILY              : string                        := "virtex6";
-    C_TYPE                : integer range 0 to 2          := 0;
-      -- 0 - Soft TEMAC capable of 10 or 100 Mbps
-      -- 1 - Soft TEMAC capable of 10, 100, or 1000 Mbps
-      -- 2 - V6 hard TEMAC
-    C_PHY_TYPE            : integer range 0 to 7          := 1;
-      -- 0 - MII
-      -- 1 - GMII
-      -- 2 - RGMII V1.3
-      -- 3 - RGMII V2.0
-      -- 4 - SGMII
-      -- 5 - 1000Base-X PCS/PMA @ 1 Gbps
-      -- 6 - 1000Base-X PCS/PMA @ 2 Gbps (C_TYPE=2 only)
-      -- 7 - 1000Base-X PCS/PMA @ 2.5 Gbps (C_TYPE=2 only)
     C_RXCSUM              : integer range 0 to 2          := 0;
       -- 0 - No checksum offloading
       -- 1 - Partial (legacy) checksum offloading
       -- 2 - Full checksum offloading
     C_RXVLAN_TRAN         : integer range 0 to 1          := 0;
     C_RXVLAN_TAG          : integer range 0 to 1          := 0;
-    C_RXVLAN_STRP         : integer range 0 to 1          := 0;
-    C_MCAST_EXTEND        : integer range 0 to 1          := 0;
-    C_STATS               : integer range 0 to 1          := 0
+    C_RXVLAN_STRP         : integer range 0 to 1          := 0
     );
 
   port    (
@@ -251,8 +201,8 @@ entity rx_axistream_if is
     AXI_STR_RXD_VALID               : out std_logic;                                        --  Receive AXI-Stream Data VALID
     AXI_STR_RXD_READY               : in  std_logic;                                        --  Receive AXI-Stream Data READY
     AXI_STR_RXD_LAST                : out std_logic;                                        --  Receive AXI-Stream Data LAST
-    AXI_STR_RXD_STRB                : out std_logic_vector(3 downto 0);                     --  Receive AXI-Stream Data STRB
-    AXI_STR_RXD_DATA                : out std_logic_vector(31 downto 0);                    --  Receive AXI-Stream Data DATA
+    AXI_STR_RXD_STRB                : out std_logic_vector(7 downto 0);                     --  Receive AXI-Stream Data STRB
+    AXI_STR_RXD_DATA                : out std_logic_vector(63 downto 0);                    --  Receive AXI-Stream Data DATA
     RESET2AXI_STR_RXD               : in  std_logic;                                        --  Reset
 
     AXI_STR_RXS_ACLK                : in  std_logic;                                        --  Receive AXI-Stream Status Clock
@@ -263,8 +213,8 @@ entity rx_axistream_if is
     AXI_STR_RXS_DATA                : out std_logic_vector(31 downto 0);                    --  Receive AXI-Stream Status DATA
     RESET2AXI_STR_RXS               : in  std_logic;                                        --  Reset
 
-    AXI_STR_RXD_DPMEM_WR_DATA       : out std_logic_vector(35 downto 0);                    --  Receive Data Memory Wr Data
-    AXI_STR_RXD_DPMEM_RD_DATA       : in  std_logic_vector(35 downto 0);                    --  Receive Data Memory Rd Data
+    AXI_STR_RXD_DPMEM_WR_DATA       : out std_logic_vector(71 downto 0);                    --  Receive Data Memory Wr Data
+    AXI_STR_RXD_DPMEM_RD_DATA       : in  std_logic_vector(71 downto 0);                    --  Receive Data Memory Rd Data
     AXI_STR_RXD_DPMEM_WR_EN         : out std_logic_vector(0 downto 0);                     --  Receive Data Memory Wr Enable
     AXI_STR_RXD_DPMEM_ADDR          : out std_logic_vector(C_RXD_MEM_ADDR_WIDTH downto 0);  --  Receive Data Memory Addr
 
@@ -274,7 +224,7 @@ entity rx_axistream_if is
     AXI_STR_RXS_DPMEM_ADDR          : out std_logic_vector(C_RXS_MEM_ADDR_WIDTH downto 0);  --  Receive Status Memory Addr
 
     AXI_STR_RXS_MEM_LAST_READ_OUT_PTR_GRAY : out std_logic_vector(35 downto 0);             --  Receive Status GRAY Pointer
-    AXI_STR_RXD_MEM_LAST_READ_OUT_PTR_GRAY : out std_logic_vector(35 downto 0)              --  Receive Data GRAY Pointer
+    AXI_STR_RXD_MEM_LAST_READ_OUT_PTR_GRAY : out std_logic_vector(71 downto 0)              --  Receive Data GRAY Pointer
     );
 end rx_axistream_if;
 
@@ -309,7 +259,7 @@ begin
 
 end bin_to_gray;
 
-constant PRE_GRAY_CODED_FF : std_logic_vector(35 downto 0) := x"FFFFFFFFF";
+constant PRE_GRAY_CODED_FF : std_logic_vector(71 downto 0) := x"FFFFFFFFFFFFFFFFFF";
 
 type RXS_AXISTREAM_STATES is (
   RESET_INIT_1,
@@ -372,7 +322,7 @@ signal rxs2rxd_frame_done                     : std_logic;
 
 signal frame_length_bytes               : std_logic_vector(15 downto 0);
 signal frame_length_words               : integer range 0 to 32767;
-signal last_rxd_strb                    : std_logic_vector(3 downto 0);
+signal last_rxd_strb                    : std_logic_vector(7 downto 0);
 
 signal rxd_mem_next_available4write_ptr_cmb : std_logic_vector(C_RXD_MEM_ADDR_WIDTH downto 0);
 signal rxd_mem_next_available4write_ptr_reg : std_logic_vector(C_RXD_MEM_ADDR_WIDTH downto 0);
@@ -414,10 +364,10 @@ signal rxd_mem_addr_cntr                : std_logic_vector(C_RXD_MEM_ADDR_WIDTH 
 
 signal rxs2rxd_frame_ready              : std_logic;
 
-signal fifoDataIn    : std_logic_vector(0 to 35);
+signal fifoDataIn    : std_logic_vector(0 to 71);
 signal fifoWrEn      : std_logic;
 signal fifoRdEn      : std_logic;
-signal fifoDataOut   : std_logic_vector(0 to 35);
+signal fifoDataOut   : std_logic_vector(0 to 71);
 signal fifoFull      : std_logic;
 signal fifoEmpty     : std_logic;
 signal fifoDataCount      : std_logic_vector(0 to 5);
@@ -426,9 +376,9 @@ signal rxd_addr_cntr_load : std_logic;
 signal rxd_word_cnt       : integer range 0 to 32767;
 signal rxd_word_cnt_vector : std_logic_vector (15 downto 0);
 
-signal rxd_mem_last_read_out_ptr_gray_d1           : std_logic_vector(35 downto 0);
-signal rxd_mem_last_read_out_ptr_gray              : std_logic_vector(35 downto 0);
-signal rxd_mem_last_read_out_ptr_toconvertto_gray  : std_logic_vector(35 downto 0);
+signal rxd_mem_last_read_out_ptr_gray_d1           : std_logic_vector(71 downto 0);
+signal rxd_mem_last_read_out_ptr_gray              : std_logic_vector(71 downto 0);
+signal rxd_mem_last_read_out_ptr_toconvertto_gray  : std_logic_vector(71 downto 0);
 
 signal rxs_mem_last_read_out_ptr_toconvertto_gray        : std_logic_vector(C_RXS_MEM_ADDR_WIDTH downto 0);
 signal rxs_mem_last_read_out_ptr_toconvertto_gray_clean  : std_logic_vector(C_RXS_MEM_ADDR_WIDTH downto 0);
@@ -508,7 +458,7 @@ begin
   begin
     if rising_edge(AXI_STR_RXS_ACLK) then
       if RESET2AXI_STR_RXS = '1' then
-        rxs_mem_last_read_out_ptr_gray_d1  <= bin_to_gray(PRE_GRAY_CODED_FF);
+        rxs_mem_last_read_out_ptr_gray_d1  <= bin_to_gray(PRE_GRAY_CODED_FF(35 downto 0));
       else
         rxs_mem_last_read_out_ptr_gray_d1(35 downto C_RXS_MEM_ADDR_WIDTH + 1) <= (others => '0');
         rxs_mem_last_read_out_ptr_gray_d1(C_RXS_MEM_ADDR_WIDTH downto 0) <= rxs_mem_last_read_out_ptr_gray;
@@ -631,19 +581,31 @@ begin
         if (rxs_axistream_current_state = READ_STATUS_WORD1) then
           rxs_status_word_1  <= axi_str_rxs_dpmem_rd_data_d1;
           frame_length_bytes <= axi_str_rxs_dpmem_rd_data_d1(31 downto 16);
-          case axi_str_rxs_dpmem_rd_data_d1(17 downto 16) is
-            when "00" =>
-              frame_length_words  <= conv_integer(axi_str_rxs_dpmem_rd_data_d1(31 downto 18));
-              last_rxd_strb       <= x"f";
-            when "01" =>
-              frame_length_words  <= conv_integer(axi_str_rxs_dpmem_rd_data_d1(31 downto 18)) + 1;
-              last_rxd_strb       <= x"1";
-            when "10" =>
-              frame_length_words  <= conv_integer(axi_str_rxs_dpmem_rd_data_d1(31 downto 18)) + 1;
-              last_rxd_strb       <= x"3";
-            when "11" =>
-              frame_length_words  <= conv_integer(axi_str_rxs_dpmem_rd_data_d1(31 downto 18)) + 1;
-              last_rxd_strb       <= x"7";
+          case axi_str_rxs_dpmem_rd_data_d1(18 downto 16) is
+            when "000" =>
+              frame_length_words  <= conv_integer(axi_str_rxs_dpmem_rd_data_d1(31 downto 19));
+              last_rxd_strb       <= x"ff";
+            when "001" =>
+              frame_length_words  <= conv_integer(axi_str_rxs_dpmem_rd_data_d1(31 downto 19)) + 1;
+              last_rxd_strb       <= x"01";
+            when "010" =>
+              frame_length_words  <= conv_integer(axi_str_rxs_dpmem_rd_data_d1(31 downto 19)) + 1;
+              last_rxd_strb       <= x"03";
+            when "011" =>
+              frame_length_words  <= conv_integer(axi_str_rxs_dpmem_rd_data_d1(31 downto 19)) + 1;
+              last_rxd_strb       <= x"07";
+            when "100" =>
+              frame_length_words  <= conv_integer(axi_str_rxs_dpmem_rd_data_d1(31 downto 19)) + 1;
+              last_rxd_strb       <= x"0f";
+            when "101" =>
+              frame_length_words  <= conv_integer(axi_str_rxs_dpmem_rd_data_d1(31 downto 19)) + 1;
+              last_rxd_strb       <= x"1f";
+            when "110" =>
+              frame_length_words  <= conv_integer(axi_str_rxs_dpmem_rd_data_d1(31 downto 19)) + 1;
+              last_rxd_strb       <= x"3f";
+            when "111" =>
+              frame_length_words  <= conv_integer(axi_str_rxs_dpmem_rd_data_d1(31 downto 19)) + 1;
+              last_rxd_strb       <= x"7f";
             -- coverage off
             when others => null;
             -- coverage on
@@ -1153,7 +1115,7 @@ begin
   fifoWrEn            <= '1' when (rxd_axistream_current_state = RD_FRAME_FROM_MEM) else
                          '0';
 
-  fifoDataIn          <= AXI_STR_RXD_DPMEM_RD_DATA(35 downto 0);
+  fifoDataIn          <= AXI_STR_RXD_DPMEM_RD_DATA(71 downto 0);
 
   rxd2rxs_frame_done  <= '1' when (rxd_axistream_current_state = PRE_IDLE) else
                          '0';
@@ -1165,9 +1127,9 @@ begin
                          '0';
 
   fifoRdEn            <= AXI_STR_RXD_READY or RESET2AXI_STR_RXD;
-  AXI_STR_RXD_DATA    <= fifoDataOut(4 to 35);
+  AXI_STR_RXD_DATA    <= fifoDataOut(8 to 71);
   AXI_STR_RXD_VALID   <= not(fifoEmpty);
-  AXI_STR_RXD_STRB    <= fifoDataOut(0 to 3);
+  AXI_STR_RXD_STRB    <= fifoDataOut(0 to 7);
   AXI_STR_RXD_LAST    <= '1' when (rxd_axistream_current_state = WAIT_END_FRAME and fifoDataCount = 1) else
                          '0';
   COUNT_RXD_WORDS_READ : process (AXI_STR_RXD_ACLK)
@@ -1195,7 +1157,7 @@ begin
 
   ELASTIC_FIFO : entity proc_common_v3_00_a.basic_sfifo_fg
   generic map(
-    C_DWIDTH                      => 36,
+    C_DWIDTH                      => 72,
       -- FIFO data Width (Read and write data ports are symetric)
     C_DEPTH                       => 32,
       -- FIFO Depth (set to power of 2)

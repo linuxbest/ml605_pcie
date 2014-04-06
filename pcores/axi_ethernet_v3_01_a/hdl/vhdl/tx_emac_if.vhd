@@ -111,19 +111,16 @@ use axi_ethernet_v3_01_a.all;
 entity tx_emac_if is
   generic (
     C_FAMILY                  : string                      := "virtex6";
-    C_TYPE                    : integer range 0 to 2        := 0;
-    C_PHY_TYPE                : integer range 0 to 7        := 1;
-    C_HALFDUP                 : integer range 0 to 1        := 0;
     C_TXMEM                   : integer                     := 4096;
-    C_TXCSUM                  : integer range 0 to 2        := 0;
+    C_TXCSUM                  : integer range   0 to 2      := 0;
 
     -- Read Port - AXI Stream TxData
-    c_TxD_write_width_a       : integer range   0 to 18     := 9;
-    c_TxD_read_width_a        : integer range   0 to 18     := 9;
-    c_TxD_write_depth_a       : integer range   0 to 32768  := 4096;
-    c_TxD_read_depth_a        : integer range   0 to 32768  := 4096;
-    c_TxD_addra_width         : integer range   0 to 15     := 10;
-    c_TxD_wea_width           : integer range   0 to 2      := 2;
+    c_TxD_write_width_a       : integer range  72 to 72     := 72;
+    c_TxD_read_width_a        : integer range  72 to 72     := 72;
+    c_TxD_write_depth_a       : integer range   0 to 4096   := 512;
+    c_TxD_read_depth_a        : integer range   0 to 4096   := 512;
+    c_TxD_addra_width         : integer range   0 to 12     := 9;
+    c_TxD_wea_width           : integer range   0 to 8      := 8;
 
     -- Read Port - AXI Stream TxControl
     c_TxC_write_width_a       : integer range  36 to 36     := 36;
@@ -133,18 +130,11 @@ entity tx_emac_if is
     c_TxC_addra_width         : integer range   0 to 10     := 10;
     c_TxC_wea_width           : integer range   0 to 1      := 1;
 
-    c_TxD_addrb_width         : integer range   0 to 13     := 10;
+    c_TxD_addrb_width         : integer range   0 to 12     := 9;
 
-    C_CLIENT_WIDTH            : integer                     := 8
+    C_CLIENT_WIDTH            : integer                     := 64
   );
   port (
-    --Transmit Memory Read Interface
-    tx_client_10_100          : in  std_logic;                                        --  Tx Client CE Toggles Indicator
-      -- ** WARNING ** WARNING ** WARNING **
-      --  For MII,GMII, RGMI, 1000Base-X and pcs/pma SGMII this is an accurate indicator
-      --  However for V6 Hard SGMII it is always tied to '0' for all speeds
-
-
     -- Read Port - AXI Stream TxData
     reset2tx_client           : in  std_logic;                                        --  reset
     Tx_Client_TxD_2_Mem_Din   : out std_logic_vector(c_TxD_write_width_a-1 downto 0); --  Tx AXI-Stream Data to Memory Wr Din
@@ -166,14 +156,10 @@ entity tx_emac_if is
     tx_reset_out              : in  std_logic;                                        --  take to reset combiner
     tx_axis_mac_tdata         : out std_logic_vector(C_CLIENT_WIDTH - 1 downto 0);    --  Tx AXI-Stream data
     tx_axis_mac_tvalid        : out std_logic;                                        --  Tx AXI-Stream valid
+    tx_axis_mac_tkeep         : out std_logic_vector(C_CLIENT_WIDTH/8-1 downto 0);    --  Tx AXI-Stream keep
     tx_axis_mac_tlast         : out std_logic;                                        --  Tx AXI-Stream last
-    tx_axis_mac_tuser         : out std_logic;                         -- this is always driven low since an underflow cannot occur
+    tx_axis_mac_tuser         : out std_logic;                         		      --  this is always driven low since an underflow cannot occur
     tx_axis_mac_tready        : in  std_logic;                                        --  Tx AXI-Stream ready in from TEMAC
-    tx_collision              : in  std_logic;                                        --  collision not used
-    tx_retransmit             : in  std_logic;                                        -- retransmit not used
-     
-
-    tx_cmplt                  : out std_logic;                                        -- transmit is complete indicator
 
     tx_init_in_prog_cross     : in  std_logic                                         --  Tx is Initializing after a reset
   );
@@ -200,13 +186,7 @@ architecture rtl of tx_emac_if is
 
   type TXD_RD_FSM_TYPE is (
                        IDLE,
-                       GET_B1,
-                       GET_B2,
-                       GET_B3,
-                       GET_B4,                       
-                       WAIT_TRDY2,
-                       WAIT_TRDY3,
-                       PRM_DATA,
+                       GET_FIRST,                     
                        CHECK_DONE,
                        WAIT_LAST
                       );
@@ -216,7 +196,6 @@ architecture rtl of tx_emac_if is
   signal set_txc_addr1               : std_logic;
   signal set_txc_addr2               : std_logic;
   signal set_txc_addr3               : std_logic;
-  signal txc_addr3_en                : std_logic;
   signal set_txc_addr4_n             : std_logic;
   signal set_txc_wr                  : std_logic;
   signal set_txc_en                  : std_logic;
@@ -245,14 +224,11 @@ architecture rtl of tx_emac_if is
   signal set_txd_en                  : std_logic;
   signal inc_txd_rd_addr             : std_logic;
   signal txd_rd_addr                 : std_logic_vector(c_TxD_addra_width -1 downto 0);
-  signal txd_rd_addr_1_0             : std_logic_vector(1 downto 0);
-  signal txd_rd_addr_aligned         : std_logic_vector(c_TxD_addra_width -1 downto 0);
   signal txd_wr_pntr_en              : std_logic;
 
-  signal align_start_addr            : std_logic;
   signal set_txd_done                : std_logic;
   signal Tx_Client_TxD_2_Mem_En_int  : std_logic;
-  signal txd                         : std_logic_vector(C_CLIENT_WIDTH-1 downto 0);
+  signal txd                         : std_logic_vector(c_TxD_read_width_a-1 downto 0);
   signal txd_vld                     : std_logic;
 
   signal txc_min_rd_addr             : std_logic_vector(c_TxC_addra_width -1 downto 0);
@@ -268,13 +244,9 @@ architecture rtl of tx_emac_if is
 
   signal txc_mem_rd_addr_0           : std_logic_vector(c_TxC_addra_width -1 downto 0);
   signal txc_mem_rd_addr_1           : std_logic_vector(c_TxC_addra_width -1 downto 0);
-
-  signal txd_1                       : std_logic_vector(C_CLIENT_WIDTH-1 downto 0);
-  signal txd_2                       : std_logic_vector(C_CLIENT_WIDTH-1 downto 0);  
-  signal txd_3                       : std_logic_vector(C_CLIENT_WIDTH-1 downto 0);
   
   constant zeroes_txc                : std_logic_vector(c_TxC_read_width_a -1 downto c_TxC_addra_width)    := (others => '0');
-  constant zeroes_txd                : std_logic_vector(c_TxC_read_width_a -1 downto c_TxD_addra_width -2) := (others => '0');
+  constant zeroes_txd                : std_logic_vector(c_TxC_read_width_a -1 downto c_TxD_addra_width)    := (others => '0');
   
   signal txcl_init_in_prog_dly1      : std_logic;
   signal txcl_init_in_prog_dly2      : std_logic;
@@ -283,55 +255,15 @@ architecture rtl of tx_emac_if is
   
   signal update_bram_cnt             : std_logic_vector(9 downto 0);
    
-  signal tx_axis_mac_tready_dly      : std_logic;
-  signal mux_b3                      : std_logic;
-  
-  signal tx_axis_mac_tlast_int       : std_logic;
-  
-  signal set_byte_en                 : std_logic;
-  signal set_byte_en_pipe            : std_logic_vector(1 downto 0);   
-  signal set_first_bytes             : std_logic;
-  signal first_bytes                 : std_logic;  
-  
-  signal phy_mode_enable             : std_logic;
+  signal tx_axis_mac_tready_dly      : std_logic; 
+  signal tx_axis_mac_tlast_int       : std_logic;  
   
   begin
 
     tx_axis_mac_tuser   <= '0';
 
     Tx_Client_TxD_2_Mem_Din <= (others => '0');
-    
-    
-    GEN_PHY_MODE_NOT_SGMII : if (C_PHY_TYPE /= 4) generate
-    begin
-      
-      phy_mode_enable <= tx_client_10_100;
-      
-    end generate GEN_PHY_MODE_NOT_SGMII;
-    
-    GEN_V6_HARD_PHY_MODE_SGMII : if (C_TYPE = 2 and C_PHY_TYPE = 4) generate
-    begin
-      -- even when 10/100 Mbps tie low as timing in tx_emac.vhd and tx_avb_2_axi_mac will not be correct
-      --  otherwise incorrect setting results in data not being primed properly
-      
-      --  In this mode the Hard temac core can operate at 10000/100/10Mbps.
-      --    At 1000Mbps tx_client_10_100 is LOW and tx_clk_en is HIGH
-      --    HOWEVER at 100/10Mbps BOTH tx_client_10_100 and tx_clk_en are HIGH
-      --      This is different from all other TEMAC configurations in which  
-      --      tx_client_10_100 is HIGH and tx_clk_en toggles.
-      --      So force the logic to think the core is operating at 1000Mbps
-      phy_mode_enable <= '0';
-      
-    end generate GEN_V6_HARD_PHY_MODE_SGMII;    
-    
-    GEN_SOFT_PHY_MODE_SGMII : if (C_TYPE /= 2 and C_PHY_TYPE = 4) generate
-    begin
-      -- even when 10/100 Mbps tie low as timing in tx_emac.vhd will not be correct otherwise 
-      --  incorrect setting results in 5th byte being duplicated once
-      phy_mode_enable <= tx_client_10_100;
-      
-    end generate GEN_SOFT_PHY_MODE_SGMII;    
-          
+     
     -----------------------------------------------------------------------------
     --  Create the full and empty comparison values for the S6 and V6 since
     --  1 S6 BRAM = 1/2 V6 BRAM
@@ -353,7 +285,7 @@ architecture rtl of tx_emac_if is
     --  Transmit Client TX Control State Machine Combinatorial Logic
     -----------------------------------------------------------------------------
     FSM_TXCLIENT_TXC_CMB : process (txc_rd_cs,tx_axis_mac_tready,
-      clr_txd_vld,txc_rd_addr_cmp,--Tx_Client_TxC_2_Mem_Dout,
+      clr_txd_vld,txc_rd_addr_cmp,
       txcl_init_in_prog_dly4,compare_addr3_cmplt,txc_wr_pntr,
       update_bram_cnt)
     begin
@@ -546,7 +478,12 @@ architecture rtl of tx_emac_if is
           end_addr <= (others => '0');
         else
           if  txc_rd_end_dly1 = '1' then
-            end_addr <= Tx_Client_TxC_2_Mem_Dout(c_TxD_addra_width -1 downto 0);
+            -- 64 bit aligned address
+            if (Tx_Client_TxC_2_Mem_Dout(2 downto 0) = "111") then
+              end_addr <= Tx_Client_TxC_2_Mem_Dout(c_TxD_addra_width + 2 downto 3);
+            else
+              end_addr <= Tx_Client_TxC_2_Mem_Dout(c_TxD_addra_width + 2 downto 3) + '1';
+            end if;
           else                                      
             end_addr <= end_addr;
           end if;
@@ -748,7 +685,6 @@ architecture rtl of tx_emac_if is
     ---------------------------------------------------------------------------
     --  Write the TxC Rd Pointer to address 2 or
     --    write the TxD Rd Pointer to address 0
-    --    Remove the lower 2 bits to align to a 32 bit word instead of a byte
     ---------------------------------------------------------------------------
     TXC_MEM_ADDR_PNTR : process(tx_axi_clk)
     begin
@@ -758,7 +694,7 @@ architecture rtl of tx_emac_if is
         --Address for data that is currently being transmitted
           Tx_Client_TxC_2_Mem_Din_int <= zeroes_txc & txc_rd_addr_cmp(c_TxC_addra_width -1 downto 0);
         elsif set_txc_addr0 = '1' then
-          Tx_Client_TxC_2_Mem_Din_int <= zeroes_txd & txd_rd_addr(c_TxD_addra_width -1 downto 2);
+          Tx_Client_TxC_2_Mem_Din_int <= zeroes_txd & txd_rd_addr(c_TxD_addra_width -1 downto 0);
         else
           Tx_Client_TxC_2_Mem_Din_int <= (others => '0');
         end if;
@@ -773,8 +709,7 @@ architecture rtl of tx_emac_if is
     FSM_TXCLIENT_TXD_CMB : process (txd_rd_cs,tx_axis_mac_tready,
       start_txd_fsm, 
       Tx_Client_TxD_2_Mem_Dout,txd_rd_addr,txc_rd_end,
-      end_addr,phy_mode_enable,
-      tx_axis_mac_tready_dly,first_bytes)
+      end_addr,tx_axis_mac_tready_dly)
 
     begin
 
@@ -782,136 +717,44 @@ architecture rtl of tx_emac_if is
       clr_txd_vld     <= '0';
       set_txd_en      <= '0';
       inc_txd_rd_addr <= '0';
-      align_start_addr<= '0';
       set_txd_done    <= '0';
-      mux_b3          <= '0';
-      set_byte_en     <= '0';
-      set_first_bytes <= '0';
       
       case txd_rd_cs is
+
         when IDLE => 
           if start_txd_fsm = '1' then  
-            inc_txd_rd_addr <= '1';
+            inc_txd_rd_addr <= '0';
             set_txd_en      <= '1';
-            set_first_bytes <= '1';
-            txd_rd_ns       <= GET_B1; 
+            txd_rd_ns       <= GET_FIRST; 
           else
             inc_txd_rd_addr <= '0';                                                  
-            set_txd_en      <= txc_rd_end;      
+            set_txd_en      <= '0';
             txd_rd_ns       <= IDLE; 
          end if;
-        when GET_B1 => 
-          inc_txd_rd_addr <= '1';  
-          set_txd_vld     <= '1'; --Start sending first data of payload
-          set_txd_en      <= '1'; 
-          txd_rd_ns       <= GET_B2;
-        when GET_B2 =>
-          inc_txd_rd_addr <= '1';                         
+
+        when GET_FIRST => 
+          inc_txd_rd_addr <= '1';
           set_txd_en      <= '1';
-          set_byte_en     <= '1'; 
-          txd_rd_ns       <= GET_B3;
-        when GET_B3 =>                       
-          inc_txd_rd_addr <= '1';            
-          set_txd_en      <= '1';  
-          txd_rd_ns       <= GET_B4;         
-        when GET_B4 =>                
-         txd_rd_ns       <= WAIT_TRDY2;                             
-        when WAIT_TRDY2 => 
-          if tx_axis_mac_tready = '1' and first_bytes = '0' and phy_mode_enable = '0' then  
-            inc_txd_rd_addr <= '1'; --Continue reading payload data
+          set_txd_vld     <= '1'; 	-- Start sending first data of payload
+          txd_rd_ns       <= CHECK_DONE;        
+   
+        when CHECK_DONE =>    
+          if end_addr = txd_rd_addr then
+            inc_txd_rd_addr  <= '0';              
+            clr_txd_vld     <= '1'; 
+            set_txd_en      <= '0';             
+            set_txd_done    <= '0';             
+            txd_rd_ns       <= WAIT_LAST;                
+          else
+            inc_txd_rd_addr <= '1'; 	-- set addr to get next data
             set_txd_en      <= '1';
-            mux_b3          <= '1';
-            txd_rd_ns       <= WAIT_TRDY3;
-            
-          elsif tx_axis_mac_tready = '1' and first_bytes = '0' and phy_mode_enable = '1' then  
-            inc_txd_rd_addr <= '0'; --Continue reading payload data
-            set_txd_en      <= '0';
-            mux_b3          <= '1';
-            txd_rd_ns       <= WAIT_TRDY3;
-                                
-          else
-            inc_txd_rd_addr <= '0'; 
-            set_txd_en      <= '0';
-            mux_b3          <= '0';
-            txd_rd_ns       <= WAIT_TRDY2;
-          end if;          
-    
-        when WAIT_TRDY3 => 
-          if tx_axis_mac_tready = '1' then  
-            inc_txd_rd_addr <= '1'; --Continue reading payload data
-            set_txd_en      <= '1';
-            txd_rd_ns       <= CHECK_DONE;        
-          else
-            inc_txd_rd_addr <= '0'; 
-            set_txd_en      <= '0';
-            txd_rd_ns       <= WAIT_TRDY3;
-          end if;          
-        
-        
-                  
-          
-        when CHECK_DONE =>
-          if tx_axis_mac_tready = '1' then
-          --  The end addreess read from the memory is always one byte before 
-          --  the actual end of the packet to allow tlast to be asserted correctly
-          
-          --  On the write side of the BRAM, the end_addr has been set such that the 
-          --  at strobes at TLAST reflect the last byte of data minus 1
-          --    case axi_str_txd_tstrb_dly0 is
-          --      when "1111" => end_addr_byte_offset <= "11";
-          --      when "0111" => end_addr_byte_offset <= "10";
-          --      when "0011" => end_addr_byte_offset <= "01";
-          --      when others => end_addr_byte_offset <= "00";
-          --    end case;
-          --
-          --  The BRAM parity bits are not used with AXI-S CORE Gen
-          --         
-            if end_addr = txd_rd_addr then
-            --Last byte of payload data is one byte after end_address
-              if txd_rd_addr(1) = '1' and txd_rd_addr (0) = '1' then
-              --  By incrementing the address one, it will be 32 bit aligned
-              --  which is the starting address of the next packet 
-                align_start_addr <= '0';
-                inc_txd_rd_addr  <= '1'; 
-              else
-              --  Align address to 32 bits because it ended non aligned
-              --    The next 32 bit aligned address will be the start
-              --    of the next payload data
-              --  Do not increment the address since it is getting aligned
-                align_start_addr <= '1';
-                inc_txd_rd_addr  <= '0'; 
-              end if;
-              
-              if phy_mode_enable = '0' then   
-                clr_txd_vld     <= '0'; 
-                set_txd_en      <= '0';             
-                set_txd_done    <= '0';             
-                txd_rd_ns       <= WAIT_LAST;  
-              elsif phy_mode_enable = '1' then   
-                clr_txd_vld     <= '1';            
-                set_txd_en      <= '0';             
-                set_txd_done    <= '1';             
-                txd_rd_ns       <= IDLE;                                         
-              end if;
-              
-            else
-              inc_txd_rd_addr <= '1'; --set addr to get next data
-              set_txd_en      <= '1';
-              set_txd_done    <= '0';
-              align_start_addr<= '0';
-              txd_rd_ns       <= CHECK_DONE;
-            end if;
-          else
-            inc_txd_rd_addr <= '0';
-            set_txd_en      <= '0';
             set_txd_done    <= '0';
-            align_start_addr<= '0';
             txd_rd_ns       <= CHECK_DONE;
           end if;
+
         when WAIT_LAST =>
         --  Need to wait one tready clock cycle before transitioning to IDLE
         --    This will allow the last Tx Byte through and set TLAST accordingly
-            clr_txd_vld     <= '1'; 
             inc_txd_rd_addr <= '0';             
             set_txd_en      <= '0';             
             set_txd_done    <= '1'; 
@@ -919,7 +762,9 @@ architecture rtl of tx_emac_if is
                        
         when others =>
           txd_rd_ns <= IDLE;
+
       end case;
+
     end process;
 
     -----------------------------------------------------------------------------
@@ -935,107 +780,7 @@ architecture rtl of tx_emac_if is
           txd_rd_cs <= txd_rd_ns;
         end if;
       end if;
-    end process;
-    
-
-    -----------------------------------------------------------------------------
-    --  Transmit Client TX Complete Signal
-    -----------------------------------------------------------------------------
-    TX_COMPLETE_INDICATOR : process (tx_axi_clk)
-    begin
-
-      if rising_edge(tx_axi_clk) then
-        if set_txd_done = '1' then
-          tx_cmplt <= '1';
-        else
-          tx_cmplt <= '0';
-        end if;
-      end if;
     end process;    
-    
-    -----------------------------------------------------------------------------
-    --  Set byte enable pipeline to use individual bits to store the BRAM data 
-    --  as it is read.  Then use the stored data to send to the MAC when 
-    --  appropriate.
-    -----------------------------------------------------------------------------
-    BX_EN_PIPE : process (tx_axi_clk)
-    begin
-
-      if rising_edge(tx_axi_clk) then       
-        if set_byte_en = '1' then
-          set_byte_en_pipe(0) <= '1';
-        else
-          set_byte_en_pipe(0) <= '0';
-        end if;
-        set_byte_en_pipe(1) <= set_byte_en_pipe(0);          
-      end if;
-    end process;
-    
-    
-    -----------------------------------------------------------------------------
-    --  Store Byte 1 data so it can be muxed to txd on each packets first 
-    --  tx_axis_mac_tready assertion   
-    -----------------------------------------------------------------------------    
-    TXD_BYTE1 : process (tx_axi_clk)
-    begin
-
-      if rising_edge(tx_axi_clk) then
-        if reset2tx_client = '1' then
-          txd_1 <= (others => '0');
-        else
-          if set_byte_en = '1' then
-            txd_1 <= Tx_Client_TxD_2_Mem_Dout(C_CLIENT_WIDTH-1 downto 0);
-          else
-            txd_1 <= txd_1;
-          end if;          
-        end if;
-      end if;
-    end process;   
-    
-         
-    -----------------------------------------------------------------------------
-    --  Store Byte 2 data so it can be muxed to txd on each packets second
-    --  tx_axis_mac_tready assertion   
-    -----------------------------------------------------------------------------        
-    TXD_BYTE2 : process (tx_axi_clk)
-    begin
-
-      if rising_edge(tx_axi_clk) then
-        if reset2tx_client = '1' then
-          txd_2 <= (others => '0');
-        else
-          if set_byte_en_pipe(0) = '1' then
-            txd_2 <= Tx_Client_TxD_2_Mem_Dout(C_CLIENT_WIDTH-1 downto 0);
-          else
-            txd_2 <= txd_2;
-          end if;          
-          
-        end if;
-      end if;
-    end process;       
-    
-    
-    -----------------------------------------------------------------------------
-    --  Store Byte 3 data so it can be muxed to txd on each packets third
-    --  tx_axis_mac_tready assertion   
-    -----------------------------------------------------------------------------            
-    TXD_BYTE3 : process (tx_axi_clk)
-    begin
-
-      if rising_edge(tx_axi_clk) then
-        if reset2tx_client = '1' then
-          txd_3 <= (others => '0');
-        else
-          if set_byte_en_pipe(1) = '1' then
-            txd_3 <= Tx_Client_TxD_2_Mem_Dout(C_CLIENT_WIDTH-1 downto 0);
-          else
-            txd_3 <= txd_3;
-          end if;          
-          
-        end if;
-      end if;
-    end process;    
-       
     
     -----------------------------------------------------------------------------
     --  Use this delay to mux in the stored first bytes of data for each packet 
@@ -1074,18 +819,7 @@ architecture rtl of tx_emac_if is
     -----------------------------------------------------------------------------
     --  TxD Memory Write Enable bit is never written to
     -----------------------------------------------------------------------------
-    Tx_Client_TxD_2_Mem_We(0) <= '0';
-
-    -----------------------------------------------------------------------------
-    --  Get Lower 2 bits for case statement below
-    -----------------------------------------------------------------------------
-    txd_rd_addr_1_0     <= txd_rd_addr(1 downto 0); -- for case statement below
-
-    -----------------------------------------------------------------------------
-    --  Set the address to be 32 bit aligned for readjustment at the end of
-    --    the packet
-    -----------------------------------------------------------------------------
-    txd_rd_addr_aligned <= txd_rd_addr(c_TxD_addra_width -1 downto 2) & "00";
+    Tx_Client_TxD_2_Mem_We <= (others => '0');
 
     -----------------------------------------------------------------------------
     --  Generate the TxD Memory Read Address
@@ -1097,24 +831,10 @@ architecture rtl of tx_emac_if is
         if reset2tx_client = '1' then
           txd_rd_addr     <= (others => '0');
         else
-        --  the end of the packet was reached, so adjust the Rd Addr
-        --    to be 32bit aligned if needed
-          if align_start_addr = '1' then
-            case txd_rd_addr_1_0 is
-              when "00" | "01" | "10" => --  | "11" =>
-              -- packet ended on a non 32bit aligned address, so adjust it
-                txd_rd_addr <=txd_rd_addr_aligned + 4;
-              when  others =>
-              -- packet ended on a 32bit aligned address, so do not change
-                txd_rd_addr <= txd_rd_addr;
-            end case;
+          if inc_txd_rd_addr = '1' then
+            txd_rd_addr <= txd_rd_addr + 1;
           else
-          --  increment to next address
-            if inc_txd_rd_addr = '1' then
-              txd_rd_addr <= txd_rd_addr + 1;
-            else
-              txd_rd_addr <= txd_rd_addr;
-            end if;
+            txd_rd_addr <= txd_rd_addr;
           end if;
         end if;
       end if;
@@ -1143,37 +863,7 @@ architecture rtl of tx_emac_if is
         end if;
       end if;
     end process;    
-    
-    
-    ---------------------------------------------------------------------------
-    --  Use this signal to dis-allow a transition to the WAIT_TRDY3 state of 
-    --  the FSM_TXCLIENT_TXD_CMB FSM when in the WAIT_TRDY2 state
-    ---------------------------------------------------------------------------        
-    SET_FIRST_BYTE_FILTER : process (tx_axi_clk)
-    begin
-
-      if rising_edge(tx_axi_clk) then
-        if reset2tx_client = '1' or (tx_axis_mac_tready = '0' and tx_axis_mac_tready_dly = '1') then 
-          first_bytes <= '0';
-        else
-          if set_first_bytes = '1' then
-            first_bytes <= '1';
-          else
-            first_bytes <= first_bytes;
-          end if;
-        end if;
-      end if;
-    end process;    
-    
-    
-    -----------------------------------------------------------------------------
-    --  Mux the Memory data to the Tx Client Interface when appropriate
-    --    1. Mux the first byte
-    --    2. Mux the second byte at the rising edge of the first tready of the packet
-    --    3. Mux the third byte at the second tready of the packet
-    --    4. Mux the fourth byte at the third tready of the packet    
-    --    5. Mux the remaining bytes
-    -----------------------------------------------------------------------------
+ 
     TXD_MEM_DATA : process (tx_axi_clk)
     begin
 
@@ -1181,24 +871,16 @@ architecture rtl of tx_emac_if is
         if reset2tx_client = '1' then
           txd <= (others => '0');
         else
-          if set_txd_vld = '1' then
-            txd <= Tx_Client_TxD_2_Mem_Dout(C_CLIENT_WIDTH-1 downto 0);  --load first byte and hold until ack
-          elsif tx_axis_mac_tready = '1' and  tx_axis_mac_tready_dly = '0' and first_bytes = '1' then 
-            txd <= txd_1;
-          elsif tx_axis_mac_tready = '1' and  tx_axis_mac_tready_dly = '1' and first_bytes = '1' then 
-            txd <= txd_2;
-          elsif mux_b3 = '1' then
-            txd <= txd_3;    
-          elsif  tx_axis_mac_tready = '1' then
-            txd <= Tx_Client_TxD_2_Mem_Dout(C_CLIENT_WIDTH -1 downto 0);  --remaining bytes
-          else
-            txd <= txd;
-          end if;
+          for i in 0 to 7 loop
+	    txd(8*i+7 downto 8*i) <= Tx_Client_TxD_2_Mem_Dout(9*i+7 downto 9*i);
+            txd(64+i) 	    <= Tx_Client_TxD_2_Mem_Dout(9*i+8);
+          end loop;
         end if;
       end if;
     end process;
 
-    tx_axis_mac_tdata <= txd;
+    tx_axis_mac_tdata <= txd(C_CLIENT_WIDTH-1 downto 0);
+    tx_axis_mac_tkeep <= txd(c_TxD_read_width_a-1 downto C_CLIENT_WIDTH);
 
     -----------------------------------------------------------------------------
     --  Assert Transmit Data Valid for the duration of a transmitted packet

@@ -49,7 +49,7 @@
 --
 -- VHDL-Standard:   VHDL'93
 -------------------------------------------------------------------------------
--- Structure:   This section shows the hierarchical structure of axi_uartlite.
+-- Structure:   This section shows the hierarchical structure of reset_combiner.
 --
 --              axi_ethernet.vhd
 --                reset_combiner.vhd
@@ -119,13 +119,9 @@ use axi_ethernet_v3_01_a.all;
 -------------------------------------------------------------------------------
 
 entity reset_combiner is
-  generic (
-    C_SIMULATION         : integer range 0 to 1 := 0
-  );
   port (
     S_AXI_ACLK           : in  std_logic;   --  AXI4-Lite Clock
     S_AXI_ARESETN        : in  std_logic;   --  AXI4-Lite Reset
-    GTX_CLK_125MHZ       : in  std_logic;   --  GTX CLK
     RX_CLIENT_CLK        : in  std_logic;   --  Receive Client Clock
     RX_CLIENT_CLK_EN     : in  std_logic;   --  Receive Client Clock Enable
     TX_CLIENT_CLK        : in  std_logic;   --  Transmit Client Clock
@@ -138,25 +134,17 @@ entity reset_combiner is
     AXI_STR_RXD_ARESETN  : in  std_logic;   --  AXI-Stream Receive Reset
     AXI_STR_RXS_ACLK     : in  std_logic;   --  AXI-Stream Receive Clock
     AXI_STR_RXS_ARESETN  : in  std_logic;   --  AXI-Stream Receive Reset
-    PHY_RESET_N          : out std_logic;   --  PHY Reset
-    PHY_RESET_CMPLTE     : out std_logic;   --  PHY Reset Complete
     RESET2AXI            : out std_logic;   --  Reset going to AXI
     RESET2RX_CLIENT      : out std_logic;   --  Reset going to Receive Client Interface
     RESET2TX_CLIENT      : out std_logic;   --  Reset going to Transmit Client Interface
     RESET2AXI_STR_TXD    : out std_logic;   --  Reset going to AXI-Stream Transmit Data Interface
     RESET2AXI_STR_TXC    : out std_logic;   --  Reset going to AXI-Stream Transmit Control Interface
     RESET2AXI_STR_RXD    : out std_logic;   --  Reset going to AXI-Stream Receive Data Interface
-    RESET2AXI_STR_RXS    : out std_logic;   --  Reset going to AXI-Stream Receive Status Interface
-    RESET2GTX_CLK        : out std_logic    --  Reset going to GTX Clock signals
+    RESET2AXI_STR_RXS    : out std_logic    --  Reset going to AXI-Stream Receive Status Interface
   );
 end reset_combiner;
 
 architecture imp of reset_combiner is
-
-  constant C_10MS : std_logic_vector(11 downto 0) := "100000000000"; -- 0x0800
-  constant C_15MS : std_logic_vector(11 downto 0) := "110000000000"; -- 0x0C00
-  constant C_10US : std_logic_vector(11 downto 0) := "000000000000"; -- 0x01
-  constant C_15US : std_logic_vector(11 downto 0) := "000000000001"; -- 0x02
 
   signal axiStrTxdResetSaxiDomain      : std_logic;
   signal axiStrTxcResetSaxiDomain      : std_logic;
@@ -183,15 +171,6 @@ architecture imp of reset_combiner is
   signal axiStrTxcResetAxiStrRxsDomain : std_logic;
   signal axiStrRxdResetAxiStrRxsDomain : std_logic;
 
-  signal saxiResetGtxDomain            : std_logic;
-  signal saxiResetGtxDomain_d1         : std_logic;
-  signal saxiResetGtxDomain_pulse      : std_logic;
-  signal reset2gtx                     : std_logic;
-
-  signal phy_reset_count               : std_logic_vector(11 downto 0);
-  signal reset_delay                   : std_logic_vector(11 downto 0);
-  signal reset_done_delay              : std_logic_vector(11 downto 0);
-
   signal reset2axi_i                   : std_logic;
   signal s_axi_areset                  : std_logic;
   signal axi_str_txd_areset            : std_logic;
@@ -199,115 +178,13 @@ architecture imp of reset_combiner is
   signal axi_str_rxd_areset            : std_logic;
   signal axi_str_rxs_areset            : std_logic;
 
-  signal srl32_1_output                : std_logic;
-  signal srl32_2_output                : std_logic;
-  signal srl32_2_output_d1             : std_logic;
-  signal phyResetCntEnable             : std_logic;
-
 begin
-
-  GTX_RESET_PULSE : process (GTX_CLK_125MHZ)
-  begin
-    if (GTX_CLK_125MHZ'event and GTX_CLK_125MHZ = '1') then
-      if (s_axi_areset = '1') then
-        saxiResetGtxDomain_d1    <= saxiResetGtxDomain;
-        saxiResetGtxDomain_pulse <= '0';
-        srl32_2_output_d1        <= '0';
-        phyResetCntEnable        <= '0';
-      else
-        saxiResetGtxDomain_d1    <= saxiResetGtxDomain;
-
-        -- create a reset pulse 1 clock wide as reset is going inactive
-        saxiResetGtxDomain_pulse <= saxiResetGtxDomain_d1 and not(saxiResetGtxDomain);
-        srl32_2_output_d1        <= srl32_2_output;
-        phyResetCntEnable        <= srl32_2_output and not(srl32_2_output_d1);
-      end if;
-    end if;
-  end process;
-
-  -- SRLC32E: 32-bit variable length shift register LUT
-  -- with clock enable
-  -- Xilinx HDL Libraries Guide, version 12.2
-
-  SRLC32E_1 : SRLC32E
-  generic map (
-    INIT => X"00000001"
-  )
-  port map (
-    Q   => srl32_1_output, -- SRL data output
-    Q31 => open,           -- SRL cascade output pin
-    A   => "11110",        -- 5-bit shift depth select input 11111 is 32 00000 is 1
-    CE  => '1',            -- Clock enable input
-    CLK => GTX_CLK_125MHZ, -- Clock input
-    D   => srl32_1_output  -- SRL data input
-  );
-  -- End of SRLC32E_inst instantiation
-
-  -- SRLC32E: 32-bit variable length shift register LUT
-  -- with clock enable
-  -- Xilinx HDL Libraries Guide, version 12.2
-
-  SRLC32E_2 : SRLC32E
-  generic map (
-    INIT => X"00000001"
-  )
-  port map (
-    Q   => srl32_2_output, -- SRL data output
-    Q31 => open,           -- SRL cascade output pin
-    A   => "10010",        -- 5-bit shift depth select input 11111 is 32 00000 is 1
-    CE  => srl32_1_output, -- Clock enable input
-    CLK => GTX_CLK_125MHZ, -- Clock input
-    D   => srl32_2_output  -- SRL data input (pulse every 5 uS)
-  );
-  -- End of SRLC32E_inst instantiation
 
   s_axi_areset       <= not(S_AXI_ARESETN);
   axi_str_txd_areset <= not(AXI_STR_TXD_ARESETN);
   axi_str_txc_areset <= not(AXI_STR_TXC_ARESETN);
   axi_str_rxd_areset <= not(AXI_STR_RXD_ARESETN);
   axi_str_rxs_areset <= not(AXI_STR_RXS_ARESETN);
-
-  NORMAL_DELAY: if(C_SIMULATION = 0) generate
-  BEGIN
-    reset_delay      <= C_10MS;
-    reset_done_delay <= C_15MS;
-  end generate NORMAL_DELAY;
-
-  SIMULATION_DELAY: if(C_SIMULATION = 1) generate
-  BEGIN
-    reset_delay      <= C_10US;
-    reset_done_delay <= C_15US;
-  end generate SIMULATION_DELAY;
-
-  -----------------------------------------------------------------------------
-  -- we must hold the PHY reset active for at least 5mS which we will do by
-  -- using the known 125 MHz GTX clock
-  -----------------------------------------------------------------------------
-
-  COUNT_GTX : process (GTX_CLK_125MHZ)
-  begin
-    if (GTX_CLK_125MHZ'event and GTX_CLK_125MHZ = '1') then
-      if (reset2gtx = '1') then
-        PHY_RESET_N      <= '0';
-        PHY_RESET_CMPLTE <= '0';
-        phy_reset_count  <= (others => '0');
-      elsif (phyResetCntEnable = '1') then -- once every 5 uS
-        if (phy_reset_count <= reset_delay) then -- 10mS (10 uS in simulation mode)
-          PHY_RESET_N      <= '0';
-          PHY_RESET_CMPLTE <= '0';
-          phy_reset_count  <= phy_reset_count + 1;
-        elsif (phy_reset_count <= reset_done_delay) then -- 15mS (15 uS in simulation mode)
-          PHY_RESET_N      <= '1';
-          PHY_RESET_CMPLTE <= '0';
-          phy_reset_count  <= phy_reset_count + 1;
-        else
-          PHY_RESET_N  <= '1';
-          PHY_RESET_CMPLTE <= '1';
-        end if;
-      end if;
-    end if;
-  end process;
-
 
   reset2axi_i      <= s_axi_areset                  or axiStrTxdResetSaxiDomain
                    or axiStrTxcResetSaxiDomain      or axiStrRxdResetSaxiDomain
@@ -331,8 +208,6 @@ begin
                    or axiStrTxcResetAxiStrRxsDomain or axiStrRxdResetAxiStrRxsDomain
                    or axi_str_rxs_areset;
 
-  reset2gtx         <= saxiResetGtxDomain;
-  RESET2GTX_CLK     <= saxiResetGtxDomain;
 
   AXI_RESET_TO_RXCLIENT : entity axi_ethernet_v3_01_a.actv_hi_reset_clk_cross(imp)
   port map    (
@@ -359,20 +234,6 @@ begin
     ClkBEN             => TX_CLIENT_CLK_EN,
     ClkBRst            => '0',
     ClkBOutOfClkARst   => RESET2TX_CLIENT,
-    ClkBCombinedRstOut => open
-  );
-
-  AXI_RESET_TO_GTX : entity axi_ethernet_v3_01_a.actv_hi_reset_clk_cross(imp)
-  port map    (
-    ClkA               => S_AXI_ACLK,
-    ClkAEN             => '1',
-    ClkARst            => s_axi_areset,
-    ClkAOutOfClkBRst   => open,
-    ClkACombinedRstOut => open,
-    ClkB               => GTX_CLK_125MHZ,
-    ClkBEN             => '1',
-    ClkBRst            => '0',
-    ClkBOutOfClkARst   => saxiResetGtxDomain,
     ClkBCombinedRstOut => open
   );
 
@@ -522,4 +383,5 @@ begin
     ClkBOutOfClkARst   => axiStrRxdResetAxiStrRxsDomain,
     ClkBCombinedRstOut => open
   );
+
 end imp;

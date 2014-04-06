@@ -120,10 +120,6 @@ use proc_common_v3_00_a.coregen_comp_defs.all;
 use proc_common_v3_00_a.proc_common_pkg.log2;
 use proc_common_v3_00_a.all;
 
--- synopsys translate_off
-library XilinxCoreLib;
--- synopsys translate_on
-
 library axi_ethernet_v3_01_a;
 use axi_ethernet_v3_01_a.all;
 
@@ -160,21 +156,9 @@ use axi_ethernet_v3_01_a.all;
 
 entity rx_axistream_client_shim is
   generic (
-    C_FAMILY              : string                        := "virtex6";
-    C_PHY_TYPE            : integer range 0 to 7          := 1
-      -- 0 - MII
-      -- 1 - GMII
-      -- 2 - RGMII V1.3
-      -- 3 - RGMII V2.0
-      -- 4 - SGMII
-      -- 5 - 1000Base-X PCS/PMA @ 1 Gbps
-      -- 6 - 1000Base-X PCS/PMA @ 2 Gbps (C_TYPE=2 only)
-      -- 7 - 1000Base-X PCS/PMA @ 2.5 Gbps (C_TYPE=2 only)
+    C_FAMILY              : string                        := "virtex6"
     );
-
-  port    (
-    RXSPEEDIS10100             : in  std_logic;
-                                                                        
+  port    (                                                                       
     RX_MAC_ACLK                : in  std_logic;                    
     RX_RESET                   : in  std_logic;                    
     RX_AXIS_MAC_TDATA          : in  std_logic_vector(7 downto 0); 
@@ -187,8 +171,6 @@ entity rx_axistream_client_shim is
 
     RX_CLIENT_CLK              : out std_logic;
     RESET2RX_CLIENT            : out std_logic;
-    EMAC_CLIENT_RX_GOODFRAME   : out std_logic;
-    EMAC_CLIENT_RX_BADFRAME    : out std_logic;
     EMAC_CLIENT_RXD_VLD        : out std_logic;
     RX_CLIENT_CLK_ENBL         : out std_logic;
     EMAC_CLIENT_RXD            : out std_logic_vector(7 downto 0)
@@ -222,11 +204,6 @@ signal receive_data_valid_gen_next_state    : RECEIVE_DATA_VALID_GEN_SM_TYPE;
 
 signal emac_client_rxd_vld_i      : std_logic;
 
-signal derived_rx_good_frame_i    : std_logic;
-signal derived_rx_bad_frame_i     : std_logic;
-signal derived_rx_good_frame_d1   : std_logic;
-signal derived_rx_bad_frame_d1    : std_logic;
-
 signal derived_rx_clk_enbl             : std_logic;
 signal derived_rx_clk_enbl_reg1        : std_logic;
 signal derived_rx_clk_enbl_reg2        : std_logic;
@@ -259,29 +236,6 @@ begin
 
   RX_CLIENT_CLK   <= RX_MAC_ACLK;
   RESET2RX_CLIENT <= RX_RESET;
-  
-  derived_rx_good_frame_i <= rx_axis_mac_tlast and not(rx_axis_mac_tuser);
-  derived_rx_bad_frame_i  <= rx_axis_mac_tlast and    (rx_axis_mac_tuser);
-
-   -- stretch good bad for 10/100 clock enable case
-   STRETCH_GOOD_BAD_PROCESS : process(rx_mac_aclk)
-   begin
-    if rising_edge(rx_mac_aclk) then
-      if rx_reset = '1' then
-         derived_rx_good_frame_d1 <= '0';
-         derived_rx_bad_frame_d1  <= '0';
-       else
-         derived_rx_good_frame_d1 <= derived_rx_good_frame_i;
-         derived_rx_bad_frame_d1  <= derived_rx_bad_frame_i;
-       end if;
-     end if;
-   end process STRETCH_GOOD_BAD_PROCESS;
-
-  EMAC_CLIENT_RX_GOODFRAME <= derived_rx_good_frame_i when rxspeedis10100 = '0' else -- speed is 1000
-                              derived_rx_good_frame_i or derived_rx_good_frame_d1;   -- speed is 10 or 100
-                              
-  EMAC_CLIENT_RX_BADFRAME  <= derived_rx_bad_frame_i when rxspeedis10100 = '0' else -- speed is 1000
-                              derived_rx_bad_frame_i  or derived_rx_bad_frame_d1;   -- speed is 10 or 100
 
   --------------------------------------------------------------------------
   -- receive data valid gen State Machine
@@ -304,15 +258,6 @@ begin
     end if;
   end process;
 
-  NOT_SGMII: if(C_PHY_TYPE /= 4) generate
-    derived_rx_clk_enbl <= '1' when rxspeedis10100 = '0' else -- speed is 1000
-                           RX_CLK_ENABLE_IN;                  -- speed is 10 or 100
-  end generate NOT_SGMII;
-
-  IS_SGMII: if(C_PHY_TYPE = 4) generate
-    derived_rx_clk_enbl <= '1' when rxspeedis10100 = '0' else -- speed is 1000
-                           derived_rx_clk_enbl_reg1;          -- speed is 10 or 100
-  end generate IS_SGMII;
   
   RXDVLDSM_CMB_PROCESS: process (
     RX_CLK_ENABLE_IN,
@@ -433,38 +378,12 @@ begin
           rx_tvalid_start <= '0';                    
         end if;
 
-        if rxspeedis10100 = '1' then -- speed is 10 or 100 clock enable toggles
-          if ((rx_axis_mac_tvalid = '1') and (rx_axis_mac_tvalid_d1 = '0') and (rx_axis_mac_tvalid_d2 = '0') and (rx_axis_mac_tvalid_d3 = '0') and (rx_axis_mac_tlast = '0')) then
-            rx_tvalid <= '1';                    
-          elsif (rx_tvalid_end = '1') then
-            rx_tvalid <= '0'; 
-          else
-            null;
-          end if;
-
-          if (C_PHY_TYPE /= 4) then -- not SGMII at 10/100
-            if no_stripping_d2 = '1' or no_stripping_d3 = '1' then --terminate early if no fcs stripping
-              emac_client_rxd_vld_i  <= '0';
-            else
-              emac_client_rxd_vld_i  <= rx_tvalid; -- extend to cover last byte when fcs stripping
-            end if;
-          else -- is SGMII at 10/100
-            if no_stripping_d2 = '1' or no_stripping_d3 = '1'  or rx_axis_mac_tlast_d1 = '1' then --terminate early if no fcs stripping
-              emac_client_rxd_vld_i  <= '0';
-            elsif (RX_AXIS_MAC_TVALID = '1') then
-              emac_client_rxd_vld_i  <= '1';
-            else
-              NULL;
-            end if;
-          end if;
-
-        else -- speed is 1000 clock enable always 1
           if rx_axis_mac_tlast = '1' and rx_axis_mac_tvalid_d1 = '0' then
             emac_client_rxd_vld_i  <= '0';
           else
             emac_client_rxd_vld_i  <= rx_axis_mac_tvalid or rx_axis_mac_tvalid_d1;
           end if;
-        end if;         
+       
         rx_axis_mac_tlast_d1     <= rx_axis_mac_tlast;
         rx_axis_mac_tlast_d2     <= rx_axis_mac_tlast_d1;
         rx_axis_mac_tlast_d3     <= rx_axis_mac_tlast_d2;
@@ -480,19 +399,8 @@ begin
       if rx_reset = '1' then
         EMAC_CLIENT_RXD  <= (others => '0');
       else
-        if rxspeedis10100 = '1' then -- speed is 10 or 100 clock enable toggles
-          if (C_PHY_TYPE /= 4) then -- not SGMII at 10/100
-            if (rx_axis_mac_tvalid_d1 = '1' or rx_axis_mac_tvalid_d3 = '1') then   
-              EMAC_CLIENT_RXD  <= rx_axis_mac_tdata;
-            end if;
-          else -- is SGMII at 10/100
 
-            EMAC_CLIENT_RXD  <= RX_AXIS_MAC_TDATA;
-          end if;
-
-        else -- speed is 1000 clock enable always 1
-          EMAC_CLIENT_RXD  <= rx_axis_mac_tdata;
-        end if;
+        EMAC_CLIENT_RXD  <= rx_axis_mac_tdata;
       end if;
     end if;
   end process CREATE_EMAC_CLIENT_RXD_LEGACY_PROCESS;

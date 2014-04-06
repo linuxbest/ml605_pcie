@@ -5,7 +5,7 @@
 -- Title      : Package for address filter components
 -- Project    : Tri-Mode Ethernet MAC
 ------------------------------------------------------------------------
--- File       : axi_stream_pack.vhd
+-- File       : address_filter_pack.vhd
 -- Author     : Xilinx Inc.
 ------------------------------------------------------------------------
 -- (c) Copyright 2003-2008 Xilinx, Inc. All rights reserved.
@@ -64,7 +64,7 @@ use ieee.std_logic_1164.all;
 package axi_stream_pack is
 
 
-component axi_ethernet_v3_01_a_rx_axi_intf 
+component rx_axi_intf 
    generic (
       C_AT_ENTRIES               : integer := 8
    );
@@ -89,7 +89,7 @@ component axi_ethernet_v3_01_a_rx_axi_intf
   );
 end component;
 
-component axi_ethernet_v3_01_a_tx_axi_intf 
+component tx_axi_intf 
    generic (
       C_HAS_SGMII                : integer := 0
    );

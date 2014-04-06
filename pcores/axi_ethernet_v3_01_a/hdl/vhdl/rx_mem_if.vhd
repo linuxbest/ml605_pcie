@@ -112,10 +112,6 @@ use proc_common_v3_00_a.coregen_comp_defs.all;
 use proc_common_v3_00_a.proc_common_pkg.log2;
 use proc_common_v3_00_a.all;
 
--- synopsys translate_off
-library XilinxCoreLib;
--- synopsys translate_on
-
 library axi_ethernet_v3_01_a;
 use axi_ethernet_v3_01_a.all;
 
@@ -166,16 +162,16 @@ use axi_ethernet_v3_01_a.all;
 entity rx_mem_if is
   generic (
     C_RXD_MEM_BYTES      : integer    := 4096;
-    C_RXD_MEM_ADDR_WIDTH : integer    := 10;
-    C_RXS_MEM_BYTES      : integer    := 4096;
-    C_RXS_MEM_ADDR_WIDTH : integer    := 10;
+    C_RXD_MEM_ADDR_WIDTH : integer    := 9;
+    C_RXS_MEM_BYTES      : integer    := 2048;
+    C_RXS_MEM_ADDR_WIDTH : integer    := 9;
     C_FAMILY             : string     := "virtex6"
   );
 
   port    (
     AXI_STR_RXD_ACLK            : in  std_logic;                                        --  AXI-Stream Receive Data Clock
-    AXI_STR_RXD_DPMEM_WR_DATA   : in  std_logic_vector(35 downto 0);                    --  AXI-Stream Receive Data Write Data
-    AXI_STR_RXD_DPMEM_RD_DATA   : out std_logic_vector(35 downto 0);                    --  AXI-Stream Receive Data Read Data
+    AXI_STR_RXD_DPMEM_WR_DATA   : in  std_logic_vector(71 downto 0);                    --  AXI-Stream Receive Data Write Data
+    AXI_STR_RXD_DPMEM_RD_DATA   : out std_logic_vector(71 downto 0);                    --  AXI-Stream Receive Data Read Data
     AXI_STR_RXD_DPMEM_WR_EN     : in  std_logic_vector(0 downto 0);                     --  AXI-Stream Receive Data Write Enable
     AXI_STR_RXD_DPMEM_ADDR      : in  std_logic_vector(C_RXD_MEM_ADDR_WIDTH downto 0);  --  AXI-Stream Receive Data Address
     RESET2AXI_STR_RXD           : in  std_logic;                                        --  AXI-Stream Receive Data Rese
@@ -189,8 +185,8 @@ entity rx_mem_if is
 
     RX_CLIENT_CLK               : in  std_logic;                                        --  Receive MAC Clock
     RX_CLIENT_CLK_ENBL          : in  std_logic;                                        --  Receive MAC Clock Enable
-    RX_CLIENT_RXD_DPMEM_WR_DATA : in  std_logic_vector(35 downto 0);                    --  Receive MAC Data Memory Write Data
-    RX_CLIENT_RXD_DPMEM_RD_DATA : out std_logic_vector(35 downto 0);                    --  Receive MAC Data Memory Read Data
+    RX_CLIENT_RXD_DPMEM_WR_DATA : in  std_logic_vector(71 downto 0);                    --  Receive MAC Data Memory Write Data
+    RX_CLIENT_RXD_DPMEM_RD_DATA : out std_logic_vector(71 downto 0);                    --  Receive MAC Data Memory Read Data
     RX_CLIENT_RXD_DPMEM_WR_EN   : in  std_logic_vector(0 downto 0);                     --  Receive MAC Data Memory Write Enable
     RX_CLIENT_RXD_DPMEM_ADDR    : in  std_logic_vector(C_RXD_MEM_ADDR_WIDTH downto 0);  --  Receive MAC Data Memory Address
 
@@ -219,7 +215,7 @@ architecture rtl of rx_mem_if is
 signal rx_client_rxs_dpmem_wr_data_d1 :  std_logic_vector(35 downto 0);
 signal rx_client_rxs_dpmem_wr_en_d1   :  std_logic_vector(0 downto 0);
 signal rx_client_rxs_dpmem_addr_d1    :  std_logic_vector(C_RXS_MEM_ADDR_WIDTH downto 0);
-signal rx_client_rxd_dpmem_wr_data_d1 :  std_logic_vector(35 downto 0);
+signal rx_client_rxd_dpmem_wr_data_d1 :  std_logic_vector(71 downto 0);
 signal rx_client_rxd_dpmem_wr_en_d1   :  std_logic_vector(0 downto 0);
 signal rx_client_rxd_dpmem_addr_d1    :  std_logic_vector(C_RXD_MEM_ADDR_WIDTH downto 0);
 
@@ -305,11 +301,11 @@ begin
       -- Port A Specific Configurations
       c_has_mem_output_regs_a  => 0,   -- 0, 1
       c_has_mux_output_regs_a  => 0,   -- 0, 1
-      c_write_width_a          => 36,  -- 1 to 1152
-      c_read_width_a           => 36,  -- 1 to 1152
-      c_write_depth_a          => (C_RXD_MEM_BYTES/4),  -- 2 to 9011200
-      c_read_depth_a           => (C_RXD_MEM_BYTES/4),  -- 2 to 9011200
-      c_addra_width            => (log2(C_RXD_MEM_BYTES/4)),   -- 1 to 24
+      c_write_width_a          => 72,  -- 1 to 1152
+      c_read_width_a           => 72,  -- 1 to 1152
+      c_write_depth_a          => (C_RXD_MEM_BYTES/8),  -- 2 to 9011200
+      c_read_depth_a           => (C_RXD_MEM_BYTES/8),  -- 2 to 9011200
+      c_addra_width            => (log2(C_RXD_MEM_BYTES/8)),   -- 1 to 24
       c_write_mode_a           => "NO_CHANGE",
          -- "Write_First"
          -- "Read_first"
@@ -324,11 +320,11 @@ begin
       -- Port B Specific Configurations
       c_has_mem_output_regs_b  => 0,   -- 0, 1
       c_has_mux_output_regs_b  => 0,   -- 0, 1
-      c_write_width_b          => 36,  -- 1 to 1152
-      c_read_width_b           => 36,  -- 1 to 1152
-      c_write_depth_b          => (C_RXD_MEM_BYTES/4),  -- 2 to 9011200
-      c_read_depth_b           => (C_RXD_MEM_BYTES/4),   -- 2 to 9011200
-      c_addrb_width            => (log2(C_RXD_MEM_BYTES/4)),   -- 1 to 24
+      c_write_width_b          => 72,  -- 1 to 1152
+      c_read_width_b           => 72,  -- 1 to 1152
+      c_write_depth_b          => (C_RXD_MEM_BYTES/8),  -- 2 to 9011200
+      c_read_depth_b           => (C_RXD_MEM_BYTES/8),   -- 2 to 9011200
+      c_addrb_width            => (log2(C_RXD_MEM_BYTES/8)),   -- 1 to 24
       c_write_mode_b           => "NO_CHANGE",
          -- "Write_First"
          -- "Read_first"

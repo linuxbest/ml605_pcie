@@ -124,7 +124,7 @@ architecture rtl of pre_accumulator is
    ---------------------------------------------------------------------
    -- Component: synchroniser block
    ---------------------------------------------------------------------
-   component axi_ethernet_v3_01_a_sync_block is
+   component sync_block is
    port (
      clk         : in  std_logic;         
      data_in     : in  std_logic;         
@@ -203,7 +203,7 @@ begin
    -- in error by -1, since only 1 bit at a time changes between each   
    -- gray code increment. 
   accum_gray_resync : for I in 0 to 7 generate
-   sync_accum_gray_i : axi_ethernet_v3_01_a_sync_block
+   sync_accum_gray_i : sync_block
    port map(
      clk         => ref_clk,      
      data_in     => accumulator_gray(i),

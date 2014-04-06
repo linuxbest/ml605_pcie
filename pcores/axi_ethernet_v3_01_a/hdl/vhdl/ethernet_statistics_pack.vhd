@@ -5,7 +5,7 @@
 -- Title      : Package of TX components
 -- Project    : Tri-Mode Ethernet MAC
 ------------------------------------------------------------------------
--- File       : ethernet_statistics_pack.vhd
+-- File       : tx_pack.vhd
 -- Author     : Xilinx Inc.
 ------------------------------------------------------------------------
 -- (c) Copyright 2001-2008 Xilinx, Inc. All rights reserved.
