@@ -350,6 +350,17 @@ architecture imp of axi_ethernet is
   attribute keep of  axirxs_aclk   : signal is true;
 
 
+  signal  AXIS_ETH_TXD_TVALID             : std_logic;
+  signal  AXIS_ETH_TXD_TREADY             : std_logic;
+  signal  AXIS_ETH_TXD_TLAST              : std_logic;
+  signal  AXIS_ETH_TXD_TKEEP              : std_logic_vector(7 downto 0);
+  signal  AXIS_ETH_TXD_TDATA              : std_logic_vector(63 downto 0);
+  signal  AXIS_ETH_TXC_TVALID             : std_logic;
+  signal  AXIS_ETH_TXC_TREADY             : std_logic;
+  signal  AXIS_ETH_TXC_TLAST              : std_logic;
+  signal  AXIS_ETH_TXC_TKEEP              : std_logic_vector(3 downto 0);
+  signal  AXIS_ETH_TXC_TDATA              : std_logic_vector(31 downto 0);
+
 begin
 
   axitxd_aclk <= AXI_STR_TXD_ACLK;
@@ -408,35 +419,35 @@ begin
     -- AXI Stream signals
     AXI_STR_TXD_ACLK       => axitxd_aclk,
     AXI_STR_TXD_ARESETN    => AXI_STR_TXD_ARESETN,
-    AXI_STR_TXD_TVALID     => AXI_STR_TXD_TVALID,
-    AXI_STR_TXD_TREADY     => AXI_STR_TXD_TREADY,
-    AXI_STR_TXD_TLAST      => AXI_STR_TXD_TLAST,
-    AXI_STR_TXD_TSTRB      => AXI_STR_TXD_TKEEP,
-    AXI_STR_TXD_TDATA      => AXI_STR_TXD_TDATA,
+    AXI_STR_TXD_TVALID     => AXIS_ETH_TXD_TVALID,
+    AXI_STR_TXD_TREADY     => AXIS_ETH_TXD_TREADY,
+    AXI_STR_TXD_TLAST      => AXIS_ETH_TXD_TLAST,
+    AXI_STR_TXD_TSTRB      => AXIS_ETH_TXD_TKEEP,
+    AXI_STR_TXD_TDATA      => AXIS_ETH_TXD_TDATA,
 
     AXI_STR_TXC_ACLK       => axitxc_aclk,
     AXI_STR_TXC_ARESETN    => AXI_STR_TXC_ARESETN,
-    AXI_STR_TXC_TVALID     => AXI_STR_TXC_TVALID,
-    AXI_STR_TXC_TREADY     => AXI_STR_TXC_TREADY,
-    AXI_STR_TXC_TLAST      => AXI_STR_TXC_TLAST,
-    AXI_STR_TXC_TSTRB      => AXI_STR_TXC_TKEEP,
-    AXI_STR_TXC_TDATA      => AXI_STR_TXC_TDATA,
+    AXI_STR_TXC_TVALID     => AXIS_ETH_TXC_TVALID,
+    AXI_STR_TXC_TREADY     => AXIS_ETH_TXC_TREADY,
+    AXI_STR_TXC_TLAST      => AXIS_ETH_TXC_TLAST,
+    AXI_STR_TXC_TSTRB      => AXIS_ETH_TXC_TKEEP,
+    AXI_STR_TXC_TDATA      => AXIS_ETH_TXC_TDATA,
 
     AXI_STR_RXD_ACLK       => axirxd_aclk,
     AXI_STR_RXD_ARESETN    => AXI_STR_RXD_ARESETN,
-    AXI_STR_RXD_VALID      => AXI_STR_RXD_TVALID,
-    AXI_STR_RXD_READY      => AXI_STR_RXD_TREADY,
-    AXI_STR_RXD_LAST       => AXI_STR_RXD_TLAST,
-    AXI_STR_RXD_STRB       => AXI_STR_RXD_TKEEP,
-    AXI_STR_RXD_DATA       => AXI_STR_RXD_TDATA,
+    AXI_STR_RXD_VALID      => open,
+    AXI_STR_RXD_READY      => '0',
+    AXI_STR_RXD_LAST       => open,
+    AXI_STR_RXD_STRB       => open,
+    AXI_STR_RXD_DATA       => open,
 
     AXI_STR_RXS_ACLK       => axirxs_aclk,
     AXI_STR_RXS_ARESETN    => AXI_STR_RXS_ARESETN,
-    AXI_STR_RXS_VALID      => AXI_STR_RXS_TVALID,
-    AXI_STR_RXS_READY      => AXI_STR_RXS_TREADY,
-    AXI_STR_RXS_LAST       => AXI_STR_RXS_TLAST,
-    AXI_STR_RXS_STRB       => AXI_STR_RXS_TKEEP,
-    AXI_STR_RXS_DATA       => AXI_STR_RXS_TDATA,
+    AXI_STR_RXS_VALID      => open,
+    AXI_STR_RXS_READY      => '0',
+    AXI_STR_RXS_LAST       => open,
+    AXI_STR_RXS_STRB       => open,
+    AXI_STR_RXS_DATA       => open,
 
     -- 10GEMAC Interface
     ------------------------
@@ -458,5 +469,58 @@ begin
     tx_axis_mac_tready      => tx_axis_mac_tready
 
   );
+
+  I_AXI_ETH_RX: entity axi_ethernet_v3_01_a.axi_eth_rx(rtl)
+  port map (
+    clk   => AXI_STR_RXD_ACLK,
+    reset => rx_reset,
+
+    AXI_STR_RXD_TVALID => AXI_STR_RXD_TVALID,
+    AXI_STR_RXD_TREADY => AXI_STR_RXD_TREADY,
+    AXI_STR_RXD_TLAST  => AXI_STR_RXD_TLAST,
+    AXI_STR_RXD_TKEEP  => AXI_STR_RXD_TKEEP,
+    AXI_STR_RXD_TDATA  => AXI_STR_RXD_TDATA,
+
+    AXI_STR_RXS_TVALID => AXI_STR_RXS_TVALID,
+    AXI_STR_RXS_TREADY => AXI_STR_RXS_TREADY,
+    AXI_STR_RXS_TLAST  => AXI_STR_RXS_TLAST,
+    AXI_STR_RXS_TKEEP  => AXI_STR_RXS_TKEEP,
+    AXI_STR_RXS_TDATA  => AXI_STR_RXS_TDATA,
+
+    rx_axis_mac_tdata  => rx_axis_mac_tdata,
+    rx_axis_mac_tvalid => rx_axis_mac_tvalid
+    rx_axis_mac_tkeep  => rx_axis_mac_tkeep,
+    rx_axis_mac_tlast  => rx_axis_mac_tlast,
+    rx_axis_mac_tuser  => rx_axis_mac_tuser, 
+    rx_axis_mac_tready => rx_axis_mac_tready
+  );
+
+  I_AXI_ETH_TX: entity axi_ethernet_v3_01_a.axi_eth_tx_buf(rtl)
+  port map (
+   clk                      =>         axitxd_aclk,
+   reset                    =>         AXI_STR_TXD_ARESETN,
+
+   AXI_STR_TXD_TVALID       =>         AXI_STR_TXD_TVALID,
+   AXI_STR_TXD_TREADY       =>         AXI_STR_TXD_TREADY,
+   AXI_STR_TXD_TLAST        =>         AXI_STR_TXD_TLAST,
+   AXI_STR_TXD_TKEEP        =>         AXI_STR_TXD_TKEEP,
+   AXI_STR_TXD_TDATA        =>         AXI_STR_TXD_TDATA,
+   AXI_STR_TXC_TVALID       =>         AXI_STR_TXC_TVALID,
+   AXI_STR_TXC_TREADY       =>         AXI_STR_TXC_TREADY,
+   AXI_STR_TXC_TLAST        =>         AXI_STR_TXC_TLAST,
+   AXI_STR_TXC_TKEEP        =>         AXI_STR_TXC_TKEEP,
+   AXI_STR_TXC_TDATA        =>         AXI_STR_TXC_TDATA
+
+   AXIS_ETH_TXD_TVALID      =>         AXIS_ETH_TXD_TVALID,
+   AXIS_ETH_TXD_TREADY      =>         AXIS_ETH_TXD_TREADY,
+   AXIS_ETH_TXD_TLAST       =>         AXIS_ETH_TXD_TLAST ,
+   AXIS_ETH_TXD_TKEEP       =>         AXIS_ETH_TXD_TKEEP ,
+   AXIS_ETH_TXD_TDATA       =>         AXIS_ETH_TXD_TDATA ,
+   AXIS_ETH_TXC_TVALID      =>         AXIS_ETH_TXC_TVALID,
+   AXIS_ETH_TXC_TREADY      =>         AXIS_ETH_TXC_TREADY,
+   AXIS_ETH_TXC_TLAST       =>         AXIS_ETH_TXC_TLAST ,
+   AXIS_ETH_TXC_TKEEP       =>         AXIS_ETH_TXC_TKEEP ,
+   AXIS_ETH_TXC_TDATA       =>         AXIS_ETH_TXC_TDATA
+   );
 
 end imp;
