@@ -45,8 +45,9 @@
 // Code:
 module xphy_int (/*AUTOARG*/
    // Outputs
-   areset, dclk_reset, resetdone, txreset322, rxreset322,
-   xgmii_txd_int, xgmii_txc_int, xgmii_rxd, xgmii_rxc,
+   areset, dclk_reset, resetdone, core_clk156_out, txreset322,
+   rxreset322, xgmii_txd_int, xgmii_txc_int, xgmii_rxd, xgmii_rxc,
+   rx_dcm_lock, tx_dcm_lock,
    // Inputs
    xphy_reset, is_eval, tx_resetdone, rx_resetdone, clk156, reset,
    tx_fault, signal_detect, txclk322, xgmii_txd, xgmii_txc,
@@ -68,10 +69,12 @@ module xphy_int (/*AUTOARG*/
    input  reset;
    input  tx_fault;
    input  signal_detect;
+   output core_clk156_out;
+   assign core_clk156_out = clk156;
 
    reg 	  core_reset_tx_tmp;
    reg 	  core_reset_tx;
-   reg 	  core_reseet_rx_tmp;
+   reg 	  core_reset_rx_tmp;
    reg 	  core_reset_rx;
    //synthesis attribute async_reg of core_reset_tx_tmp is "true";
    //synthesis attribute async_reg of core_reset_tx is "true";
@@ -89,9 +92,9 @@ module xphy_int (/*AUTOARG*/
 	else
 	  begin
 	     // Hold core in reset until everything else is ready...
-	     core_reset_tx_tmp <= #1 (!(tx_resetdone_int) || reset || tx_fault || !(signal_detect));
+	     core_reset_tx_tmp <= #1 (!(tx_resetdone) || reset || tx_fault || !(signal_detect));
 	     core_reset_tx     <= #1 core_reset_tx_tmp;
-	     core_reset_rx_tmp <= #1 (!(rx_resetdone_int) || reset || tx_fault || !(signal_detect));
+	     core_reset_rx_tmp <= #1 (!(rx_resetdone) || reset || tx_fault || !(signal_detect));
 	     core_reset_rx     <= #1 core_reset_rx_tmp;
 	  end
      end // always @ (posedge clk156 or posedge reset)
@@ -154,6 +157,12 @@ module xphy_int (/*AUTOARG*/
 	xgmii_rxd     <= #1 xgmii_rxd_int;
 	xgmii_rxc     <= #1 xgmii_rxc_int;
      end
+
+   output rx_dcm_lock;
+   output tx_dcm_lock;
+   assign rx_dcm_lock = rx_resetdone;
+   assign tx_dcm_lock = tx_resetdone;
+   
 endmodule
 // 
 // xphy_int.v ends here

@@ -458,49 +458,93 @@ module demo_tb;
 //-----------------------------------------------------------------------------
 // Connect the Design Under Test to the signals in the test-fixture.
 //-----------------------------------------------------------------------------
-  xphy_example_design DUT(
-    .reset(reset),
-    .core_clk156_out(core_clk156_out),
-    .xgmii_txd(xgmii_txd),
-    .xgmii_txc(xgmii_txc),
-    .xgmii_rx_clk(xgmii_rx_clk),
-    .xgmii_rxd(xgmii_rxd),
-    .xgmii_rxc(xgmii_rxc),
-    .refclk_p(refclk_p),
-    .refclk_n(refclk_n),
-//-----------------------------------------------------------------------------
-// Serial Interface
-//-----------------------------------------------------------------------------
-    .txp(txp),
-    .txn(txn),
-    .rxp(rxp), 
-    .rxn(rxn),
-    .resetdone(resetdone),
-    .signal_detect(signal_detect),
-    .tx_fault(tx_fault),
-    .tx_disable(tx_disable),
-    .is_eval(),
-//-----------------------------------------------------------------------------
-// MDIO Interface
-//-----------------------------------------------------------------------------
-    .mdc(mdc),
-    .mdio_in(mdio_in),
-    .mdio_out(mdio_out),
-    .mdio_tri(mdio_tri),
-    .prtad(prtad),
-    .core_status(core_status),
-    .an_enable(1'b0), // disable AN to allow sim to run quickly
-    .training_enable(1'b0),
-    .training_addr(21'b0),
-    .training_rnw(1'b1),
-    .training_wrdata(16'b0),
-    .training_ipif_cs(1'b0),
-    .training_drp_cs(1'b0),
-    .training_rddata(),
-    .training_rdack(),
-    .training_wrack()
-  );
+   wire [31:0] ip2bus_data;
+   wire        ip2bus_error;
+   wire        ip2bus_rdack;
+   wire        ip2bus_wrack;
+   
+   wire [31:0] bus2ip_addr = 0;
+   wire [31:0] bus2ip_data = 0;
 
+   wire [63:0] rx_axis_tdata;
+   wire [7:0]  rx_axis_tkeep;
+   wire        rx_axis_tlast;
+   wire        rx_axis_tuser;
+   wire        rx_axis_tvalid;
+
+   wire [63:0] tx_axis_tdata  = 0;
+   wire [7:0]  tx_axis_tkeep  = 0;
+   wire        tx_axis_tlast  = 0;
+   wire        tx_axis_tuser  = 0;
+   wire        tx_axis_tvalid = 0;
+   
+   wire [7:0]  tx_ifg_delay   = 0;
+
+   wire        training_enable = 0;
+   wire [20:0] training_addr   = 0;
+   wire        training_rnw    = 1;
+   wire [15:0] training_wrdata = 0;
+   wire        training_ipif_cs = 0;
+   wire [15:0] training_rddata;
+   wire        training_rdack;
+   wire        training_wrack;
+   
+  axi_10g_mac_phy DUT (/*AUTOINST*/
+		       // Outputs
+		       .core_clk156_out	(core_clk156_out),
+		       .core_status	(core_status[7:0]),
+		       .dclk		(dclk),
+		       .ip2bus_data	(ip2bus_data[31:0]),
+		       .ip2bus_error	(ip2bus_error),
+		       .ip2bus_rdack	(ip2bus_rdack),
+		       .ip2bus_wrack	(ip2bus_wrack),
+		       .resetdone	(resetdone),
+		       .rx_axis_tdata	(rx_axis_tdata[63:0]),
+		       .rx_axis_tkeep	(rx_axis_tkeep[7:0]),
+		       .rx_axis_tlast	(rx_axis_tlast),
+		       .rx_axis_tuser	(rx_axis_tuser),
+		       .rx_axis_tvalid	(rx_axis_tvalid),
+		       .rxclk322	(rxclk322),
+		       .training_rdack	(training_rdack),
+		       .training_rddata	(training_rddata[15:0]),
+		       .training_wrack	(training_wrack),
+		       .tx_axis_tready	(tx_axis_tready),
+		       .tx_disable	(tx_disable),
+		       .txn		(txn),
+		       .txp		(txp),
+		       .xgmacint	(xgmacint),
+		       // Inputs
+		       .an_enable	(an_enable),
+		       .bus2ip_addr	(bus2ip_addr[31:0]),
+		       .bus2ip_clk	(bus2ip_clk),
+		       .bus2ip_cs	(bus2ip_cs),
+		       .bus2ip_data	(bus2ip_data[31:0]),
+		       .bus2ip_reset	(bus2ip_reset),
+		       .bus2ip_rnw	(bus2ip_rnw),
+		       .prtad		(prtad[4:0]),
+		       .refclk_n	(refclk_n),
+		       .refclk_p	(refclk_p),
+		       .reset		(reset),
+		       .rx_axis_aresetn	(rx_axis_aresetn),
+		       .rxn		(rxn),
+		       .rxp		(rxp),
+		       .signal_detect	(signal_detect),
+		       .training_addr	(training_addr[20:0]),
+		       .training_drp_cs	(training_drp_cs),
+		       .training_enable	(training_enable),
+		       .training_ipif_cs(training_ipif_cs),
+		       .training_rnw	(training_rnw),
+		       .training_wrdata	(training_wrdata[15:0]),
+		       .tx_axis_aresetn	(tx_axis_aresetn),
+		       .tx_axis_tdata	(tx_axis_tdata[63:0]),
+		       .tx_axis_tkeep	(tx_axis_tkeep[7:0]),
+		       .tx_axis_tlast	(tx_axis_tlast),
+		       .tx_axis_tuser	(tx_axis_tuser),
+		       .tx_axis_tvalid	(tx_axis_tvalid),
+		       .tx_fault	(tx_fault),
+		       .tx_ifg_delay	(tx_ifg_delay[7:0]),
+		       .xphy_reset	(xphy_reset));
+   
   assign signal_detect = 1'b1;
   assign tx_fault = 1'b0;
 //-----------------------------------------------------------------------------
@@ -1675,3 +1719,8 @@ module demo_tb;
     end // rx_serialize
         
 endmodule
+// Local Variables:
+// verilog-library-directories:("../hdl/verilog/")
+// verilog-library-files:("")
+// verilog-library-extensions:(".v" ".h")
+// End:

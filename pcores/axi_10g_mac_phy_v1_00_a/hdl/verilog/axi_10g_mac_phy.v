@@ -45,20 +45,19 @@
 // Code:
 module axi_10g_mac_phy (/*AUTOARG*/
    // Outputs
-   xgmacint, txp, txn, tx_disable, tx_configuration_vector,
-   tx_axis_tready, training_wrack, training_rddata, training_rdack,
-   rxclk322, rx_configuration_vector, rx_axis_tvalid, rx_axis_tuser,
-   rx_axis_tlast, rx_axis_tkeep, rx_axis_tdata, resetdone,
-   ip2bus_wrack, ip2bus_rdack, ip2bus_error, ip2bus_data, dclk,
-   core_status,
+   xgmacint, txp, txn, tx_disable, tx_axis_tready, training_wrack,
+   training_rddata, training_rdack, rxclk322, rx_axis_tvalid,
+   rx_axis_tuser, rx_axis_tlast, rx_axis_tkeep, rx_axis_tdata,
+   resetdone, ip2bus_wrack, ip2bus_rdack, ip2bus_error, ip2bus_data,
+   dclk, core_status, core_clk156_out,
    // Inputs
-   xphy_reset, tx_ifg_delay, tx_fault, tx_dcm_lock, tx_axis_tvalid,
-   tx_axis_tuser, tx_axis_tlast, tx_axis_tkeep, tx_axis_tdata,
-   tx_axis_aresetn, training_wrdata, training_rnw, training_ipif_cs,
-   training_enable, training_drp_cs, training_addr, status_vector,
-   signal_detect, rxp, rxn, rx_dcm_lock, rx_axis_aresetn, reset,
-   refclk_p, refclk_n, prtad, bus2ip_rnw, bus2ip_reset, bus2ip_data,
-   bus2ip_cs, bus2ip_clk, bus2ip_addr, an_enable
+   xphy_reset, tx_ifg_delay, tx_fault, tx_axis_tvalid, tx_axis_tuser,
+   tx_axis_tlast, tx_axis_tkeep, tx_axis_tdata, tx_axis_aresetn,
+   training_wrdata, training_rnw, training_ipif_cs, training_enable,
+   training_drp_cs, training_addr, signal_detect, rxp, rxn,
+   rx_axis_aresetn, reset, refclk_p, refclk_n, prtad, bus2ip_rnw,
+   bus2ip_reset, bus2ip_data, bus2ip_cs, bus2ip_clk, bus2ip_addr,
+   an_enable
    );
 
    /*AUTOINPUT*/
@@ -75,11 +74,9 @@ module axi_10g_mac_phy (/*AUTOARG*/
    input		refclk_p;		// To xphy_block of xphy_block.v
    input		reset;			// To xgmac of xgmac.v, ...
    input		rx_axis_aresetn;	// To xgmac of xgmac.v
-   input		rx_dcm_lock;		// To xgmac of xgmac.v
    input		rxn;			// To xphy_block of xphy_block.v
    input		rxp;			// To xphy_block of xphy_block.v
    input		signal_detect;		// To xphy_block of xphy_block.v, ...
-   input [1:0]		status_vector;		// To xgmac_int of xgmac_int.v
    input [20:0]		training_addr;		// To xphy_block of xphy_block.v
    input		training_drp_cs;	// To xphy_block of xphy_block.v
    input		training_enable;	// To xphy_block of xphy_block.v
@@ -92,13 +89,13 @@ module axi_10g_mac_phy (/*AUTOARG*/
    input		tx_axis_tlast;		// To xgmac of xgmac.v
    input		tx_axis_tuser;		// To xgmac of xgmac.v
    input		tx_axis_tvalid;		// To xgmac of xgmac.v
-   input		tx_dcm_lock;		// To xgmac of xgmac.v
    input		tx_fault;		// To xphy_block of xphy_block.v, ...
    input [7:0]		tx_ifg_delay;		// To xgmac of xgmac.v
    input		xphy_reset;		// To xphy_int of xphy_int.v
    // End of automatics
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
+   output		core_clk156_out;	// From xphy_int of xphy_int.v
    output [7:0]		core_status;		// From xphy_block of xphy_block.v
    output		dclk;			// From xphy_block of xphy_block.v
    output [31:0]	ip2bus_data;		// From xgmac of xgmac.v
@@ -111,13 +108,11 @@ module axi_10g_mac_phy (/*AUTOARG*/
    output		rx_axis_tlast;		// From xgmac of xgmac.v
    output		rx_axis_tuser;		// From xgmac of xgmac.v
    output		rx_axis_tvalid;		// From xgmac of xgmac.v
-   output [79:0]	rx_configuration_vector;// From xgmac_int of xgmac_int.v
    output		rxclk322;		// From xphy_block of xphy_block.v
    output		training_rdack;		// From xphy_block of xphy_block.v
    output [15:0]	training_rddata;	// From xphy_block of xphy_block.v
    output		training_wrack;		// From xphy_block of xphy_block.v
    output		tx_axis_tready;		// From xgmac of xgmac.v
-   output [79:0]	tx_configuration_vector;// From xgmac_int of xgmac_int.v
    output		tx_disable;		// From xphy_block of xphy_block.v
    output		txn;			// From xphy_block of xphy_block.v
    output		txp;			// From xphy_block of xphy_block.v
@@ -134,20 +129,22 @@ module axi_10g_mac_phy (/*AUTOARG*/
    wire			pause_req;		// From xgmac_int of xgmac_int.v
    wire [15:0]		pause_val;		// From xgmac_int of xgmac_int.v
    wire			rx_clk0;		// From xgmac_int of xgmac_int.v
+   wire			rx_dcm_lock;		// From xphy_int of xphy_int.v
    wire			rx_resetdone;		// From xphy_block of xphy_block.v
    wire			rx_statistics_valid;	// From xgmac of xgmac.v
    wire [29:0]		rx_statistics_vector;	// From xgmac of xgmac.v
    wire			rxreset322;		// From xphy_int of xphy_int.v
    wire			tx_clk0;		// From xgmac_int of xgmac_int.v
+   wire			tx_dcm_lock;		// From xphy_int of xphy_int.v
    wire			tx_resetdone;		// From xphy_block of xphy_block.v
    wire			tx_statistics_valid;	// From xgmac of xgmac.v
    wire [25:0]		tx_statistics_vector;	// From xgmac of xgmac.v
    wire			txclk322;		// From xphy_block of xphy_block.v
    wire			txreset322;		// From xphy_int of xphy_int.v
    wire [7:0]		xgmii_rxc;		// From xphy_int of xphy_int.v
-   wire			xgmii_rxc_int;		// From xphy_block of xphy_block.v
+   wire [7:0]		xgmii_rxc_int;		// From xphy_block of xphy_block.v
    wire [63:0]		xgmii_rxd;		// From xphy_int of xphy_int.v
-   wire			xgmii_rxd_int;		// From xphy_block of xphy_block.v
+   wire [63:0]		xgmii_rxd_int;		// From xphy_block of xphy_block.v
    wire [7:0]		xgmii_txc;		// From xgmac of xgmac.v
    wire [7:0]		xgmii_txc_int;		// From xphy_int of xphy_int.v
    wire [63:0]		xgmii_txd;		// From xgmac of xgmac.v
@@ -215,14 +212,11 @@ module axi_10g_mac_phy (/*AUTOARG*/
 		// Outputs
 		.pause_req		(pause_req),
 		.pause_val		(pause_val[15:0]),
-		.rx_configuration_vector(rx_configuration_vector[79:0]),
-		.tx_configuration_vector(tx_configuration_vector[79:0]),
 		.tx_clk0		(tx_clk0),
 		.rx_clk0		(rx_clk0),
 		// Inputs
 		.rx_statistics_valid	(rx_statistics_valid),
 		.rx_statistics_vector	(rx_statistics_vector[29:0]),
-		.status_vector		(status_vector[1:0]),
 		.tx_statistics_valid	(tx_statistics_valid),
 		.tx_statistics_vector	(tx_statistics_vector[25:0]),
 		.clk156			(clk156));
@@ -231,10 +225,10 @@ module axi_10g_mac_phy (/*AUTOARG*/
     .mdio_in               (mdio_out_int),
     .mdio_out              (mdio_in_int),
     .mdio_tri              (),
-    .xgmii_rxd             (xgmii_rxd_int),
-    .xgmii_rxc             (xgmii_rxc_int),
-    .xgmii_txd             (xgmii_txd_int),
-    .xgmii_txc             (xgmii_txc_int),
+    .xgmii_rxd             (xgmii_rxd_int[]),
+    .xgmii_rxc             (xgmii_rxc_int[]),
+    .xgmii_txd             (xgmii_txd_int[]),
+    .xgmii_txc             (xgmii_txc_int[]),
     );*/
    xphy_block
      xphy_block (/*AUTOINST*/
@@ -245,8 +239,8 @@ module axi_10g_mac_phy (/*AUTOARG*/
 		 .dclk			(dclk),
 		 .txp			(txp),
 		 .txn			(txn),
-		 .xgmii_rxd		(xgmii_rxd_int),	 // Templated
-		 .xgmii_rxc		(xgmii_rxc_int),	 // Templated
+		 .xgmii_rxd		(xgmii_rxd_int[63:0]),	 // Templated
+		 .xgmii_rxc		(xgmii_rxc_int[7:0]),	 // Templated
 		 .mdio_out		(mdio_in_int),		 // Templated
 		 .mdio_tri		(),			 // Templated
 		 .core_status		(core_status[7:0]),
@@ -267,8 +261,8 @@ module axi_10g_mac_phy (/*AUTOARG*/
 		 .dclk_reset		(dclk_reset),
 		 .rxp			(rxp),
 		 .rxn			(rxn),
-		 .xgmii_txd		(xgmii_txd_int),	 // Templated
-		 .xgmii_txc		(xgmii_txc_int),	 // Templated
+		 .xgmii_txd		(xgmii_txd_int[63:0]),	 // Templated
+		 .xgmii_txc		(xgmii_txc_int[7:0]),	 // Templated
 		 .mdc			(mdc),
 		 .mdio_in		(mdio_out_int),		 // Templated
 		 .prtad			(prtad[4:0]),
@@ -288,12 +282,15 @@ module axi_10g_mac_phy (/*AUTOARG*/
 		.areset			(areset),
 		.dclk_reset		(dclk_reset),
 		.resetdone		(resetdone),
+		.core_clk156_out	(core_clk156_out),
 		.txreset322		(txreset322),
 		.rxreset322		(rxreset322),
 		.xgmii_txd_int		(xgmii_txd_int[63:0]),
 		.xgmii_txc_int		(xgmii_txc_int[7:0]),
 		.xgmii_rxd		(xgmii_rxd[63:0]),
 		.xgmii_rxc		(xgmii_rxc[7:0]),
+		.rx_dcm_lock		(rx_dcm_lock),
+		.tx_dcm_lock		(tx_dcm_lock),
 		// Inputs
 		.xphy_reset		(xphy_reset),
 		.is_eval		(is_eval),
