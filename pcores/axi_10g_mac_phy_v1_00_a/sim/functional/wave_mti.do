@@ -75,7 +75,10 @@ add wave -noupdate -format logic -binary /demo_tb/tx_fault
 add wave -noupdate -format logic -binary /demo_tb/tx_disable
 #
 add wave -noupdate -divider {Management signals}
-add wave -noupdate -format logic -binary /demo_tb/DUT/configuration_vector
-add wave -noupdate -format logic -binary /demo_tb/DUT/status_vector
+add wave -noupdate -format logic -binary /demo_tb/mdc
+add wave -noupdate -format logic -binary /demo_tb/mdio_in
+add wave -noupdate -format logic -binary /demo_tb/mdio_out
+add wave -noupdate -format logic -binary /demo_tb/mdio_tri
+add wave -noupdate -format logic -hex /demo_tb/prtad
 
 TreeUpdate [SetDefaultTree]

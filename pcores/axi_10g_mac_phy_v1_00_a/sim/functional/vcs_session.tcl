@@ -59,5 +59,5 @@ gui_sg_addsignal -group 10GBASER_Group {{demo_tb.txp} {demo_tb.txn} {demo_tb.rxp
 gui_sg_addsignal -group 10GBASER_Group {{Control_Signals}} -divider
 gui_sg_addsignal -group 10GBASER_Group {{demo_tb.resetdone} {demo_tb.signal_detect} {demo_tb.tx_fault} {demo_tb.tx_disable}}
 gui_sg_addsignal -group 10GBASER_Group {{Management_Signals}} -divider
-gui_sg_addsignal -group 10GBASER_Group {{demo_tb.configuration_vector} {demo_tb.status_vector}}
+gui_sg_addsignal -group 10GBASER_Group {{demo_tb.mdc} {demo_tb.mdio_in} {demo_tb.mdio_out} {demo_tb.mdio_tri} {demo_tb.prtad}}
 gui_zoom -window Wave.1 -full

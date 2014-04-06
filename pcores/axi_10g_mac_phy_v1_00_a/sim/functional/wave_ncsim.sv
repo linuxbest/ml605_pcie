@@ -106,8 +106,11 @@ if {[catch {group new -name {Management signals} -overlay 0}] != ""} {
     group clear 0 end
 }
 group insert \
-    demo_tb.DUT/configuration_vector \
-    demo_tb.DUT/status_vector
+    demo_tb.mdc \
+    demo_tb.mdio_in \
+    demo_tb.mdio_out \
+    demo_tb.mdio_tri \
+    demo_tb.prtad 
 
 #
 # Waveform windows
