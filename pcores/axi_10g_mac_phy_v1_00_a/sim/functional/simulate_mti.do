@@ -45,15 +45,15 @@
 ## PART OF THIS FILE AT ALL TIMES.
 vlib work
 vmap work work
-vlog -work work ../../../xphy.v \
-  ../../example_design/gtx/xphy_gt_usrclk_source.v \
-  ../../example_design/gtx/xphy_gtwizard_10gbaser.v \
-  ../../example_design/gtx/xphy_gtwizard_10gbaser_gt.v \
-  ../../example_design/xphy_example_design.v \
-  ../../example_design/xphy_block.v \
+vlog -work work ../../hdl/verilog/xphy.v \
+  ../../hdl/verilog/gtx/xphy_gt_usrclk_source.v \
+  ../../hdl/verilog/gtx/xphy_gtwizard_10gbaser.v \
+  ../../hdl/verilog/gtx/xphy_gtwizard_10gbaser_gt.v \
+  ../../hdl/verilog/xphy_example_design.v \
+  ../../hdl/verilog/xphy_block.v \
   ../demo_tb.v
 
 
-vsim -L unisims_ver -L secureip -t ps work.demo_tb work.glbl -voptargs="+acc"
+vsim -L unisims_ver -L secureip -t ps work.demo_tb work.glbl -novopt 
 do wave_mti.do
 run -all
