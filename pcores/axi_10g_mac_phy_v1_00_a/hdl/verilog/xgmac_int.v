@@ -65,7 +65,14 @@ module xgmac_int (/*AUTOARG*/
    input 	 tx_statistics_valid;
    input [25:0]  tx_statistics_vector;
 
-   /*TODO*/
+   output 	 tx_clk0;
+   output 	 rx_clk0;
+   input 	 clk156;
+
+   // ug773 10G MAC with PCS/PMA
+   assign tx_clk0 = clk156;
+   assign rx_clk0 = clk156;
+   
 endmodule
 // 
 // xgmac_int.v ends here

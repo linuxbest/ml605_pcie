@@ -45,7 +45,7 @@
 ## PART OF THIS FILE AT ALL TIMES.
 vlib work
 vmap work work
-vlog -work work ../../hdl/verilog/xphy.v \
+vlog -work work ../../netlist/xphy.v \
   ../../hdl/verilog/gtx/xphy_gt_usrclk_source.v \
   ../../hdl/verilog/gtx/xphy_gtwizard_10gbaser.v \
   ../../hdl/verilog/gtx/xphy_gtwizard_10gbaser_gt.v \

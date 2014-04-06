@@ -60,8 +60,8 @@
 // refclk Period in ps - in reality this should be 6206 ps nominal, but 66*95 
 `define BITPERIOD 98 // Closest even number to 96.9696...
 `define PERIOD156 66*98 // this is the clock for 156.25MHz based on bit period of 98.
-`define C_VEC_MAX 535
-`define S_VEC_MAX 447
+// MDC clock runs at 2.5MHz
+`define MDCPERIOD 400000
 `define LOCK_INIT 0
 `define RESET_CNT 1
 `define TEST_SH   2
@@ -421,6 +421,12 @@ module demo_tb;
   reg            rxp;
   wire           rxn;
 
+  reg             mdc;
+  wire            mdio_in;
+  wire            mdio_out;
+  wire            mdio_tri;
+  wire   [4 : 0]  prtad;
+  reg    [15 : 0] mdio_result;
 
   wire           resetdone;
   wire           signal_detect;
@@ -447,6 +453,7 @@ module demo_tb;
   reg in_a_frame = 0;
   
 
+  assign prtad    = 5'b00000;
   
 //-----------------------------------------------------------------------------
 // Connect the Design Under Test to the signals in the test-fixture.
@@ -473,38 +480,14 @@ module demo_tb;
     .tx_fault(tx_fault),
     .tx_disable(tx_disable),
     .is_eval(),
-    .pma_loopback(1'b0),
-    .pma_reset(1'b0),
-    .global_tx_disable(1'b0),
-    .pma_vs_loopback(4'b0),
-    .pcs_loopback(1'b0),
-    .pcs_reset(1'b0),
-    .test_patt_a(58'b0),
-    .test_patt_b(58'b0),
-    .data_patt_sel(1'b0),
-    .test_patt_sel(1'b0),
-    .rx_test_patt_en(1'b0),
-    .tx_test_patt_en(1'b0),
-    .prbs31_tx_en(1'b0),
-    .prbs31_rx_en(1'b0),
-    .pcs_vs_loopback(2'b0),
-    .set_pma_link_status(1'b0),
-    .set_pcs_link_status(1'b0),
-    .clear_pcs_status2(1'b0),
-    .clear_test_patt_err_count(1'b0),
-    .configuration_vector_preserve(1'b0),
-    .pma_link_status(),
-    .rx_sig_det(),
-    .pcs_rx_link_status(),
-    .pcs_rx_locked(),
-    .pcs_hiber(),
-    .teng_pcs_rx_link_status(),
-    .pcs_err_block_count(),
-    .pcs_ber_count(),
-    .pcs_rx_hiber_lh(),
-    .pcs_rx_locked_ll(),
-    .pcs_test_patt_err_count(),   
-    .status_vector_preserve(),
+//-----------------------------------------------------------------------------
+// MDIO Interface
+//-----------------------------------------------------------------------------
+    .mdc(mdc),
+    .mdio_in(mdio_in),
+    .mdio_out(mdio_out),
+    .mdio_tri(mdio_tri),
+    .prtad(prtad),
     .core_status(core_status),
     .an_enable(1'b0), // disable AN to allow sim to run quickly
     .training_enable(1'b0),
@@ -571,6 +554,19 @@ module demo_tb;
   end
 
 
+  //Generate the mdc management i/f clock
+  initial
+  begin
+    mdc <= 1'b0;
+    forever
+    begin
+      mdc <= 1'b0;
+      #(`MDCPERIOD/2);
+      mdc <= 1'b1;
+      #(`MDCPERIOD/2);
+    end
+  end
+
   //----------------------------------------------------------------
   // Global Set/Reset
   //----------------------------------------------------------------
@@ -608,6 +604,8 @@ module demo_tb;
     repeat ( 500 ) @ ( negedge sampleclk );
   end
 
+  // Drive MDIO bus during the simulation...
+  assign mdio_in = 1'b1;
 
   // Main initial block to start and stop simulation
   initial

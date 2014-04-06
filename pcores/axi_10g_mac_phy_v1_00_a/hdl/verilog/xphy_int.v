@@ -45,20 +45,15 @@
 // Code:
 module xphy_int (/*AUTOARG*/
    // Outputs
-   areset, dclk_reset, mdc, mdio_in,
+   areset, dclk_reset,
    // Inputs
-   xphy_reset, mdio_out, mdio_tri, is_eval
+   xphy_reset, is_eval
    );
    output areset;
    input  xphy_reset;
    assign areset = xphy_reset;
 
    output dclk_reset;
-   output mdc;
-   output mdio_in;
-   input  mdio_out;
-   input  mdio_tri;
-   
    input  is_eval;
    
    

@@ -77,8 +77,11 @@ module xphy_block #
   input  [7:0]    xgmii_txc,
   output [63:0]   xgmii_rxd,
   output [7:0]    xgmii_rxc,
-  input  [535 : 0] configuration_vector,
-  output [447 : 0]  status_vector,
+  input           mdc,
+  input           mdio_in,
+  output          mdio_out,
+  output          mdio_tri,
+  input  [4 : 0]  prtad,
   output [7 : 0]  core_status,
   output          tx_resetdone,
   output          rx_resetdone,
@@ -210,14 +213,6 @@ module xphy_block #
   wire signal_detect_comb;
   wire cable_is_pulled;
 
-  wire [535:0] configuration_vector_i;
-    
-  // Use the an_link_up to enable training, when training enabled in register/config vector[33]
-  // and use the change in an_link_up to trigger a training restart (34) when required.
-  assign configuration_vector_i = {configuration_vector[535 : 34], 
-                                   (configuration_vector[33] && (an_link_up || !an_enable_control)),
-                                   (configuration_vector[32] || an_link_up_changing),
-                                   configuration_vector[31 : 0]};
 
   // If no arbitration is required on the GT DRP ports then connect REQ to GNT...
   assign drp_gnt = drp_req;
@@ -238,8 +233,11 @@ module xphy_block #
       .xgmii_txc(xgmii_txc),
       .xgmii_rxd(xgmii_rxd),
       .xgmii_rxc(xgmii_rxc),
-      .configuration_vector(configuration_vector),
-      .status_vector(status_vector),
+      .mdc(mdc),
+      .mdio_in(mdio_in),
+      .mdio_out(mdio_out),
+      .mdio_tri(mdio_tri),
+      .prtad(prtad),
       .core_status(core_status_i),    
       .drp_req(drp_req),
       .drp_gnt(drp_gnt),                            
