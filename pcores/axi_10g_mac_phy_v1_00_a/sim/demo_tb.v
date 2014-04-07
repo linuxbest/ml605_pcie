@@ -458,42 +458,46 @@ module demo_tb;
 //-----------------------------------------------------------------------------
 // Connect the Design Under Test to the signals in the test-fixture.
 //-----------------------------------------------------------------------------
-   wire [31:0] ip2bus_data;
-   wire        ip2bus_error;
-   wire        ip2bus_rdack;
-   wire        ip2bus_wrack;
-   
-   wire [31:0] bus2ip_addr = 0;
-   wire [31:0] bus2ip_data = 0;
-
-   wire [63:0] rx_axis_tdata;
-   wire [7:0]  rx_axis_tkeep;
-   wire        rx_axis_tlast;
-   wire        rx_axis_tuser;
-   wire        rx_axis_tvalid;
-
-   wire [63:0] tx_axis_tdata  = 0;
-   wire [7:0]  tx_axis_tkeep  = 0;
-   wire        tx_axis_tlast  = 0;
-   wire        tx_axis_tuser  = 0;
-   wire        tx_axis_tvalid = 0;
-   
-   wire [7:0]  tx_ifg_delay   = 0;
-
-   wire        training_enable = 0;
-   wire [20:0] training_addr   = 0;
-   wire        training_rnw    = 1;
-   wire [15:0] training_wrdata = 0;
-   wire        training_ipif_cs = 0;
-   wire [15:0] training_rddata;
-   wire        training_rdack;
-   wire        training_wrack;
+   /*AUTOWIRE*/
+   // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   wire			an_enable;		// From xgmac_dut of xgmac_dut.v
+   wire [31:0]		bus2ip_addr;		// From xgmac_dut of xgmac_dut.v
+   wire [31:0]		bus2ip_data;		// From xgmac_dut of xgmac_dut.v
+   wire [31:0]		ip2bus_data;		// From DUT of axi_10g_mac_phy.v
+   wire			ip2bus_error;		// From DUT of axi_10g_mac_phy.v
+   wire			ip2bus_rdack;		// From DUT of axi_10g_mac_phy.v
+   wire			ip2bus_wrack;		// From DUT of axi_10g_mac_phy.v
+   wire			rx_axis_aresetn;	// From xgmac_dut of xgmac_dut.v
+   wire [63:0]		rx_axis_tdata;		// From DUT of axi_10g_mac_phy.v
+   wire [7:0]		rx_axis_tkeep;		// From DUT of axi_10g_mac_phy.v
+   wire			rx_axis_tlast;		// From DUT of axi_10g_mac_phy.v
+   wire			rx_axis_tready;		// From xgmac_address_swap of xgmac_address_swap.v
+   wire			rx_axis_tuser;		// From DUT of axi_10g_mac_phy.v
+   wire			rx_axis_tvalid;		// From DUT of axi_10g_mac_phy.v
+   wire			rx_clk;			// From xgmac_dut of xgmac_dut.v
+   wire			rxclk322;		// From DUT of axi_10g_mac_phy.v
+   wire [20:0]		training_addr;		// From xgmac_dut of xgmac_dut.v
+   wire			training_enable;	// From xgmac_dut of xgmac_dut.v
+   wire			training_ipif_cs;	// From xgmac_dut of xgmac_dut.v
+   wire			training_rdack;		// From DUT of axi_10g_mac_phy.v
+   wire [15:0]		training_rddata;	// From DUT of axi_10g_mac_phy.v
+   wire			training_rnw;		// From xgmac_dut of xgmac_dut.v
+   wire			training_wrack;		// From DUT of axi_10g_mac_phy.v
+   wire [15:0]		training_wrdata;	// From xgmac_dut of xgmac_dut.v
+   wire			tx_axis_aresetn;	// From xgmac_dut of xgmac_dut.v
+   wire [63:0]		tx_axis_tdata;		// From xgmac_address_swap of xgmac_address_swap.v
+   wire [7:0]		tx_axis_tkeep;		// From xgmac_address_swap of xgmac_address_swap.v
+   wire			tx_axis_tlast;		// From xgmac_address_swap of xgmac_address_swap.v
+   wire			tx_axis_tready;		// From DUT of axi_10g_mac_phy.v
+   wire			tx_axis_tvalid;		// From xgmac_address_swap of xgmac_address_swap.v
+   wire [7:0]		tx_ifg_delay;		// From xgmac_dut of xgmac_dut.v
+   wire			xgmacint;		// From DUT of axi_10g_mac_phy.v
+   // End of automatics
    
   axi_10g_mac_phy DUT (/*AUTOINST*/
 		       // Outputs
 		       .core_clk156_out	(core_clk156_out),
 		       .core_status	(core_status[7:0]),
-		       .dclk		(dclk),
 		       .ip2bus_data	(ip2bus_data[31:0]),
 		       .ip2bus_error	(ip2bus_error),
 		       .ip2bus_rdack	(ip2bus_rdack),
@@ -544,6 +548,49 @@ module demo_tb;
 		       .tx_fault	(tx_fault),
 		       .tx_ifg_delay	(tx_ifg_delay[7:0]));
 
+  xgmac_address_swap
+    xgmac_address_swap (/*AUTOINST*/
+			// Outputs
+			.rx_axis_tready	(rx_axis_tready),
+			.tx_axis_tdata	(tx_axis_tdata[63:0]),
+			.tx_axis_tkeep	(tx_axis_tkeep[7:0]),
+			.tx_axis_tlast	(tx_axis_tlast),
+			.tx_axis_tvalid	(tx_axis_tvalid),
+			// Inputs
+			.reset		(reset),
+			.rx_clk		(rx_clk),
+			.rx_axis_tdata	(rx_axis_tdata[63:0]),
+			.rx_axis_tkeep	(rx_axis_tkeep[7:0]),
+			.rx_axis_tlast	(rx_axis_tlast),
+			.rx_axis_tvalid	(rx_axis_tvalid),
+			.tx_axis_tready	(tx_axis_tready));
+
+   xgmac_dut
+     xgmac_dut (/*AUTOINST*/
+		// Outputs
+		.bus2ip_addr		(bus2ip_addr[31:0]),
+		.bus2ip_data		(bus2ip_data[31:0]),
+		.tx_ifg_delay		(tx_ifg_delay[7:0]),
+		.training_enable	(training_enable),
+		.training_addr		(training_addr[20:0]),
+		.training_rnw		(training_rnw),
+		.training_wrdata	(training_wrdata[15:0]),
+		.training_ipif_cs	(training_ipif_cs),
+		.rx_clk			(rx_clk),
+		.rx_axis_aresetn	(rx_axis_aresetn),
+		.tx_axis_aresetn	(tx_axis_aresetn),
+		.an_enable		(an_enable),
+		// Inputs
+		.ip2bus_data		(ip2bus_data[31:0]),
+		.ip2bus_error		(ip2bus_error),
+		.ip2bus_rdack		(ip2bus_rdack),
+		.ip2bus_wrack		(ip2bus_wrack),
+		.training_rddata	(training_rddata[15:0]),
+		.training_rdack		(training_rdack),
+		.training_wrack		(training_wrack),
+		.core_clk156_out	(core_clk156_out),
+		.resetdone		(resetdone));
+   
   defparam DUT.xphy_block.EXAMPLE_SIM_GTRESET_SPEEDUP = "TRUE"; 
 
   assign signal_detect = 1'b1;
@@ -730,8 +777,10 @@ module demo_tb;
        while (DUT.resetdone !== 1'b1)
          tx_stimulus_send_idle;
        // now wait until the testbench has block_lock on the transmitted idles
+       $display("p_tx_stimulus: wait for block_lock");
        while (block_lock !== 1'b1)
          tx_stimulus_send_idle;
+       $display("p_tx_stimulus: wait for block_lock done");
          
        tx_stimulus_send_frame(frame0.tobits(0));
        tx_stimulus_send_idle;
@@ -1506,12 +1555,16 @@ module demo_tb;
        // by a rising edge on the align_status signal.
        while (DUT.resetdone !== 1'b1)
          rx_stimulus_send_idle;
+       $display("p_rx_stimulus: wait for block_lock");
        while (block_lock !== 1'b1)
          rx_stimulus_send_idle;
+       $display("p_rx_stimulus: wait for block_lock done");
        
+       $display("p_rx_stimulus: wait for gtx block lock");
        // Give the GTX time to get block_lock on incoming data...  
        while (core_status[0] !== 1'b1)
          rx_stimulus_send_idle;
+       $display("p_rx_stimulus: wait for gtx block lock done");
 
        rx_stimulus_send_frame(frame0.tobits(0));
        rx_stimulus_send_idle;
@@ -1721,7 +1774,7 @@ module demo_tb;
         
 endmodule
 // Local Variables:
-// verilog-library-directories:("../hdl/verilog/")
+// verilog-library-directories:("../hdl/verilog/" ".")
 // verilog-library-files:("")
 // verilog-library-extensions:(".v" ".h")
 // End:

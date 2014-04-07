@@ -54,6 +54,10 @@ add wave -noupdate -format logic /demo_tb/reset
 add wave -noupdate -format logic /demo_tb/refclk_p
 add wave -noupdate -format logic /demo_tb/refclk_n
 add wave -noupdate -format logic /demo_tb/core_clk156_out
+add wave -noupdate -format logic /demo_tb/block_lock
+add wave -noupdate -format logic /demo_tb/core_status
+add wave -noupdate -format hex   /demo_tb/BLSTATE
+add wave -noupdate -format logic /demo_tb/test_sh
 #
 add wave -noupdate -divider {XGMII Signals}
 add wave -noupdate -format logic -hex /demo_tb/xgmii_txd
@@ -91,6 +95,7 @@ add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/tx_resetdone
 add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/rx_resetdone
 
 add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/clk156
+add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/dclk
 add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/tx_fault
 add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/signal_detect
 
@@ -98,13 +103,30 @@ add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/txclk322
 add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/txreset322
 add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/rxreset322
 
-add wave -noupdate -format logic -hex /demo_tb/DUT/xphy_int/xgmii_txd
-add wave -noupdate -format logic -hex /demo_tb/DUT/xphy_int/xgmii_txc
+add wave -noupdate -format logic -hex /demo_tb/DUT/xphy_block/xgmii_txd
+add wave -noupdate -format logic -hex /demo_tb/DUT/xphy_block/xgmii_txc
 
-add wave -noupdate -format logic -hex /demo_tb/DUT/xphy_int/xgmii_rxd
-add wave -noupdate -format logic -hex /demo_tb/DUT/xphy_int/xgmii_rxc
+add wave -noupdate -format logic -hex /demo_tb/DUT/xphy_block/xgmii_rxd
+add wave -noupdate -format logic -hex /demo_tb/DUT/xphy_block/xgmii_rxc
 
-add wave -noupdate -divider {xphy block}
+add wave -noupdate -divider {xphy axis tx}
+add wave -noupdate -format logic -binary /demo_tb/DUT/tx_axis_aresetn
+add wave -noupdate -format logic -binary /demo_tb/DUT/tx_clk0
+add wave -noupdate -format logic -hex    /demo_tb/DUT/tx_axis_tdata
+add wave -noupdate -format logic -hex    /demo_tb/DUT/tx_axis_tkeep
+add wave -noupdate -format logic -binary /demo_tb/DUT/tx_axis_tlast
+add wave -noupdate -format logic -binary /demo_tb/DUT/tx_axis_tuser
+add wave -noupdate -format logic -binary /demo_tb/DUT/tx_axis_tvalid
+
+add wave -noupdate -divider {xphy axis rx}
+add wave -noupdate -format logic -binary /demo_tb/DUT/rx_axis_aresetn
+add wave -noupdate -format logic -binary /demo_tb/DUT/rx_clk0
+add wave -noupdate -format logic -hex    /demo_tb/DUT/rx_axis_tdata
+add wave -noupdate -format logic -hex    /demo_tb/DUT/rx_axis_tkeep
+add wave -noupdate -format logic -binary /demo_tb/DUT/rx_axis_tlast
+add wave -noupdate -format logic -binary /demo_tb/DUT/rx_axis_tuser
+add wave -noupdate -format logic -binary /demo_tb/DUT/rx_axis_tvalid
+
 
 configure  wave -justifyvalue          right
 configure  wave -signalnamewidth       1

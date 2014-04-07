@@ -49,7 +49,7 @@ module axi_10g_mac_phy (/*AUTOARG*/
    training_rddata, training_rdack, rxclk322, rx_axis_tvalid,
    rx_axis_tuser, rx_axis_tlast, rx_axis_tkeep, rx_axis_tdata,
    resetdone, ip2bus_wrack, ip2bus_rdack, ip2bus_error, ip2bus_data,
-   dclk, core_status, core_clk156_out,
+   core_status, core_clk156_out,
    // Inputs
    tx_ifg_delay, tx_fault, tx_axis_tvalid, tx_axis_tuser,
    tx_axis_tlast, tx_axis_tkeep, tx_axis_tdata, tx_axis_aresetn,
@@ -96,7 +96,6 @@ module axi_10g_mac_phy (/*AUTOARG*/
    // Beginning of automatic outputs (from unused autoinst outputs)
    output		core_clk156_out;	// From xphy_int of xphy_int.v
    output [7:0]		core_status;		// From xphy_block of xphy_block.v
-   output		dclk;			// From xphy_block of xphy_block.v
    output [31:0]	ip2bus_data;		// From xgmac of xgmac.v
    output		ip2bus_error;		// From xgmac of xgmac.v
    output		ip2bus_rdack;		// From xgmac of xgmac.v
@@ -123,6 +122,7 @@ module axi_10g_mac_phy (/*AUTOARG*/
    wire			areset;			// From xphy_int of xphy_int.v
    wire			clk156;			// From xphy_block of xphy_block.v
    wire			core_reset_tx;		// From xphy_int of xphy_int.v
+   wire			dclk;			// From xphy_block of xphy_block.v
    wire			dclk_reset;		// From xphy_int of xphy_int.v
    wire			is_eval;		// From xphy_block of xphy_block.v
    wire			mdc;			// From xgmac of xgmac.v
@@ -295,6 +295,7 @@ module axi_10g_mac_phy (/*AUTOARG*/
 		.tx_dcm_lock		(tx_dcm_lock),
 		// Inputs
 		.reset			(reset),
+		.dclk			(dclk),
 		.is_eval		(is_eval),
 		.tx_resetdone		(tx_resetdone),
 		.rx_resetdone		(rx_resetdone),

@@ -49,7 +49,7 @@ module xphy_int (/*AUTOARG*/
    txreset322, rxreset322, xgmii_txd_int, xgmii_txc_int, xgmii_rxd,
    xgmii_rxc, rx_dcm_lock, tx_dcm_lock,
    // Inputs
-   reset, is_eval, tx_resetdone, rx_resetdone, clk156, tx_fault,
+   reset, dclk, is_eval, tx_resetdone, rx_resetdone, clk156, tx_fault,
    signal_detect, txclk322, xgmii_txd, xgmii_txc, xgmii_rxd_int,
    xgmii_rxc_int
    );
@@ -57,6 +57,7 @@ module xphy_int (/*AUTOARG*/
    input  reset;
    assign areset = reset;
 
+   input  dclk;
    output dclk_reset;
    input  is_eval;
    
@@ -153,7 +154,7 @@ module xphy_int (/*AUTOARG*/
    always @(posedge clk156)
      begin
 	xgmii_txd_int <= #1 xgmii_txd;
-	xgmii_txd_int <= #1 xgmii_txd;
+	xgmii_txc_int <= #1 xgmii_txc;
 	xgmii_rxd     <= #1 xgmii_rxd_int;
 	xgmii_rxc     <= #1 xgmii_rxc_int;
      end

@@ -56,7 +56,9 @@ vlog -work work \
   ../../hdl/verilog/xphy_int.v \
   ../../hdl/verilog/xgmac_int.v \
   ../../hdl/verilog/axi_10g_mac_phy.v \
-  ../demo_tb.v
+  ../demo_tb.v \
+  ../xgmac_address_swap.v \
+  ../xgmac_dut.v
 
 
 vsim -L unisims_ver -L secureip -t ps work.demo_tb work.glbl -novopt 
