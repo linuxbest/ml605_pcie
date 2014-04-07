@@ -460,7 +460,6 @@ module demo_tb;
 //-----------------------------------------------------------------------------
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire			an_enable;		// From xgmac_dut of xgmac_dut.v
    wire [31:0]		bus2ip_addr;		// From xgmac_dut of xgmac_dut.v
    wire [31:0]		bus2ip_data;		// From xgmac_dut of xgmac_dut.v
    wire [31:0]		ip2bus_data;		// From DUT of axi_10g_mac_phy.v
@@ -476,14 +475,6 @@ module demo_tb;
    wire			rx_axis_tvalid;		// From DUT of axi_10g_mac_phy.v
    wire			rx_clk;			// From xgmac_dut of xgmac_dut.v
    wire			rxclk322;		// From DUT of axi_10g_mac_phy.v
-   wire [20:0]		training_addr;		// From xgmac_dut of xgmac_dut.v
-   wire			training_enable;	// From xgmac_dut of xgmac_dut.v
-   wire			training_ipif_cs;	// From xgmac_dut of xgmac_dut.v
-   wire			training_rdack;		// From DUT of axi_10g_mac_phy.v
-   wire [15:0]		training_rddata;	// From DUT of axi_10g_mac_phy.v
-   wire			training_rnw;		// From xgmac_dut of xgmac_dut.v
-   wire			training_wrack;		// From DUT of axi_10g_mac_phy.v
-   wire [15:0]		training_wrdata;	// From xgmac_dut of xgmac_dut.v
    wire			tx_axis_aresetn;	// From xgmac_dut of xgmac_dut.v
    wire [63:0]		tx_axis_tdata;		// From xgmac_address_swap of xgmac_address_swap.v
    wire [7:0]		tx_axis_tkeep;		// From xgmac_address_swap of xgmac_address_swap.v
@@ -509,23 +500,18 @@ module demo_tb;
 		       .rx_axis_tuser	(rx_axis_tuser),
 		       .rx_axis_tvalid	(rx_axis_tvalid),
 		       .rxclk322	(rxclk322),
-		       .training_rdack	(training_rdack),
-		       .training_rddata	(training_rddata[15:0]),
-		       .training_wrack	(training_wrack),
 		       .tx_axis_tready	(tx_axis_tready),
 		       .tx_disable	(tx_disable),
 		       .txn		(txn),
 		       .txp		(txp),
 		       .xgmacint	(xgmacint),
 		       // Inputs
-		       .an_enable	(an_enable),
 		       .bus2ip_addr	(bus2ip_addr[31:0]),
 		       .bus2ip_clk	(bus2ip_clk),
 		       .bus2ip_cs	(bus2ip_cs),
 		       .bus2ip_data	(bus2ip_data[31:0]),
 		       .bus2ip_reset	(bus2ip_reset),
 		       .bus2ip_rnw	(bus2ip_rnw),
-		       .prtad		(prtad[4:0]),
 		       .refclk_n	(refclk_n),
 		       .refclk_p	(refclk_p),
 		       .reset		(reset),
@@ -533,12 +519,7 @@ module demo_tb;
 		       .rxn		(rxn),
 		       .rxp		(rxp),
 		       .signal_detect	(signal_detect),
-		       .training_addr	(training_addr[20:0]),
 		       .training_drp_cs	(training_drp_cs),
-		       .training_enable	(training_enable),
-		       .training_ipif_cs(training_ipif_cs),
-		       .training_rnw	(training_rnw),
-		       .training_wrdata	(training_wrdata[15:0]),
 		       .tx_axis_aresetn	(tx_axis_aresetn),
 		       .tx_axis_tdata	(tx_axis_tdata[63:0]),
 		       .tx_axis_tkeep	(tx_axis_tkeep[7:0]),
@@ -571,23 +552,14 @@ module demo_tb;
 		.bus2ip_addr		(bus2ip_addr[31:0]),
 		.bus2ip_data		(bus2ip_data[31:0]),
 		.tx_ifg_delay		(tx_ifg_delay[7:0]),
-		.training_enable	(training_enable),
-		.training_addr		(training_addr[20:0]),
-		.training_rnw		(training_rnw),
-		.training_wrdata	(training_wrdata[15:0]),
-		.training_ipif_cs	(training_ipif_cs),
 		.rx_clk			(rx_clk),
 		.rx_axis_aresetn	(rx_axis_aresetn),
 		.tx_axis_aresetn	(tx_axis_aresetn),
-		.an_enable		(an_enable),
 		// Inputs
 		.ip2bus_data		(ip2bus_data[31:0]),
 		.ip2bus_error		(ip2bus_error),
 		.ip2bus_rdack		(ip2bus_rdack),
 		.ip2bus_wrack		(ip2bus_wrack),
-		.training_rddata	(training_rddata[15:0]),
-		.training_rdack		(training_rdack),
-		.training_wrack		(training_wrack),
 		.core_clk156_out	(core_clk156_out),
 		.resetdone		(resetdone));
    

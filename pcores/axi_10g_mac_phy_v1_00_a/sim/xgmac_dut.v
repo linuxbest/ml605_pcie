@@ -45,13 +45,11 @@
 // Code:
 module xgmac_dut (/*AUTOARG*/
    // Outputs
-   bus2ip_addr, bus2ip_data, tx_ifg_delay, training_enable,
-   training_addr, training_rnw, training_wrdata, training_ipif_cs,
-   rx_clk, rx_axis_aresetn, tx_axis_aresetn, an_enable,
+   bus2ip_addr, bus2ip_data, tx_ifg_delay, rx_clk, rx_axis_aresetn,
+   tx_axis_aresetn,
    // Inputs
    ip2bus_data, ip2bus_error, ip2bus_rdack, ip2bus_wrack,
-   training_rddata, training_rdack, training_wrack, core_clk156_out,
-   resetdone
+   core_clk156_out, resetdone
    );
 
    input [31:0] ip2bus_data;
@@ -67,21 +65,6 @@ module xgmac_dut (/*AUTOARG*/
    output [7:0]  tx_ifg_delay;
    assign tx_ifg_delay = 0;
 
-   output        training_enable;
-   output [20:0] training_addr;
-   output        training_rnw;
-   output [15:0] training_wrdata;
-   output        training_ipif_cs;
-   assign training_enable = 0;
-   assign training_addr   = 0;
-   assign training_rnw    = 1;
-   assign training_wrdata = 0;
-   assign training_ipif_cs= 0;
-
-   input [15:0]  training_rddata;
-   input 	 training_rdack;
-   input 	 training_wrack;
-
    input 	 core_clk156_out;
    output 	 rx_clk;
    assign rx_clk = core_clk156_out;
@@ -91,9 +74,6 @@ module xgmac_dut (/*AUTOARG*/
    output 	 tx_axis_aresetn;
    assign rx_axis_aresetn = resetdone;
    assign tx_axis_aresetn = resetdone;
-
-   output        an_enable;
-   assign        an_enable = 1'b0;
 endmodule
 // 
 // xgmac_dut.v ends here
