@@ -478,6 +478,7 @@ module demo_tb;
    wire			rx_axis_tuser;		// From DUT of axi_10g_mac_phy.v
    wire			rx_axis_tvalid;		// From DUT of axi_10g_mac_phy.v
    wire			rx_clk;			// From xgmac_dut of xgmac_dut.v
+   wire			sfp_rs;			// From DUT of axi_10g_mac_phy.v
    wire			tx_axis_aresetn;	// From xgmac_dut of xgmac_dut.v
    wire [63:0]		tx_axis_tdata;		// From xgmac_address_swap of xgmac_address_swap.v
    wire [7:0]		tx_axis_tkeep;		// From xgmac_address_swap of xgmac_address_swap.v
@@ -486,6 +487,10 @@ module demo_tb;
    wire [127:0]		tx_axis_tuser;		// From xgmac_dut of xgmac_dut.v
    wire			tx_axis_tvalid;		// From xgmac_address_swap of xgmac_address_swap.v
    wire			xgmacint;		// From DUT of axi_10g_mac_phy.v
+   wire [7:0]		xgmii_rxc_dbg;		// From DUT of axi_10g_mac_phy.v
+   wire [63:0]		xgmii_rxd_dbg;		// From DUT of axi_10g_mac_phy.v
+   wire [7:0]		xgmii_txc_dbg;		// From DUT of axi_10g_mac_phy.v
+   wire [63:0]		xgmii_txd_dbg;		// From DUT of axi_10g_mac_phy.v
    // End of automatics
    
   axi_10g_mac_phy DUT (/*AUTOINST*/
@@ -502,11 +507,16 @@ module demo_tb;
 		       .rx_axis_tlast	(rx_axis_tlast),
 		       .rx_axis_tuser	(rx_axis_tuser),
 		       .rx_axis_tvalid	(rx_axis_tvalid),
+		       .sfp_rs		(sfp_rs),
 		       .tx_axis_tready	(tx_axis_tready),
 		       .tx_disable	(tx_disable),
 		       .txn		(txn),
 		       .txp		(txp),
 		       .xgmacint	(xgmacint),
+		       .xgmii_rxc_dbg	(xgmii_rxc_dbg[7:0]),
+		       .xgmii_rxd_dbg	(xgmii_rxd_dbg[63:0]),
+		       .xgmii_txc_dbg	(xgmii_txc_dbg[7:0]),
+		       .xgmii_txd_dbg	(xgmii_txd_dbg[63:0]),
 		       // Inputs
 		       .bus2ip_addr	(bus2ip_addr[10:0]),
 		       .bus2ip_clk	(bus2ip_clk),
@@ -569,7 +579,11 @@ module demo_tb;
 		.rx_axis_tready		(rx_axis_tready),
 		.rx_axis_tuser		(rx_axis_tuser),
 		.xgmacint		(xgmacint),
-		.core_status		(core_status[7:0]));
+		.core_status		(core_status[7:0]),
+		.xgmii_txd_dbg		(xgmii_txd_dbg[63:0]),
+		.xgmii_rxd_dbg		(xgmii_rxd_dbg[63:0]),
+		.xgmii_txc_dbg		(xgmii_txc_dbg[7:0]),
+		.xgmii_rxc_dbg		(xgmii_rxc_dbg[7:0]));
    
   defparam DUT.EXAMPLE_SIM_GTRESET_SPEEDUP = "TRUE"; 
 

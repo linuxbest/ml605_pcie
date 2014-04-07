@@ -116,6 +116,7 @@ add wave -noupdate -format logic -hex    /demo_tb/DUT/tx_axis_tdata
 add wave -noupdate -format logic -hex    /demo_tb/DUT/tx_axis_tkeep
 add wave -noupdate -format logic -binary /demo_tb/DUT/tx_axis_tlast
 add wave -noupdate -format logic -binary /demo_tb/DUT/tx_axis_tuser
+add wave -noupdate -format logic -binary /demo_tb/DUT/tx_axis_tready
 add wave -noupdate -format logic -binary /demo_tb/DUT/tx_axis_tvalid
 
 add wave -noupdate -divider {xphy axis rx}
@@ -125,6 +126,7 @@ add wave -noupdate -format logic -hex    /demo_tb/DUT/rx_axis_tdata
 add wave -noupdate -format logic -hex    /demo_tb/DUT/rx_axis_tkeep
 add wave -noupdate -format logic -binary /demo_tb/DUT/rx_axis_tlast
 add wave -noupdate -format logic -binary /demo_tb/DUT/rx_axis_tuser
+add wave -noupdate -format logic -binary /demo_tb/DUT/rx_axis_tready
 add wave -noupdate -format logic -binary /demo_tb/DUT/rx_axis_tvalid
 
 
