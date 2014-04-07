@@ -481,7 +481,6 @@ module demo_tb;
    wire			tx_axis_tlast;		// From xgmac_address_swap of xgmac_address_swap.v
    wire			tx_axis_tready;		// From DUT of axi_10g_mac_phy.v
    wire			tx_axis_tvalid;		// From xgmac_address_swap of xgmac_address_swap.v
-   wire [7:0]		tx_ifg_delay;		// From xgmac_dut of xgmac_dut.v
    wire			xgmacint;		// From DUT of axi_10g_mac_phy.v
    // End of automatics
    
@@ -519,15 +518,13 @@ module demo_tb;
 		       .rxn		(rxn),
 		       .rxp		(rxp),
 		       .signal_detect	(signal_detect),
-		       .training_drp_cs	(training_drp_cs),
 		       .tx_axis_aresetn	(tx_axis_aresetn),
 		       .tx_axis_tdata	(tx_axis_tdata[63:0]),
 		       .tx_axis_tkeep	(tx_axis_tkeep[7:0]),
 		       .tx_axis_tlast	(tx_axis_tlast),
 		       .tx_axis_tuser	(tx_axis_tuser),
 		       .tx_axis_tvalid	(tx_axis_tvalid),
-		       .tx_fault	(tx_fault),
-		       .tx_ifg_delay	(tx_ifg_delay[7:0]));
+		       .tx_fault	(tx_fault));
 
   xgmac_address_swap
     xgmac_address_swap (/*AUTOINST*/
@@ -551,7 +548,6 @@ module demo_tb;
 		// Outputs
 		.bus2ip_addr		(bus2ip_addr[31:0]),
 		.bus2ip_data		(bus2ip_data[31:0]),
-		.tx_ifg_delay		(tx_ifg_delay[7:0]),
 		.rx_clk			(rx_clk),
 		.rx_axis_aresetn	(rx_axis_aresetn),
 		.tx_axis_aresetn	(tx_axis_aresetn),

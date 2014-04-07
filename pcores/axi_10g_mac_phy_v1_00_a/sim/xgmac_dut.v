@@ -45,8 +45,7 @@
 // Code:
 module xgmac_dut (/*AUTOARG*/
    // Outputs
-   bus2ip_addr, bus2ip_data, tx_ifg_delay, rx_clk, rx_axis_aresetn,
-   tx_axis_aresetn,
+   bus2ip_addr, bus2ip_data, rx_clk, rx_axis_aresetn, tx_axis_aresetn,
    // Inputs
    ip2bus_data, ip2bus_error, ip2bus_rdack, ip2bus_wrack,
    core_clk156_out, resetdone
@@ -62,9 +61,6 @@ module xgmac_dut (/*AUTOARG*/
    assign bus2ip_data = 0;
    assign bus2ip_addr = 0;
    
-   output [7:0]  tx_ifg_delay;
-   assign tx_ifg_delay = 0;
-
    input 	 core_clk156_out;
    output 	 rx_clk;
    assign rx_clk = core_clk156_out;
