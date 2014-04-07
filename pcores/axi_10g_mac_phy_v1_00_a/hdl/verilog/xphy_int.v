@@ -197,6 +197,10 @@ module xphy_int (/*AUTOARG*/
    assign tx_ifg_delay = 8'h0;
 
    input rxclk322;
+
+   /* synthesis attribute keep of clk156   is "true" */
+   /* synthesis attribute keep of rxclk322 is "true" */
+   /* synthesis attribute keep of txclk322 is "true" */
 endmodule
 // 
 // xphy_int.v ends here

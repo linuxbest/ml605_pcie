@@ -1,11 +1,23 @@
-NET reset LOC = "AK10" | PULLDOWN;
+NET reset LOC = "AK10" | PULLDOWN | IOSTANDARD = HSTL_I;
 
-NET tx_disable LOC = M27;
-#NET tx_disable LOC = L27;
-#NET tx_disable LOC = K25;
-#NET tx_disable LOC = K21;
+NET tx_disable    LOC = M27 | IOSTANDARD = LVCMOS25;
+NET tx_fault      LOC = N27 | IOSTANDARD = LVCMOS25;
+NET signal_detect LOC = P19 | IOSTANDARD = LVCMOS25 | PULLUP;
+
+#NET tx_disable LOC = L27 | IOSTANDARD = LVCMOS25;
+#NET tx_disable LOC = K25 | IOSTANDARD = LVCMOS25;
+#NET tx_disable LOC = K21 | IOSTANDARD = LVCMOS25;
+
+NET "*/xphy_block/q1_clk0_refclk_i" TNM_NET = "REFCLK";
+NET "*/xphy_int/clk156"   TNM_NET = "CLK156";
+NET "*/xphy_int/txclk322" TNM_NET = "TXCLK322";
+NET "*/xphy_int/rxclk322" TNM_NET = "RXCLK322";
+
+TIMESPEC "TS_REFCLK"    = PERIOD "REFCLK"   156.25 MHz;
+TIMESPEC "TS_CLK156"    = PERIOD "CLK156"   156.25 MHz;
+TIMESPEC "TS_RXCLK322"  = PERIOD "TXCLK322" 322.50 MHz;
+TIMESPEC "TS_TXCLK322"  = PERIOD "RXCLK322" 322.50 MHz;
 
 NET refclk_p LOC = C8;
 NET refclk_n LOC = C7;
-
 INST */gtxe2_i LOC=GTXE2_CHANNEL_X0Y12;

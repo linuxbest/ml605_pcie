@@ -1051,6 +1051,7 @@ module xphy_block #
     );
    
 
+    /* synthesis attribute keep of q1_clk0_refclk_i is "true" */
 endmodule
 
 

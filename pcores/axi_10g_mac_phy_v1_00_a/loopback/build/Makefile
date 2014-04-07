@@ -10,7 +10,7 @@ mac_loopback.ngc: ../mac_loopback.v
 	xst -ifn mac_loopback.scr -ofn mac_loopback.syr -intstyle ise
 
 # TRANSLATE
-mac_loopback.ngd: mac_loopback.ngc ../mac_loopback.ucf 
+mac_loopback.ngd: mac_loopback.ngc ../mac_loopback.ucf icon3.ngc ila256_16.ngc
 	ngdbuild -intstyle ise -sd ../../netlist -dd . -nt timestamp -uc ../mac_loopback.ucf -p ${DEV} mac_loopback.ngc mac_loopback.ngd
 
 # MAP
@@ -28,3 +28,13 @@ mac_loopback.twr: mac_loopback.ncd
 # BIT
 mac_loopback.bit: ${CGS} mac_loopback.ncd mac_loopback.twr
 	bitgen -w -intstyle ise mac_loopback.ncd
+
+
+icon3.ngc:
+	coregen -b icon3_cg.xco
+
+ila256_16.ngc:
+	coregen -b ila256_16_cg.xco
+
+ila512_16.ngc:
+	coregen -b ila512_16_cg.xco

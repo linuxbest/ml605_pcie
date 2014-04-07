@@ -182,7 +182,59 @@ module mac_loopback (/*AUTOARG*/
 		.rx_axis_tuser		(rx_axis_tuser),
 		.xgmacint		(xgmacint),
 		.core_status		(core_status[7:0]));
+
+   wire [255:0] 	txdata;
+   wire [255:0] 	rxdata;
+   wire [255:0] 	ctdata;
    
+   assign txdata[63:0]  = tx_axis_tdata;
+   assign txdata[71:64] = tx_axis_tkeep;
+   assign txdata[72]    = tx_axis_tready;
+   assign txdata[73]    = tx_axis_tlast;
+   assign txdata[74]    = tx_axis_tvalid;
+
+   assign rxdata[63:0]  = rx_axis_tdata;
+   assign rxdata[71:64] = rx_axis_tkeep;
+   assign rxdata[72]    = rx_axis_tready;
+   assign rxdata[73]    = rx_axis_tlast;
+   assign rxdata[74]    = rx_axis_tvalid;   
+
+   assign ctdata[7:0]   = core_status;
+   assign ctdata[8]     = resetdone;
+
+   wire [35:0] 		CONTROL0;
+   wire [35:0] 		CONTROL1;
+   wire [35:0] 		CONTROL2;
+   icon3
+     icon3 (/*AUTOINST*/
+	    // Inouts
+	    .CONTROL0			(CONTROL0[35:0]),
+	    .CONTROL1			(CONTROL1[35:0]),
+	    .CONTROL2			(CONTROL2[35:0]));
+   ila256_16
+     ila_ct (
+	     // Inouts
+	     .CONTROL			(CONTROL0[35:0]),
+	     // Inputs
+	     .CLK			(core_clk156_out),
+	     .DATA			(ctdata[255:0]),
+	     .TRIG0			(ctdata[15:0]));
+   ila256_16
+     ila_tx (
+	     // Inouts
+	     .CONTROL			(CONTROL1[35:0]),
+	     // Inputs
+	     .CLK			(rx_clk),
+	     .DATA			(rxdata[255:0]),
+	     .TRIG0			(rxdata[78:64]));
+   ila256_16
+     ila_rx (
+	     // Inouts
+	     .CONTROL			(CONTROL2[35:0]),
+	     // Inputs
+	     .CLK			(rx_clk),
+	     .DATA			(txdata[255:0]),
+	     .TRIG0			(txdata[78:64]));   
 endmodule // mac_loopback
 // Local Variables:
 // verilog-library-directories:("../hdl/verilog/" "../sim/" ".")
