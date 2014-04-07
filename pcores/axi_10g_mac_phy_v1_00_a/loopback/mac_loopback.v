@@ -45,7 +45,7 @@
 // Code:
 module mac_loopback (/*AUTOARG*/
    // Outputs
-   txp, txn, tx_disable, rxclk322,
+   txp, txn, tx_disable,
    // Inputs
    tx_fault, signal_detect, rxp, rxn, reset, refclk_p, refclk_n
    );
@@ -61,7 +61,6 @@ module mac_loopback (/*AUTOARG*/
    // End of automatics
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
-   output		rxclk322;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
    output		tx_disable;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
    output		txn;			// From axi_10g_mac_phy of axi_10g_mac_phy.v
    output		txp;			// From axi_10g_mac_phy of axi_10g_mac_phy.v
@@ -69,7 +68,7 @@ module mac_loopback (/*AUTOARG*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [31:0]		bus2ip_addr;		// From xgmac_dut of xgmac_dut.v
+   wire [10:0]		bus2ip_addr;		// From xgmac_dut of xgmac_dut.v
    wire			bus2ip_clk;		// From xgmac_dut of xgmac_dut.v
    wire			bus2ip_cs;		// From xgmac_dut of xgmac_dut.v
    wire [31:0]		bus2ip_data;		// From xgmac_dut of xgmac_dut.v
@@ -95,7 +94,7 @@ module mac_loopback (/*AUTOARG*/
    wire [7:0]		tx_axis_tkeep;		// From xgmac_address_swap of xgmac_address_swap.v
    wire			tx_axis_tlast;		// From xgmac_address_swap of xgmac_address_swap.v
    wire			tx_axis_tready;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   wire			tx_axis_tuser;		// From xgmac_dut of xgmac_dut.v
+   wire [127:0]		tx_axis_tuser;		// From xgmac_dut of xgmac_dut.v
    wire			tx_axis_tvalid;		// From xgmac_address_swap of xgmac_address_swap.v
    wire			xgmacint;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
    // End of automatics
@@ -115,14 +114,13 @@ module mac_loopback (/*AUTOARG*/
 		      .rx_axis_tlast	(rx_axis_tlast),
 		      .rx_axis_tuser	(rx_axis_tuser),
 		      .rx_axis_tvalid	(rx_axis_tvalid),
-		      .rxclk322		(rxclk322),
 		      .tx_axis_tready	(tx_axis_tready),
 		      .tx_disable	(tx_disable),
 		      .txn		(txn),
 		      .txp		(txp),
 		      .xgmacint		(xgmacint),
 		      // Inputs
-		      .bus2ip_addr	(bus2ip_addr[31:0]),
+		      .bus2ip_addr	(bus2ip_addr[10:0]),
 		      .bus2ip_clk	(bus2ip_clk),
 		      .bus2ip_cs	(bus2ip_cs),
 		      .bus2ip_data	(bus2ip_data[31:0]),
@@ -139,7 +137,7 @@ module mac_loopback (/*AUTOARG*/
 		      .tx_axis_tdata	(tx_axis_tdata[63:0]),
 		      .tx_axis_tkeep	(tx_axis_tkeep[7:0]),
 		      .tx_axis_tlast	(tx_axis_tlast),
-		      .tx_axis_tuser	(tx_axis_tuser),
+		      .tx_axis_tuser	(tx_axis_tuser[127:0]),
 		      .tx_axis_tvalid	(tx_axis_tvalid),
 		      .tx_fault		(tx_fault));
 
@@ -163,7 +161,7 @@ module mac_loopback (/*AUTOARG*/
    xgmac_dut
      xgmac_dut (/*AUTOINST*/
 		// Outputs
-		.bus2ip_addr		(bus2ip_addr[31:0]),
+		.bus2ip_addr		(bus2ip_addr[10:0]),
 		.bus2ip_data		(bus2ip_data[31:0]),
 		.bus2ip_clk		(bus2ip_clk),
 		.bus2ip_cs		(bus2ip_cs),
@@ -172,7 +170,7 @@ module mac_loopback (/*AUTOARG*/
 		.rx_clk			(rx_clk),
 		.rx_axis_aresetn	(rx_axis_aresetn),
 		.tx_axis_aresetn	(tx_axis_aresetn),
-		.tx_axis_tuser		(tx_axis_tuser),
+		.tx_axis_tuser		(tx_axis_tuser[127:0]),
 		// Inputs
 		.ip2bus_data		(ip2bus_data[31:0]),
 		.ip2bus_error		(ip2bus_error),

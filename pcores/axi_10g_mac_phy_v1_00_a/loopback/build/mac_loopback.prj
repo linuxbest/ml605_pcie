@@ -1,0 +1,13 @@
+verilog work ../../hdl/verilog/xphy.v
+verilog work ../../hdl/verilog/xgmac.v
+verilog work ../../hdl/verilog/xphy_block.v
+verilog work ../../hdl/verilog/gtx/xphy_gt_usrclk_source.v
+verilog work ../../hdl/verilog/gtx/xphy_gtwizard_10gbaser.v
+verilog work ../../hdl/verilog/gtx/xphy_gtwizard_10gbaser_gt.v
+verilog work ../../hdl/verilog/xphy_example_design.v
+verilog work ../../hdl/verilog/xgmac_int.v
+verilog work ../../hdl/verilog/axi_10g_mac_phy.v
+verilog work ../../hdl/verilog/xphy_int.v
+verilog work ../../sim/xgmac_dut.v
+verilog work ../../sim/xgmac_address_swap.v
+verilog work ../mac_loopback.v

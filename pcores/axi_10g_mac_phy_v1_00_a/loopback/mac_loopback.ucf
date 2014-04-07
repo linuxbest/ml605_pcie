@@ -1,0 +1,11 @@
+NET reset LOC = "AK10" | PULLDOWN;
+
+NET tx_disable LOC = M27;
+#NET tx_disable LOC = L27;
+#NET tx_disable LOC = K25;
+#NET tx_disable LOC = K21;
+
+NET refclk_p LOC = C8;
+NET refclk_n LOC = C7;
+
+INST */gtxe2_i LOC=GTXE2_CHANNEL_X0Y12;

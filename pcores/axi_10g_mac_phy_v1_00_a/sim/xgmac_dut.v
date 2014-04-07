@@ -59,32 +59,34 @@ module xgmac_dut (/*AUTOARG*/
    input 	ip2bus_rdack;
    input 	ip2bus_wrack;
    
-   output [31:0] bus2ip_addr;
+   output [10:0] bus2ip_addr;
    output [31:0] bus2ip_data;
    output 	 bus2ip_clk;
    output 	 bus2ip_cs;
    output 	 bus2ip_reset;
    output 	 bus2ip_rnw;
-   assign bus2ip_data = 0;
-   assign bus2ip_addr = 0;
-   assign bus2ip_clk  = rx_clk;
-   assign bus2ip_reset= 1'b0;
-   assign bus2ip_rnw  = 1;
    
    input 	 core_clk156_out;
+  
+   assign bus2ip_data = 0;
+   assign bus2ip_addr = 0;
+   assign bus2ip_clk  = core_clk156_out;
+   assign bus2ip_reset= 1'b0;
+   assign bus2ip_rnw  = 1;
+
    output 	 rx_clk;
    assign rx_clk = core_clk156_out;
-
+   
    input 	 resetdone;
    output 	 rx_axis_aresetn;
    output 	 tx_axis_aresetn;
    assign rx_axis_aresetn = resetdone;
    assign tx_axis_aresetn = resetdone;
 
-   output 	 tx_axis_tuser;
+   output [127:0] tx_axis_tuser;
    input 	 rx_axis_tready;
    input 	 rx_axis_tuser;   
-   assign tx_axis_tuser  = 1'b0;
+   assign tx_axis_tuser  = 0;
 
    input 	 xgmacint;
    input [7:0] 	 core_status;

@@ -1,0 +1,14 @@
+set -xsthdpdir "."
+run
+-ifn "mac_loopback.prj"
+-ifmt MIXED
+-ofmt NGC
+-ofn "mac_loopback.ngc"
+-p xc7k325t-2ffg900
+-work_lib work
+-ent mac_loopback
+-arch kintex7
+-top mac_loopback
+-bus_delimiter <>
+-lso "mac_loopback.lso"
+-resource_sharing NO

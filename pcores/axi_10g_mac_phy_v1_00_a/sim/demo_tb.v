@@ -460,8 +460,12 @@ module demo_tb;
 //-----------------------------------------------------------------------------
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [31:0]		bus2ip_addr;		// From xgmac_dut of xgmac_dut.v
+   wire [10:0]		bus2ip_addr;		// From xgmac_dut of xgmac_dut.v
+   wire			bus2ip_clk;		// From xgmac_dut of xgmac_dut.v
+   wire			bus2ip_cs;		// From xgmac_dut of xgmac_dut.v
    wire [31:0]		bus2ip_data;		// From xgmac_dut of xgmac_dut.v
+   wire			bus2ip_reset;		// From xgmac_dut of xgmac_dut.v
+   wire			bus2ip_rnw;		// From xgmac_dut of xgmac_dut.v
    wire [31:0]		ip2bus_data;		// From DUT of axi_10g_mac_phy.v
    wire			ip2bus_error;		// From DUT of axi_10g_mac_phy.v
    wire			ip2bus_rdack;		// From DUT of axi_10g_mac_phy.v
@@ -474,12 +478,12 @@ module demo_tb;
    wire			rx_axis_tuser;		// From DUT of axi_10g_mac_phy.v
    wire			rx_axis_tvalid;		// From DUT of axi_10g_mac_phy.v
    wire			rx_clk;			// From xgmac_dut of xgmac_dut.v
-   wire			rxclk322;		// From DUT of axi_10g_mac_phy.v
    wire			tx_axis_aresetn;	// From xgmac_dut of xgmac_dut.v
    wire [63:0]		tx_axis_tdata;		// From xgmac_address_swap of xgmac_address_swap.v
    wire [7:0]		tx_axis_tkeep;		// From xgmac_address_swap of xgmac_address_swap.v
    wire			tx_axis_tlast;		// From xgmac_address_swap of xgmac_address_swap.v
    wire			tx_axis_tready;		// From DUT of axi_10g_mac_phy.v
+   wire [127:0]		tx_axis_tuser;		// From xgmac_dut of xgmac_dut.v
    wire			tx_axis_tvalid;		// From xgmac_address_swap of xgmac_address_swap.v
    wire			xgmacint;		// From DUT of axi_10g_mac_phy.v
    // End of automatics
@@ -498,14 +502,13 @@ module demo_tb;
 		       .rx_axis_tlast	(rx_axis_tlast),
 		       .rx_axis_tuser	(rx_axis_tuser),
 		       .rx_axis_tvalid	(rx_axis_tvalid),
-		       .rxclk322	(rxclk322),
 		       .tx_axis_tready	(tx_axis_tready),
 		       .tx_disable	(tx_disable),
 		       .txn		(txn),
 		       .txp		(txp),
 		       .xgmacint	(xgmacint),
 		       // Inputs
-		       .bus2ip_addr	(bus2ip_addr[31:0]),
+		       .bus2ip_addr	(bus2ip_addr[10:0]),
 		       .bus2ip_clk	(bus2ip_clk),
 		       .bus2ip_cs	(bus2ip_cs),
 		       .bus2ip_data	(bus2ip_data[31:0]),
@@ -522,7 +525,7 @@ module demo_tb;
 		       .tx_axis_tdata	(tx_axis_tdata[63:0]),
 		       .tx_axis_tkeep	(tx_axis_tkeep[7:0]),
 		       .tx_axis_tlast	(tx_axis_tlast),
-		       .tx_axis_tuser	(tx_axis_tuser),
+		       .tx_axis_tuser	(tx_axis_tuser[127:0]),
 		       .tx_axis_tvalid	(tx_axis_tvalid),
 		       .tx_fault	(tx_fault));
 
@@ -546,18 +549,27 @@ module demo_tb;
    xgmac_dut
      xgmac_dut (/*AUTOINST*/
 		// Outputs
-		.bus2ip_addr		(bus2ip_addr[31:0]),
+		.bus2ip_addr		(bus2ip_addr[10:0]),
 		.bus2ip_data		(bus2ip_data[31:0]),
+		.bus2ip_clk		(bus2ip_clk),
+		.bus2ip_cs		(bus2ip_cs),
+		.bus2ip_reset		(bus2ip_reset),
+		.bus2ip_rnw		(bus2ip_rnw),
 		.rx_clk			(rx_clk),
 		.rx_axis_aresetn	(rx_axis_aresetn),
 		.tx_axis_aresetn	(tx_axis_aresetn),
+		.tx_axis_tuser		(tx_axis_tuser[127:0]),
 		// Inputs
 		.ip2bus_data		(ip2bus_data[31:0]),
 		.ip2bus_error		(ip2bus_error),
 		.ip2bus_rdack		(ip2bus_rdack),
 		.ip2bus_wrack		(ip2bus_wrack),
 		.core_clk156_out	(core_clk156_out),
-		.resetdone		(resetdone));
+		.resetdone		(resetdone),
+		.rx_axis_tready		(rx_axis_tready),
+		.rx_axis_tuser		(rx_axis_tuser),
+		.xgmacint		(xgmacint),
+		.core_status		(core_status[7:0]));
    
   defparam DUT.EXAMPLE_SIM_GTRESET_SPEEDUP = "TRUE"; 
 

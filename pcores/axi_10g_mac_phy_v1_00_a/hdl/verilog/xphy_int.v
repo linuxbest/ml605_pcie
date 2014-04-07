@@ -53,7 +53,8 @@ module xphy_int (/*AUTOARG*/
    // Inputs
    reset, dclk, is_eval, tx_resetdone, rx_resetdone, clk156, tx_fault,
    signal_detect, txclk322, xgmii_txd, xgmii_txc, xgmii_rxd_int,
-   xgmii_rxc_int, training_rddata, training_rdack, training_wrack
+   xgmii_rxc_int, training_rddata, training_rdack, training_wrack,
+   rxclk322
    );
    parameter C_MDIO_ADDR = 5'h0;
    parameter EXAMPLE_SIM_GTRESET_SPEEDUP = "FALSE";
@@ -194,6 +195,8 @@ module xphy_int (/*AUTOARG*/
 
    output [7:0]  tx_ifg_delay;
    assign tx_ifg_delay = 8'h0;
+
+   input rxclk322;
 endmodule
 // 
 // xphy_int.v ends here
