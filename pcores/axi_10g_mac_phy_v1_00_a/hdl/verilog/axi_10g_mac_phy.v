@@ -45,10 +45,10 @@
 // Code:
 module axi_10g_mac_phy (/*AUTOARG*/
    // Outputs
-   xgmacint, txp, txn, tx_disable, tx_axis_tready, rx_axis_tvalid,
-   rx_axis_tuser, rx_axis_tlast, rx_axis_tkeep, rx_axis_tdata,
-   resetdone, ip2bus_wrack, ip2bus_rdack, ip2bus_error, ip2bus_data,
-   core_status, core_clk156_out,
+   xgmacint, txp, txn, tx_disable, tx_axis_tready, sfp_rs,
+   rx_axis_tvalid, rx_axis_tuser, rx_axis_tlast, rx_axis_tkeep,
+   rx_axis_tdata, resetdone, ip2bus_wrack, ip2bus_rdack, ip2bus_error,
+   ip2bus_data, core_status, core_clk156_out,
    // Inputs
    tx_fault, tx_axis_tvalid, tx_axis_tuser, tx_axis_tlast,
    tx_axis_tkeep, tx_axis_tdata, tx_axis_aresetn, signal_detect, rxp,
@@ -95,6 +95,7 @@ module axi_10g_mac_phy (/*AUTOARG*/
    output		rx_axis_tlast;		// From xgmac of xgmac.v
    output		rx_axis_tuser;		// From xgmac of xgmac.v
    output		rx_axis_tvalid;		// From xgmac of xgmac.v
+   output		sfp_rs;			// From xphy_int of xphy_int.v
    output		tx_axis_tready;		// From xgmac of xgmac.v
    output		tx_disable;		// From xphy_block of xphy_block.v
    output		txn;			// From xphy_block of xphy_block.v
@@ -305,6 +306,7 @@ module axi_10g_mac_phy (/*AUTOARG*/
 		.training_drp_cs	(training_drp_cs),
 		.an_enable		(an_enable),
 		.tx_ifg_delay		(tx_ifg_delay[7:0]),
+		.sfp_rs			(sfp_rs),
 		// Inputs
 		.reset			(reset),
 		.dclk			(dclk),

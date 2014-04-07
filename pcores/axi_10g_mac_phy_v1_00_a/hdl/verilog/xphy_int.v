@@ -49,7 +49,7 @@ module xphy_int (/*AUTOARG*/
    txreset322, rxreset322, xgmii_txd_int, xgmii_txc_int, xgmii_rxd,
    xgmii_rxc, rx_dcm_lock, tx_dcm_lock, prtad, training_enable,
    training_addr, training_rnw, training_wrdata, training_ipif_cs,
-   training_drp_cs, an_enable, tx_ifg_delay,
+   training_drp_cs, an_enable, tx_ifg_delay, sfp_rs,
    // Inputs
    reset, dclk, is_eval, tx_resetdone, rx_resetdone, clk156, tx_fault,
    signal_detect, txclk322, xgmii_txd, xgmii_txc, xgmii_rxd_int,
@@ -198,6 +198,8 @@ module xphy_int (/*AUTOARG*/
 
    input rxclk322;
 
+   output sfp_rs;
+   assign sfp_rs = 1'b1;
    /* synthesis attribute keep of clk156   is "true" */
    /* synthesis attribute keep of rxclk322 is "true" */
    /* synthesis attribute keep of txclk322 is "true" */

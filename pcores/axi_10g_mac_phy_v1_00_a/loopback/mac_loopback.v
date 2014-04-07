@@ -45,7 +45,7 @@
 // Code:
 module mac_loopback (/*AUTOARG*/
    // Outputs
-   txp, txn, tx_disable,
+   txp, txn, tx_disable, sfp_rs,
    // Inputs
    tx_fault, signal_detect, rxp, rxn, reset, refclk_p, refclk_n
    );
@@ -61,6 +61,7 @@ module mac_loopback (/*AUTOARG*/
    // End of automatics
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
+   output		sfp_rs;			// From axi_10g_mac_phy of axi_10g_mac_phy.v
    output		tx_disable;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
    output		txn;			// From axi_10g_mac_phy of axi_10g_mac_phy.v
    output		txp;			// From axi_10g_mac_phy of axi_10g_mac_phy.v
@@ -114,6 +115,7 @@ module mac_loopback (/*AUTOARG*/
 		      .rx_axis_tlast	(rx_axis_tlast),
 		      .rx_axis_tuser	(rx_axis_tuser),
 		      .rx_axis_tvalid	(rx_axis_tvalid),
+		      .sfp_rs		(sfp_rs),
 		      .tx_axis_tready	(tx_axis_tready),
 		      .tx_disable	(tx_disable),
 		      .txn		(txn),
