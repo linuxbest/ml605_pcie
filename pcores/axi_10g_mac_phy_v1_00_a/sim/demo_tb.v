@@ -542,9 +542,10 @@ module demo_tb;
 		       .tx_axis_tuser	(tx_axis_tuser),
 		       .tx_axis_tvalid	(tx_axis_tvalid),
 		       .tx_fault	(tx_fault),
-		       .tx_ifg_delay	(tx_ifg_delay[7:0]),
-		       .xphy_reset	(xphy_reset));
-   
+		       .tx_ifg_delay	(tx_ifg_delay[7:0]));
+
+  defparam DUT.xphy_block.EXAMPLE_SIM_GTRESET_SPEEDUP = "TRUE"; 
+
   assign signal_detect = 1'b1;
   assign tx_fault = 1'b0;
 //-----------------------------------------------------------------------------

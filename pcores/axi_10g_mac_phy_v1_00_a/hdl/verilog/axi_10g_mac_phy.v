@@ -51,7 +51,7 @@ module axi_10g_mac_phy (/*AUTOARG*/
    resetdone, ip2bus_wrack, ip2bus_rdack, ip2bus_error, ip2bus_data,
    dclk, core_status, core_clk156_out,
    // Inputs
-   xphy_reset, tx_ifg_delay, tx_fault, tx_axis_tvalid, tx_axis_tuser,
+   tx_ifg_delay, tx_fault, tx_axis_tvalid, tx_axis_tuser,
    tx_axis_tlast, tx_axis_tkeep, tx_axis_tdata, tx_axis_aresetn,
    training_wrdata, training_rnw, training_ipif_cs, training_enable,
    training_drp_cs, training_addr, signal_detect, rxp, rxn,
@@ -91,7 +91,6 @@ module axi_10g_mac_phy (/*AUTOARG*/
    input		tx_axis_tvalid;		// To xgmac of xgmac.v
    input		tx_fault;		// To xphy_block of xphy_block.v, ...
    input [7:0]		tx_ifg_delay;		// To xgmac of xgmac.v
-   input		xphy_reset;		// To xphy_int of xphy_int.v
    // End of automatics
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
@@ -123,6 +122,7 @@ module axi_10g_mac_phy (/*AUTOARG*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire			areset;			// From xphy_int of xphy_int.v
    wire			clk156;			// From xphy_block of xphy_block.v
+   wire			core_reset_tx;		// From xphy_int of xphy_int.v
    wire			dclk_reset;		// From xphy_int of xphy_int.v
    wire			is_eval;		// From xphy_block of xphy_block.v
    wire			mdc;			// From xgmac of xgmac.v
@@ -229,6 +229,7 @@ module axi_10g_mac_phy (/*AUTOARG*/
     .xgmii_rxc             (xgmii_rxc_int[]),
     .xgmii_txd             (xgmii_txd_int[]),
     .xgmii_txc             (xgmii_txc_int[]),
+    .reset		   (core_reset_tx),
     );*/
    xphy_block
      xphy_block (/*AUTOINST*/
@@ -255,7 +256,7 @@ module axi_10g_mac_phy (/*AUTOARG*/
 		 .refclk_n		(refclk_n),
 		 .refclk_p		(refclk_p),
 		 .areset		(areset),
-		 .reset			(reset),
+		 .reset			(core_reset_tx),	 // Templated
 		 .txreset322		(txreset322),
 		 .rxreset322		(rxreset322),
 		 .dclk_reset		(dclk_reset),
@@ -283,6 +284,7 @@ module axi_10g_mac_phy (/*AUTOARG*/
 		.dclk_reset		(dclk_reset),
 		.resetdone		(resetdone),
 		.core_clk156_out	(core_clk156_out),
+		.core_reset_tx		(core_reset_tx),
 		.txreset322		(txreset322),
 		.rxreset322		(rxreset322),
 		.xgmii_txd_int		(xgmii_txd_int[63:0]),
@@ -292,12 +294,11 @@ module axi_10g_mac_phy (/*AUTOARG*/
 		.rx_dcm_lock		(rx_dcm_lock),
 		.tx_dcm_lock		(tx_dcm_lock),
 		// Inputs
-		.xphy_reset		(xphy_reset),
+		.reset			(reset),
 		.is_eval		(is_eval),
 		.tx_resetdone		(tx_resetdone),
 		.rx_resetdone		(rx_resetdone),
 		.clk156			(clk156),
-		.reset			(reset),
 		.tx_fault		(tx_fault),
 		.signal_detect		(signal_detect),
 		.txclk322		(txclk322),

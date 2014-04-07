@@ -81,4 +81,31 @@ add wave -noupdate -format logic -binary /demo_tb/mdio_out
 add wave -noupdate -format logic -binary /demo_tb/mdio_tri
 add wave -noupdate -format logic -hex /demo_tb/prtad
 
+add wave -noupdate -divider {xphy int}
+add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/is_eval
+
+add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/reset
+add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/areset
+add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/dclk_reset
+add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/tx_resetdone
+add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/rx_resetdone
+
+add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/clk156
+add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/tx_fault
+add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/signal_detect
+
+add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/txclk322
+add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/txreset322
+add wave -noupdate -format logic -binary /demo_tb/DUT/xphy_int/rxreset322
+
+add wave -noupdate -format logic -hex /demo_tb/DUT/xphy_int/xgmii_txd
+add wave -noupdate -format logic -hex /demo_tb/DUT/xphy_int/xgmii_txc
+
+add wave -noupdate -format logic -hex /demo_tb/DUT/xphy_int/xgmii_rxd
+add wave -noupdate -format logic -hex /demo_tb/DUT/xphy_int/xgmii_rxc
+
+add wave -noupdate -divider {xphy block}
+
+configure  wave -justifyvalue          right
+configure  wave -signalnamewidth       1
 TreeUpdate [SetDefaultTree]

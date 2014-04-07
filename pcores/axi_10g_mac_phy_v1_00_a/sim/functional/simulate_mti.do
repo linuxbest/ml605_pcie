@@ -60,5 +60,7 @@ vlog -work work \
 
 
 vsim -L unisims_ver -L secureip -t ps work.demo_tb work.glbl -novopt 
+
 do wave_mti.do
+
 run -all

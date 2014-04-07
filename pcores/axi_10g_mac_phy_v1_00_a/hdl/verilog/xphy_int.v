@@ -45,17 +45,17 @@
 // Code:
 module xphy_int (/*AUTOARG*/
    // Outputs
-   areset, dclk_reset, resetdone, core_clk156_out, txreset322,
-   rxreset322, xgmii_txd_int, xgmii_txc_int, xgmii_rxd, xgmii_rxc,
-   rx_dcm_lock, tx_dcm_lock,
+   areset, dclk_reset, resetdone, core_clk156_out, core_reset_tx,
+   txreset322, rxreset322, xgmii_txd_int, xgmii_txc_int, xgmii_rxd,
+   xgmii_rxc, rx_dcm_lock, tx_dcm_lock,
    // Inputs
-   xphy_reset, is_eval, tx_resetdone, rx_resetdone, clk156, reset,
-   tx_fault, signal_detect, txclk322, xgmii_txd, xgmii_txc,
-   xgmii_rxd_int, xgmii_rxc_int
+   reset, is_eval, tx_resetdone, rx_resetdone, clk156, tx_fault,
+   signal_detect, txclk322, xgmii_txd, xgmii_txc, xgmii_rxd_int,
+   xgmii_rxc_int
    );
    output areset;
-   input  xphy_reset;
-   assign areset = xphy_reset;
+   input  reset;
+   assign areset = reset;
 
    output dclk_reset;
    input  is_eval;
@@ -66,12 +66,12 @@ module xphy_int (/*AUTOARG*/
    assign resetdone = tx_resetdone && rx_resetdone;
 
    input  clk156;
-   input  reset;
    input  tx_fault;
    input  signal_detect;
    output core_clk156_out;
    assign core_clk156_out = clk156;
 
+   output core_reset_tx;
    reg 	  core_reset_tx_tmp;
    reg 	  core_reset_tx;
    reg 	  core_reset_rx_tmp;
