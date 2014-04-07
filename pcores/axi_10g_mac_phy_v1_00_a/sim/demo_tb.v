@@ -563,7 +563,7 @@ module demo_tb;
 		.core_clk156_out	(core_clk156_out),
 		.resetdone		(resetdone));
    
-  defparam DUT.xphy_block.EXAMPLE_SIM_GTRESET_SPEEDUP = "TRUE"; 
+  defparam DUT.EXAMPLE_SIM_GTRESET_SPEEDUP = "TRUE"; 
 
   assign signal_detect = 1'b1;
   assign tx_fault = 1'b0;
