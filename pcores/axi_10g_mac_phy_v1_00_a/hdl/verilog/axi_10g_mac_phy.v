@@ -45,6 +45,7 @@
 // Code:
 module axi_10g_mac_phy (/*AUTOARG*/
    // Outputs
+   xgmii_txd_dbg, xgmii_txc_dbg, xgmii_rxd_dbg, xgmii_rxc_dbg,
    xgmacint, txp, txn, tx_disable, tx_axis_tready, sfp_rs,
    rx_axis_tvalid, rx_axis_tuser, rx_axis_tlast, rx_axis_tkeep,
    rx_axis_tdata, resetdone, ip2bus_wrack, ip2bus_rdack, ip2bus_error,
@@ -101,6 +102,10 @@ module axi_10g_mac_phy (/*AUTOARG*/
    output		txn;			// From xphy_block of xphy_block.v
    output		txp;			// From xphy_block of xphy_block.v
    output		xgmacint;		// From xgmac of xgmac.v
+   output [7:0]		xgmii_rxc_dbg;		// From xphy_int of xphy_int.v
+   output [63:0]	xgmii_rxd_dbg;		// From xphy_int of xphy_int.v
+   output [7:0]		xgmii_txc_dbg;		// From xphy_int of xphy_int.v
+   output [63:0]	xgmii_txd_dbg;		// From xphy_int of xphy_int.v
    // End of automatics
 
    /*AUTOWIRE*/
@@ -295,6 +300,10 @@ module axi_10g_mac_phy (/*AUTOARG*/
 		.xgmii_txc_int		(xgmii_txc_int[7:0]),
 		.xgmii_rxd		(xgmii_rxd[63:0]),
 		.xgmii_rxc		(xgmii_rxc[7:0]),
+		.xgmii_txd_dbg		(xgmii_txd_dbg[63:0]),
+		.xgmii_rxd_dbg		(xgmii_rxd_dbg[63:0]),
+		.xgmii_txc_dbg		(xgmii_txc_dbg[7:0]),
+		.xgmii_rxc_dbg		(xgmii_rxc_dbg[7:0]),
 		.rx_dcm_lock		(rx_dcm_lock),
 		.tx_dcm_lock		(tx_dcm_lock),
 		.prtad			(prtad[4:0]),

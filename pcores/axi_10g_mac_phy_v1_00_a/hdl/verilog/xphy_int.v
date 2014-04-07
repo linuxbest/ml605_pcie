@@ -47,7 +47,8 @@ module xphy_int (/*AUTOARG*/
    // Outputs
    areset, dclk_reset, resetdone, core_clk156_out, core_reset_tx,
    txreset322, rxreset322, xgmii_txd_int, xgmii_txc_int, xgmii_rxd,
-   xgmii_rxc, rx_dcm_lock, tx_dcm_lock, prtad, training_enable,
+   xgmii_rxc, xgmii_txd_dbg, xgmii_rxd_dbg, xgmii_txc_dbg,
+   xgmii_rxc_dbg, rx_dcm_lock, tx_dcm_lock, prtad, training_enable,
    training_addr, training_rnw, training_wrdata, training_ipif_cs,
    training_drp_cs, an_enable, tx_ifg_delay, sfp_rs,
    // Inputs
@@ -165,6 +166,22 @@ module xphy_int (/*AUTOARG*/
 	xgmii_rxc     <= #1 xgmii_rxc_int;
      end
 
+   output [63:0] xgmii_txd_dbg;
+   output [63:0] xgmii_rxd_dbg;
+   output [7:0]  xgmii_txc_dbg;
+   output [7:0]  xgmii_rxc_dbg;
+   reg [63:0] xgmii_txd_dbg;
+   reg [63:0] xgmii_rxd_dbg;
+   reg [7:0]  xgmii_txc_dbg;
+   reg [7:0]  xgmii_rxc_dbg;
+   always @(posedge clk156)
+     begin
+	xgmii_txd_dbg <= #1 xgmii_txd;
+	xgmii_txc_dbg <= #1 xgmii_txc;
+	xgmii_rxd_dbg <= #1 xgmii_rxd_int;
+	xgmii_rxc_dbg <= #1 xgmii_rxc_int;	
+     end
+   
    output rx_dcm_lock;
    output tx_dcm_lock;
    assign rx_dcm_lock = rx_resetdone;

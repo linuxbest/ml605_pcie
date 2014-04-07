@@ -51,7 +51,8 @@ module xgmac_dut (/*AUTOARG*/
    // Inputs
    ip2bus_data, ip2bus_error, ip2bus_rdack, ip2bus_wrack,
    core_clk156_out, resetdone, rx_axis_tready, rx_axis_tuser,
-   xgmacint, core_status
+   xgmacint, core_status, xgmii_txd_dbg, xgmii_rxd_dbg, xgmii_txc_dbg,
+   xgmii_rxc_dbg
    );
 
    input [31:0] ip2bus_data;
@@ -90,6 +91,12 @@ module xgmac_dut (/*AUTOARG*/
 
    input 	 xgmacint;
    input [7:0] 	 core_status;
+
+
+   input [63:0]  xgmii_txd_dbg;
+   input [63:0]  xgmii_rxd_dbg;
+   input [7:0] 	 xgmii_txc_dbg; 
+   input [7:0] 	 xgmii_rxc_dbg;  
 endmodule
 // 
 // xgmac_dut.v ends here
