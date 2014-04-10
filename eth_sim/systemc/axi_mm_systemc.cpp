@@ -235,10 +235,66 @@ void axi_mm_systemc::axi_intr(void)
 
 void axi_mm_systemc::bram_mem_porta(void)
 {
+	uint32_t val, rval;
+	uint32_t addr;
+	uint32_t we;
+
+	if (BRAM_En_A.read() == 0) 
+		return;
+
+	addr = BRAM_Addr_A.read();
+	addr &= (mem_size-1);
+
+	val  = BRAM_WrData_A.read();
+	we   = BRAM_WE_B.read();
+
+	if (we & 1)
+		mem0[addr+3] = val >> 0;
+	if (we & 2)
+		mem0[addr+2] = val >> 8;
+	if (we & 4)
+		mem0[addr+1] = val >> 16;
+	if (we & 8)
+		mem0[addr+0] = val >> 24;
+
+	rval =  (mem0[addr+3] << 0 ) |
+		(mem0[addr+2] << 8 ) |
+		(mem0[addr+1] << 16) |
+		(mem0[addr+0] << 24);
+
+	BRAM_RdData_A.write(rval);
 }
 
 void axi_mm_systemc::bram_mem_portb(void)
 {
+	uint32_t val, rval;
+	uint32_t addr;
+	uint32_t we;
+
+	if (BRAM_En_B.read() == 0) 
+		return;
+
+	addr = BRAM_Addr_B.read();
+	addr &= (mem_size-1);
+
+	val  = BRAM_WrData_B.read();
+	we   = BRAM_WE_B.read();
+
+	if (we & 1)
+		mem0[addr+3] = val >> 0;
+	if (we & 2)
+		mem0[addr+2] = val >> 8;
+	if (we & 4)
+		mem0[addr+1] = val >> 16;
+	if (we & 8)
+		mem0[addr+0] = val >> 24;
+
+	rval =  (mem0[addr+3] << 0 ) |
+		(mem0[addr+2] << 8 ) |
+		(mem0[addr+1] << 16) |
+		(mem0[addr+0] << 24);
+
+	BRAM_RdData_B.write(rval);
 }
 
 SC_MODULE_EXPORT(axi_mm_systemc);

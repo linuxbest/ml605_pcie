@@ -20,16 +20,16 @@ vcom -work axi_systemc_v1_00_a ../../pcores/axi_systemc_v1_00_a/hdl/vhdl/wr_chnl
 vcom -work axi_systemc_v1_00_a ../../pcores/axi_systemc_v1_00_a/hdl/vhdl/full_axi.vhd
 vcom -work axi_systemc_v1_00_a ../../pcores/axi_systemc_v1_00_a/hdl/vhdl/axi_bram_ctrl.vhd
 
-#sccom -work axi_systemc_v1_00_a -ggdb -I ../../systemc/ ../../systemc/axi_mm_systemc.cpp
-
-sccom -work work -ggdb -I ../../systemc/ ../../systemc/axi_mm_systemc.cpp
+# todo, try to figure out why need compile two times.
+sccom -work axi_systemc_v1_00_a -ggdb -I ../../systemc/ ../../systemc/axi_mm_systemc.cpp
+#sccom -work work -ggdb -I ../../systemc/ ../../systemc/axi_mm_systemc.cpp
 
 sccom -ggdb ../../systemc/osChip.c
 sccom -ggdb ../../systemc/xaxidma_bd.c
 sccom -ggdb ../../systemc/xaxidma.c
 sccom -ggdb ../../systemc/xaxidma_bdring.c
 
-sccom -link
+sccom -link -lib axi_systemc_v1_00_a
 
 s
 w

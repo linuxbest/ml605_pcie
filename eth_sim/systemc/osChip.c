@@ -12,6 +12,8 @@
 #include "xaxidma_bdring.h"
 #include "xdebug.h"
 
+#include "axi_mm_systemc.h"
+
 typedef uint32_t __le32;
 
 //#include "mu_hw.h"
@@ -29,7 +31,7 @@ typedef uint32_t __le32;
 FILE *tfile;
 FILE *sfile;
 
-unsigned char *base0;
+unsigned char *mem0;
 size_t mem_size;
 
 static int rdma_test(uint32_t base);
@@ -119,7 +121,7 @@ int osChip_init(uint32_t base)
 {
 	int err = 0;
 	mem_size = 32*1024*1024;
-	base0 = (unsigned char*)memalign(mem_size, mem_size);
+	mem0 = (unsigned char*)memalign(mem_size, mem_size);
 	tfile = fopen("rdma.log", "w+b");
 
 	axi_dma_device *dma_dev;
@@ -129,7 +131,7 @@ int osChip_init(uint32_t base)
 	long diff, msec, kbyte_per_sec;
 
 	/*Probe       */
-	dma_dev = (axi_dma_device *)(base0 + 0x7000000);
+	dma_dev = (axi_dma_device *)(mem0 + 0x7000000);
 
 	dma_dev->axi_base = base/*bar0 addr*/;
 	dma_dev->axi_len = 0x10000/*bar0 len*/;
@@ -201,23 +203,23 @@ static int axi_dma_mem_alloc(struct axi_dma_device *dma_dev)
 	/* Setup Tx BD size  base addr 0x1010000*/
 	Bdsize = XAxiDma_mBdRingMemCalc(XAXIDMA_BD_MINIMUM_ALIGNMENT,TX_BD_CNT);
 	
-	dma_dev->tx_desc_virt = (u32 *) (base0 + 0x1010000);
+	dma_dev->tx_desc_virt = (u32 *) (mem0 + 0x1010000);
 	printf("dma_dev->tx_desc_virt : %x\n", dma_dev->tx_desc_virt);
 	dma_dev->tx_desc_size = Bdsize;
 
 	/* Setup Rx BD size  base addr 0x1020000*/
 	Bdsize = XAxiDma_mBdRingMemCalc(XAXIDMA_BD_MINIMUM_ALIGNMENT,RX_BD_CNT);
 	dma_dev->rx_desc_size = Bdsize;
-	dma_dev->rx_desc_virt = (u32 *) (base0 + 0x1020000);
+	dma_dev->rx_desc_virt = (u32 *) (mem0 + 0x1020000);
 	printf("dma_dev->rx_desc_virt : %x\n", dma_dev->rx_desc_virt);
 	
-	dma_dev->tx_desc_phys = dma_dev->tx_desc_virt - (u32 *)base0;
-	dma_dev->rx_desc_phys = dma_dev->rx_desc_virt - (u32 *)base0;
+	dma_dev->tx_desc_phys = dma_dev->tx_desc_virt - (u32 *)mem0;
+	dma_dev->rx_desc_phys = dma_dev->rx_desc_virt - (u32 *)mem0;
 
 	/*Alloc page for RX data base_offset 0x200000*/
 	page_dst = dma_dev->page_dst;
 	for (i = 0 ; i < RX_BD_CNT; i++) {
-		page_dst[i] = (u32 *) (base0 + 0x200000 + i*0x1000);
+		page_dst[i] = (u32 *) (mem0 + 0x200000 + i*0x1000);
 		printf("page_dst [%d]: %x\n", i, page_dst[i]);
 	}
 	for (i = 0 ; i < RX_BD_CNT; i++) {
@@ -225,14 +227,14 @@ static int axi_dma_mem_alloc(struct axi_dma_device *dma_dev)
 		for (j = 0; j < SIZE; j++) {
 			ptr[j] = 0xff;
 		}	
-		dma_dev->dma_dst[i] = ((u32)dma_dev -> page_dst[i] - (u32)base0); 
+		dma_dev->dma_dst[i] = ((u32)dma_dev -> page_dst[i] - (u32)mem0); 
 		printf("dma_dev->dma_dst [%d]: %x\n", i,  dma_dev->dma_dst[i]);
 	}
 	
 	/*Alloc page for TX data base_offset 0x100000*/
 	page_src = dma_dev->page_src;
 	for (i = 0 ; i < RX_BD_CNT; i++) {
-		page_src[i] = (u32 *) (base0 + 0x100000 + i*0x1000);
+		page_src[i] = (u32 *) (mem0 + 0x100000 + i*0x1000);
 		printf("page_src [%d]: %x\n", i, page_src[i]);
 	}
 	for (i = 0 ; i < TX_BD_CNT; i++) {
@@ -240,7 +242,7 @@ static int axi_dma_mem_alloc(struct axi_dma_device *dma_dev)
 		for (j = 0; j < SIZE; j++) {
 			ptr[j] = j;
 		}	
-		dma_dev->dma_src[i] = ((u32)dma_dev -> page_src[i] - (u32)base0); 
+		dma_dev->dma_src[i] = ((u32)dma_dev -> page_src[i] - (u32)mem0); 
 		printf("dma_dev->dma_src [%d]: %x\n", i,  dma_dev->dma_src[i]);
 	}
 	return 0;
