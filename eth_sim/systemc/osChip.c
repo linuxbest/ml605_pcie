@@ -204,17 +204,19 @@ static int axi_dma_mem_alloc(struct axi_dma_device *dma_dev)
 	Bdsize = XAxiDma_mBdRingMemCalc(XAXIDMA_BD_MINIMUM_ALIGNMENT,TX_BD_CNT);
 	
 	dma_dev->tx_desc_virt = (u32 *) (mem0 + 0x1010000);
-	printf("dma_dev->tx_desc_virt : %x\n", dma_dev->tx_desc_virt);
 	dma_dev->tx_desc_size = Bdsize;
 
 	/* Setup Rx BD size  base addr 0x1020000*/
 	Bdsize = XAxiDma_mBdRingMemCalc(XAXIDMA_BD_MINIMUM_ALIGNMENT,RX_BD_CNT);
 	dma_dev->rx_desc_size = Bdsize;
 	dma_dev->rx_desc_virt = (u32 *) (mem0 + 0x1020000);
-	printf("dma_dev->rx_desc_virt : %x\n", dma_dev->rx_desc_virt);
 	
-	dma_dev->tx_desc_phys = dma_dev->tx_desc_virt - (u32 *)mem0;
-	dma_dev->rx_desc_phys = dma_dev->rx_desc_virt - (u32 *)mem0;
+	dma_dev->tx_desc_phys = (char *)dma_dev->tx_desc_virt - (char *)mem0;
+	dma_dev->rx_desc_phys = (char *)dma_dev->rx_desc_virt - (char *)mem0;
+	printf("dma_dev->tx_desc_virt : %x, phy %x\n", dma_dev->tx_desc_virt,
+			dma_dev->tx_desc_phys);
+	printf("dma_dev->rx_desc_virt : %x, phy %x\n", dma_dev->rx_desc_virt,
+			dma_dev->rx_desc_phys);
 
 	/*Alloc page for RX data base_offset 0x200000*/
 	page_dst = dma_dev->page_dst;
@@ -383,11 +385,11 @@ static int RxSetup(struct axi_dma_device *dma_dev)
 		XAxiDma_BdSetCtrl(BdCurPtr, RingIndex);
 
 		XAxiDma_BdSetId(BdCurPtr, RxBufferPtr);
+		
+		XAxiDma_DumpBd(BdCurPtr);
 
 		RxBufferPtr = dma_dev->dma_dst[Index + 1];
 		BdCurPtr = XAxiDma_mBdRingNext(RxRingPtr, BdCurPtr);
-		
-		XAxiDma_DumpBd(BdCurPtr);
 	}
 
 	/*

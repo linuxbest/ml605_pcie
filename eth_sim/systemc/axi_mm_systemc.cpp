@@ -249,18 +249,18 @@ void axi_mm_systemc::bram_mem_porta(void)
 	we   = BRAM_WE_B.read();
 
 	if (we & 1)
-		mem0[addr+3] = val >> 0;
+		mem0[addr+0] = val >> 0;
 	if (we & 2)
-		mem0[addr+2] = val >> 8;
+		mem0[addr+1] = val >> 8;
 	if (we & 4)
-		mem0[addr+1] = val >> 16;
+		mem0[addr+2] = val >> 16;
 	if (we & 8)
-		mem0[addr+0] = val >> 24;
+		mem0[addr+3] = val >> 24;
 
-	rval =  (mem0[addr+3] << 0 ) |
-		(mem0[addr+2] << 8 ) |
-		(mem0[addr+1] << 16) |
-		(mem0[addr+0] << 24);
+	rval =  (mem0[addr+0] << 0 ) |
+		(mem0[addr+1] << 8 ) |
+		(mem0[addr+2] << 16) |
+		(mem0[addr+3] << 24);
 
 	BRAM_RdData_A.write(rval);
 }
@@ -281,18 +281,18 @@ void axi_mm_systemc::bram_mem_portb(void)
 	we   = BRAM_WE_B.read();
 
 	if (we & 1)
-		mem0[addr+3] = val >> 0;
+		mem0[addr+0] = val >> 0;
 	if (we & 2)
-		mem0[addr+2] = val >> 8;
+		mem0[addr+1] = val >> 8;
 	if (we & 4)
-		mem0[addr+1] = val >> 16;
+		mem0[addr+2] = val >> 16;
 	if (we & 8)
-		mem0[addr+0] = val >> 24;
+		mem0[addr+3] = val >> 24;
 
-	rval =  (mem0[addr+3] << 0 ) |
-		(mem0[addr+2] << 8 ) |
-		(mem0[addr+1] << 16) |
-		(mem0[addr+0] << 24);
+	rval =  (mem0[addr+0] << 0 ) |
+		(mem0[addr+1] << 8 ) |
+		(mem0[addr+2] << 16) |
+		(mem0[addr+3] << 24);
 
 	BRAM_RdData_B.write(rval);
 }
