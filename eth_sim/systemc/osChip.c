@@ -180,7 +180,7 @@ int osChip_init(uint32_t base)
 		unsigned long flags;
 
 		/* Send a packet */
-		//err = SendPacket(dma_dev);
+		err = SendPacket(dma_dev);
 		
 		if (err != XST_SUCCESS) {
 			printf("Failed send packet %d\n", i);
