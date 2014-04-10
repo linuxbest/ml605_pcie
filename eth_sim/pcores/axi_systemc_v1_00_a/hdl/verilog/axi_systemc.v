@@ -62,7 +62,7 @@ module axi_systemc (/*AUTOARG*/
    s_axi_arburst, s_axi_araddr, m_axi_wready, m_axi_rvalid,
    m_axi_rresp, m_axi_rlast, m_axi_rdata, m_axi_bvalid, m_axi_bresp,
    m_axi_awready, m_axi_arready, interrupt, axi_aresetn, axi_aclk,
-   S_AXI_ARESETN, S_AXI_ACLK, s_axi_awregion, s_axi_arregion
+   s_axi_awregion, s_axi_arregion
    );
    parameter C_INSTANCE         = "";
    parameter C_FAMILY           = "";
@@ -75,20 +75,18 @@ module axi_systemc (/*AUTOARG*/
    parameter C_BASEADDR         = 32'h00000000;
    parameter C_HIGHADDR         = 32'h01FFFFFF;
 
-   parameter C_S_AXI_PROTOCOL        = "axi4";
+   parameter C_S_AXI_PROTOCOL        = "AXI4";
    parameter C_SINGLE_PORT_BRAM      = 0;
    parameter C_S_AXI_CTRL_ADDR_WIDTH = 32;
    parameter C_S_AXI_CTRL_DATA_WIDTH = 32;
    parameter C_ECC                   = 0;
    parameter C_FAULT_INJECT          = 0;
-   parameter C_ECC_ONOFF_RESET_VALUE = 0;
+   parameter C_ECC_ONOFF_RESET_VALUE = 1;
    
    /*AUTOINPUT*/
    // Beginning of automatic inputs (from unused autoinst inputs)
-   input		S_AXI_ACLK;		// To axi_bram_ctrl of axi_bram_ctrl.v
-   input		S_AXI_ARESETN;		// To axi_bram_ctrl of axi_bram_ctrl.v
-   input		axi_aclk;		// To axi_mm_systemc of axi_mm_systemc.v
-   input		axi_aresetn;		// To axi_mm_systemc of axi_mm_systemc.v
+   input		axi_aclk;		// To axi_mm_systemc of axi_mm_systemc.v, ...
+   input		axi_aresetn;		// To axi_mm_systemc of axi_mm_systemc.v, ...
    input		interrupt;		// To axi_mm_systemc of axi_mm_systemc.v
    input		m_axi_arready;		// To axi_mm_systemc of axi_mm_systemc.v
    input		m_axi_awready;		// To axi_mm_systemc of axi_mm_systemc.v
@@ -237,6 +235,8 @@ module axi_systemc (/*AUTOARG*/
 
 
    /* axi_bram_ctrl AUTO_TEMPLATE (
+    .S_AXI_ACLK        (axi_aclk),
+    .S_AXI_ARESETN     (axi_aresetn),
     .ECC\(.*\)         (),
     .S_AXI_CTRL_\(.*\) (),
     .S_AXI_AWID(s_axi_awid[]),
@@ -326,8 +326,8 @@ module axi_systemc (/*AUTOARG*/
       .BRAM_Addr_B			(BRAM_Addr_B[C_S_AXI_ADDR_WIDTH-1:0]),
       .BRAM_WrData_B			(BRAM_WrData_B[C_S_AXI_DATA_WIDTH+C_ECC*8*(1+(C_S_AXI_DATA_WIDTH/128))-1:0]),
       // Inputs
-      .S_AXI_ACLK			(S_AXI_ACLK),
-      .S_AXI_ARESETN			(S_AXI_ARESETN),
+      .S_AXI_ACLK			(axi_aclk),		 // Templated
+      .S_AXI_ARESETN			(axi_aresetn),		 // Templated
       .S_AXI_AWID			(s_axi_awid[C_S_AXI_ID_WIDTH-1:0]), // Templated
       .S_AXI_AWADDR			(s_axi_awaddr[C_S_AXI_ADDR_WIDTH-1:0]), // Templated
       .S_AXI_AWLEN			(s_axi_awlen[7:0]),	 // Templated
