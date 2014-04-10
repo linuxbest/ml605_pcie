@@ -1,6 +1,7 @@
 
 if { [info exists PathSeparator] } { set ps $PathSeparator } else { set ps "/" }
 if { ![info exists dmapath] } { set scpath "/system_tb${ps}dut${ps}axi_systemc_0${ps}axi_systemc_0" }
+if { ![info exists dmapath] } { set txpath "/system_tb/dut/ETHERNET/ETHERNET/I_EMBEDDED_TOP/TX_INTFCE_I/GEN_TXDIF_MEM_PARAM_V6V7A7K7CLIENT8/GEN_TXCIF_MEM_PARAM_V6V7A7K7" }
 
 set binopt {-logic}
 set hexopt {-literal -hex}
@@ -68,6 +69,98 @@ eval add wave -noupdate $hexopt $scpath${ps}BRAM_Addr_B
 eval add wave -noupdate $binopt $scpath${ps}BRAM_WE_B
 eval add wave -noupdate $hexopt $scpath${ps}BRAM_WrData_B
 eval add wave -noupdate $hexopt $scpath${ps}BRAM_RdData_B
+
+eval add wave -noupdate -divider {"ethernet tx stream if"}
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}reset2axi_str_txd
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}AXI_STR_TXD_ACLK
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}AXI_STR_TXD_TVALID
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}AXI_STR_TXD_TREADY
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}AXI_STR_TXD_TLAST
+eval add wave -noupdate $hexopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}AXI_STR_TXD_TSTRB
+eval add wave -noupdate $hexopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}AXI_STR_TXD_TDATA
+
+eval add wave -noupdate $hexopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}Axi_Str_TxD_2_Mem_Din
+eval add wave -noupdate $hexopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}Axi_Str_TxD_2_Mem_Addr
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}Axi_Str_TxD_2_Mem_En
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}Axi_Str_TxD_2_Mem_We
+eval add wave -noupdate $hexopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}Axi_Str_TxD_2_Mem_Dout
+
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}reset2axi_str_txc
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}AXI_STR_TXC_ACLK
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}AXI_STR_TXC_TVALID
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}AXI_STR_TXC_TREADY
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}AXI_STR_TXC_TLAST
+eval add wave -noupdate $hexopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}AXI_STR_TXC_TSTRB
+eval add wave -noupdate $hexopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}AXI_STR_TXC_TDATA
+
+eval add wave -noupdate $hexopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}Axi_Str_TxC_2_Mem_Din
+eval add wave -noupdate $hexopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}Axi_Str_TxC_2_Mem_Addr
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}Axi_Str_TxC_2_Mem_En
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}Axi_Str_TxC_2_Mem_We
+eval add wave -noupdate $hexopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}Axi_Str_TxC_2_Mem_Dout
+
+eval add wave -noupdate $hexopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}tx_vlan_bram_addr
+eval add wave -noupdate $hexopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}tx_vlan_bram_din
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}tx_vlan_bram_en
+
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}enable_newFncEn
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}transMode_cross
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}tagMode_cross
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}strpMode_cross
+
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}tpid0_cross
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}tpid1_cross
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}tpid2_cross
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}tpid3_cross
+
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}newTagData_cross
+eval add wave -noupdate $binopt $txpath${ps}TX_AXISTREAM_INTERFACE${ps}tx_init_in_prog
+
+eval add wave -noupdate -divider {"ethernet tx mem if"}
+eval add wave -noupdate $binopt $txpath${ps}TX_MEM_INTERFACE${ps}TX_CLIENT_CLK
+eval add wave -noupdate $binopt $txpath${ps}TX_MEM_INTERFACE${ps}reset2tx_client
+
+eval add wave -noupdate $hexopt $txpath${ps}TX_MEM_INTERFACE${ps}Tx_Client_TxD_2_Mem_Din
+eval add wave -noupdate $hexopt $txpath${ps}TX_MEM_INTERFACE${ps}Tx_Client_TxD_2_Mem_Addr
+eval add wave -noupdate $binopt $txpath${ps}TX_MEM_INTERFACE${ps}Tx_Client_TxD_2_Mem_En
+eval add wave -noupdate $binopt $txpath${ps}TX_MEM_INTERFACE${ps}Tx_Client_TxD_2_Mem_We
+eval add wave -noupdate $hexopt $txpath${ps}TX_MEM_INTERFACE${ps}Tx_Client_TxD_2_Mem_Dout
+
+eval add wave -noupdate $binopt $txpath${ps}TX_MEM_INTERFACE${ps}AXI_STR_TXD_ACLK
+eval add wave -noupdate $binopt $txpath${ps}TX_MEM_INTERFACE${ps}reset2axi_str_txd
+eval add wave -noupdate $hexopt $txpath${ps}TX_MEM_INTERFACE${ps}Axi_Str_TxD_2_Mem_Din
+eval add wave -noupdate $hexopt $txpath${ps}TX_MEM_INTERFACE${ps}Axi_Str_TxD_2_Mem_Addr
+eval add wave -noupdate $binopt $txpath${ps}TX_MEM_INTERFACE${ps}Axi_Str_TxD_2_Mem_En
+eval add wave -noupdate $binopt $txpath${ps}TX_MEM_INTERFACE${ps}Axi_Str_TxD_2_Mem_We
+eval add wave -noupdate $hexopt $txpath${ps}TX_MEM_INTERFACE${ps}Axi_Str_TxD_2_Mem_Dout
+
+eval add wave -noupdate $hexopt $txpath${ps}TX_MEM_INTERFACE${ps}Tx_Client_TxC_2_Mem_Din
+eval add wave -noupdate $hexopt $txpath${ps}TX_MEM_INTERFACE${ps}Tx_Client_TxC_2_Mem_Addr
+eval add wave -noupdate $binopt $txpath${ps}TX_MEM_INTERFACE${ps}Tx_Client_TxC_2_Mem_En
+eval add wave -noupdate $binopt $txpath${ps}TX_MEM_INTERFACE${ps}Tx_Client_TxC_2_Mem_We
+eval add wave -noupdate $hexopt $txpath${ps}TX_MEM_INTERFACE${ps}Tx_Client_TxC_2_Mem_Dout
+
+eval add wave -noupdate $binopt $txpath${ps}TX_MEM_INTERFACE${ps}AXI_STR_TXC_ACLK
+eval add wave -noupdate $binopt $txpath${ps}TX_MEM_INTERFACE${ps}reset2axi_str_txc
+eval add wave -noupdate $hexopt $txpath${ps}TX_MEM_INTERFACE${ps}Axi_Str_TxC_2_Mem_Din
+eval add wave -noupdate $hexopt $txpath${ps}TX_MEM_INTERFACE${ps}Axi_Str_TxC_2_Mem_Addr
+eval add wave -noupdate $binopt $txpath${ps}TX_MEM_INTERFACE${ps}Axi_Str_TxC_2_Mem_En
+eval add wave -noupdate $binopt $txpath${ps}TX_MEM_INTERFACE${ps}Axi_Str_TxC_2_Mem_We
+eval add wave -noupdate $hexopt $txpath${ps}TX_MEM_INTERFACE${ps}Axi_Str_TxC_2_Mem_Dout
+
+eval add wave -noupdate -divider {"ethernet tx emac if"}
+eval add wave -noupdate $binopt $txpath${ps}TX_EMAC_INTERFACE${ps}tx_axi_clk
+eval add wave -noupdate $binopt $txpath${ps}TX_EMAC_INTERFACE${ps}tx_reset_out
+
+eval add wave -noupdate $hexopt $txpath${ps}TX_EMAC_INTERFACE${ps}tx_axis_mac_tdata
+eval add wave -noupdate $binopt $txpath${ps}TX_EMAC_INTERFACE${ps}tx_axis_mac_tvalid
+eval add wave -noupdate $binopt $txpath${ps}TX_EMAC_INTERFACE${ps}tx_axis_mac_tlast
+eval add wave -noupdate $binopt $txpath${ps}TX_EMAC_INTERFACE${ps}tx_axis_mac_tuser
+eval add wave -noupdate $binopt $txpath${ps}TX_EMAC_INTERFACE${ps}tx_axis_mac_tready
+eval add wave -noupdate $binopt $txpath${ps}TX_EMAC_INTERFACE${ps}tx_collision
+eval add wave -noupdate $binopt $txpath${ps}TX_EMAC_INTERFACE${ps}tx_retransmit
+eval add wave -noupdate $binopt $txpath${ps}TX_EMAC_INTERFACE${ps}tx_cmplt
+eval add wave -noupdate $binopt $txpath${ps}TX_EMAC_INTERFACE${ps}tx_init_in_prog_cross
 
 #  Wave window configuration information
 #
