@@ -11,11 +11,22 @@
  PARAMETER VERSION = 2.1.0
 
 
- PORT sm_fan_pwm_net_vcc = net_vcc, DIR = O
  PORT RESET = RESET, DIR = I, SIGIS = RST, RST_POLARITY = 1
  PORT CLK_P = CLK, DIR = I, DIFFERENTIAL_POLARITY = P, SIGIS = CLK, CLK_FREQ = 200000000
  PORT CLK_N = CLK, DIR = I, DIFFERENTIAL_POLARITY = N, SIGIS = CLK, CLK_FREQ = 200000000
 
+ PORT sfp_sgd = sfp_sgd, DIR = I
+ PORT sfp_txf = sfp_txf, DIR = I
+ PORT sfp_rs  = sfp_ss , DIR = I
+ PORT sfp_txd = sfp_txd, DIR = I
+
+ PORT txp = txp, DIR = O
+ PORT txn = txn, DIR = O
+ PORT rxp = rxp, DIR = I
+ PORT rxn = rxn, DIR = I
+
+ PORT refclk_p = refclk_p, DIR = I, SIGIS = CLK, CLK_FREQ = 156250000
+ PORT refclk_n = refclk_n, DIR = I
 
 BEGIN proc_sys_reset
  PARAMETER INSTANCE = proc_sys_reset_0
@@ -140,19 +151,41 @@ BEGIN axi_ethernet
  PORT AXI_STR_TXC_ACLK = clk_100_0000MHzPLLE0
  PORT AXI_STR_RXD_ACLK = clk_100_0000MHzPLLE0
  PORT AXI_STR_RXS_ACLK = clk_100_0000MHzPLLE0
- PORT AXI_STR_TXD_ARESETN = AXI_STR_TXD_ARESETN
- PORT AXI_STR_TXC_ARESETN = AXI_STR_TXC_ARESETN
- PORT AXI_STR_RXD_ARESETN = AXI_STR_RXD_ARESETN
- PORT AXI_STR_RXS_ARESETN = AXI_STR_RXS_ARESETN
-
  PORT S_AXI_ACLK = clk_100_0000MHzPLLE0
 
  PORT rx_mac_aclk = clk_125_0000MHz
  PORT rx_reset    = proc_sys_reset_0_BUS_STRUCT_RESET
- 
  PORT tx_mac_aclk = clk_125_0000MHz
  PORT tx_reset    = proc_sys_reset_0_BUS_STRUCT_RESET
 
- BUS_INTERFACE AXI_MAC_TX = mac_axis
- BUS_INTERFACE AXI_MAC_RX = mac_axis
+ BUS_INTERFACE AXI_MAC_TX = mac_axis_tx
+ BUS_INTERFACE AXI_MAC_RX = mac_axis_rx
+END
+
+BEGIN axi_10gmacphy
+ PARAMETER INSTANCE = ten_mac_phy
+ PARAMETER HW_VER = 1.00.a
+
+ PORT refclk_p    = refclk_p
+ PORT refclk_n    = refclk_n
+
+ PORT signal_detect = sfp_sgd
+ PORT tx_fault      = sfp_txf
+ PORT sfp_rs        = sfp_rs
+ PORT tx_disable    = sfp_txd
+
+ PORT txp           = txp
+ PORT txn           = txn
+ PORT rxp           = rxp
+ PORT rxn           = rxn
+
+ PORT reset       = proc_sys_reset_0_BUS_STRUCT_RESET
+ 
+ PORT rx_mac_aclk = clk_125_0000MHz
+ PORT rx_reset    = proc_sys_reset_0_BUS_STRUCT_RESET
+ PORT tx_mac_aclk = clk_125_0000MHz
+ PORT tx_reset    = proc_sys_reset_0_BUS_STRUCT_RESET
+
+ BUS_INTERFACE AXI_MAC_TX = mac_axis_tx
+ BUS_INTERFACE AXI_MAC_RX = mac_axis_rx
 END
