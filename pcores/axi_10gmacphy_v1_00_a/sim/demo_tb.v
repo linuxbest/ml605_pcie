@@ -466,78 +466,87 @@ module demo_tb;
    wire [31:0]		bus2ip_data;		// From xgmac_dut of xgmac_dut.v
    wire			bus2ip_reset;		// From xgmac_dut of xgmac_dut.v
    wire			bus2ip_rnw;		// From xgmac_dut of xgmac_dut.v
-   wire [31:0]		ip2bus_data;		// From DUT of axi_10g_mac_phy.v
-   wire			ip2bus_error;		// From DUT of axi_10g_mac_phy.v
-   wire			ip2bus_rdack;		// From DUT of axi_10g_mac_phy.v
-   wire			ip2bus_wrack;		// From DUT of axi_10g_mac_phy.v
+   wire [31:0]		ip2bus_data;		// From DUT of axi_10gmacphy.v
+   wire			ip2bus_error;		// From DUT of axi_10gmacphy.v
+   wire			ip2bus_rdack;		// From DUT of axi_10gmacphy.v
+   wire			ip2bus_wrack;		// From DUT of axi_10gmacphy.v
    wire			rx_axis_aresetn;	// From xgmac_dut of xgmac_dut.v
-   wire [63:0]		rx_axis_tdata;		// From DUT of axi_10g_mac_phy.v
-   wire [7:0]		rx_axis_tkeep;		// From DUT of axi_10g_mac_phy.v
-   wire			rx_axis_tlast;		// From DUT of axi_10g_mac_phy.v
+   wire [63:0]		rx_axis_tdata;		// From DUT of axi_10gmacphy.v
+   wire [7:0]		rx_axis_tkeep;		// From DUT of axi_10gmacphy.v
+   wire			rx_axis_tlast;		// From DUT of axi_10gmacphy.v
    wire			rx_axis_tready;		// From xgmac_address_swap of xgmac_address_swap.v
-   wire			rx_axis_tuser;		// From DUT of axi_10g_mac_phy.v
-   wire			rx_axis_tvalid;		// From DUT of axi_10g_mac_phy.v
+   wire			rx_axis_tuser;		// From DUT of axi_10gmacphy.v
+   wire			rx_axis_tvalid;		// From DUT of axi_10gmacphy.v
    wire			rx_clk;			// From xgmac_dut of xgmac_dut.v
-   wire			sfp_rs;			// From DUT of axi_10g_mac_phy.v
+   wire			rx_mac_aclk;		// From DUT of axi_10gmacphy.v
+   wire			rx_reset;		// From DUT of axi_10gmacphy.v
+   wire			sfp_rs;			// From DUT of axi_10gmacphy.v
    wire			tx_axis_aresetn;	// From xgmac_dut of xgmac_dut.v
    wire [63:0]		tx_axis_tdata;		// From xgmac_address_swap of xgmac_address_swap.v
    wire [7:0]		tx_axis_tkeep;		// From xgmac_address_swap of xgmac_address_swap.v
    wire			tx_axis_tlast;		// From xgmac_address_swap of xgmac_address_swap.v
-   wire			tx_axis_tready;		// From DUT of axi_10g_mac_phy.v
+   wire			tx_axis_tready;		// From DUT of axi_10gmacphy.v
    wire [127:0]		tx_axis_tuser;		// From xgmac_dut of xgmac_dut.v
    wire			tx_axis_tvalid;		// From xgmac_address_swap of xgmac_address_swap.v
-   wire			xgmacint;		// From DUT of axi_10g_mac_phy.v
-   wire [7:0]		xgmii_rxc_dbg;		// From DUT of axi_10g_mac_phy.v
-   wire [63:0]		xgmii_rxd_dbg;		// From DUT of axi_10g_mac_phy.v
-   wire [7:0]		xgmii_txc_dbg;		// From DUT of axi_10g_mac_phy.v
-   wire [63:0]		xgmii_txd_dbg;		// From DUT of axi_10g_mac_phy.v
+   wire			tx_mac_aclk;		// From DUT of axi_10gmacphy.v
+   wire			tx_reset;		// From DUT of axi_10gmacphy.v
+   wire			xgmacint;		// From DUT of axi_10gmacphy.v
+   wire [7:0]		xgmii_rxc_dbg;		// From DUT of axi_10gmacphy.v
+   wire [63:0]		xgmii_rxd_dbg;		// From DUT of axi_10gmacphy.v
+   wire [7:0]		xgmii_txc_dbg;		// From DUT of axi_10gmacphy.v
+   wire [63:0]		xgmii_txd_dbg;		// From DUT of axi_10gmacphy.v
    // End of automatics
    
   axi_10gmacphy DUT (/*AUTOINST*/
-		       // Outputs
-		       .core_clk156_out	(core_clk156_out),
-		       .core_status	(core_status[7:0]),
-		       .ip2bus_data	(ip2bus_data[31:0]),
-		       .ip2bus_error	(ip2bus_error),
-		       .ip2bus_rdack	(ip2bus_rdack),
-		       .ip2bus_wrack	(ip2bus_wrack),
-		       .resetdone	(resetdone),
-		       .rx_axis_tdata	(rx_axis_tdata[63:0]),
-		       .rx_axis_tkeep	(rx_axis_tkeep[7:0]),
-		       .rx_axis_tlast	(rx_axis_tlast),
-		       .rx_axis_tuser	(rx_axis_tuser),
-		       .rx_axis_tvalid	(rx_axis_tvalid),
-		       .sfp_rs		(sfp_rs),
-		       .tx_axis_tready	(tx_axis_tready),
-		       .tx_disable	(tx_disable),
-		       .txn		(txn),
-		       .txp		(txp),
-		       .xgmacint	(xgmacint),
-		       .xgmii_rxc_dbg	(xgmii_rxc_dbg[7:0]),
-		       .xgmii_rxd_dbg	(xgmii_rxd_dbg[63:0]),
-		       .xgmii_txc_dbg	(xgmii_txc_dbg[7:0]),
-		       .xgmii_txd_dbg	(xgmii_txd_dbg[63:0]),
-		       // Inputs
-		       .bus2ip_addr	(bus2ip_addr[10:0]),
-		       .bus2ip_clk	(bus2ip_clk),
-		       .bus2ip_cs	(bus2ip_cs),
-		       .bus2ip_data	(bus2ip_data[31:0]),
-		       .bus2ip_reset	(bus2ip_reset),
-		       .bus2ip_rnw	(bus2ip_rnw),
-		       .refclk_n	(refclk_n),
-		       .refclk_p	(refclk_p),
-		       .reset		(reset),
-		       .rx_axis_aresetn	(rx_axis_aresetn),
-		       .rxn		(rxn),
-		       .rxp		(rxp),
-		       .signal_detect	(signal_detect),
-		       .tx_axis_aresetn	(tx_axis_aresetn),
-		       .tx_axis_tdata	(tx_axis_tdata[63:0]),
-		       .tx_axis_tkeep	(tx_axis_tkeep[7:0]),
-		       .tx_axis_tlast	(tx_axis_tlast),
-		       .tx_axis_tuser	(tx_axis_tuser[127:0]),
-		       .tx_axis_tvalid	(tx_axis_tvalid),
-		       .tx_fault	(tx_fault));
+		     // Outputs
+		     .core_clk156_out	(core_clk156_out),
+		     .core_status	(core_status[7:0]),
+		     .ip2bus_data	(ip2bus_data[31:0]),
+		     .ip2bus_error	(ip2bus_error),
+		     .ip2bus_rdack	(ip2bus_rdack),
+		     .ip2bus_wrack	(ip2bus_wrack),
+		     .resetdone		(resetdone),
+		     .rx_axis_tdata	(rx_axis_tdata[63:0]),
+		     .rx_axis_tkeep	(rx_axis_tkeep[7:0]),
+		     .rx_axis_tlast	(rx_axis_tlast),
+		     .rx_axis_tuser	(rx_axis_tuser),
+		     .rx_axis_tvalid	(rx_axis_tvalid),
+		     .rx_mac_aclk	(rx_mac_aclk),
+		     .rx_reset		(rx_reset),
+		     .sfp_rs		(sfp_rs),
+		     .tx_axis_tready	(tx_axis_tready),
+		     .tx_disable	(tx_disable),
+		     .tx_mac_aclk	(tx_mac_aclk),
+		     .tx_reset		(tx_reset),
+		     .txn		(txn),
+		     .txp		(txp),
+		     .xgmacint		(xgmacint),
+		     .xgmii_rxc_dbg	(xgmii_rxc_dbg[7:0]),
+		     .xgmii_rxd_dbg	(xgmii_rxd_dbg[63:0]),
+		     .xgmii_txc_dbg	(xgmii_txc_dbg[7:0]),
+		     .xgmii_txd_dbg	(xgmii_txd_dbg[63:0]),
+		     // Inputs
+		     .bus2ip_addr	(bus2ip_addr[10:0]),
+		     .bus2ip_clk	(bus2ip_clk),
+		     .bus2ip_cs		(bus2ip_cs),
+		     .bus2ip_data	(bus2ip_data[31:0]),
+		     .bus2ip_reset	(bus2ip_reset),
+		     .bus2ip_rnw	(bus2ip_rnw),
+		     .refclk_n		(refclk_n),
+		     .refclk_p		(refclk_p),
+		     .reset		(reset),
+		     .rx_axis_aresetn	(rx_axis_aresetn),
+		     .rx_axis_tready	(rx_axis_tready),
+		     .rxn		(rxn),
+		     .rxp		(rxp),
+		     .signal_detect	(signal_detect),
+		     .tx_axis_aresetn	(tx_axis_aresetn),
+		     .tx_axis_tdata	(tx_axis_tdata[63:0]),
+		     .tx_axis_tkeep	(tx_axis_tkeep[7:0]),
+		     .tx_axis_tlast	(tx_axis_tlast),
+		     .tx_axis_tuser	(tx_axis_tuser[127:0]),
+		     .tx_axis_tvalid	(tx_axis_tvalid),
+		     .tx_fault		(tx_fault));
 
   xgmac_address_swap
     xgmac_address_swap (/*AUTOINST*/

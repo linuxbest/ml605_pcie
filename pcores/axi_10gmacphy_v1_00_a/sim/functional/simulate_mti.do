@@ -46,8 +46,8 @@
 vlib work
 vmap work work
 vlog -work work \
-  ../../netlist/xphy.v \
-  ../../netlist/xgmac.v \
+  ../../hdl/verilog/xphy.v \
+  ../../hdl/verilog/xgmac.v \
   ../../hdl/verilog/gtx/xphy_gt_usrclk_source.v \
   ../../hdl/verilog/gtx/xphy_gtwizard_10gbaser.v \
   ../../hdl/verilog/gtx/xphy_gtwizard_10gbaser_gt.v \
@@ -55,7 +55,7 @@ vlog -work work \
   ../../hdl/verilog/xphy_block.v \
   ../../hdl/verilog/xphy_int.v \
   ../../hdl/verilog/xgmac_int.v \
-  ../../hdl/verilog/axi_10g_mac_phy.v \
+  ../../hdl/verilog/axi_10gmacphy.v \
   ../demo_tb.v \
   ../xgmac_address_swap.v \
   ../xgmac_dut.v
