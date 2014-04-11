@@ -152,7 +152,6 @@ BEGIN axi_ethernet
  PORT AXI_STR_RXD_ACLK = clk_100_0000MHzPLLE0
  PORT AXI_STR_RXS_ACLK = clk_100_0000MHzPLLE0
  PORT S_AXI_ACLK = clk_100_0000MHzPLLE0
-
  BUS_INTERFACE AXI_MAC_TX = mac_axis_tx
  BUS_INTERFACE AXI_MAC_RX = mac_axis_rx
 END
@@ -160,22 +159,20 @@ END
 BEGIN axi_10gmacphy
  PARAMETER INSTANCE = ten_mac_phy
  PARAMETER HW_VER = 1.00.a
-
- PORT refclk_p    = refclk_p
- PORT refclk_n    = refclk_n
-
+ PARAMETER EXAMPLE_SIM_GTRESET_SPEEDUP = TRUE
+ PORT refclk_p      = refclk_p
+ PORT refclk_n      = refclk_n
  PORT signal_detect = sfp_sgd
  PORT tx_fault      = sfp_txf
  PORT sfp_rs        = sfp_rs
  PORT tx_disable    = sfp_txd
-
  PORT txp           = txp
  PORT txn           = txn
  PORT rxp           = rxp
  PORT rxn           = rxn
-
- PORT reset       = proc_sys_reset_0_BUS_STRUCT_RESET
- 
+ PORT reset         = proc_sys_reset_0_BUS_STRUCT_RESET
+ PORT bus2ip_clk    = clk_100_0000MHzPLLE0
+ PORT bus2ip_reset  = proc_sys_reset_0_BUS_STRUCT_RESET
  BUS_INTERFACE AXI_MAC_TX = mac_axis_tx
  BUS_INTERFACE AXI_MAC_RX = mac_axis_rx
 END

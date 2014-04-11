@@ -229,8 +229,8 @@ module xphy_int (/*AUTOARG*/
    output rx_reset;
    assign tx_mac_aclk = clk156;
    assign rx_mac_aclk = clk156;
-   assign tx_reset    = core_reset_tx;
-   assign rx_reset    = core_reset_rx;
+   assign tx_reset    = reset;
+   assign rx_reset    = reset;
    /* TODO */
    input  rx_axis_tready;
 endmodule
