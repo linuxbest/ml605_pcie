@@ -59,11 +59,24 @@ PORT tx_disable    = "", DIR = O
 #PORT S_AXI_RVALID = RVALID, DIR = O, BUS = S_AXI
 #PORT S_AXI_RREADY = RREADY, DIR = I, BUS = S_AXI
 
+BUS_INTERFACE BUS = DEVICE_IF, BUS_TYPE = TARGET, BUS_STD = IPIF_IF
+PORT bus2ip_clk  = bus2ip_clk,     DIR = I, SIGIS = CLK
+PORT bus2ip_reset= bus2ip_reset,   DIR = I, SIGIS = CLK
+
+PORT bus2ip_addr = bus2ip_addr,    DIR = I, BUS = DEVICE_IF, VEC = [10:0], ENDIAN = LITTLE, INITIALVAL = GND
+PORT bus2ip_cs   = bus2ip_cs,      DIR = I, BUS = DEVICE_IF, INITIALVAL = GND
+PORT bus2ip_rnw  = bus2ip_rnw,     DIR = I, BUS = DEVICE_IF, INITIALVAL = VCC
+PORT bus2ip_data = bus2ip_data,    DIR = I, BUS = DEVICE_IF, VEC = [31:0], ENDIAN = LITTLE, INITIALVAL = GND
+PORT ip2bus_data = ip2bus_data,    DIR = O, BUS = DEVICE_IF, VEC = [31:0], ENDIAN = LITTLE
+PORT ip2bus_error= ip2bus_error,   DIR = O, BUS = DEVICE_IF
+PORT ip2bus_rdack= ip2bus_rdack,   DIR = O, BUS = DEVICE_IF
+PORT ip2bus_wrack= ip2bus_wrack,   DIR = O, BUS = DEVICE_IF
+
 BUS_INTERFACE BUS = AXI_MAC_TX, BUS_STD = AXIS, BUS_TYPE = TARGET
 BUS_INTERFACE BUS = AXI_MAC_RX, BUS_STD = AXIS, BUS_TYPE = INITIATOR
 
-PORT rx_mac_aclk       = ""       ,DIR = O, SIGIS = CLK
-PORT rx_reset          = "",       DIR = O, SIGIS = RST
+PORT rx_mac_aclk  = CLK,       DIR = O, SIGIS = CLK, BUS = AXI_MAC_RX
+PORT rx_reset     = RESET,     DIR = O, SIGIS = RST, BUS = AXI_MAC_RX
 
 PORT rx_axis_tvalid= TVALID,   DIR = O, BUS = AXI_MAC_RX
 PORT rx_axis_tready= TREADY,   DIR = I, BUS = AXI_MAC_RX
@@ -72,8 +85,8 @@ PORT rx_axis_tkeep = TKEEP,    DIR = O, BUS = AXI_MAC_RX, VEC = [7:0], ENDIAN = 
 PORT rx_axis_tlast = TLAST,    DIR = O, BUS = AXI_MAC_RX
 PORT rx_axis_tuser = TUSER,    DIR = O, BUS = AXI_MAC_RX
 
-PORT tx_mac_aclk       = "",       DIR = O, SIGIS = CLK
-PORT tx_reset          = "",       DIR = O, SIGIS = RST
+PORT tx_mac_aclk   = CLK,      DIR = O, SIGIS = CLK, BUS = AXI_MAC_TX
+PORT tx_reset      = RESET,    DIR = O, SIGIS = RST, BUS = AXI_MAC_TX
 
 PORT tx_axis_tdata = TDATA,    DIR = I, BUS = AXI_MAC_TX, VEC = [63:0], ENDIAN = LITTLE
 PORT tx_axis_tvalid= TVALID,   DIR = I, BUS = AXI_MAC_TX

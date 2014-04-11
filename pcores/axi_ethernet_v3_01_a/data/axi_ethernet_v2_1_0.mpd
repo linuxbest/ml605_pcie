@@ -164,8 +164,8 @@ PORT AXI_STR_RXS_TDATA = TDATA, DIR = O, BUS = AXI_STR_RXS, VEC = [31:0], ENDIAN
 
 BUS_INTERFACE BUS = AXI_MAC_TX, BUS_STD = AXIS, BUS_TYPE = INITIATOR
 BUS_INTERFACE BUS = AXI_MAC_RX, BUS_STD = AXIS, BUS_TYPE = TARGET
-PORT rx_mac_aclk       = ""       ,DIR = I, SIGIS = CLK, INITIALVAL = VCC
-PORT rx_reset          = "",       DIR = I, SIGIS = RST
+PORT rx_mac_aclk       = "CLK",    DIR = I, SIGIS = CLK, BUS = AXI_MAC_RX, INITIALVAL = VCC
+PORT rx_reset          = "RESET",  DIR = I, SIGIS = RST, BUS = AXI_MAC_RX
 
 PORT rx_axis_mac_tvalid= TVALID,   DIR = I, BUS = AXI_MAC_RX
 PORT rx_axis_mac_tready= TREADY,   DIR = O, BUS = AXI_MAC_RX
@@ -174,8 +174,8 @@ PORT rx_axis_mac_tkeep = TKEEP,    DIR = I, BUS = AXI_MAC_RX, VEC = [7:0], ENDIA
 PORT rx_axis_mac_tlast = TLAST,    DIR = I, BUS = AXI_MAC_RX
 PORT rx_axis_mac_tuser = TUSER,    DIR = I, BUS = AXI_MAC_RX
 
-PORT tx_mac_aclk       = "",       DIR = I, SIGIS = CLK, INITIALVAL = VCC
-PORT tx_reset          = "",       DIR = I, SIGIS = RST
+PORT tx_mac_aclk       = "CLK",    DIR = I, SIGIS = CLK, BUS = AXI_MAC_TX , INITIALVAL = VCC
+PORT tx_reset          = "RESET",  DIR = I, SIGIS = RST, BUS = AXI_MAC_TX
 
 PORT tx_axis_mac_tdata = TDATA,    DIR = O, BUS = AXI_MAC_TX, VEC = [63:0], ENDIAN = LITTLE
 PORT tx_axis_mac_tvalid= TVALID,   DIR = O, BUS = AXI_MAC_TX
