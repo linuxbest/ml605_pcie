@@ -61,8 +61,9 @@ PORT tx_disable    = "", DIR = O
 
 BUS_INTERFACE BUS = AXI_MAC_TX, BUS_STD = AXIS, BUS_TYPE = TARGET
 BUS_INTERFACE BUS = AXI_MAC_RX, BUS_STD = AXIS, BUS_TYPE = INITIATOR
-PORT rx_mac_aclk       = ""       ,DIR = I, SIGIS = CLK, INITIALVAL = VCC
-PORT rx_reset          = "",       DIR = I, SIGIS = RST
+
+PORT rx_mac_aclk       = ""       ,DIR = O, SIGIS = CLK
+PORT rx_reset          = "",       DIR = O, SIGIS = RST
 
 PORT rx_axis_tvalid= TVALID,   DIR = O, BUS = AXI_MAC_RX
 PORT rx_axis_tready= TREADY,   DIR = I, BUS = AXI_MAC_RX
@@ -71,8 +72,8 @@ PORT rx_axis_tkeep = TKEEP,    DIR = O, BUS = AXI_MAC_RX, VEC = [7:0], ENDIAN = 
 PORT rx_axis_tlast = TLAST,    DIR = O, BUS = AXI_MAC_RX
 PORT rx_axis_tuser = TUSER,    DIR = O, BUS = AXI_MAC_RX
 
-PORT tx_mac_aclk       = "",       DIR = I, SIGIS = CLK, INITIALVAL = VCC
-PORT tx_reset          = "",       DIR = I, SIGIS = RST
+PORT tx_mac_aclk       = "",       DIR = O, SIGIS = CLK
+PORT tx_reset          = "",       DIR = O, SIGIS = RST
 
 PORT tx_axis_tdata = TDATA,    DIR = I, BUS = AXI_MAC_TX, VEC = [63:0], ENDIAN = LITTLE
 PORT tx_axis_tvalid= TVALID,   DIR = I, BUS = AXI_MAC_TX

@@ -46,16 +46,19 @@
 module axi_10gmacphy (/*AUTOARG*/
    // Outputs
    xgmii_txd_dbg, xgmii_txc_dbg, xgmii_rxd_dbg, xgmii_rxc_dbg,
-   xgmacint, txp, txn, tx_disable, tx_axis_tready, sfp_rs,
-   rx_axis_tvalid, rx_axis_tuser, rx_axis_tlast, rx_axis_tkeep,
-   rx_axis_tdata, resetdone, ip2bus_wrack, ip2bus_rdack, ip2bus_error,
-   ip2bus_data, core_status, core_clk156_out,
+   xgmacint, txp, txn, tx_reset, tx_mac_aclk, tx_disable,
+   tx_axis_tready, sfp_rs, rx_reset, rx_mac_aclk, rx_axis_tvalid,
+   rx_axis_tuser, rx_axis_tlast, rx_axis_tkeep, rx_axis_tdata,
+   resetdone, ip2bus_wrack, ip2bus_rdack, ip2bus_error, ip2bus_data,
+   core_status, core_clk156_out,
    // Inputs
    tx_fault, tx_axis_tvalid, tx_axis_tuser, tx_axis_tlast,
    tx_axis_tkeep, tx_axis_tdata, tx_axis_aresetn, signal_detect, rxp,
-   rxn, rx_axis_aresetn, reset, refclk_p, refclk_n, bus2ip_rnw,
-   bus2ip_reset, bus2ip_data, bus2ip_cs, bus2ip_clk, bus2ip_addr
+   rxn, rx_axis_tready, rx_axis_aresetn, reset, refclk_p, refclk_n,
+   bus2ip_rnw, bus2ip_reset, bus2ip_data, bus2ip_cs, bus2ip_clk,
+   bus2ip_addr
    );
+   parameter C_FAMILY = "";
    parameter C_MDIO_ADDR = 5'h0;
    parameter EXAMPLE_SIM_GTRESET_SPEEDUP = "FALSE";
    
@@ -71,6 +74,7 @@ module axi_10gmacphy (/*AUTOARG*/
    input		refclk_p;		// To xphy_block of xphy_block.v
    input		reset;			// To xgmac of xgmac.v, ...
    input		rx_axis_aresetn;	// To xgmac of xgmac.v
+   input		rx_axis_tready;		// To xphy_int of xphy_int.v
    input		rxn;			// To xphy_block of xphy_block.v
    input		rxp;			// To xphy_block of xphy_block.v
    input		signal_detect;		// To xphy_block of xphy_block.v, ...
@@ -96,9 +100,13 @@ module axi_10gmacphy (/*AUTOARG*/
    output		rx_axis_tlast;		// From xgmac of xgmac.v
    output		rx_axis_tuser;		// From xgmac of xgmac.v
    output		rx_axis_tvalid;		// From xgmac of xgmac.v
+   output		rx_mac_aclk;		// From xphy_int of xphy_int.v
+   output		rx_reset;		// From xphy_int of xphy_int.v
    output		sfp_rs;			// From xphy_int of xphy_int.v
    output		tx_axis_tready;		// From xgmac of xgmac.v
    output		tx_disable;		// From xphy_block of xphy_block.v
+   output		tx_mac_aclk;		// From xphy_int of xphy_int.v
+   output		tx_reset;		// From xphy_int of xphy_int.v
    output		txn;			// From xphy_block of xphy_block.v
    output		txp;			// From xphy_block of xphy_block.v
    output		xgmacint;		// From xgmac of xgmac.v
@@ -293,6 +301,10 @@ module axi_10gmacphy (/*AUTOARG*/
 		.dclk_reset		(dclk_reset),
 		.resetdone		(resetdone),
 		.core_clk156_out	(core_clk156_out),
+		.tx_mac_aclk		(tx_mac_aclk),
+		.tx_reset		(tx_reset),
+		.rx_mac_aclk		(rx_mac_aclk),
+		.rx_reset		(rx_reset),
 		.core_reset_tx		(core_reset_tx),
 		.txreset322		(txreset322),
 		.rxreset322		(rxreset322),
@@ -333,7 +345,8 @@ module axi_10gmacphy (/*AUTOARG*/
 		.training_rddata	(training_rddata[15:0]),
 		.training_rdack		(training_rdack),
 		.training_wrack		(training_wrack),
-		.rxclk322		(rxclk322));
+		.rxclk322		(rxclk322),
+		.rx_axis_tready		(rx_axis_tready));
    
 endmodule
 // 

@@ -153,10 +153,10 @@ BEGIN axi_ethernet
  PORT AXI_STR_RXS_ACLK = clk_100_0000MHzPLLE0
  PORT S_AXI_ACLK = clk_100_0000MHzPLLE0
 
- PORT rx_mac_aclk = clk_125_0000MHz
- PORT rx_reset    = proc_sys_reset_0_BUS_STRUCT_RESET
- PORT tx_mac_aclk = clk_125_0000MHz
- PORT tx_reset    = proc_sys_reset_0_BUS_STRUCT_RESET
+ PORT rx_mac_aclk = rx_mac_aclk
+ PORT rx_reset    = rx_mac_reset
+ PORT tx_mac_aclk = tx_mac_aclk
+ PORT tx_reset    = tx_mac_reset
 
  BUS_INTERFACE AXI_MAC_TX = mac_axis_tx
  BUS_INTERFACE AXI_MAC_RX = mac_axis_rx
@@ -181,10 +181,10 @@ BEGIN axi_10gmacphy
 
  PORT reset       = proc_sys_reset_0_BUS_STRUCT_RESET
  
- PORT rx_mac_aclk = clk_125_0000MHz
- PORT rx_reset    = proc_sys_reset_0_BUS_STRUCT_RESET
- PORT tx_mac_aclk = clk_125_0000MHz
- PORT tx_reset    = proc_sys_reset_0_BUS_STRUCT_RESET
+ PORT rx_mac_aclk = rx_mac_aclk
+ PORT rx_reset    = rx_mac_reset
+ PORT tx_mac_aclk = tx_mac_aclk
+ PORT tx_reset    = tx_mac_reset
 
  BUS_INTERFACE AXI_MAC_TX = mac_axis_tx
  BUS_INTERFACE AXI_MAC_RX = mac_axis_rx
