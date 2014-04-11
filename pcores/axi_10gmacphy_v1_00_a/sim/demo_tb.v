@@ -470,7 +470,6 @@ module demo_tb;
    wire			ip2bus_error;		// From DUT of axi_10gmacphy.v
    wire			ip2bus_rdack;		// From DUT of axi_10gmacphy.v
    wire			ip2bus_wrack;		// From DUT of axi_10gmacphy.v
-   wire			rx_axis_aresetn;	// From xgmac_dut of xgmac_dut.v
    wire [63:0]		rx_axis_tdata;		// From DUT of axi_10gmacphy.v
    wire [7:0]		rx_axis_tkeep;		// From DUT of axi_10gmacphy.v
    wire			rx_axis_tlast;		// From DUT of axi_10gmacphy.v
@@ -481,7 +480,6 @@ module demo_tb;
    wire			rx_mac_aclk;		// From DUT of axi_10gmacphy.v
    wire			rx_reset;		// From DUT of axi_10gmacphy.v
    wire			sfp_rs;			// From DUT of axi_10gmacphy.v
-   wire			tx_axis_aresetn;	// From xgmac_dut of xgmac_dut.v
    wire [63:0]		tx_axis_tdata;		// From xgmac_address_swap of xgmac_address_swap.v
    wire [7:0]		tx_axis_tkeep;		// From xgmac_address_swap of xgmac_address_swap.v
    wire			tx_axis_tlast;		// From xgmac_address_swap of xgmac_address_swap.v
@@ -535,12 +533,10 @@ module demo_tb;
 		     .refclk_n		(refclk_n),
 		     .refclk_p		(refclk_p),
 		     .reset		(reset),
-		     .rx_axis_aresetn	(rx_axis_aresetn),
 		     .rx_axis_tready	(rx_axis_tready),
 		     .rxn		(rxn),
 		     .rxp		(rxp),
 		     .signal_detect	(signal_detect),
-		     .tx_axis_aresetn	(tx_axis_aresetn),
 		     .tx_axis_tdata	(tx_axis_tdata[63:0]),
 		     .tx_axis_tkeep	(tx_axis_tkeep[7:0]),
 		     .tx_axis_tlast	(tx_axis_tlast),
@@ -575,8 +571,6 @@ module demo_tb;
 		.bus2ip_reset		(bus2ip_reset),
 		.bus2ip_rnw		(bus2ip_rnw),
 		.rx_clk			(rx_clk),
-		.rx_axis_aresetn	(rx_axis_aresetn),
-		.tx_axis_aresetn	(tx_axis_aresetn),
 		.tx_axis_tuser		(tx_axis_tuser[127:0]),
 		// Inputs
 		.ip2bus_data		(ip2bus_data[31:0]),
@@ -584,7 +578,6 @@ module demo_tb;
 		.ip2bus_rdack		(ip2bus_rdack),
 		.ip2bus_wrack		(ip2bus_wrack),
 		.core_clk156_out	(core_clk156_out),
-		.resetdone		(resetdone),
 		.rx_axis_tready		(rx_axis_tready),
 		.rx_axis_tuser		(rx_axis_tuser),
 		.xgmacint		(xgmacint),

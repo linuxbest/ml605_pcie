@@ -45,26 +45,32 @@
 // Code:
 module mac_loopback (/*AUTOARG*/
    // Outputs
-   txp, txn, tx_disable, sfp_rs,
+   txp, txn, tx_reset, tx_mac_aclk, tx_disable, sfp_rs, rx_reset,
+   rx_mac_aclk, resetdone,
    // Inputs
    tx_fault, signal_detect, rxp, rxn, reset, refclk_p, refclk_n
    );
    /*AUTOINPUT*/
    // Beginning of automatic inputs (from unused autoinst inputs)
-   input		refclk_n;		// To axi_10g_mac_phy of axi_10g_mac_phy.v
-   input		refclk_p;		// To axi_10g_mac_phy of axi_10g_mac_phy.v
-   input		reset;			// To axi_10g_mac_phy of axi_10g_mac_phy.v, ...
-   input		rxn;			// To axi_10g_mac_phy of axi_10g_mac_phy.v
-   input		rxp;			// To axi_10g_mac_phy of axi_10g_mac_phy.v
-   input		signal_detect;		// To axi_10g_mac_phy of axi_10g_mac_phy.v
-   input		tx_fault;		// To axi_10g_mac_phy of axi_10g_mac_phy.v
+   input		refclk_n;		// To axi_10g_mac_phy of axi_10gmacphy.v
+   input		refclk_p;		// To axi_10g_mac_phy of axi_10gmacphy.v
+   input		reset;			// To axi_10g_mac_phy of axi_10gmacphy.v, ...
+   input		rxn;			// To axi_10g_mac_phy of axi_10gmacphy.v
+   input		rxp;			// To axi_10g_mac_phy of axi_10gmacphy.v
+   input		signal_detect;		// To axi_10g_mac_phy of axi_10gmacphy.v
+   input		tx_fault;		// To axi_10g_mac_phy of axi_10gmacphy.v
    // End of automatics
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
-   output		sfp_rs;			// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   output		tx_disable;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   output		txn;			// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   output		txp;			// From axi_10g_mac_phy of axi_10g_mac_phy.v
+   output		resetdone;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   output		rx_mac_aclk;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   output		rx_reset;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   output		sfp_rs;			// From axi_10g_mac_phy of axi_10gmacphy.v
+   output		tx_disable;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   output		tx_mac_aclk;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   output		tx_reset;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   output		txn;			// From axi_10g_mac_phy of axi_10gmacphy.v
+   output		txp;			// From axi_10g_mac_phy of axi_10gmacphy.v
    // End of automatics
 
    /*AUTOWIRE*/
@@ -75,33 +81,30 @@ module mac_loopback (/*AUTOARG*/
    wire [31:0]		bus2ip_data;		// From xgmac_dut of xgmac_dut.v
    wire			bus2ip_reset;		// From xgmac_dut of xgmac_dut.v
    wire			bus2ip_rnw;		// From xgmac_dut of xgmac_dut.v
-   wire			core_clk156_out;	// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   wire [7:0]		core_status;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   wire [31:0]		ip2bus_data;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   wire			ip2bus_error;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   wire			ip2bus_rdack;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   wire			ip2bus_wrack;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   wire			resetdone;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   wire			rx_axis_aresetn;	// From xgmac_dut of xgmac_dut.v
-   wire [63:0]		rx_axis_tdata;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   wire [7:0]		rx_axis_tkeep;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   wire			rx_axis_tlast;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
+   wire			core_clk156_out;	// From axi_10g_mac_phy of axi_10gmacphy.v
+   wire [7:0]		core_status;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   wire [31:0]		ip2bus_data;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   wire			ip2bus_error;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   wire			ip2bus_rdack;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   wire			ip2bus_wrack;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   wire [63:0]		rx_axis_tdata;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   wire [7:0]		rx_axis_tkeep;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   wire			rx_axis_tlast;		// From axi_10g_mac_phy of axi_10gmacphy.v
    wire			rx_axis_tready;		// From xgmac_address_swap of xgmac_address_swap.v
-   wire			rx_axis_tuser;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   wire			rx_axis_tvalid;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
+   wire			rx_axis_tuser;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   wire			rx_axis_tvalid;		// From axi_10g_mac_phy of axi_10gmacphy.v
    wire			rx_clk;			// From xgmac_dut of xgmac_dut.v
-   wire			tx_axis_aresetn;	// From xgmac_dut of xgmac_dut.v
    wire [63:0]		tx_axis_tdata;		// From xgmac_address_swap of xgmac_address_swap.v
    wire [7:0]		tx_axis_tkeep;		// From xgmac_address_swap of xgmac_address_swap.v
    wire			tx_axis_tlast;		// From xgmac_address_swap of xgmac_address_swap.v
-   wire			tx_axis_tready;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
+   wire			tx_axis_tready;		// From axi_10g_mac_phy of axi_10gmacphy.v
    wire [127:0]		tx_axis_tuser;		// From xgmac_dut of xgmac_dut.v
    wire			tx_axis_tvalid;		// From xgmac_address_swap of xgmac_address_swap.v
-   wire			xgmacint;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   wire [7:0]		xgmii_rxc_dbg;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   wire [63:0]		xgmii_rxd_dbg;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   wire [7:0]		xgmii_txc_dbg;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
-   wire [63:0]		xgmii_txd_dbg;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
+   wire			xgmacint;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   wire [7:0]		xgmii_rxc_dbg;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   wire [63:0]		xgmii_rxd_dbg;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   wire [7:0]		xgmii_txc_dbg;		// From axi_10g_mac_phy of axi_10gmacphy.v
+   wire [63:0]		xgmii_txd_dbg;		// From axi_10g_mac_phy of axi_10gmacphy.v
    // End of automatics
    
    axi_10gmacphy
@@ -119,9 +122,13 @@ module mac_loopback (/*AUTOARG*/
 		      .rx_axis_tlast	(rx_axis_tlast),
 		      .rx_axis_tuser	(rx_axis_tuser),
 		      .rx_axis_tvalid	(rx_axis_tvalid),
+		      .rx_mac_aclk	(rx_mac_aclk),
+		      .rx_reset		(rx_reset),
 		      .sfp_rs		(sfp_rs),
 		      .tx_axis_tready	(tx_axis_tready),
 		      .tx_disable	(tx_disable),
+		      .tx_mac_aclk	(tx_mac_aclk),
+		      .tx_reset		(tx_reset),
 		      .txn		(txn),
 		      .txp		(txp),
 		      .xgmacint		(xgmacint),
@@ -139,11 +146,10 @@ module mac_loopback (/*AUTOARG*/
 		      .refclk_n		(refclk_n),
 		      .refclk_p		(refclk_p),
 		      .reset		(reset),
-		      .rx_axis_aresetn	(rx_axis_aresetn),
+		      .rx_axis_tready	(rx_axis_tready),
 		      .rxn		(rxn),
 		      .rxp		(rxp),
 		      .signal_detect	(signal_detect),
-		      .tx_axis_aresetn	(tx_axis_aresetn),
 		      .tx_axis_tdata	(tx_axis_tdata[63:0]),
 		      .tx_axis_tkeep	(tx_axis_tkeep[7:0]),
 		      .tx_axis_tlast	(tx_axis_tlast),
@@ -178,8 +184,6 @@ module mac_loopback (/*AUTOARG*/
 		.bus2ip_reset		(bus2ip_reset),
 		.bus2ip_rnw		(bus2ip_rnw),
 		.rx_clk			(rx_clk),
-		.rx_axis_aresetn	(rx_axis_aresetn),
-		.tx_axis_aresetn	(tx_axis_aresetn),
 		.tx_axis_tuser		(tx_axis_tuser[127:0]),
 		// Inputs
 		.ip2bus_data		(ip2bus_data[31:0]),
@@ -187,7 +191,6 @@ module mac_loopback (/*AUTOARG*/
 		.ip2bus_rdack		(ip2bus_rdack),
 		.ip2bus_wrack		(ip2bus_wrack),
 		.core_clk156_out	(core_clk156_out),
-		.resetdone		(resetdone),
 		.rx_axis_tready		(rx_axis_tready),
 		.rx_axis_tuser		(rx_axis_tuser),
 		.xgmacint		(xgmacint),

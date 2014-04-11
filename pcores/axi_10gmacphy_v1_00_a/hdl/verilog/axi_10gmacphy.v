@@ -53,10 +53,9 @@ module axi_10gmacphy (/*AUTOARG*/
    core_status, core_clk156_out,
    // Inputs
    tx_fault, tx_axis_tvalid, tx_axis_tuser, tx_axis_tlast,
-   tx_axis_tkeep, tx_axis_tdata, tx_axis_aresetn, signal_detect, rxp,
-   rxn, rx_axis_tready, rx_axis_aresetn, reset, refclk_p, refclk_n,
-   bus2ip_rnw, bus2ip_reset, bus2ip_data, bus2ip_cs, bus2ip_clk,
-   bus2ip_addr
+   tx_axis_tkeep, tx_axis_tdata, signal_detect, rxp, rxn,
+   rx_axis_tready, reset, refclk_p, refclk_n, bus2ip_rnw,
+   bus2ip_reset, bus2ip_data, bus2ip_cs, bus2ip_clk, bus2ip_addr
    );
    parameter C_FAMILY = "";
    parameter C_MDIO_ADDR = 5'h0;
@@ -73,12 +72,10 @@ module axi_10gmacphy (/*AUTOARG*/
    input		refclk_n;		// To xphy_block of xphy_block.v
    input		refclk_p;		// To xphy_block of xphy_block.v
    input		reset;			// To xgmac of xgmac.v, ...
-   input		rx_axis_aresetn;	// To xgmac of xgmac.v
    input		rx_axis_tready;		// To xphy_int of xphy_int.v
    input		rxn;			// To xphy_block of xphy_block.v
    input		rxp;			// To xphy_block of xphy_block.v
    input		signal_detect;		// To xphy_block of xphy_block.v, ...
-   input		tx_axis_aresetn;	// To xgmac of xgmac.v
    input [63:0]		tx_axis_tdata;		// To xgmac of xgmac.v
    input [7:0]		tx_axis_tkeep;		// To xgmac of xgmac.v
    input		tx_axis_tlast;		// To xgmac of xgmac.v
@@ -129,6 +126,7 @@ module axi_10gmacphy (/*AUTOARG*/
    wire			pause_req;		// From xgmac_int of xgmac_int.v
    wire [15:0]		pause_val;		// From xgmac_int of xgmac_int.v
    wire [4:0]		prtad;			// From xphy_int of xphy_int.v
+   wire			rx_axis_aresetn;	// From xphy_int of xphy_int.v
    wire			rx_clk0;		// From xgmac_int of xgmac_int.v
    wire			rx_dcm_lock;		// From xphy_int of xphy_int.v
    wire			rx_resetdone;		// From xphy_block of xphy_block.v
@@ -145,6 +143,7 @@ module axi_10gmacphy (/*AUTOARG*/
    wire			training_rnw;		// From xphy_int of xphy_int.v
    wire			training_wrack;		// From xphy_block of xphy_block.v
    wire [15:0]		training_wrdata;	// From xphy_int of xphy_int.v
+   wire			tx_axis_aresetn;	// From xphy_int of xphy_int.v
    wire			tx_clk0;		// From xgmac_int of xgmac_int.v
    wire			tx_dcm_lock;		// From xphy_int of xphy_int.v
    wire [7:0]		tx_ifg_delay;		// From xphy_int of xphy_int.v
@@ -174,16 +173,11 @@ module axi_10gmacphy (/*AUTOARG*/
      xgmac (/*AUTOINST*/
 	    // Outputs
 	    .tx_axis_tready		(tx_axis_tready),
-	    .tx_statistics_vector	(tx_statistics_vector[25:0]),
 	    .tx_statistics_valid	(tx_statistics_valid),
-	    .rx_axis_tdata		(rx_axis_tdata[63:0]),
-	    .rx_axis_tkeep		(rx_axis_tkeep[7:0]),
 	    .rx_axis_tvalid		(rx_axis_tvalid),
-	    .rx_axis_tlast		(rx_axis_tlast),
 	    .rx_axis_tuser		(rx_axis_tuser),
-	    .rx_statistics_vector	(rx_statistics_vector[29:0]),
+	    .rx_axis_tlast		(rx_axis_tlast),
 	    .rx_statistics_valid	(rx_statistics_valid),
-	    .ip2bus_data		(ip2bus_data[31:0]),
 	    .ip2bus_rdack		(ip2bus_rdack),
 	    .ip2bus_wrack		(ip2bus_wrack),
 	    .ip2bus_error		(ip2bus_error),
@@ -191,31 +185,36 @@ module axi_10gmacphy (/*AUTOARG*/
 	    .mdc			(mdc),
 	    .mdio_out			(mdio_out_int),		 // Templated
 	    .mdio_tri			(),			 // Templated
+	    .tx_statistics_vector	(tx_statistics_vector[25:0]),
+	    .rx_axis_tdata		(rx_axis_tdata[63:0]),
+	    .rx_axis_tkeep		(rx_axis_tkeep[7:0]),
+	    .rx_statistics_vector	(rx_statistics_vector[29:0]),
+	    .ip2bus_data		(ip2bus_data[31:0]),
 	    .xgmii_txd			(xgmii_txd[63:0]),
 	    .xgmii_txc			(xgmii_txc[7:0]),
 	    // Inputs
 	    .reset			(reset),
 	    .tx_axis_aresetn		(tx_axis_aresetn),
-	    .tx_axis_tdata		(tx_axis_tdata[63:0]),
-	    .tx_axis_tkeep		(tx_axis_tkeep[7:0]),
 	    .tx_axis_tvalid		(tx_axis_tvalid),
-	    .tx_ifg_delay		(tx_ifg_delay[7:0]),
 	    .tx_axis_tlast		(tx_axis_tlast),
-	    .tx_axis_tuser		(tx_axis_tuser[127:0]),
-	    .pause_val			(pause_val[15:0]),
-	    .pause_req			(pause_req),
 	    .rx_axis_aresetn		(rx_axis_aresetn),
+	    .pause_req			(pause_req),
 	    .bus2ip_clk			(bus2ip_clk),
 	    .bus2ip_reset		(bus2ip_reset),
 	    .bus2ip_rnw			(bus2ip_rnw),
-	    .bus2ip_addr		(bus2ip_addr[10:0]),
-	    .bus2ip_data		(bus2ip_data[31:0]),
 	    .bus2ip_cs			(bus2ip_cs),
-	    .mdio_in			(mdio_in_int),		 // Templated
 	    .tx_clk0			(tx_clk0),
 	    .tx_dcm_lock		(tx_dcm_lock),
 	    .rx_clk0			(rx_clk0),
 	    .rx_dcm_lock		(rx_dcm_lock),
+	    .mdio_in			(mdio_in_int),		 // Templated
+	    .tx_axis_tdata		(tx_axis_tdata[63:0]),
+	    .tx_axis_tuser		(tx_axis_tuser[127:0]),
+	    .tx_ifg_delay		(tx_ifg_delay[7:0]),
+	    .tx_axis_tkeep		(tx_axis_tkeep[7:0]),
+	    .pause_val			(pause_val[15:0]),
+	    .bus2ip_addr		(bus2ip_addr[10:0]),
+	    .bus2ip_data		(bus2ip_data[31:0]),
 	    .xgmii_rxd			(xgmii_rxd[63:0]),
 	    .xgmii_rxc			(xgmii_rxc[7:0]));
 
@@ -300,6 +299,8 @@ module axi_10gmacphy (/*AUTOARG*/
 		.areset			(areset),
 		.dclk_reset		(dclk_reset),
 		.resetdone		(resetdone),
+		.rx_axis_aresetn	(rx_axis_aresetn),
+		.tx_axis_aresetn	(tx_axis_aresetn),
 		.core_clk156_out	(core_clk156_out),
 		.core_reset_tx		(core_reset_tx),
 		.txreset322		(txreset322),

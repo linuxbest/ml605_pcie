@@ -46,13 +46,13 @@
 `timescale 1ns / 1ps
 module xphy_int (/*AUTOARG*/
    // Outputs
-   areset, dclk_reset, resetdone, core_clk156_out, core_reset_tx,
-   txreset322, rxreset322, xgmii_txd_int, xgmii_txc_int, xgmii_rxd,
-   xgmii_rxc, xgmii_txd_dbg, xgmii_rxd_dbg, xgmii_txc_dbg,
-   xgmii_rxc_dbg, rx_dcm_lock, tx_dcm_lock, prtad, training_enable,
-   training_addr, training_rnw, training_wrdata, training_ipif_cs,
-   training_drp_cs, an_enable, tx_ifg_delay, sfp_rs, tx_mac_aclk,
-   tx_reset, rx_mac_aclk, rx_reset,
+   areset, dclk_reset, resetdone, rx_axis_aresetn, tx_axis_aresetn,
+   core_clk156_out, core_reset_tx, txreset322, rxreset322,
+   xgmii_txd_int, xgmii_txc_int, xgmii_rxd, xgmii_rxc, xgmii_txd_dbg,
+   xgmii_rxd_dbg, xgmii_txc_dbg, xgmii_rxc_dbg, rx_dcm_lock,
+   tx_dcm_lock, prtad, training_enable, training_addr, training_rnw,
+   training_wrdata, training_ipif_cs, training_drp_cs, an_enable,
+   tx_ifg_delay, sfp_rs, tx_mac_aclk, tx_reset, rx_mac_aclk, rx_reset,
    // Inputs
    reset, dclk, is_eval, tx_resetdone, rx_resetdone, clk156, tx_fault,
    signal_detect, txclk322, xgmii_txd, xgmii_txc, xgmii_rxd_int,
@@ -75,6 +75,11 @@ module xphy_int (/*AUTOARG*/
    output resetdone;
    assign resetdone = tx_resetdone && rx_resetdone;
 
+   output rx_axis_aresetn;
+   output tx_axis_aresetn;
+   assign rx_axis_aresetn = resetdone;
+   assign tx_axis_aresetn = resetdone;
+   
    input  clk156;
    input  tx_fault;
    input  signal_detect;

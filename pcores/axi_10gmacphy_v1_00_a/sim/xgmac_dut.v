@@ -46,12 +46,11 @@
 module xgmac_dut (/*AUTOARG*/
    // Outputs
    bus2ip_addr, bus2ip_data, bus2ip_clk, bus2ip_cs, bus2ip_reset,
-   bus2ip_rnw, rx_clk, rx_axis_aresetn, tx_axis_aresetn,
-   tx_axis_tuser,
+   bus2ip_rnw, rx_clk, tx_axis_tuser,
    // Inputs
    ip2bus_data, ip2bus_error, ip2bus_rdack, ip2bus_wrack,
-   core_clk156_out, resetdone, rx_axis_tready, rx_axis_tuser,
-   xgmacint, core_status, xgmii_txd_dbg, xgmii_rxd_dbg, xgmii_txc_dbg,
+   core_clk156_out, rx_axis_tready, rx_axis_tuser, xgmacint,
+   core_status, xgmii_txd_dbg, xgmii_rxd_dbg, xgmii_txc_dbg,
    xgmii_rxc_dbg
    );
 
@@ -78,12 +77,6 @@ module xgmac_dut (/*AUTOARG*/
    output 	 rx_clk;
    assign rx_clk = core_clk156_out;
    
-   input 	 resetdone;
-   output 	 rx_axis_aresetn;
-   output 	 tx_axis_aresetn;
-   assign rx_axis_aresetn = resetdone;
-   assign tx_axis_aresetn = resetdone;
-
    output [127:0] tx_axis_tuser;
    input 	 rx_axis_tready;
    input 	 rx_axis_tuser;   
