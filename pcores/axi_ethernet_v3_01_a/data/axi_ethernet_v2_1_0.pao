@@ -106,7 +106,9 @@ lib axi_ethernet_v3_01_a  tx_if.vhd   vhdl
 #lib axi_ethernet_v3_01_a  rx_emac_if_vlan.vhd   vhdl
 #lib axi_ethernet_v3_01_a  rx_if.vhd   vhdl
 
-lib axi_ethernet_v3_01_a  axi_eth_rx.vhd   vhdl
+lib axi_ethernet_v3_01_a  rx_csum_if.vhd vhdl
+lib axi_ethernet_v3_01_a  rx_csum_top.vhd vhdl
+lib axi_ethernet_v3_01_a  axi_eth_rx.vhd vhdl
 lib axi_ethernet_v3_01_a  axi_eth_tx_buf.vhd   vhdl
 lib axi_ethernet_v3_01_a  embedded_top.vhd   vhdl
 lib axi_ethernet_v3_01_a  axi_ethernet.vhd   vhdl

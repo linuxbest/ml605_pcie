@@ -6,6 +6,9 @@ use IEEE.std_logic_unsigned.all;
 library axi_ethernet_v3_01_a;
 use axi_ethernet_v3_01_a.all;
 
+library proc_common_v3_00_a;
+use proc_common_v3_00_a.all;
+
 entity axi_eth_rx is
   port (
     clk			     : in  std_logic;
@@ -397,16 +400,47 @@ rxd_fifo_rdreq			<=   (not rxd_fifo_empty) and (not RXS_RXDn_flag) and AXI_STR_R
 AXI_STR_RXD_TKEEP		<=   rxd_fifo_q(71 downto 64);
 AXI_STR_RXD_TDATA		<=   rxd_fifo_q(63 downto 0);
 
-Inst_rxd_fifo : rxd_fifo PORT MAP (
-		aclr	 => 	reset,
-		clock	 => 	clk,
-		data	 => 	rxd_fifo_data,
-		rdreq	 => 	rxd_fifo_rdreq,
-		wrreq	 => 	rxd_fifo_wrreq,
-		empty	 => 	rxd_fifo_empty,
-		full	 => 	rxd_fifo_full,
-		q	 => 	rxd_fifo_q
-	);
+    I_rxd_fifo : entity proc_common_v3_00_a.basic_sfifo_fg
+    generic map(
+      C_DWIDTH                      => 73,
+        -- FIFO data Width (Read and write data ports are symetric)
+      C_DEPTH                       => 1024,
+        -- FIFO Depth (set to power of 2)
+      C_HAS_DATA_COUNT              => 0,
+        -- 0 = DataCount not used
+        -- 1 = Data Count used 
+      C_DATA_COUNT_WIDTH            => 10,
+      -- Data Count bit width (Max value is log2(C_DEPTH))
+      C_IMPLEMENTATION_TYPE         => 0, 
+        --  0 = Common Clock BRAM / Distributed RAM (Synchronous FIFO)
+        --  1 = Common Clock Shift Register (Synchronous FIFO)
+      C_MEMORY_TYPE                 => 1,
+        --   0 = Any
+        --   1 = BRAM
+        --   2 = Distributed Memory  
+        --   3 = Shift Registers
+      C_PRELOAD_REGS                => 1, 
+        -- 0 = normal            
+        -- 1 for FWFT
+      C_PRELOAD_LATENCY             => 0,              
+        -- 0 for FWFT
+        -- 1 = normal            
+      C_USE_FWFT_DATA_COUNT         => 0, 
+        -- 0 = normal            
+        -- 1 for FWFT
+      C_FAMILY                      => "kintex7" 
+      )
+    port map(
+      CLK                           =>  clk,
+      DIN                           =>  rxd_fifo_data,                   
+      RD_EN                         =>  rxd_fifo_rdreq,                  
+      SRST                          =>  reset,            
+      WR_EN                         =>  rxd_fifo_wrreq,                  
+      DATA_COUNT                    =>  open,                
+      DOUT                          =>  rxd_fifo_q,                  
+      EMPTY                         =>  rxd_fifo_empty,                 
+      FULL                          =>  rxd_fifo_full
+      );    
 
 -- RXS FIFO Write Data Path
 rxs_fifo_data(36)		<=   rxs_last;
@@ -421,15 +455,47 @@ rxs_fifo_rdreq			<=   (not rxs_fifo_empty) and RXS_RXDn_flag and AXI_STR_RXS_TRE
 AXI_STR_RXS_TKEEP		<=   rxs_fifo_q(35 downto 32);
 AXI_STR_RXS_TDATA		<=   rxs_fifo_q(31 downto 0);
 
-Inst_rxs_fifo : rxs_fifo PORT MAP (
-		aclr	 => 	reset,
-		clock	 => 	clk,
-		data	 => 	rxs_fifo_data,
-		rdreq	 => 	rxs_fifo_rdreq,
-		wrreq	 => 	rxs_fifo_wrreq,
-		empty	 => 	rxs_fifo_empty,
-		full	 => 	rxs_fifo_full,
-		q	 => 	rxs_fifo_q
-	);
 
+    I_rxs_fifo : entity proc_common_v3_00_a.basic_sfifo_fg
+    generic map(
+      C_DWIDTH                      => 37,
+        -- FIFO data Width (Read and write data ports are symetric)
+      C_DEPTH                       => 512,
+        -- FIFO Depth (set to power of 2)
+      C_HAS_DATA_COUNT              => 0,
+        -- 0 = DataCount not used
+        -- 1 = Data Count used 
+      C_DATA_COUNT_WIDTH            => 9,
+      -- Data Count bit width (Max value is log2(C_DEPTH))
+      C_IMPLEMENTATION_TYPE         => 0, 
+        --  0 = Common Clock BRAM / Distributed RAM (Synchronous FIFO)
+        --  1 = Common Clock Shift Register (Synchronous FIFO)
+      C_MEMORY_TYPE                 => 1,
+        --   0 = Any
+        --   1 = BRAM
+        --   2 = Distributed Memory  
+        --   3 = Shift Registers
+      C_PRELOAD_REGS                => 1, 
+        -- 0 = normal            
+        -- 1 for FWFT
+      C_PRELOAD_LATENCY             => 0,              
+        -- 0 for FWFT
+        -- 1 = normal            
+      C_USE_FWFT_DATA_COUNT         => 0, 
+        -- 0 = normal            
+        -- 1 for FWFT
+      C_FAMILY                      => "kintex7" 
+      )
+    port map(
+      CLK                           =>  clk,
+      DIN                           =>  rxs_fifo_data,                   
+      RD_EN                         =>  rxs_fifo_rdreq,                  
+      SRST                          =>  reset,            
+      WR_EN                         =>  rxs_fifo_wrreq,                  
+      DATA_COUNT                    =>  open,                
+      DOUT                          =>  rxs_fifo_q,                  
+      EMPTY                         =>  rxs_fifo_empty,                 
+      FULL                          =>  rxs_fifo_full
+      );    
+ 
 end rtl;
