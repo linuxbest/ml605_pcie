@@ -21,6 +21,16 @@
  PORT PCIe_Diff_Clk_N = PCIe_Diff_Clk_N, DIR = I
  PORT PCIe_perstn = PCIe_perstn, DIR = I, SIGIS = RST
 
+ PORT sfp_sgd = sfp_sgd, DIR = I
+ PORT sfp_txf = sfp_txf, DIR = I
+ PORT sfp_rs  = sfp_ss , DIR = I
+ PORT sfp_txd = sfp_txd, DIR = I
+ PORT txp = txp, DIR = O
+ PORT txn = txn, DIR = O
+ PORT rxp = rxp, DIR = I
+ PORT rxn = rxn, DIR = I
+ PORT refclk_p = refclk_p, DIR = I, SIGIS = CLK, CLK_FREQ = 156250000
+ PORT refclk_n = refclk_n, DIR = I
 
 BEGIN util_vector_logic
  PARAMETER INSTANCE = util_and_logic_0
@@ -199,4 +209,87 @@ BEGIN axi_aes
  PORT mm2s_intr = mm2s_intr_0
  PORT s2mm_intr = s2mm_intr_0
  PORT axi_intr = axi_aes_intr_0
+END
+
+BEGIN axi_dma
+ PARAMETER INSTANCE = ETHERNET_dma
+ PARAMETER HW_VER = 6.03.a
+ PARAMETER C_SG_INCLUDE_DESC_QUEUE = 1
+ PARAMETER C_SG_USE_STSAPP_LENGTH = 1
+ PARAMETER C_INCLUDE_MM2S_DRE = 1
+ PARAMETER C_INCLUDE_S2MM_DRE = 1
+ PARAMETER C_DLYTMR_RESOLUTION = 1250
+ PARAMETER C_PRMRY_IS_ACLK_ASYNC = 0
+ PARAMETER C_SG_INCLUDE_STSCNTRL_STRM = 1
+ PARAMETER C_SG_LENGTH_WIDTH = 16
+ PARAMETER C_INCLUDE_MM2S = 1
+ PARAMETER C_INCLUDE_S2MM = 1
+ PARAMETER C_M_AXI_MM2S_DATA_WIDTH = 64
+ PARAMETER C_M_AXI_S2MM_DATA_WIDTH = 64
+ PARAMETER C_S_AXIS_S2MM_TDATA_WIDTH = 64
+ PARAMETER C_M_AXIS_MM2S_TDATA_WIDTH = 64
+ PARAMETER C_BASEADDR = 0xC4010000
+ PARAMETER C_HIGHADDR = 0xC4017fff
+ BUS_INTERFACE S_AXI_LITE = axi4lite_0
+ BUS_INTERFACE M_AXI_SG = axi4_0
+ BUS_INTERFACE M_AXI_MM2S = axi4_0
+ BUS_INTERFACE M_AXI_S2MM = axi4_0
+ BUS_INTERFACE M_AXIS_MM2S = ETHERNET_dma_txd
+ BUS_INTERFACE M_AXIS_MM2S_CNTRL = ETHERNET_dma_txc
+ BUS_INTERFACE S_AXIS_S2MM_STS = ETHERNET_dma_rxs
+ BUS_INTERFACE S_AXIS_S2MM = ETHERNET_dma_rxd
+ PORT s_axi_lite_aclk = clk_100_0000MHzMMCM0
+ PORT m_axi_sg_aclk   = clk_100_0000MHzMMCM0
+ PORT m_axi_mm2s_aclk = clk_100_0000MHzMMCM0
+ PORT m_axi_s2mm_aclk = clk_100_0000MHzMMCM0
+ PORT mm2s_prmry_reset_out_n = AXI_STR_TXD_ARESETN
+ PORT mm2s_cntrl_reset_out_n = AXI_STR_TXC_ARESETN
+ PORT s2mm_prmry_reset_out_n = AXI_STR_RXD_ARESETN
+ PORT s2mm_sts_reset_out_n = AXI_STR_RXS_ARESETN
+ PORT mm2s_introut = ETHERNET_dma_mm2s_introut
+ PORT s2mm_introut = ETHERNET_dma_s2mm_introut
+END
+
+BEGIN axi_ethernet
+ PARAMETER INSTANCE = ETHERNET
+ PARAMETER HW_VER = 3.01.a
+ PARAMETER C_TXMEM = 4096
+ PARAMETER C_RXMEM = 4096
+ PARAMETER C_TXCSUM = 2
+ PARAMETER C_RXCSUM = 2
+ PARAMETER C_INTERCONNECT_S_AXI_IS_ACLK_ASYNC = 0
+ PARAMETER C_BASEADDR = 0xC4018000
+ PARAMETER C_HIGHADDR = 0xC401ffff
+ BUS_INTERFACE S_AXI = axi4lite_0
+ BUS_INTERFACE AXI_STR_TXD = ETHERNET_dma_txd
+ BUS_INTERFACE AXI_STR_TXC = ETHERNET_dma_txc
+ BUS_INTERFACE AXI_STR_RXS = ETHERNET_dma_rxs
+ BUS_INTERFACE AXI_STR_RXD = ETHERNET_dma_rxd
+ PORT AXI_STR_TXD_ACLK = clk_100_0000MHzMMCM0
+ PORT AXI_STR_TXC_ACLK = clk_100_0000MHzMMCM0
+ PORT AXI_STR_RXD_ACLK = clk_100_0000MHzMMCM0
+ PORT AXI_STR_RXS_ACLK = clk_100_0000MHzMMCM0
+ PORT S_AXI_ACLK = clk_100_0000MHzMMCM0
+ BUS_INTERFACE AXI_MAC_TX = mac_axis_tx
+ BUS_INTERFACE AXI_MAC_RX = mac_axis_rx
+END
+
+BEGIN axi_10gmacphy
+ PARAMETER INSTANCE = ten_mac_phy
+ PARAMETER HW_VER = 1.00.a
+ PORT refclk_p      = refclk_p
+ PORT refclk_n      = refclk_n
+ PORT signal_detect = sfp_sgd
+ PORT tx_fault      = sfp_txf
+ PORT sfp_rs        = sfp_rs
+ PORT tx_disable    = sfp_txd
+ PORT txp           = txp
+ PORT txn           = txn
+ PORT rxp           = rxp
+ PORT rxn           = rxn
+ PORT reset         = proc_sys_reset_0_BUS_STRUCT_RESET
+ PORT bus2ip_clk    = clk_100_0000MHzMMCM0
+ PORT bus2ip_reset  = proc_sys_reset_0_BUS_STRUCT_RESET
+ BUS_INTERFACE AXI_MAC_TX = mac_axis_tx
+ BUS_INTERFACE AXI_MAC_RX = mac_axis_rx
 END

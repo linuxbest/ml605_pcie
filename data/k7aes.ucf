@@ -120,3 +120,15 @@ NET "*pipe_clock_i/clk_125mhz" TIG;
 NET "*/sig_blk_dcontrol<12>" TIG;
 NET "*/sig_blk_dcontrol<13>" TIG;
 NET "*/sig_blk_dcontrol<14>" TIG;
+
+#################
+# 10G mac pcs pma
+NET refclk_p LOC = C8;
+NET refclk_n LOC = C7;
+
+NET sfp_sgd LOC = P19 | IOSTANDARD = LVCMOS25 | PULLUP;
+NET sfp_txd LOC = M27 | IOSTANDARD = LVCMOS25;
+NET sfp_txf LOC = N27 | IOSTANDARD = LVCMOS25;
+NET sfp_rs  LOC = K28 | IOSTANDARD = LVCMOS25;
+
+INST */gtxe2_i LOC=GTXE2_CHANNEL_X0Y12;
