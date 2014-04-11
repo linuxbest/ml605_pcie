@@ -34,6 +34,6 @@ sccom -link -lib axi_systemc_v1_00_a -lib work
 s
 w
 
-do ../../systemc/wave.do
+#do ../../systemc/wave.do
 
 run 10000ns

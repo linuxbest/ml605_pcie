@@ -488,11 +488,11 @@ begin
     AXI_STR_RXS_TDATA  => AXI_STR_RXS_TDATA,
 
     rx_axis_mac_tdata  => rx_axis_mac_tdata,
-    rx_axis_mac_tvalid => rx_axis_mac_tvalid
+    rx_axis_mac_tvalid => rx_axis_mac_tvalid,
     rx_axis_mac_tkeep  => rx_axis_mac_tkeep,
     rx_axis_mac_tlast  => rx_axis_mac_tlast,
-    rx_axis_mac_tuser  => rx_axis_mac_tuser, 
-    rx_axis_mac_tready => rx_axis_mac_tready
+    --rx_axis_mac_tready => rx_axis_mac_tready,
+    rx_axis_mac_tuser  => rx_axis_mac_tuser
   );
 
   I_AXI_ETH_TX: entity axi_ethernet_v3_01_a.axi_eth_tx_buf(rtl)
@@ -509,7 +509,7 @@ begin
    AXI_STR_TXC_TREADY       =>         AXI_STR_TXC_TREADY,
    AXI_STR_TXC_TLAST        =>         AXI_STR_TXC_TLAST,
    AXI_STR_TXC_TKEEP        =>         AXI_STR_TXC_TKEEP,
-   AXI_STR_TXC_TDATA        =>         AXI_STR_TXC_TDATA
+   AXI_STR_TXC_TDATA        =>         AXI_STR_TXC_TDATA,
 
    AXIS_ETH_TXD_TVALID      =>         AXIS_ETH_TXD_TVALID,
    AXIS_ETH_TXD_TREADY      =>         AXIS_ETH_TXD_TREADY,
