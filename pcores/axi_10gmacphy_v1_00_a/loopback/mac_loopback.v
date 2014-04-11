@@ -104,7 +104,7 @@ module mac_loopback (/*AUTOARG*/
    wire [63:0]		xgmii_txd_dbg;		// From axi_10g_mac_phy of axi_10g_mac_phy.v
    // End of automatics
    
-   axi_10g_mac_phy
+   axi_10gmacphy
      axi_10g_mac_phy (/*AUTOINST*/
 		      // Outputs
 		      .core_clk156_out	(core_clk156_out),

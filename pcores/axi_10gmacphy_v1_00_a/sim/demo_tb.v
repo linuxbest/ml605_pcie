@@ -493,7 +493,7 @@ module demo_tb;
    wire [63:0]		xgmii_txd_dbg;		// From DUT of axi_10g_mac_phy.v
    // End of automatics
    
-  axi_10g_mac_phy DUT (/*AUTOINST*/
+  axi_10gmacphy DUT (/*AUTOINST*/
 		       // Outputs
 		       .core_clk156_out	(core_clk156_out),
 		       .core_status	(core_status[7:0]),

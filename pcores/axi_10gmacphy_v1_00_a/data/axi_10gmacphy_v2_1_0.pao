@@ -1,4 +1,4 @@
-lib axi_10gmacphy_v1_00_a axi_10g_mac_phy.v verilog
+lib axi_10gmacphy_v1_00_a axi_10gmacphy.v verilog
 lib axi_10gmacphy_v1_00_a gtx/xphy_gt_usrclk_source.v verilog
 lib axi_10gmacphy_v1_00_a gtx/xphy_gtwizard_10gbaser.v verilog
 lib axi_10gmacphy_v1_00_a gtx/xphy_gtwizard_10gbaser_gt.v verilog

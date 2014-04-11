@@ -43,7 +43,7 @@
 // 	device pins                        : "*_pin"
 // 	ports                              : - Names begin with Uppercase
 // Code:
-module axi_10g_mac_phy (/*AUTOARG*/
+module axi_10gmacphy (/*AUTOARG*/
    // Outputs
    xgmii_txd_dbg, xgmii_txc_dbg, xgmii_rxd_dbg, xgmii_rxc_dbg,
    xgmacint, txp, txn, tx_disable, tx_axis_tready, sfp_rs,
