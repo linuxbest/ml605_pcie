@@ -16,7 +16,7 @@
  PORT CLK_N = CLK, DIR = I, DIFFERENTIAL_POLARITY = N, SIGIS = CLK, CLK_FREQ = 200000000
  PORT sfp_sgd = sfp_sgd, DIR = I
  PORT sfp_txf = sfp_txf, DIR = I
- PORT sfp_rs = sfp_ss, DIR = I
+ PORT sfp_rs = sfp_ss, DIR = O
  PORT sfp_txd = sfp_txd, DIR = O
  PORT txp = txp, DIR = O
  PORT txn = txn, DIR = O
