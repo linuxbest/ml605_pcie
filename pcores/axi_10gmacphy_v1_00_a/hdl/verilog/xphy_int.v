@@ -235,8 +235,8 @@ module xphy_int (/*AUTOARG*/
    output rx_reset;
    assign tx_mac_aclk = clk156;
    assign rx_mac_aclk = clk156;
-   assign tx_reset    = reset;
-   assign rx_reset    = reset;
+   assign tx_reset    = ~tx_resetdone;
+   assign rx_reset    = ~rx_resetdone;
 
    output linkup;
    input [7:0] core_status;
