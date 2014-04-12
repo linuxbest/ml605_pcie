@@ -40,7 +40,7 @@ enum lro_state {
 #define DRIVER_DESCRIPTION	"Axi Ethernet driver"
 #define DRIVER_VERSION		"1.00a"
 
-#define SSTG_DEBUG 	0
+#define SSTG_DEBUG 	1
 #define RX_HW_CSUM 	1
 #define TX_HW_CSUM	1
 
@@ -166,6 +166,7 @@ struct axi_local {
 
 static struct pci_device_id axi_pci_table[] = {
 	{ 0x1172, 0xe001, PCI_ANY_ID, PCI_ANY_ID},
+	{ 0x10ee, 0x0505, PCI_ANY_ID, PCI_ANY_ID},
 	{ 0 },
 };
 #if SSTG_DEBUG
@@ -583,8 +584,9 @@ static void DmaRecvHandlerBH(unsigned long p)
 #endif
 
 #if SSTG_DEBUG
-				printk("LEN: %d\n", len);
-				sstg_dump_context(skb->data, len);
+				axi_trace("len: %d\n", len);
+				print_hex_dump(KERN_DEBUG, "RX ", DUMP_PREFIX_ADDRESS, 16, 1, 
+						skb->data, len, 1);
 				disp_bd(BdCurPtr);
 #endif
 				BdCurPtr = XAxiDma_mBdRingNext(RingPtr, BdCurPtr);
@@ -734,8 +736,8 @@ static int axi_DmaSend_internal(struct sk_buff *skb, struct net_device *ndev)
 
 	len = skb_headlen(skb);
 #if SSTG_DEBUG
-	printk("skb headlen: %d\n", len);
-	sstg_dump_context(skb->data, len);
+	axi_trace("len: %d\n", len);
+	print_hex_dump(KERN_DEBUG, "TX ", DUMP_PREFIX_ADDRESS, 16, 1, skb->data, len, 1);
 #endif
 
 	/* get the physical address of the header */

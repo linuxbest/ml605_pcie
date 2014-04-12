@@ -40,7 +40,7 @@ module system_tb
   reg rxp;
   reg sfp_rs;
   reg sfp_sgd;
-  reg sfp_txd;
+  wire sfp_txd;
   reg sfp_txf;
   wire txn;
   wire txp;

@@ -18,10 +18,9 @@
  *	0x80000~0xFFFFF		10G Ethernet MAC CSR(include XAUI PHY)	
  */
 
-#define PCIE_HW_IP_CRA		0x0000
-#define AXI_DMA_REG			0x4000
-#define MAC_ADDR_BASE 		0x80000
-#define AXI_MAC_ADDR_BASE	0x40000
+#define PCIE_HW_IP_CRA		0x00000
+#define AXI_DMA_REG		0x10000
+#define MAC_ADDR_BASE 		0x18000
 
 /* The next few constants help upper layers determine the size of memory
  * pools used for Ethernet buffers and descriptor lists.

@@ -6,7 +6,7 @@ KERNELDIR ?= /lib/modules/`uname -r`/build
 
 obj-m := aes10g.o eth10g.o
 aes10g-objs := aesdma.o xaxidma_bd.o xaxidma_bdring.o xaxidma.o xio.o
-eth10g-objs := ethdma.o xaxidma_bd.o xaxidma_bdring.o xaxidma.o xio.o
+eth10g-objs := ethdma.o xaxidma_bd.o xaxidma_bdring.o xaxidma.o xio.o axitemac.o
 
 default:
 	        $(MAKE) -C $(KERNELDIR) SUBDIRS=$(PWD) modules
