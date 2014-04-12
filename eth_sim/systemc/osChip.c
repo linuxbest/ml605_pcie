@@ -171,6 +171,10 @@ int osChip_init(uint32_t base)
 	}
 	printf("Rx  ok!\n");
 
+	/* testing mac register read */
+	uint32_t macbase = 0x41240000 + 0x4F8;
+	printf("verstion %08x\n", axi_mm_in32(macbase));
+
 	/* Initialize flags before start transfer test  */
 	TxDone = 0;
 	RxDone = 0;
