@@ -49,9 +49,9 @@ module xgmac_dut (/*AUTOARG*/
    bus2ip_rnw, rx_clk, tx_axis_tuser,
    // Inputs
    ip2bus_data, ip2bus_error, ip2bus_rdack, ip2bus_wrack,
-   core_clk156_out, rx_axis_tready, rx_axis_tuser, xgmacint,
-   core_status, xgmii_txd_dbg, xgmii_rxd_dbg, xgmii_txc_dbg,
-   xgmii_rxc_dbg
+   core_clk156_out, rx_axis_tready, rx_axis_tuser, xgmacint, linkup,
+   xgmii_txd_dbg, xgmii_rxd_dbg, xgmii_txc_dbg, xgmii_rxc_dbg,
+   rx_mac_aclk, rx_reset, tx_mac_aclk, tx_reset, resetdone
    );
 
    input [31:0] ip2bus_data;
@@ -59,7 +59,7 @@ module xgmac_dut (/*AUTOARG*/
    input 	ip2bus_rdack;
    input 	ip2bus_wrack;
    
-   output [10:0] bus2ip_addr;
+   output [31:0] bus2ip_addr;
    output [31:0] bus2ip_data;
    output 	 bus2ip_clk;
    output 	 bus2ip_cs;
@@ -82,14 +82,19 @@ module xgmac_dut (/*AUTOARG*/
    input 	 rx_axis_tuser;   
    assign tx_axis_tuser  = 0;
 
-   input 	 xgmacint;
-   input [7:0] 	 core_status;
-
+   input 	xgmacint;
+   input	linkup;
 
    input [63:0]  xgmii_txd_dbg;
    input [63:0]  xgmii_rxd_dbg;
    input [7:0] 	 xgmii_txc_dbg; 
-   input [7:0] 	 xgmii_rxc_dbg;  
+   input [7:0] 	 xgmii_rxc_dbg;
+
+   input 	 rx_mac_aclk;
+   input 	 rx_reset;
+   input 	 tx_mac_aclk;
+   input 	 tx_reset;
+   input 	 resetdone;
 endmodule
 // 
 // xgmac_dut.v ends here

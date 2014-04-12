@@ -460,7 +460,7 @@ module demo_tb;
 //-----------------------------------------------------------------------------
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [10:0]		bus2ip_addr;		// From xgmac_dut of xgmac_dut.v
+   wire [31:0]		bus2ip_addr;		// From xgmac_dut of xgmac_dut.v
    wire			bus2ip_clk;		// From xgmac_dut of xgmac_dut.v
    wire			bus2ip_cs;		// From xgmac_dut of xgmac_dut.v
    wire [31:0]		bus2ip_data;		// From xgmac_dut of xgmac_dut.v
@@ -470,6 +470,7 @@ module demo_tb;
    wire			ip2bus_error;		// From DUT of axi_10gmacphy.v
    wire			ip2bus_rdack;		// From DUT of axi_10gmacphy.v
    wire			ip2bus_wrack;		// From DUT of axi_10gmacphy.v
+   wire			linkup;			// From DUT of axi_10gmacphy.v
    wire [63:0]		rx_axis_tdata;		// From DUT of axi_10gmacphy.v
    wire [7:0]		rx_axis_tkeep;		// From DUT of axi_10gmacphy.v
    wire			rx_axis_tlast;		// From DUT of axi_10gmacphy.v
@@ -498,11 +499,11 @@ module demo_tb;
   axi_10gmacphy DUT (/*AUTOINST*/
 		     // Outputs
 		     .core_clk156_out	(core_clk156_out),
-		     .core_status	(core_status[7:0]),
 		     .ip2bus_data	(ip2bus_data[31:0]),
 		     .ip2bus_error	(ip2bus_error),
 		     .ip2bus_rdack	(ip2bus_rdack),
 		     .ip2bus_wrack	(ip2bus_wrack),
+		     .linkup		(linkup),
 		     .resetdone		(resetdone),
 		     .rx_axis_tdata	(rx_axis_tdata[63:0]),
 		     .rx_axis_tkeep	(rx_axis_tkeep[7:0]),
@@ -524,7 +525,7 @@ module demo_tb;
 		     .xgmii_txc_dbg	(xgmii_txc_dbg[7:0]),
 		     .xgmii_txd_dbg	(xgmii_txd_dbg[63:0]),
 		     // Inputs
-		     .bus2ip_addr	(bus2ip_addr[10:0]),
+		     .bus2ip_addr	(bus2ip_addr[31:0]),
 		     .bus2ip_clk	(bus2ip_clk),
 		     .bus2ip_cs		(bus2ip_cs),
 		     .bus2ip_data	(bus2ip_data[31:0]),
@@ -564,7 +565,7 @@ module demo_tb;
    xgmac_dut
      xgmac_dut (/*AUTOINST*/
 		// Outputs
-		.bus2ip_addr		(bus2ip_addr[10:0]),
+		.bus2ip_addr		(bus2ip_addr[31:0]),
 		.bus2ip_data		(bus2ip_data[31:0]),
 		.bus2ip_clk		(bus2ip_clk),
 		.bus2ip_cs		(bus2ip_cs),
@@ -581,11 +582,16 @@ module demo_tb;
 		.rx_axis_tready		(rx_axis_tready),
 		.rx_axis_tuser		(rx_axis_tuser),
 		.xgmacint		(xgmacint),
-		.core_status		(core_status[7:0]),
+		.linkup			(linkup),
 		.xgmii_txd_dbg		(xgmii_txd_dbg[63:0]),
 		.xgmii_rxd_dbg		(xgmii_rxd_dbg[63:0]),
 		.xgmii_txc_dbg		(xgmii_txc_dbg[7:0]),
-		.xgmii_rxc_dbg		(xgmii_rxc_dbg[7:0]));
+		.xgmii_rxc_dbg		(xgmii_rxc_dbg[7:0]),
+		.rx_mac_aclk		(rx_mac_aclk),
+		.rx_reset		(rx_reset),
+		.tx_mac_aclk		(tx_mac_aclk),
+		.tx_reset		(tx_reset),
+		.resetdone		(resetdone));
    
   defparam DUT.EXAMPLE_SIM_GTRESET_SPEEDUP = "TRUE"; 
 

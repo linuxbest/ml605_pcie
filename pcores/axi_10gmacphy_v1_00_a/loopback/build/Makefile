@@ -27,7 +27,7 @@ mac_loopback.twr: mac_loopback.ncd
 
 # BIT
 mac_loopback.bit: ${CGS} mac_loopback.ncd mac_loopback.twr
-	bitgen -w -intstyle ise mac_loopback.ncd
+	bitgen -w -intstyle ise mac_loopback.ncd -g UnconstrainedPins:Allow
 
 
 icon3.ngc:

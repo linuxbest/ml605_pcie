@@ -18,12 +18,11 @@
  PORT PCI_Express_pci_exp_rxp = PCI_Express_pci_exp_rxp, DIR = I, VEC = [7:0]
  PORT PCI_Express_pci_exp_rxn = PCI_Express_pci_exp_rxn, DIR = I, VEC = [7:0]
  PORT PCIe_Diff_Clk_P = PCIe_Diff_Clk_P, DIR = I, SIGIS = CLK, CLK_FREQ = 100000000
- PORT PCIe_Diff_Clk_N = PCIe_Diff_Clk_N, DIR = I
- PORT PCIe_perstn = PCIe_perstn, DIR = I, SIGIS = RST
-
+ PORT PCIe_Diff_Clk_N = PCIe_Diff_Clk_N, DIR = I, SIGIS = CLK, CLK_FREQ = 100000000
+ PORT PCIe_perstn = PCIe_perstn, DIR = I, SIGIS = RST, RST_POLARITY = 0
  PORT sfp_sgd = sfp_sgd, DIR = I
  PORT sfp_txf = sfp_txf, DIR = I
- PORT sfp_rs  = sfp_ss , DIR = O
+ PORT sfp_rs = sfp_ss, DIR = O
  PORT sfp_txd = sfp_txd, DIR = O
  PORT txp = txp, DIR = O
  PORT txn = txn, DIR = O
@@ -31,6 +30,7 @@
  PORT rxn = rxn, DIR = I
  PORT refclk_p = refclk_p, DIR = I, SIGIS = CLK, CLK_FREQ = 156250000
  PORT refclk_n = refclk_n, DIR = I
+
 
 BEGIN util_vector_logic
  PARAMETER INSTANCE = util_and_logic_0
@@ -239,7 +239,7 @@ BEGIN axi_dma
  BUS_INTERFACE S_AXIS_S2MM_STS = ETHERNET_dma_rxs_0
  BUS_INTERFACE S_AXIS_S2MM = ETHERNET_dma_rxd_0
  PORT s_axi_lite_aclk = clk_100_0000MHzMMCM0
- PORT m_axi_sg_aclk   = clk_100_0000MHzMMCM0
+ PORT m_axi_sg_aclk = clk_100_0000MHzMMCM0
  PORT m_axi_mm2s_aclk = clk_100_0000MHzMMCM0
  PORT m_axi_s2mm_aclk = clk_100_0000MHzMMCM0
  PORT mm2s_prmry_reset_out_n = AXI_STR_TXD_ARESETN_0
@@ -265,33 +265,34 @@ BEGIN axi_ethernet
  BUS_INTERFACE AXI_STR_TXC = ETHERNET_dma_txc_0
  BUS_INTERFACE AXI_STR_RXS = ETHERNET_dma_rxs_0
  BUS_INTERFACE AXI_STR_RXD = ETHERNET_dma_rxd_0
+ BUS_INTERFACE AXI_MAC_TX = mac_axis_tx_0
+ BUS_INTERFACE AXI_MAC_RX = mac_axis_rx_0
+ BUS_INTERFACE DEVICE_IF = mac_ipif_0
  PORT AXI_STR_TXD_ACLK = clk_100_0000MHzMMCM0
  PORT AXI_STR_TXC_ACLK = clk_100_0000MHzMMCM0
  PORT AXI_STR_RXD_ACLK = clk_100_0000MHzMMCM0
  PORT AXI_STR_RXS_ACLK = clk_100_0000MHzMMCM0
  PORT S_AXI_ACLK = clk_100_0000MHzMMCM0
- BUS_INTERFACE AXI_MAC_TX = mac_axis_tx_0
- BUS_INTERFACE AXI_MAC_RX = mac_axis_rx_0
- BUS_INTERFACE DEVICE_IF  = mac_ipif_0
 END
 
 BEGIN axi_10gmacphy
  PARAMETER INSTANCE = ten_eth_macphy_0
  PARAMETER HW_VER = 1.00.a
- PORT refclk_p      = refclk_p
- PORT refclk_n      = refclk_n
- PORT signal_detect = sfp_sgd
- PORT tx_fault      = sfp_txf
- PORT sfp_rs        = sfp_rs
- PORT tx_disable    = sfp_txd
- PORT txp           = txp
- PORT txn           = txn
- PORT rxp           = rxp
- PORT rxn           = rxn
- PORT reset         = proc_sys_reset_0_BUS_STRUCT_RESET
- PORT bus2ip_clk    = clk_100_0000MHzMMCM0
- PORT bus2ip_reset  = proc_sys_reset_0_BUS_STRUCT_RESET
- BUS_INTERFACE DEVICE_IF  = mac_ipif_0
+ BUS_INTERFACE DEVICE_IF = mac_ipif_0
  BUS_INTERFACE AXI_MAC_TX = mac_axis_tx_0
  BUS_INTERFACE AXI_MAC_RX = mac_axis_rx_0
+ PORT refclk_p = refclk_p
+ PORT refclk_n = refclk_n
+ PORT signal_detect = sfp_sgd
+ PORT tx_fault = sfp_txf
+ PORT sfp_rs = sfp_rs
+ PORT tx_disable = sfp_txd
+ PORT txp = txp
+ PORT txn = txn
+ PORT rxp = rxp
+ PORT rxn = rxn
+ PORT reset = proc_sys_reset_0_BUS_STRUCT_RESET
+ PORT bus2ip_clk = clk_100_0000MHzMMCM0
+ PORT bus2ip_reset = proc_sys_reset_0_BUS_STRUCT_RESET
 END
+
