@@ -30,7 +30,7 @@
  PORT rxn = rxn, DIR = I
  PORT refclk_p = refclk_p, DIR = I, SIGIS = CLK, CLK_FREQ = 156250000
  PORT refclk_n = refclk_n, DIR = I
-
+ PORT linkup = linkup, DIR = O
 
 BEGIN util_vector_logic
  PARAMETER INSTANCE = util_and_logic_0
@@ -278,6 +278,7 @@ END
 BEGIN axi_10gmacphy
  PARAMETER INSTANCE = ten_eth_macphy_0
  PARAMETER HW_VER = 1.00.a
+ PARAMETER C_DBG_PORT = 1
  BUS_INTERFACE DEVICE_IF = mac_ipif_0
  BUS_INTERFACE AXI_MAC_TX = mac_axis_tx_0
  BUS_INTERFACE AXI_MAC_RX = mac_axis_rx_0
@@ -287,6 +288,7 @@ BEGIN axi_10gmacphy
  PORT tx_fault = sfp_txf
  PORT sfp_rs = sfp_rs
  PORT tx_disable = sfp_txd
+ PORT linkup = linkup
  PORT txp = txp
  PORT txn = txn
  PORT rxp = rxp

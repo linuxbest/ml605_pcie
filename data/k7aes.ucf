@@ -126,10 +126,15 @@ NET "*/sig_blk_dcontrol<14>" TIG;
 NET refclk_p LOC = C8;
 NET refclk_n LOC = C7;
 
+# signal detect
 NET sfp_sgd LOC = P19 | IOSTANDARD = LVCMOS25 | PULLUP;
-NET sfp_txd LOC = M27 | IOSTANDARD = LVCMOS25;
+# tx fault
 NET sfp_txf LOC = N27 | IOSTANDARD = LVCMOS25;
+# tx disable
+NET sfp_txd LOC = M27 | IOSTANDARD = LVCMOS25;
+# rate select
 NET sfp_rs  LOC = K28 | IOSTANDARD = LVCMOS25;
+NET linkup  LOC = T28 | IOSTANDARD = LVCOMS25;
 
 INST */gtxe2_i LOC=GTXE2_CHANNEL_X0Y12;
 

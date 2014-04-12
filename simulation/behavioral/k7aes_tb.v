@@ -42,6 +42,7 @@ module k7aes_tb
   reg PCIe_Diff_Clk_P;
   reg PCIe_perstn;
   reg RESET;
+  wire linkup;
   reg refclk_n;
   reg refclk_p;
   reg rxn;
@@ -73,7 +74,8 @@ module k7aes_tb
       .rxp ( rxp ),
       .rxn ( rxn ),
       .refclk_p ( refclk_p ),
-      .refclk_n ( refclk_n )
+      .refclk_n ( refclk_n ),
+      .linkup ( linkup )
     );
 
   // Clock generator for CLK

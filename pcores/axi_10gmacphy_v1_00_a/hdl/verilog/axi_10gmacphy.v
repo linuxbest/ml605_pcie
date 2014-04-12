@@ -60,6 +60,7 @@ module axi_10gmacphy (/*AUTOARG*/
    parameter C_FAMILY = "";
    parameter C_MDIO_ADDR = 5'h0;
    parameter EXAMPLE_SIM_GTRESET_SPEEDUP = "FALSE";
+   parameter C_DBG_PORT = 0;
    
    input [31:0]		bus2ip_addr;		// To xgmac of xgmac.v
    /*AUTOINPUT*/
@@ -351,7 +352,93 @@ module axi_10gmacphy (/*AUTOARG*/
 		.rxclk322		(rxclk322),
 		.core_status		(core_status[7:0]),
 		.rx_axis_tready		(rx_axis_tready));
+
+   wire [35:0] 		CONTROL0;
+   wire [35:0] 		CONTROL1;
+   wire [35:0] 		CONTROL2;   
+   wire [255:0] 	c_dbg;
+   wire [15:0] 		c_trig;
+   wire [255:0] 	t_dbg;
+   wire [15:0] 		t_trig;
+   wire [255:0] 	r_dbg;
+   wire [15:0] 		r_trig;
+   assign c_trig[7:0] = core_status; 
+   assign c_dbg[7:0]  = core_status;
+   assign c_dbg[8]    = reset;
+   assign c_dbg[9]    = signal_detect;
+   assign c_dbg[10]   = tx_fault;
+   assign c_dbg[11]   = resetdone;
+   assign c_dbg[12]   = rx_reset;
+   assign c_dbg[13]   = tx_reset;
+   assign c_dbg[14]   = sfp_rs;
+   assign c_dbg[15]   = tx_disable;
+   assign c_dbg[16]   = xgmacint;
+   assign c_dbg[17]   = an_enable;
+   assign c_dbg[18]   = dclk_reset;
+   assign c_dbg[19]   = rx_resetdone;
+   assign c_dbg[20]   = tx_resetdone;
+
+   assign r_trig[0]   = rx_axis_tvalid;
+   assign r_trig[1]   = rx_axis_tlast;
+   assign r_trig[2]   = rx_axis_tready;
    
-endmodule
+   assign r_dbg[0]     = rx_axis_tvalid;
+   assign r_dbg[1]     = rx_axis_tlast;
+   assign r_dbg[2]     = rx_axis_tready;
+   assign r_dbg[3]     = rx_axis_tuser;
+   assign r_dbg[23:16] = rx_axis_tkeep;
+   assign r_dbg[87:24] = rx_axis_tdata;
+   assign r_dbg[95:88] = xgmii_rxc_int;
+   assign r_dbg[159:96]= xgmii_rxd_int;
+
+   assign t_trig[0]   = tx_axis_tvalid;
+   assign t_trig[1]   = tx_axis_tlast;
+   assign t_trig[2]   = tx_axis_tready;
+   
+   assign t_dbg[0]     = tx_axis_tvalid;
+   assign t_dbg[1]     = tx_axis_tlast;
+   assign t_dbg[2]     = tx_axis_tready;
+   assign t_dbg[3]     = tx_axis_tuser;
+   assign t_dbg[23:16] = tx_axis_tkeep;
+   assign t_dbg[87:24] = tx_axis_tdata;
+   assign t_dbg[95:88] = xgmii_txc_int;
+   assign t_dbg[159:96]= xgmii_txd_int;
+
+   generate if (C_DBG_PORT == 1) 
+     begin
+	icon3     icon3 (/*AUTOINST*/
+			 // Inouts
+			 .CONTROL0		(CONTROL0[35:0]),
+			 .CONTROL1		(CONTROL1[35:0]),
+			 .CONTROL2		(CONTROL2[35:0]));
+	ila256_16 ila_c (
+			 // Inouts
+			 .CONTROL		(CONTROL0[35:0]),
+			 // Inputs
+			 .CLK			(clk156),
+			 .DATA			(c_dbg[255:0]),
+			 .TRIG0			(c_trig[15:0]));
+	ila256_16 ila_t (
+			 // Inouts
+			 .CONTROL		(CONTROL1[35:0]),
+			 // Inputs
+			 .CLK			(clk156),
+			 .DATA			(t_dbg[255:0]),
+			 .TRIG0			(t_trig[15:0]));
+	ila256_16 ila_r (
+			 // Inouts
+			 .CONTROL		(CONTROL2[35:0]),
+			 // Inputs
+			 .CLK			(clk156),
+			 .DATA			(r_dbg[255:0]),
+			 .TRIG0			(r_trig[15:0]));
+     end
+   endgenerate
+endmodule // axi_10gmacphy
+// Local Variables:
+// verilog-library-directories:("../../loopback" ".")
+// verilog-library-files:("")
+// verilog-library-extensions:(".v" ".h")
+// End:
 // 
 // axi_10g_mac_phy.v ends here
