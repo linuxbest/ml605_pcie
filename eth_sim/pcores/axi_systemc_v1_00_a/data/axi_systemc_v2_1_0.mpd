@@ -166,4 +166,6 @@ PORT m_axi_rlast = RLAST, DIR = I, BUS = M_AXI
 PORT m_axi_rvalid = RVALID, DIR = I, BUS = M_AXI
 PORT m_axi_rready = RREADY, DIR = O, BUS = M_AXI
 
+PORT ready = "", DIR = I
+
 END

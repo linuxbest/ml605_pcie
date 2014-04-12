@@ -59,7 +59,7 @@ module axi_systemc (/*AUTOARG*/
    s_axi_awlock, s_axi_awlen, s_axi_awid, s_axi_awcache,
    s_axi_awburst, s_axi_awaddr, s_axi_arvalid, s_axi_arsize,
    s_axi_arprot, s_axi_arlock, s_axi_arlen, s_axi_arid, s_axi_arcache,
-   s_axi_arburst, s_axi_araddr, m_axi_wready, m_axi_rvalid,
+   s_axi_arburst, s_axi_araddr, ready, m_axi_wready, m_axi_rvalid,
    m_axi_rresp, m_axi_rlast, m_axi_rdata, m_axi_bvalid, m_axi_bresp,
    m_axi_awready, m_axi_arready, interrupt, axi_aresetn, axi_aclk,
    s_axi_awregion, s_axi_arregion
@@ -97,6 +97,7 @@ module axi_systemc (/*AUTOARG*/
    input [1:0]		m_axi_rresp;		// To axi_mm_systemc of axi_mm_systemc.v
    input		m_axi_rvalid;		// To axi_mm_systemc of axi_mm_systemc.v
    input		m_axi_wready;		// To axi_mm_systemc of axi_mm_systemc.v
+   input		ready;			// To axi_mm_systemc of axi_mm_systemc.v
    input [C_S_AXI_ADDR_WIDTH-1:0] s_axi_araddr;	// To axi_bram_ctrl of axi_bram_ctrl.v
    input [1:0]		s_axi_arburst;		// To axi_bram_ctrl of axi_bram_ctrl.v
    input [3:0]		s_axi_arcache;		// To axi_bram_ctrl of axi_bram_ctrl.v
@@ -211,6 +212,7 @@ module axi_systemc (/*AUTOARG*/
 		     .axi_aclk		(axi_aclk),
 		     .axi_aresetn	(axi_aresetn),
 		     .interrupt		(interrupt),
+		     .ready		(ready),
 		     .m_axi_awready	(m_axi_awready),
 		     .m_axi_wready	(m_axi_wready),
 		     .m_axi_bresp	(m_axi_bresp[1:0]),

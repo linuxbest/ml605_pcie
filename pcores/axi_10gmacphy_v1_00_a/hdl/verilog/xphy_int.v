@@ -53,11 +53,12 @@ module xphy_int (/*AUTOARG*/
    tx_dcm_lock, prtad, training_enable, training_addr, training_rnw,
    training_wrdata, training_ipif_cs, training_drp_cs, an_enable,
    tx_ifg_delay, sfp_rs, tx_mac_aclk, tx_reset, rx_mac_aclk, rx_reset,
+   linkup,
    // Inputs
    reset, dclk, is_eval, tx_resetdone, rx_resetdone, clk156, tx_fault,
    signal_detect, txclk322, xgmii_txd, xgmii_txc, xgmii_rxd_int,
    xgmii_rxc_int, training_rddata, training_rdack, training_wrack,
-   rxclk322, rx_axis_tready
+   rxclk322, core_status, rx_axis_tready
    );
    parameter C_MDIO_ADDR = 5'h0;
    parameter EXAMPLE_SIM_GTRESET_SPEEDUP = "FALSE";
@@ -236,6 +237,11 @@ module xphy_int (/*AUTOARG*/
    assign rx_mac_aclk = clk156;
    assign tx_reset    = reset;
    assign rx_reset    = reset;
+
+   output linkup;
+   input [7:0] core_status;
+   assign linkup = core_status[0];
+   
    /* TODO */
    input  rx_axis_tready;
 endmodule

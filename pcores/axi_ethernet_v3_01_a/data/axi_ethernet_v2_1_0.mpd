@@ -184,4 +184,18 @@ PORT tx_axis_mac_tlast = TLAST,    DIR = O, BUS = AXI_MAC_TX
 PORT tx_axis_mac_tready= TREADY,   DIR = I, BUS = AXI_MAC_TX
 PORT tx_axis_mac_tuser = TUSER,    DIR = O, BUS = AXI_MAC_TX
 
+
+BUS_INTERFACE BUS = DEVICE_IF, BUS_TYPE = INITIATOR, BUS_STD = IPIF_IF
+#PORT mac_bus2ip_clk  = bus2ip_clk,     DIR = I, SIGIS = CLK
+#PORT mac_bus2ip_reset= bus2ip_reset,   DIR = I, SIGIS = RST
+
+PORT mac_bus2ip_addr = bus2ip_addr,    DIR = O, BUS = DEVICE_IF, VEC = [31:0], ENDIAN = LITTLE
+PORT mac_bus2ip_cs   = bus2ip_cs,      DIR = O, BUS = DEVICE_IF, VEC = [0:0]
+PORT mac_bus2ip_rnw  = bus2ip_rnw,     DIR = O, BUS = DEVICE_IF
+PORT mac_bus2ip_data = bus2ip_data,    DIR = O, BUS = DEVICE_IF, VEC = [31:0], ENDIAN = LITTLE
+PORT mac_ip2bus_data = ip2bus_data,    DIR = I, BUS = DEVICE_IF, VEC = [31:0], ENDIAN = LITTLE
+PORT mac_ip2bus_error= ip2bus_error,   DIR = I, BUS = DEVICE_IF
+PORT mac_ip2bus_rdack= ip2bus_rdack,   DIR = I, BUS = DEVICE_IF
+PORT mac_ip2bus_wrack= ip2bus_wrack,   DIR = I, BUS = DEVICE_IF
+
 END

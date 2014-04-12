@@ -62,6 +62,7 @@ public:
    sc_out < sc_uint<32> > BRAM_RdData_B;
 
    sc_in <bool>           interrupt;
+   sc_in <bool>           ready;
 
    void axi_intr(void);
 
@@ -215,6 +216,9 @@ void axi_mm_systemc::axi_mm_master_init(void)
 
 	printf("calling %s, %d\n", __func__, __LINE__);
 	for (i = 0; i < 100; i++) 
+		wait (axi_aclk->posedge_event());
+	
+	for (i = 0; ready.read() == 0; i++) 
 		wait (axi_aclk->posedge_event());
 
 	printf("calling %s, %d\n", __func__, __LINE__);

@@ -7,15 +7,17 @@ module axi_mm_systemc ( /*AUTOARG*/
    m_axi_arprot, m_axi_arvalid, m_axi_arlock, m_axi_arcache,
    m_axi_rready, BRAM_RdData_A, BRAM_RdData_B,
    // Inputs
-   axi_aclk, axi_aresetn, interrupt, m_axi_awready, m_axi_wready,
-   m_axi_bresp, m_axi_bvalid, m_axi_arready, m_axi_rdata, m_axi_rresp,
-   m_axi_rlast, m_axi_rvalid, BRAM_Rst_A, BRAM_Clk_A, BRAM_En_A,
-   BRAM_WE_A, BRAM_Addr_A, BRAM_WrData_A, BRAM_Rst_B, BRAM_Clk_B,
-   BRAM_En_B, BRAM_WE_B, BRAM_Addr_B, BRAM_WrData_B
+   axi_aclk, axi_aresetn, interrupt, ready, m_axi_awready,
+   m_axi_wready, m_axi_bresp, m_axi_bvalid, m_axi_arready,
+   m_axi_rdata, m_axi_rresp, m_axi_rlast, m_axi_rvalid, BRAM_Rst_A,
+   BRAM_Clk_A, BRAM_En_A, BRAM_WE_A, BRAM_Addr_A, BRAM_WrData_A,
+   BRAM_Rst_B, BRAM_Clk_B, BRAM_En_B, BRAM_WE_B, BRAM_Addr_B,
+   BRAM_WrData_B
    );
    input axi_aclk;
    input axi_aresetn;
    input interrupt;
+   input ready;
    output [31:0] m_axi_awaddr;
    output [7:0]  m_axi_awlen;
    output [2:0]  m_axi_awsize;

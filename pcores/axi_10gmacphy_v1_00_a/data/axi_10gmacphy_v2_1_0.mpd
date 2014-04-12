@@ -62,10 +62,10 @@ PORT tx_disable    = "", DIR = O
 
 BUS_INTERFACE BUS = DEVICE_IF, BUS_TYPE = TARGET, BUS_STD = IPIF_IF
 PORT bus2ip_clk  = bus2ip_clk,     DIR = I, SIGIS = CLK
-PORT bus2ip_reset= bus2ip_reset,   DIR = I, SIGIS = CLK
+PORT bus2ip_reset= bus2ip_reset,   DIR = I, SIGIS = RST
 
-PORT bus2ip_addr = bus2ip_addr,    DIR = I, BUS = DEVICE_IF, VEC = [10:0], ENDIAN = LITTLE, INITIALVAL = GND
-PORT bus2ip_cs   = bus2ip_cs,      DIR = I, BUS = DEVICE_IF, INITIALVAL = GND
+PORT bus2ip_addr = bus2ip_addr,    DIR = I, BUS = DEVICE_IF, VEC = [31:0], ENDIAN = LITTLE, INITIALVAL = GND
+PORT bus2ip_cs   = bus2ip_cs,      DIR = I, BUS = DEVICE_IF, VEC = [0:0], INITIALVAL = GND
 PORT bus2ip_rnw  = bus2ip_rnw,     DIR = I, BUS = DEVICE_IF, INITIALVAL = VCC
 PORT bus2ip_data = bus2ip_data,    DIR = I, BUS = DEVICE_IF, VEC = [31:0], ENDIAN = LITTLE, INITIALVAL = GND
 PORT ip2bus_data = ip2bus_data,    DIR = O, BUS = DEVICE_IF, VEC = [31:0], ENDIAN = LITTLE
@@ -95,5 +95,7 @@ PORT tx_axis_tkeep = TKEEP,    DIR = I, BUS = AXI_MAC_TX, VEC = [7:0], ENDIAN = 
 PORT tx_axis_tlast = TLAST,    DIR = I, BUS = AXI_MAC_TX
 PORT tx_axis_tready= TREADY,   DIR = O, BUS = AXI_MAC_TX
 PORT tx_axis_tuser = TUSER,    DIR = I, BUS = AXI_MAC_TX
+
+PORT linkup = "", DIR = O
 
 END

@@ -323,8 +323,16 @@ entity axi_ethernet is
     tx_axis_mac_tkeep        : out std_logic_vector(7 downto 0);
     tx_axis_mac_tlast        : out std_logic;
     tx_axis_mac_tuser        : out std_logic;
-    tx_axis_mac_tready       : in std_logic
+    tx_axis_mac_tready       : in std_logic;
 
+    mac_ip2bus_data  : in std_logic_vector(31 downto 0);
+    mac_ip2bus_wrack : in std_logic;
+    mac_ip2bus_rdack : in std_logic;
+    mac_ip2bus_error : in std_logic;
+    mac_bus2ip_addr  : out std_logic_vector(31 downto 0);
+    mac_bus2ip_data  : out std_logic_vector(31 downto 0);
+    mac_bus2ip_rnw   : out std_logic;
+    mac_bus2ip_cs    : out std_logic_vector(0 downto 0)
   );
 end axi_ethernet;
 
@@ -467,8 +475,16 @@ begin
     tx_axis_mac_tkeep       => tx_axis_mac_tkeep,
     tx_axis_mac_tlast       => tx_axis_mac_tlast,
     tx_axis_mac_tuser       => tx_axis_mac_tuser,
-    tx_axis_mac_tready      => tx_axis_mac_tready
+    tx_axis_mac_tready      => tx_axis_mac_tready,
 
+    mac_ip2bus_data         => mac_ip2bus_data,
+    mac_ip2bus_wrack        => mac_ip2bus_wrack,
+    mac_ip2bus_rdack        => mac_ip2bus_rdack,
+    mac_ip2bus_error        => mac_ip2bus_error,
+    mac_bus2ip_addr         => mac_bus2ip_addr,
+    mac_bus2ip_data         => mac_bus2ip_data, 
+    mac_bus2ip_rnw          => mac_bus2ip_rnw, 
+    mac_bus2ip_cs           => mac_bus2ip_cs    
   );
 
   I_AXI_ETH_RX: entity axi_ethernet_v3_01_a.axi_eth_rx(rtl)

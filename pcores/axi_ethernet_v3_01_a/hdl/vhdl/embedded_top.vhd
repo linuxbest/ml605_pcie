@@ -282,7 +282,16 @@ entity embedded_top is
     tx_axis_mac_tkeep       : out std_logic_vector(7 downto 0); 		    -- Tx axistream keep to 10GEMAC
     tx_axis_mac_tlast       : out std_logic;                                        -- Tx axistream last to 10GEMAC
     tx_axis_mac_tuser       : out std_logic;                                        -- Tx axistream underrun indicator to 10GEMAC
-    tx_axis_mac_tready      : in  std_logic                                         -- Tx axistream ready from 10GEMAC
+    tx_axis_mac_tready      : in  std_logic;                                        -- Tx axistream ready from 10GEMAC
+
+    mac_ip2bus_data  : in std_logic_vector(31 downto 0);
+    mac_ip2bus_wrack : in std_logic;
+    mac_ip2bus_rdack : in std_logic;
+    mac_ip2bus_error : in std_logic;
+    mac_bus2ip_addr  : out std_logic_vector(31 downto 0);
+    mac_bus2ip_data  : out std_logic_vector(31 downto 0);
+    mac_bus2ip_rnw   : out std_logic;
+    mac_bus2ip_cs    : out std_logic_vector(0 downto 0)
   );
 
 end embedded_top;
@@ -331,7 +340,7 @@ architecture imp of embedded_top is
 --      X"00000000" & (C_BASEADDR), -- user0 base address soft registers
 --      X"00000000" & (C_HIGHADDR)  -- user0 high address
       X"0000000000000000", -- user0 base address soft registers
-      X"000000000003FFFF"  -- user0 high address
+      X"0000000000000FFF"  -- user0 high address
     );
 
   constant C_ARD_NUM_CE_ARRAY   : INTEGER_ARRAY_TYPE :=
@@ -342,7 +351,7 @@ architecture imp of embedded_top is
     );
 
   constant C_S_AXI_MIN_SIZE       : std_logic_vector(31 downto 0)
-                                  := X"0003FFFF";
+                                  := X"00000FFF";
 
   constant C_USE_WSTRB            : integer := 0;
 
@@ -567,61 +576,61 @@ begin
     -- IP Interconnect (IPIC) port signals
     BUS2IP_CLK     => bus2ip_clk_i,
     BUS2IP_RESETN  => bus2ip_reset_n_i,
-    IP2BUS_DATA    => shim2bus_data ,
-    IP2BUS_WRACK   => shim2bus_wr_ack,
-    IP2BUS_RDACK   => shim2bus_rd_ack,
-    IP2BUS_ERROR   => ip2shim_error,
-    BUS2IP_ADDR    => bus2shim_addr,
-    BUS2IP_DATA    => bus2shim_data,
-    BUS2IP_RNW     => bus2shim_r_nw ,
+    IP2BUS_DATA    => mac_ip2bus_data,
+    IP2BUS_WRACK   => mac_ip2bus_wrack,
+    IP2BUS_RDACK   => mac_ip2bus_rdack,
+    IP2BUS_ERROR   => mac_ip2bus_error,
+    BUS2IP_ADDR    => mac_bus2ip_addr,
+    BUS2IP_DATA    => mac_bus2ip_data,
+    BUS2IP_RNW     => mac_bus2ip_rnw,
     BUS2IP_BE      => open,
-    BUS2IP_CS      => bus2shim_cs  ,
-    BUS2IP_RDCE    => bus2shim_rd_ce,
-    BUS2IP_WRCE    => bus2shim_wr_ce
+    BUS2IP_CS      => mac_bus2ip_cs,
+    BUS2IP_RDCE    => open,
+    BUS2IP_WRCE    => open 
   );
 
   bus2ip_reset_i <= not(bus2ip_reset_n_i);
 
   -- Instantiate the Address response shim for invalid addresses
-  I_ADDR_SHIM : entity axi_ethernet_v3_01_a.addr_response_shim(rtl)
-  generic map(
-    C_BUS2CORE_CLK_RATIO      => 1,
-    C_S_AXI_ADDR_WIDTH        => C_S_AXI_ADDR_WIDTH,
-    C_S_AXI_DATA_WIDTH        => C_S_AXI_DATA_WIDTH,
-    C_SIPIF_DWIDTH            => 32,
-    C_NUM_CS                  => C_NUM_CS,
-    C_NUM_CE                  => C_NUM_CE,
-    C_FAMILY                  => C_FAMILY
-  )
-  port map(
-    -- clock and reset
-    S_AXI_ACLK                => bus2ip_clk_i,
-    S_AXI_ARESET              => bus2ip_reset_i,
+  -- I_ADDR_SHIM : entity axi_ethernet_v3_01_a.addr_response_shim(rtl)
+  -- generic map(
+  --   C_BUS2CORE_CLK_RATIO      => 1,
+  --   C_S_AXI_ADDR_WIDTH        => C_S_AXI_ADDR_WIDTH,
+  --   C_S_AXI_DATA_WIDTH        => C_S_AXI_DATA_WIDTH,
+  --   C_SIPIF_DWIDTH            => 32,
+  --   C_NUM_CS                  => 1,
+  --   C_NUM_CE                  => 1,
+  --   C_FAMILY                  => C_FAMILY
+  -- )
+  -- port map(
+  --   -- clock and reset
+  --   S_AXI_ACLK                => bus2ip_clk_i,
+  --   S_AXI_ARESET              => bus2ip_reset_i,
 
-    -- slave AXI bus interface with shim
-    BUS2SHIM_ADDR             => bus2shim_addr,
-    BUS2SHIM_DATA             => bus2shim_data,
-    BUS2SHIM_RNW              => bus2shim_r_nw ,
-    BUS2SHIM_CS               => bus2shim_cs  ,
-    BUS2SHIM_RDCE             => bus2shim_rd_ce,
-    BUS2SHIM_WRCE             => bus2shim_wr_ce,
+  --   -- slave AXI bus interface with shim
+  --   BUS2SHIM_ADDR             => bus2shim_addr,
+  --   BUS2SHIM_DATA             => bus2shim_data,
+  --   BUS2SHIM_RNW              => bus2shim_r_nw ,
+  --   BUS2SHIM_CS               => bus2shim_cs  ,
+  --   BUS2SHIM_RDCE             => bus2shim_rd_ce,
+  --   BUS2SHIM_WRCE             => bus2shim_wr_ce,
 
-    SHIM2BUS_DATA             => shim2bus_data ,
-    SHIM2BUS_WRACK            => shim2bus_wr_ack,
-    SHIM2BUS_RDACK            => shim2bus_rd_ack,
+  --   SHIM2BUS_DATA             => shim2bus_data ,
+  --   SHIM2BUS_WRACK            => shim2bus_wr_ack,
+  --   SHIM2BUS_RDACK            => shim2bus_rd_ack,
 
-    -- internal interface with shim
-    SHIM2IP_ADDR              => shim2ip_addr_i,
-    SHIM2IP_DATA              => shim2ip_data_i,
-    SHIM2IP_RNW               => shim2ip_r_nw_i,
-    SHIM2IP_CS                => shim2ip_cs  ,
-    SHIM2IP_RDCE              => shim2ip_rd_ce,
-    SHIM2IP_WRCE              => shim2ip_wr_ce,
+  --   -- internal interface with shim
+  --   SHIM2IP_ADDR              => shim2ip_addr_i,
+  --   SHIM2IP_DATA              => shim2ip_data_i,
+  --   SHIM2IP_RNW               => shim2ip_r_nw_i,
+  --   SHIM2IP_CS                => shim2ip_cs  ,
+  --   SHIM2IP_RDCE              => shim2ip_rd_ce,
+  --   SHIM2IP_WRCE              => shim2ip_wr_ce,
 
-    IP2SHIM_DATA              => ip2shim_data,
-    IP2SHIM_WRACK             => ip2shim_wr_ack,
-    IP2SHIM_RDACK             => ip2shim_rd_ack
-  );
+  --   IP2SHIM_DATA              => ip2shim_data,
+  --   IP2SHIM_WRACK             => ip2shim_wr_ack,
+  --   IP2SHIM_RDACK             => ip2shim_rd_ack
+  -- );
 
   TAG_REG_CROSS_I : entity axi_ethernet_v3_01_a.bus_clk_cross(imp)
   generic map (
