@@ -37,7 +37,7 @@ enum lro_state {
 #include "axitemac.h"
 
 #define DRIVER_NAME		"axinet"
-#define DRIVER_DESCRIPTION	"Soul Axi Ethernet driver"
+#define DRIVER_DESCRIPTION	"Axi Ethernet driver"
 #define DRIVER_VERSION		"1.00a"
 
 #define SSTG_DEBUG 	0
@@ -1383,7 +1383,7 @@ static void __exit axi_exit(void)
 module_init(axi_init);
 module_exit(axi_exit);
 
-MODULE_DESCRIPTION("Soul Axi Ethernet driver");
-MODULE_AUTHOR("Soul");
+MODULE_DESCRIPTION("Axi Ethernet driver");
+MODULE_AUTHOR("Hu Gang");
 MODULE_LICENSE("GPL");
 
