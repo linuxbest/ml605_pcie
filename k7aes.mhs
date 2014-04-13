@@ -21,7 +21,7 @@
  PORT PCIe_Diff_Clk_N = PCIe_Diff_Clk_N, DIR = I, SIGIS = CLK, CLK_FREQ = 100000000
  PORT PCIe_perstn = PCIe_perstn, DIR = I, SIGIS = RST, RST_POLARITY = 0
  PORT sfp_txf = sfp_txf, DIR = I
- PORT sfp_rs = sfp_ss, DIR = O
+ PORT sfp_rs = sfp_rs, DIR = O
  PORT sfp_txd = sfp_txd, DIR = O
  PORT txp = txp, DIR = O
  PORT txn = txn, DIR = O

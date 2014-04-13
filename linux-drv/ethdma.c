@@ -41,8 +41,8 @@ enum lro_state {
 #define DRIVER_VERSION		"1.00a"
 
 #define SSTG_DEBUG 	1
-#define RX_HW_CSUM 	1
-#define TX_HW_CSUM	1
+#define RX_HW_CSUM 	0
+#define TX_HW_CSUM	0
 
 /* Descriptors defines for Tx and Rx DMA - 2^n for the best performance */
 #define TX_BD_NUM	512
@@ -162,6 +162,7 @@ struct axi_local {
 	struct net_lro_mgr lro_mgr;
 	struct net_lro_desc lro_arr[MAX_LRO_DESCRIPTORS];
 #endif
+	struct timer_list poll_timer;
 };
 
 static struct pci_device_id axi_pci_table[] = {
@@ -615,6 +616,14 @@ static void DmaRecvHandlerBH(unsigned long p)
 	}
 }
 
+static void axi_poll_isr(unsigned long data)
+{
+	struct net_device *ndev = (struct net_device *)data;
+	struct axi_local *lp = netdev_priv(ndev);
+	axi_interrupt(0, ndev);
+	mod_timer(&lp->poll_timer, jiffies + 1);
+}
+
 static int axi_irq_setup(struct net_device *ndev)
 {
 	int res;
@@ -645,6 +654,7 @@ static int axi_open(struct net_device *ndev)
 
 	axi_irq_setup(ndev);
 
+
 	if (XAxiDma_BdRingStart(TxRingPtr, RingIndex) == XST_FAILURE) {
 		printk(KERN_ERR "%s: XAxiDma: could not start dma tx channel\n", ndev->name);
 		return -EIO;
@@ -659,6 +669,11 @@ static int axi_open(struct net_device *ndev)
 #endif
 	/* We're ready to go. */
 	netif_start_queue(ndev);
+
+	init_timer(&lp->poll_timer);
+	lp->poll_timer.data = ndev;
+	lp->poll_timer.function = axi_poll_isr;
+	mod_timer(&lp->poll_timer, jiffies + (1 * HZ));
 
 	return 0;
 }
@@ -1062,6 +1077,8 @@ static void axi_remove_ndev(struct net_device *ndev)
 	*/
 	XAxiDma_mBdRingIntDisable(RxRingPtr, XAXIDMA_IRQ_ALL_MASK);
 	XAxiDma_mBdRingIntDisable(TxRingPtr, XAXIDMA_IRQ_ALL_MASK);
+
+	del_timer(&lp->poll_timer);
 
 	/*Stop AXI DMA Engine*/
 	AxiDma_Stop((u32)(lp->reg_base + AXI_DMA_REG));
