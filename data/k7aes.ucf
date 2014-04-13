@@ -136,14 +136,7 @@ NET sfp_txd LOC = M27 | IOSTANDARD = LVCMOS25;
 NET sfp_rs  LOC = K28 | IOSTANDARD = LVCMOS25;
 NET linkup  LOC = T28 | IOSTANDARD = LVCMOS25;
 
-INST */gtxe2_i LOC=GTXE2_CHANNEL_X0Y12;
-
-NET "*/xphy_block/q1_clk0_refclk_i" TNM_NET = "XG_REFCLK";
-NET "*/xphy_int/clk156"             TNM_NET = "XG_CLK156";
-NET "*/xphy_int/txclk322"           TNM_NET = "XG_TXCLK322";
-NET "*/xphy_int/rxclk322"           TNM_NET = "XG_RXCLK322";
-
-TIMESPEC "TS_XG_REFCLK"    = PERIOD "XG_REFCLK"   156.25 MHz;
-TIMESPEC "TS_XG_CLK156"    = PERIOD "XG_CLK156"   156.25 MHz;
-TIMESPEC "TS_XG_RXCLK322"  = PERIOD "XG_TXCLK322" 322.50 MHz;
-TIMESPEC "TS_XG_TXCLK322"  = PERIOD "XG_RXCLK322" 322.50 MHz;
+# Edit these constraints to select the correct transceiver for your design
+## Sample constraint for GT location
+INST "ten_eth_macphy_0/*gtxe2_i"          LOC="GTXE2_CHANNEL_X0Y12";
+INST "ten_eth_macphy_0/*gtxe2_common_0_i" LOC="GTXE2_COMMON_X0Y3";

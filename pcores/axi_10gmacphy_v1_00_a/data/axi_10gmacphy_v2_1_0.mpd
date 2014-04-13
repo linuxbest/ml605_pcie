@@ -8,6 +8,7 @@ OPTION IMP_NETLIST = TRUE
 OPTION HDL = VERILOG
 OPTION USAGE_LEVEL = BASE_USER
 OPTION DESC = AXI Ethernet Embedded IP
+OPTION PLATGEN_SYSLEVEL_UPDATE_PROC = generate_corelevel_ucf
 OPTION ARCH_SUPPORT_MAP = (spartan6t=PRODUCTION, spartan6=PRODUCTION, spartan6l=PRODUCTION, qspartan6t=PRODUCTION, qspartan6=PRODUCTION, aspartan6t=PRODUCTION, aspartan6=PRODUCTION, virtex6lx=PRODUCTION, virtex6sx=PRODUCTION, virtex6cx=PRODUCTION, virtex6llx=PRODUCTION, virtex6lsx=PRODUCTION, qspartan6l=PRODUCTION, qvirtex6lx=PRODUCTION, qvirtex6sx=PRODUCTION, qvirtex6fx=PRODUCTION, qvirtex6tx=PRODUCTION, virtex7=PRODUCTION, kintex7=PRODUCTION, artix7=PRE_PRODUCTION, zynq=PRE_PRODUCTION, virtex7l=PRE_PRODUCTION, kintex7l=PRE_PRODUCTION, aartix7=PRE_PRODUCTION, artix7l=PRE_PRODUCTION, virtex7ht=PRE_PRODUCTION, qvirtex7=PRE_PRODUCTION, qkintex7=PRE_PRODUCTION, qkintex7l=PRE_PRODUCTION, qartix7=PRE_PRODUCTION, qartix7l=PRE_PRODUCTION, azynq=PRE_PRODUCTION, qzynq=PRE_PRODUCTION, qvirtex7l=PRE_PRODUCTION)
 
 ## Bus Interfaces
@@ -22,8 +23,8 @@ PARAMETER C_DBG_PORT = 0, DT = integer
 # GTX
 PORT refclk_p = "", DIR = I, SIGIS = CLK
 PORT refclk_n = "", DIR = I, SIGIS = CLK
+PORT reset    = "", DIR = I, SIGIS = RST, INITIALVAL = GND
 
-PORT reset    = "", DIR = I, SIGIS = RST
 PORT rxp      = "", DIR = I
 PORT rxn      = "", DIR = I
 PORT txp      = "", DIR = O
