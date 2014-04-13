@@ -127,7 +127,7 @@ NET refclk_p LOC = C8;
 NET refclk_n LOC = C7;
 
 # signal detect
-NET sfp_sgd LOC = L28 | IOSTANDARD = LVCMOS25;
+#NET sfp_sgd LOC = L28 | IOSTANDARD = LVCMOS25;
 # tx fault
 NET sfp_txf LOC = N27 | IOSTANDARD = LVCMOS25;
 # tx disable

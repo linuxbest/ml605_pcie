@@ -20,7 +20,6 @@
  PORT PCIe_Diff_Clk_P = PCIe_Diff_Clk_P, DIR = I, SIGIS = CLK, CLK_FREQ = 100000000
  PORT PCIe_Diff_Clk_N = PCIe_Diff_Clk_N, DIR = I, SIGIS = CLK, CLK_FREQ = 100000000
  PORT PCIe_perstn = PCIe_perstn, DIR = I, SIGIS = RST, RST_POLARITY = 0
- PORT sfp_sgd = sfp_sgd, DIR = I
  PORT sfp_txf = sfp_txf, DIR = I
  PORT sfp_rs = sfp_ss, DIR = O
  PORT sfp_txd = sfp_txd, DIR = O
@@ -284,7 +283,6 @@ BEGIN axi_10gmacphy
  BUS_INTERFACE AXI_MAC_RX = mac_axis_rx_0
  PORT refclk_p = refclk_p
  PORT refclk_n = refclk_n
- PORT signal_detect = sfp_sgd
  PORT tx_fault = sfp_txf
  PORT sfp_rs = sfp_rs
  PORT tx_disable = sfp_txd

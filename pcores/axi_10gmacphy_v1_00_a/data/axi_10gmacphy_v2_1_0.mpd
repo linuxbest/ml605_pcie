@@ -30,8 +30,8 @@ PORT rxn      = "", DIR = I
 PORT txp      = "", DIR = O
 PORT txn      = "", DIR = O
 
-PORT signal_detect = "", DIR = I
-PORT tx_fault      = "", DIR = I
+PORT signal_detect = "", DIR = I, INITIALVAL = VCC
+PORT tx_fault      = "", DIR = I, INITIALVAL = GND
 PORT sfp_rs        = "", DIR = O
 PORT tx_disable    = "", DIR = O
 
