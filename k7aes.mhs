@@ -297,4 +297,3 @@ BEGIN axi_10gmacphy
  PORT bus2ip_clk = clk_100_0000MHzMMCM0
  PORT bus2ip_reset = proc_sys_reset_0_BUS_STRUCT_RESET
 END
-
