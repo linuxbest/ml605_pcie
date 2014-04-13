@@ -381,7 +381,7 @@ module xphy_gtwizard_10gbaser_GT #
             .TX_EIDLE_ASSERT_DELAY                  (3'b110),
             .TX_EIDLE_DEASSERT_DELAY                (3'b100),
             .TX_LOOPBACK_DRIVE_HIZ                  ("FALSE"),
-            .TX_MAINCURSOR_SEL                      (1'b1),
+            .TX_MAINCURSOR_SEL                      (1'b0),
             .TX_DRIVE_MODE                          ("DIRECT"),
             .TX_MARGIN_FULL_0                       (7'b1001110),
             .TX_MARGIN_FULL_1                       (7'b1001001),

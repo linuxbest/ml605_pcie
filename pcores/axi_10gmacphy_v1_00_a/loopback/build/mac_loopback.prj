@@ -10,6 +10,6 @@ verilog work ../../hdl/verilog/axi_10gmacphy.v
 verilog work ../../hdl/verilog/xphy_int.v
 verilog work ../../sim/xgmac_dut.v
 verilog work ../../sim/xgmac_address_swap.v
-verilog work ../icon3.v
-verilog work ../ila256_16.v
+verilog work ../../hdl/verilog/icon3.v
+verilog work ../../hdl/verilog/ila256_16.v
 verilog work ../mac_loopback.v

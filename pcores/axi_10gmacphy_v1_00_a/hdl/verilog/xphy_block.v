@@ -4,8 +4,8 @@
 //-----------------------------------------------------------------------------
 // File       : xphy_block.v                                          
 //-----------------------------------------------------------------------------
-// Description: This file is a wrapper for the 10GBASE-KR core. It contains the 
-// 10GBASE-KR core, the transceivers and some transceiver logic.                
+// Description: This file is a wrapper for the 10GBASE-R core. It contains the 
+// 10GBASE-R core, the transceivers and some transceiver logic.                
 //-----------------------------------------------------------------------------
 // (c) Copyright 2009 - 2012 Xilinx, Inc. All rights reserved.
 //
@@ -87,18 +87,7 @@ module xphy_block #
   output          rx_resetdone,
   input           signal_detect,
   input           tx_fault,
-  output          tx_disable,
-  output          is_eval,
-  input wire      an_enable,
-  input wire training_enable,
-  input wire [20:0] training_addr,
-  input wire training_rnw,
-  input wire [15:0] training_wrdata,
-  input wire training_ipif_cs,
-  input wire training_drp_cs,
-  output wire [15:0] training_rddata,
-  output wire training_rdack,
-  output wire training_wrack);
+  output          tx_disable);   
     
   //  Static signal Assigments    
   wire            tied_to_ground_i;
@@ -168,19 +157,6 @@ module xphy_block #
   // Set this according to requirements
   wire [19:0] RXRESETTIME = RXRESETTIME_NOM;
 
-  wire [7:0] core_status_i;
-  reg rxlpmen_i_reg = 1'b0;
-  wire an_link_up;
-  wire an_enable_control;
-  reg an_link_up_reg = 1'b0;
-  reg an_link_up_changing = 1'b0;
-  reg rxlpmen_i_changing = 1'b0;
-  reg gt0_rxlpmen_i = 1'b0;
-  (* ASYNC_REG = "TRUE" *)
-  reg gt0_rxlpmen_i_syncrx_tmp = 1'b0;
-  (* ASYNC_REG = "TRUE" *)
-  reg gt0_rxlpmen_i_syncrx = 1'b0;
-
   // Aid the detection of a cable/board being pulled
   reg [3:0] rx_sample = 4'b0000; // Used to monitor RX data for a cable pull 
   reg [3:0] rx_sample_prev = 4'b0000; // Used to monitor RX data for a cable pull 
@@ -205,10 +181,6 @@ module xphy_block #
   reg cable_unpull_reset_reg_reg = 1'b0;
   reg cable_unpull_reset_rising = 1'b0;
   reg cable_unpull_reset_rising_reg = 1'b0;
-  
-  wire [4:0] coeff_minus_1;
-  wire [4:0] coeff_plus_1;
-  wire [6:0] coeff_zero;
   
   wire signal_detect_comb;
   wire cable_is_pulled;
@@ -238,7 +210,8 @@ module xphy_block #
       .mdio_out(mdio_out),
       .mdio_tri(mdio_tri),
       .prtad(prtad),
-      .core_status(core_status_i),    
+      .core_status(core_status), 
+      .pma_pmd_type(3'b101),
       .drp_req(drp_req),
       .drp_gnt(drp_gnt),                            
       .drp_den(gt0_drpen_i),                                   
@@ -259,21 +232,7 @@ module xphy_block #
       .tx_prbs31_en(tx_prbs31_en),
       .rx_prbs31_en(rx_prbs31_en),
       .clear_rx_prbs_err_count(gt0_clear_rx_prbs_err_count_i),
-      .loopback_ctrl(gt0_loopback_i),
-      .is_eval(is_eval),
-      .an_enable(an_enable),
-      .coeff_minus_1(coeff_minus_1),
-      .coeff_plus_1(coeff_plus_1),
-      .coeff_zero(coeff_zero),
-      .training_enable(training_enable),
-      .training_addr(training_addr),
-      .training_rnw(training_rnw),
-      .training_wrdata(training_wrdata),
-      .training_ipif_cs(training_ipif_cs),
-      .training_drp_cs(training_drp_cs),
-      .training_rddata(training_rddata),
-      .training_rdack(training_rdack),
-      .training_wrack(training_wrack));
+      .loopback_ctrl(gt0_loopback_i));
 
   // Make the GT Wizard output connect to the core and top level i/f
   assign Q1_CLK0_GTREFCLK_PAD_N_IN = refclk_n;
@@ -695,7 +654,7 @@ module xphy_block #
       rx_sample <= gt_rxd[7:4];
       rx_sample_prev <= rx_sample;
       
-      if(!cable_pull_reset && !gt0_rxlpmen_i_syncrx && !cable_is_pulled && gt0_rxresetdone_i_regrx322)
+      if(!cable_pull_reset && !cable_is_pulled && gt0_rxresetdone_i_regrx322)
       begin
         // If those 4 bits do not look like the cable-pull behaviour, increment the event counter
         if(!(rx_sample == 4'b1010) && !(rx_sample == 4'b0101) && !(rx_sample == 4'b0000) && !(rx_sample == rx_sample_prev))  // increment the event counter
@@ -755,7 +714,7 @@ module xphy_block #
     end
     else
     begin
-      if(!cable_unpull_reset && !gt0_rxlpmen_i_syncrx && cable_is_pulled && gt0_rxresetdone_i_regrx322)
+      if(!cable_unpull_reset && cable_is_pulled && gt0_rxresetdone_i_regrx322)
       begin
         // If those 4 bits do not look like the cable-pull behaviour, increment the event counter
         if(!(rx_sample == 4'b1010) && !(rx_sample == 4'b0101) && !(rx_sample == 4'b0000) && !(rx_sample == rx_sample_prev))  // increment the event counter
@@ -795,64 +754,6 @@ module xphy_block #
   // Create the signal_detect signal as an AND of the external signal and (not) the local cable_is_pulled
   assign signal_detect_comb = signal_detect && !cable_is_pulled;
 
-  assign core_status = core_status_i;
-
-  // When the AN block is enabled, we need to switch the GT RX to LPM mode and give an RX Reset
-  // We need to detect when AN is enabled but not complete....
-    
-  assign an_link_up = core_status_i[5];
-  assign an_enable_control = core_status_i[4] && an_enable;
-
-  always @(posedge clk156)
-  begin
-    if (an_enable_control == 1'b1 && mmcm_locked == 1'b1) 
-      gt0_rxlpmen_i <= !(an_link_up);
-    else 
-      gt0_rxlpmen_i <= 1'b0;
-  end
-
-  always @(posedge areset_clk156 or posedge clk156 or negedge mmcm_locked_clk156)
-  begin
-    if(areset_clk156 == 1'b1 || mmcm_locked_clk156 == 1'b0)
-      rxlpmen_i_reg <= 1'b0;
-    else
-      rxlpmen_i_reg <= gt0_rxlpmen_i;
-  end   
-  
-  always @(posedge gt0_rxusrclk2_i or posedge gt0_gtrxreset_i_gt0_rxusrclk2_i)
-  begin
-    if(gt0_gtrxreset_i_gt0_rxusrclk2_i)
-    begin
-      gt0_rxlpmen_i_syncrx_tmp <= 1'b0;
-      gt0_rxlpmen_i_syncrx <= 1'b0;
-    end
-    else
-    begin
-      gt0_rxlpmen_i_syncrx_tmp <= rxlpmen_i_reg;
-      gt0_rxlpmen_i_syncrx <= gt0_rxlpmen_i_syncrx_tmp;
-    end
-  end
-  
-  // Detect a change on the gt0_rxlpmen_i signal, to trigger an RX Reset in the GT.
-  always @(posedge clk156)
-  begin
-    if(mmcm_locked == 1'b1)
-      rxlpmen_i_changing <= gt0_rxlpmen_i ^ rxlpmen_i_reg;
-  end
-  
-  // Create a rising edge pulse when an_link_up goes high, to restart Training
-  always @(posedge areset_clk156 or posedge clk156 or negedge mmcm_locked_clk156)
-  begin
-    if(areset_clk156 == 1'b1 || mmcm_locked_clk156 == 1'b0) begin
-      an_link_up_reg <= 1'b0;
-      an_link_up_changing <= 1'b0;
-    end
-    else begin
-      an_link_up_reg <= an_link_up;
-      an_link_up_changing <= an_link_up_reg ^ an_link_up;
-    end
-  end 
-
 
   always @(posedge areset_clk156 or posedge clk156 or negedge mmcm_locked_clk156)
   begin
@@ -874,9 +775,10 @@ module xphy_block #
   
   assign pcs_resetout_rising = pcs_resetout && !pcs_resetout_reg;
   
-  // Incorporate the pma_resetout_rising and cable_pull/unpull_reset_rising and rxlpmen_i_changing bits generated in code below.
-  assign  gt0_gtrxreset_i = (GTRXRESET_IN || !gt0_qplllock_i || pma_resetout_rising || 
-                             cable_pull_reset_rising_reg || cable_unpull_reset_rising_reg || rxlpmen_i_changing) && reset_counter[7];
+  
+  // Incorporate the pma_resetout_rising and cable_pull/unpull_reset_rising bits generated in code below.
+  assign  gt0_gtrxreset_i = (GTRXRESET_IN || !gt0_qplllock_i || pma_resetout_rising ||
+                             cable_pull_reset_rising_reg || cable_unpull_reset_rising_reg) && reset_counter[7];
  	assign  gt0_gttxreset_i = (GTTXRESET_IN || !gt0_qplllock_i || pma_resetout_rising) && reset_counter[7];
   assign  gt0_qpllreset_i = QPLLRESET_IN;
 
@@ -1005,7 +907,7 @@ module xphy_block #
         .GT0_GTXRXP_IN                  (RXP_IN),
         .GT0_RXCDRLOCK_OUT              (),
         .GT0_RXELECIDLE_OUT             (),
-        .GT0_RXLPMEN_IN                 (gt0_rxlpmen_i),
+        .GT0_RXLPMEN_IN                 (1'b0),
         //------ Receive Ports - RX Elastic Buffer and Phase Alignment Ports -------
         .GT0_RXBUFRESET_IN              (gt0_rxbufreset_i),
         .GT0_RXBUFSTATUS_OUT            (gt0_rxbufstatus_i),
@@ -1029,9 +931,9 @@ module xphy_block #
         .GT0_GTXTXN_OUT                 (TXN_OUT),
         .GT0_GTXTXP_OUT                 (TXP_OUT),
         .GT0_TXINHIBIT_IN               (tx_disable),
-        .GT0_TXPRECURSOR_IN             (coeff_minus_1),
-        .GT0_TXPOSTCURSOR_IN            (coeff_plus_1),
-        .GT0_TXMAINCURSOR_IN            (coeff_zero),
+        .GT0_TXPRECURSOR_IN             (5'b0),
+        .GT0_TXPOSTCURSOR_IN            (5'b0),
+        .GT0_TXMAINCURSOR_IN            (7'b0),
         //--------------------- Transmit Ports - TX PLL Ports ----------------------
         .GT0_TXRESETDONE_OUT            (gt0_txresetdone_i),
         //------------------- Transmit Ports - TX PRBS Generator -------------------
@@ -1051,7 +953,6 @@ module xphy_block #
     );
    
 
-    /* synthesis attribute keep of q1_clk0_refclk_i is "true" */
 endmodule
 
 

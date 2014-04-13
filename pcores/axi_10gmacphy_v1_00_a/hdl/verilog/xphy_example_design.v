@@ -4,7 +4,7 @@
 //-----------------------------------------------------------------------------
 // File       : xphy_example_design.v
 //-----------------------------------------------------------------------------
-// Description: This file is a wrapper for the 10GBASE-KR core; it contains all 
+// Description: This file is a wrapper for the 10GBASE-R core; it contains all 
 // of the clock buffers required for implementing the block level
 //-----------------------------------------------------------------------------
 // (c) Copyright 2009 - 2012 Xilinx, Inc. All rights reserved.
@@ -78,22 +78,10 @@ module xphy_example_design
   output          resetdone,
   input           signal_detect,
   input           tx_fault,
-  output          tx_disable,
-  output          is_eval,
-  input wire an_enable,
-  input wire training_enable,
-  input wire [20:0] training_addr,
-  input wire training_rnw,
-  input wire [15:0] training_wrdata,
-  input wire training_ipif_cs,
-  input wire training_drp_cs,
-  output wire [15:0] training_rddata,
-  output wire training_rdack,
-  output wire training_wrack);
+  output          tx_disable);
 
   // Signal declarations
   wire clk156;
-  wire txclk156_mmcm0_locked;
   
   // Sync the global reset to the relevant clocks
   reg core_reset_tx;
@@ -117,10 +105,8 @@ module xphy_example_design
   wire rx_resetdone_int;
   reg [63:0] xgmii_txd_reg;
   reg [7:0] xgmii_txc_reg;
-  reg [63:0] xgmii_txd_reg1;
-  reg [7:0] xgmii_txc_reg1;
-  wire [63 : 0] xgmii_rxd_int;
-  wire [7 : 0]  xgmii_rxc_int;
+  wire [63:0] xgmii_rxd_int;
+  wire [7:0] xgmii_rxc_int;
   
   wire mdio_out_int;
   wire mdio_tri_int;
@@ -151,8 +137,6 @@ module xphy_example_design
       core_reset_rx <= core_reset_rx_tmp;
     end
   end     
-    
-  // Create the other synchronized resets from the core reset...
     
   //synthesis attribute async_reg of txreset322_tmp is "true";
   //synthesis attribute async_reg of txreset322 is "true";
@@ -200,17 +184,14 @@ module xphy_example_design
       dclk_reset_tmp <= core_reset_rx;
       dclk_reset <= dclk_reset_tmp;
     end
-  end  
- 
+  end   
+   
   // Add a pipeline to the xmgii_tx inputs, to aid timing closure
   always @(posedge clk156)
   begin
-    xgmii_txd_reg1 <= xgmii_txd; 
-    xgmii_txc_reg1 <= xgmii_txc; 
-    xgmii_txd_reg <= xgmii_txd_reg1; 
-    xgmii_txc_reg <= xgmii_txc_reg1; 
+    xgmii_txd_reg <= xgmii_txd; 
+    xgmii_txc_reg <= xgmii_txc; 
   end
-     
 
   // Add a pipeline to the xmgii_rx outputs, to aid timing closure
   always @(posedge clk156)
@@ -218,7 +199,7 @@ module xphy_example_design
     xgmii_rxd <= xgmii_rxd_int; 
     xgmii_rxc <= xgmii_rxc_int; 
   end
-     
+
   // Add a pipeline to the mdio outputs, to aid timing closure
   // This is safe because the mdio clock is running so slowly
   always @(posedge clk156)
@@ -226,8 +207,8 @@ module xphy_example_design
     mdio_out <= mdio_out_int; 
     mdio_tri <= mdio_tri_int; 
   end
-     
-  // Instantiate the 10GBASE-KR Block Level
+
+  // Instantiate the 10GBASE-R Block Level
 
   xphy_block # (
       .EXAMPLE_SIM_GTRESET_SPEEDUP("TRUE") ) //Does not affect hardware
@@ -262,26 +243,14 @@ module xphy_example_design
       .rx_resetdone(rx_resetdone_int),
       .signal_detect(signal_detect),
       .tx_fault(tx_fault),
-      .tx_disable(tx_disable),
-      .is_eval(is_eval),
-      .an_enable(an_enable),
-      .training_enable(training_enable),
-      .training_addr(training_addr),
-      .training_rnw(training_rnw),
-      .training_wrdata(training_wrdata),
-      .training_ipif_cs(training_ipif_cs),
-      .training_drp_cs(training_drp_cs),
-      .training_rddata(training_rddata),
-      .training_rdack(training_rdack),
-      .training_wrack(training_wrack)
-      );
+      .tx_disable(tx_disable));
  
   assign core_clk156_out = clk156;
 
   ODDR #(.DDR_CLK_EDGE("SAME_EDGE")) rx_clk_ddr(
     .Q(xgmii_rx_clk),
-    .D1(1'b0),
-    .D2(1'b1),
+    .D1(1'b1),
+    .D2(1'b0),
     .C(clk156),
     .CE(1'b1),
     .R(1'b0),

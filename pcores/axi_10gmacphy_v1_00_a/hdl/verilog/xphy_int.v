@@ -50,15 +50,12 @@ module xphy_int (/*AUTOARG*/
    core_clk156_out, core_reset_tx, txreset322, rxreset322,
    xgmii_txd_int, xgmii_txc_int, xgmii_rxd, xgmii_rxc, xgmii_txd_dbg,
    xgmii_rxd_dbg, xgmii_txc_dbg, xgmii_rxc_dbg, rx_dcm_lock,
-   tx_dcm_lock, prtad, training_enable, training_addr, training_rnw,
-   training_wrdata, training_ipif_cs, training_drp_cs, an_enable,
-   tx_ifg_delay, sfp_rs, tx_mac_aclk, tx_reset, rx_mac_aclk, rx_reset,
-   linkup,
+   tx_dcm_lock, prtad, tx_ifg_delay, sfp_rs, tx_mac_aclk, tx_reset,
+   rx_mac_aclk, rx_reset, linkup,
    // Inputs
-   reset, dclk, is_eval, tx_resetdone, rx_resetdone, clk156, tx_fault,
+   reset, dclk, tx_resetdone, rx_resetdone, clk156, tx_fault,
    signal_detect, txclk322, xgmii_txd, xgmii_txc, xgmii_rxd_int,
-   xgmii_rxc_int, training_rddata, training_rdack, training_wrack,
-   rxclk322, core_status, rx_axis_tready
+   xgmii_rxc_int, rxclk322, core_status, rx_axis_tready
    );
    parameter C_MDIO_ADDR = 5'h0;
    parameter EXAMPLE_SIM_GTRESET_SPEEDUP = "FALSE";
@@ -69,7 +66,6 @@ module xphy_int (/*AUTOARG*/
 
    input  dclk;
    output dclk_reset;
-   input  is_eval;
    
    input  tx_resetdone;
    input  rx_resetdone;
@@ -197,26 +193,6 @@ module xphy_int (/*AUTOARG*/
 
    output [4:0] prtad;
    assign prtad = C_MDIO_ADDR;
-
-   output training_enable;
-   output [20:0] training_addr;
-   output        training_rnw;
-   output [15:0] training_wrdata;
-   output        training_ipif_cs;
-   output        training_drp_cs;
-   assign training_enable = 0;
-   assign training_addr   = 0;
-   assign training_rnw    = 1;
-   assign training_wrdata = 0;
-   assign training_ipif_cs= 0;
-   assign training_drp_cs = 0;
-
-   input [15:0]  training_rddata;
-   input         training_rdack;
-   input         training_wrack;
- 
-   output 	 an_enable;
-   assign an_enable = EXAMPLE_SIM_GTRESET_SPEEDUP == "TRUE" ? 1'b0 : 1'b1;
 
    output [7:0]  tx_ifg_delay;
    assign tx_ifg_delay = 8'h0;

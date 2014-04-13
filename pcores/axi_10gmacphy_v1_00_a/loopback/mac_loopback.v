@@ -45,7 +45,7 @@
 // Code:
 module mac_loopback (/*AUTOARG*/
    // Outputs
-   txp, txn, tx_disable, sfp_rs, resetdone,
+   txp, txn, tx_disable, sfp_rs,
    // Inputs
    tx_fault, signal_detect, rxp, rxn, reset, refclk_p, refclk_n
    );
@@ -61,7 +61,6 @@ module mac_loopback (/*AUTOARG*/
    // End of automatics
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
-   output		resetdone;		// From axi_10g_mac_phy of axi_10gmacphy.v
    output		sfp_rs;			// From axi_10g_mac_phy of axi_10gmacphy.v
    output		tx_disable;		// From axi_10g_mac_phy of axi_10gmacphy.v
    output		txn;			// From axi_10g_mac_phy of axi_10gmacphy.v
@@ -82,6 +81,7 @@ module mac_loopback (/*AUTOARG*/
    wire			ip2bus_rdack;		// From axi_10g_mac_phy of axi_10gmacphy.v
    wire			ip2bus_wrack;		// From axi_10g_mac_phy of axi_10gmacphy.v
    wire			linkup;			// From axi_10g_mac_phy of axi_10gmacphy.v
+   wire			resetdone;		// From axi_10g_mac_phy of axi_10gmacphy.v
    wire [63:0]		rx_axis_tdata;		// From axi_10g_mac_phy of axi_10gmacphy.v
    wire [7:0]		rx_axis_tkeep;		// From axi_10g_mac_phy of axi_10gmacphy.v
    wire			rx_axis_tlast;		// From axi_10g_mac_phy of axi_10gmacphy.v
@@ -201,70 +201,9 @@ module mac_loopback (/*AUTOARG*/
 		.rx_mac_aclk		(rx_mac_aclk),
 		.rx_reset		(rx_reset),
 		.tx_mac_aclk		(tx_mac_aclk),
-		.tx_reset		(tx_reset));
+		.tx_reset		(tx_reset),
+		.resetdone		(resetdone));
 
-   wire [255:0] 	txdata;
-   wire [255:0] 	rxdata;
-   wire [255:0] 	ctdata;
-   wire [15:0]          rxtrig;
-   wire [15:0]          txtrig;
-
-   assign txdata[63:0]  = tx_axis_tdata;
-   assign txdata[71:64] = tx_axis_tkeep;
-   assign txdata[72]    = tx_axis_tready;
-   assign txdata[73]    = tx_axis_tlast;
-   assign txdata[74]    = tx_axis_tvalid;
-   assign txdata[190:127]=xgmii_txd_dbg;
-   assign txdata[198:191]=xgmii_txc_dbg;
-   assign txtrig[0]     = tx_axis_tlast;
-   assign txtrig[1]     = tx_axis_tvalid;
-
-   assign rxdata[63:0]  = rx_axis_tdata;
-   assign rxdata[71:64] = rx_axis_tkeep;
-   assign rxdata[72]    = rx_axis_tready;
-   assign rxdata[73]    = rx_axis_tlast;
-   assign rxdata[74]    = rx_axis_tvalid;
-   assign rxdata[190:127]=xgmii_rxd_dbg;
-   assign rxdata[198:191]=xgmii_rxc_dbg;   
-   assign rxtrig[0]     = rx_axis_tlast;
-   assign rxtrig[1]     = rx_axis_tvalid;
-
-   assign ctdata[7:0]   = linkup;
-   assign ctdata[8]     = resetdone;
-
-   wire [35:0] 		CONTROL0;
-   wire [35:0] 		CONTROL1;
-   wire [35:0] 		CONTROL2;
-   icon3
-     icon3 (/*AUTOINST*/
-	    // Inouts
-	    .CONTROL0			(CONTROL0[35:0]),
-	    .CONTROL1			(CONTROL1[35:0]),
-	    .CONTROL2			(CONTROL2[35:0]));
-   ila256_16
-     ila_ct (
-	     // Inouts
-	     .CONTROL			(CONTROL0[35:0]),
-	     // Inputs
-	     .CLK			(core_clk156_out),
-	     .DATA			(ctdata[255:0]),
-	     .TRIG0			(ctdata[15:0]));
-   ila256_16
-     ila_rx (
-	     // Inouts
-	     .CONTROL			(CONTROL1[35:0]),
-	     // Inputs
-	     .CLK			(rx_clk),
-	     .DATA			(rxdata[255:0]),
-	     .TRIG0			(rxtrig[15:0]));
-   ila256_16
-     ila_tx (
-	     // Inouts
-	     .CONTROL			(CONTROL2[35:0]),
-	     // Inputs
-	     .CLK			(rx_clk),
-	     .DATA			(txdata[255:0]),
-	     .TRIG0			(txtrig[15:0]));   
 endmodule // mac_loopback
 // Local Variables:
 // verilog-library-directories:("../hdl/verilog/" "../sim/" ".")

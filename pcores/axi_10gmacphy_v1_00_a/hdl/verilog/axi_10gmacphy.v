@@ -116,14 +116,12 @@ module axi_10gmacphy (/*AUTOARG*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire			an_enable;		// From xphy_int of xphy_int.v
    wire			areset;			// From xphy_int of xphy_int.v
    wire			clk156;			// From xphy_block of xphy_block.v
    wire			core_reset_tx;		// From xphy_int of xphy_int.v
    wire [7:0]		core_status;		// From xphy_block of xphy_block.v
    wire			dclk;			// From xphy_block of xphy_block.v
    wire			dclk_reset;		// From xphy_int of xphy_int.v
-   wire			is_eval;		// From xphy_block of xphy_block.v
    wire			mdc;			// From xgmac of xgmac.v
    wire			pause_req;		// From xgmac_int of xgmac_int.v
    wire [15:0]		pause_val;		// From xgmac_int of xgmac_int.v
@@ -136,15 +134,6 @@ module axi_10gmacphy (/*AUTOARG*/
    wire [29:0]		rx_statistics_vector;	// From xgmac of xgmac.v
    wire			rxclk322;		// From xphy_block of xphy_block.v
    wire			rxreset322;		// From xphy_int of xphy_int.v
-   wire [20:0]		training_addr;		// From xphy_int of xphy_int.v
-   wire			training_drp_cs;	// From xphy_int of xphy_int.v
-   wire			training_enable;	// From xphy_int of xphy_int.v
-   wire			training_ipif_cs;	// From xphy_int of xphy_int.v
-   wire			training_rdack;		// From xphy_block of xphy_block.v
-   wire [15:0]		training_rddata;	// From xphy_block of xphy_block.v
-   wire			training_rnw;		// From xphy_int of xphy_int.v
-   wire			training_wrack;		// From xphy_block of xphy_block.v
-   wire [15:0]		training_wrdata;	// From xphy_int of xphy_int.v
    wire			tx_axis_aresetn;	// From xphy_int of xphy_int.v
    wire			tx_clk0;		// From xgmac_int of xgmac_int.v
    wire			tx_dcm_lock;		// From xphy_int of xphy_int.v
@@ -263,10 +252,6 @@ module axi_10gmacphy (/*AUTOARG*/
 		 .tx_resetdone		(tx_resetdone),
 		 .rx_resetdone		(rx_resetdone),
 		 .tx_disable		(tx_disable),
-		 .is_eval		(is_eval),
-		 .training_rddata	(training_rddata[15:0]),
-		 .training_rdack	(training_rdack),
-		 .training_wrack	(training_wrack),
 		 // Inputs
 		 .refclk_n		(refclk_n),
 		 .refclk_p		(refclk_p),
@@ -283,14 +268,7 @@ module axi_10gmacphy (/*AUTOARG*/
 		 .mdio_in		(mdio_out_int),		 // Templated
 		 .prtad			(prtad[4:0]),
 		 .signal_detect		(signal_detect),
-		 .tx_fault		(tx_fault),
-		 .an_enable		(an_enable),
-		 .training_enable	(training_enable),
-		 .training_addr		(training_addr[20:0]),
-		 .training_rnw		(training_rnw),
-		 .training_wrdata	(training_wrdata[15:0]),
-		 .training_ipif_cs	(training_ipif_cs),
-		 .training_drp_cs	(training_drp_cs));
+		 .tx_fault		(tx_fault));
 
    xphy_int   #(/*AUTOINSTPARAM*/
 		// Parameters
@@ -318,13 +296,6 @@ module axi_10gmacphy (/*AUTOARG*/
 		.rx_dcm_lock		(rx_dcm_lock),
 		.tx_dcm_lock		(tx_dcm_lock),
 		.prtad			(prtad[4:0]),
-		.training_enable	(training_enable),
-		.training_addr		(training_addr[20:0]),
-		.training_rnw		(training_rnw),
-		.training_wrdata	(training_wrdata[15:0]),
-		.training_ipif_cs	(training_ipif_cs),
-		.training_drp_cs	(training_drp_cs),
-		.an_enable		(an_enable),
 		.tx_ifg_delay		(tx_ifg_delay[7:0]),
 		.sfp_rs			(sfp_rs),
 		.tx_mac_aclk		(tx_mac_aclk),
@@ -335,7 +306,6 @@ module axi_10gmacphy (/*AUTOARG*/
 		// Inputs
 		.reset			(reset),
 		.dclk			(dclk),
-		.is_eval		(is_eval),
 		.tx_resetdone		(tx_resetdone),
 		.rx_resetdone		(rx_resetdone),
 		.clk156			(clk156),
@@ -346,9 +316,6 @@ module axi_10gmacphy (/*AUTOARG*/
 		.xgmii_txc		(xgmii_txc[7:0]),
 		.xgmii_rxd_int		(xgmii_rxd_int[63:0]),
 		.xgmii_rxc_int		(xgmii_rxc_int[7:0]),
-		.training_rddata	(training_rddata[15:0]),
-		.training_rdack		(training_rdack),
-		.training_wrack		(training_wrack),
 		.rxclk322		(rxclk322),
 		.core_status		(core_status[7:0]),
 		.rx_axis_tready		(rx_axis_tready));
@@ -373,7 +340,7 @@ module axi_10gmacphy (/*AUTOARG*/
    assign c_dbg[14]   = sfp_rs;
    assign c_dbg[15]   = tx_disable;
    assign c_dbg[16]   = xgmacint;
-   assign c_dbg[17]   = an_enable;
+   assign c_dbg[17]   = 1'b0;
    assign c_dbg[18]   = dclk_reset;
    assign c_dbg[19]   = rx_resetdone;
    assign c_dbg[20]   = tx_resetdone;
