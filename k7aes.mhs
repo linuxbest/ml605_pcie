@@ -205,9 +205,8 @@ BEGIN axi_aes
  PORT mm2s_cntrl_reset_out_n = mm2s_cntrl_reset_out_n_0
  PORT s2mm_prmry_reset_out_n = s2mm_prmry_reset_out_n_0
  PORT s2mm_sts_reset_out_n = s2mm_sts_reset_out_n_0
- PORT mm2s_intr = mm2s_intr_0
- PORT s2mm_intr = s2mm_intr_0
- PORT axi_intr = axi_aes_intr_0
+ PORT intr_in = s2mm_intr_0 & mm2s_intr_0 & 0b00 & ETHERNET_dma_s2mm_introut_0 & ETHERNET_dma_mm2s_introut_0 & 0b00
+ PORT intr_out = axi_aes_intr_0
 END
 
 BEGIN axi_dma
