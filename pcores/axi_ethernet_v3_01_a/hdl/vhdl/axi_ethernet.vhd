@@ -531,10 +531,10 @@ begin
    I_RX_FIFO: entity axi_ethernet_v3_01_a.axi_async_fifo(axi_async_fifo_a)
      generic map(
      C_FAMILY           => C_FAMILY,
-     C_FIFO_DEPTH       => 2048,
-     C_PROG_FULL_THRESH => 1024,
+     C_FIFO_DEPTH       => 1024,
+     C_PROG_FULL_THRESH => 256,
      C_DATA_WIDTH       => 74,
-     C_PTR_WIDTH        => 11,
+     C_PTR_WIDTH        => 10,
      C_MEMORY_TYPE      => 1,
      C_COMMON_CLOCK     => 0,
      C_IMPLEMENTATION_TYPE => 2,

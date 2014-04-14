@@ -16,4 +16,4 @@ w
 
 do ../../systemc/wave_eth.do
 
-run 10000ns
+run 30000ns
