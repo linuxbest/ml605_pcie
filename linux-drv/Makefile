@@ -1,6 +1,6 @@
 GITVERSION="git-$(shell git describe --dirty --always) `date "+%Y %D %H:%M:%S"`"
 EXTRA_CFLAGS += -DGITVERSION=\"${GITVERSION}\"
-#EXTRA_CFLAGS += -DCONFIG_VPCI
+EXTRA_CFLAGS += -DCONFIG_VPCI
 #EXTRA_CFLAGS += -DDEBUG -g
 
 KERNELDIR ?= /lib/modules/`uname -r`/build

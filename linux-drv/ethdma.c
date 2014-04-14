@@ -135,14 +135,15 @@ struct axi_local {
 	
 	struct net_device *ndev;
 	struct device *dev;
-	struct pci_dev *pdev;
 #ifdef CONFIG_VPCI
 	struct platform_device *mdev;
+#else
+	struct pci_dev *pdev;
 #endif
 	/* IO registers, dma functions and IRQs */
 	u32 base;
 	u32 base_len;
-	void __iomem *reg_base;
+	void __iomem *reg_base, *_reg_base;
 
 	int irq;
 	u32 options;			/* Current options word */
@@ -641,16 +642,29 @@ static void axi_poll_isr(unsigned long data)
 	mod_timer(&lp->poll_timer, jiffies + 1);
 }
 
+static int axi_irq_free(struct net_device *ndev)
+{
+#ifdef CONFIG_VPCI
+#else
+	free_irq(ndev->irq, ndev);
+#endif
+	return 0;
+}
+
 static int axi_irq_setup(struct net_device *ndev)
 {
 	int res;
 	struct axi_local *lp = netdev_priv(ndev);
 
+#ifdef CONFIG_VPCI
+	res = 0;
+#else
 	res = request_irq(lp->irq, axi_interrupt, IRQF_SHARED, DRIVER_NAME, lp->ndev);
 	if (res) {
 		dev_err(lp->dev, "request tx_irq failed %d\n", res);
 		return res;
 	}
+#endif
 	return res;
 }
 
@@ -710,7 +724,7 @@ static int axi_close(struct net_device *ndev)
 	/*
 	 * Free the interrupt - not polled mode.
 	 */
-	free_irq(ndev->irq, ndev);
+	axi_irq_free(ndev);
 
 	spin_lock_irqsave(&receivedQueueSpin, flags);
 	list_del(&(lp->rcv));
@@ -991,12 +1005,12 @@ static int descriptor_init(struct net_device *ndev)
 	/* calc size of descriptor space pool; alloc from non-cached memory */
 	sendsize = XAxiDma_mBdRingMemCalc(XAXIDMA_BD_MINIMUM_ALIGNMENT, TX_BD_NUM);
 	
-	lp->tx_bd_v = dma_alloc_coherent(&lp->pdev->dev, sendsize, &lp->tx_bd_p, GFP_KERNEL);
+	lp->tx_bd_v = dma_alloc_coherent(lp->dev, sendsize, &lp->tx_bd_p, GFP_KERNEL);
 	lp->tx_bd_size = sendsize;
 
 	recvsize = XAxiDma_mBdRingMemCalc(XAXIDMA_BD_MINIMUM_ALIGNMENT,
 					RX_BD_NUM);
-	lp->rx_bd_v = dma_alloc_coherent(&lp->pdev->dev, recvsize, &lp->rx_bd_p, GFP_KERNEL);
+	lp->rx_bd_v = dma_alloc_coherent(lp->dev, recvsize, &lp->rx_bd_p, GFP_KERNEL);
 	lp->rx_bd_size = recvsize;
 
 	printk(KERN_INFO
@@ -1106,7 +1120,7 @@ static void axi_remove_ndev(struct net_device *ndev)
 	
 	if (ndev) {
 		free_descriptor_skb(ndev);
-		iounmap((void *) (lp->reg_base));
+		iounmap((void *) (lp->_reg_base));
 		free_netdev(ndev);
 	}
 }
@@ -1189,109 +1203,16 @@ static struct net_device_ops axi_netdev_ops = {
 	.ndo_set_mac_address = netdev_set_mac_address,
 };
 
-static int __init axi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+static int eth_probe_common(struct axi_local *lp, struct net_device *ndev)
 {
-	struct axi_local *lp = NULL;
-	struct net_device *ndev = NULL;
-	XAxiDma_Config *Config;
-	int err = 0;
-	char *addr = NULL;
 	int RingIndex = 0;
 	XAxiDma_BdRing *RxRingPtr, *TxRingPtr;
-	
-	/* Create an ethernet device instance */
-	ndev = alloc_etherdev(sizeof(struct axi_local));
-	if (!ndev) {
-		printk("Could not allocate net device.\n");
-		goto error;
-	}
+	int err;
+	char *addr = NULL;
+	XAxiDma_Config *Config;
 
-	err = pci_enable_device(pdev);
-	if (err) {
-		dev_err(&pdev->dev, "PCI device enable failed.ERR= %d\n", err);
-		return err;
-	}
-
-	pci_set_drvdata(pdev, ndev);
-	SET_NETDEV_DEV(ndev, &pdev->dev);
-	ndev->irq = pdev->irq;
-	
-	/* Initialize the private data*/
-	
-	lp = netdev_priv(ndev);
-	lp->ndev = ndev;
-	lp->pdev = pdev;
-	lp->dev = &pdev->dev;
-	lp->irq = ndev->irq;
-
-	/* initialize the netdev structure */
-	
-	ndev->netdev_ops = &axi_netdev_ops;
-	ndev->flags &= ~IFF_MULTICAST;
-	ndev->watchdog_timeo = TX_TIMEOUT;
-#if TX_HW_CSUM
-	ndev->features |= NETIF_F_IP_CSUM;
-	ndev->features |= NETIF_F_SG | NETIF_F_FRAGLIST;
-#endif
-		
-	err = pci_request_regions(pdev, DRIVER_NAME);
-	if (err) {
-			dev_err(&pdev->dev, "PCI device get region failed.ERR= %d\n", err);
-			goto error;
-	}
-	
-	pci_set_master(pdev);
-	if (!pci_set_dma_mask(pdev, DMA_BIT_MASK(64))) {
-			err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
-	} else {
-			err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
-			if (!err)
-					err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
-	}
-	
-	if (err) {
-			dev_err(&pdev->dev, "No usable DMA configuration.\n");
-			goto error;
-	}
-	
-	lp->base= pci_resource_start(pdev, 0);
-	lp->base_len= pci_resource_len(pdev, 0);
-	lp->reg_base= ioremap(lp->base, lp->base_len);
-	
-    if (!lp->reg_base)
-            goto error;
-    printk("base 0x%x, size 0x%x, mmr 0x%lx\n",
-                   lp->base, lp->base_len, (unsigned long)lp->reg_base);
-#if 0
-	/*-----------------------Test AXIDMA---------------------*/
-
-	printk("Read axi dma tx CR before(0x00): %08x\n", XAxiDma_ReadReg((u32)lp->reg_base 
-						+ AXI_DMA_REG, XAXIDMA_TX_OFFSET));
-	printk("Read axi dma rx CR before(0x30): %08x\n", XAxiDma_ReadReg((u32)lp->reg_base 
-						+ AXI_DMA_REG, XAXIDMA_RX_OFFSET));
-
-	printk("Write (0x07<<16) (0x07<<12) to XAXIDMA TX(0x00)/RX OFFSET(0x30)\n");
-	XAxiDma_WriteReg((u32)lp->reg_base+ AXI_DMA_REG, XAXIDMA_TX_OFFSET, 0x07<<16);
-	XAxiDma_WriteReg((u32)lp->reg_base+ AXI_DMA_REG, XAXIDMA_RX_OFFSET, 0x07<<12);
-	printk("Ready to read\n");
-
-	printk("Read axi dma tx CR (0x00): %08x\n", XAxiDma_ReadReg((u32)lp->reg_base
-				+ AXI_DMA_REG, XAXIDMA_TX_OFFSET));
-	printk("Read axi dma rx CR (0x30): %08x\n", XAxiDma_ReadReg((u32)lp->reg_base
-				+ AXI_DMA_REG, XAXIDMA_RX_OFFSET));
-
-	printk("reset start\n");
-	XAxiDma_WriteReg((u32)lp->reg_base+ AXI_DMA_REG,XAXIDMA_TX_OFFSET,XAXIDMA_CR_RESET_MASK);
-	mdelay(5);
-	XAxiDma_WriteReg((u32)lp->reg_base+ AXI_DMA_REG,XAXIDMA_RX_OFFSET,XAXIDMA_CR_RESET_MASK);
-	mdelay(5);
-	printk("reset down\n");
-
-	printk("Read axi dma tx CR (0x00): %08x\n", XAxiDma_ReadReg((u32)lp->reg_base+ AXI_DMA_REG, XAXIDMA_TX_OFFSET));
-	printk("Read axi dma rx CR (0x30): %08x\n", XAxiDma_ReadReg((u32)lp->reg_base+ AXI_DMA_REG, XAXIDMA_RX_OFFSET));
-
-	printk("Test Reg R/W down!\n");
-#endif
+	printk("base 0x%x, size 0x%x, mmr 0x%lx\n",
+			lp->base, lp->base_len, (unsigned long)lp->reg_base);
 
 	if (ndev->mtu > XTE_JUMBO_MTU)
 		ndev->mtu = XTE_JUMBO_MTU;
@@ -1344,30 +1265,106 @@ static int __init axi_probe(struct pci_dev *pdev, const struct pci_device_id *id
 	XAxiDma_mBdRingIntEnable(RxRingPtr, XAXIDMA_IRQ_ALL_MASK);
 
 #ifdef CONFIG_INET_LRO
-		memset(&lp->lro_mgr.stats, 0, sizeof(lp->lro_mgr.stats));
-		memset(&lp->lro_arr, 0, sizeof(lp->lro_arr));
+	memset(&lp->lro_mgr.stats, 0, sizeof(lp->lro_mgr.stats));
+	memset(&lp->lro_arr, 0, sizeof(lp->lro_arr));
 
-		lp->lro_mgr.max_aggr = LRO_MAX_AGGR;
-		lp->lro_mgr.max_desc = MAX_LRO_DESCRIPTORS;
-		lp->lro_mgr.lro_arr  = lp->lro_arr;
-		lp->lro_mgr.get_skb_header = axi_get_skb_header;
-		lp->lro_mgr.features = /*LRO_F_NAPI*/0;
-		lp->lro_mgr.dev      = ndev;
+	lp->lro_mgr.max_aggr = LRO_MAX_AGGR;
+	lp->lro_mgr.max_desc = MAX_LRO_DESCRIPTORS;
+	lp->lro_mgr.lro_arr  = lp->lro_arr;
+	lp->lro_mgr.get_skb_header = axi_get_skb_header;
+	lp->lro_mgr.features = /*LRO_F_NAPI*/0;
+	lp->lro_mgr.dev      = ndev;
 
-		lp->lro_mgr.ip_summed = CHECKSUM_NONE;
-		lp->lro_mgr.ip_summed_aggr = CHECKSUM_NONE;
+	lp->lro_mgr.ip_summed = CHECKSUM_NONE;
+	lp->lro_mgr.ip_summed_aggr = CHECKSUM_NONE;
 
-		lp->lro_mgr.frag_align_pad = 0;
-		lp->lro_state = XTE_LRO_NORM;
+	lp->lro_mgr.frag_align_pad = 0;
+	lp->lro_state = XTE_LRO_NORM;
 #endif
 
 	/* init the stats */
 	lp->tx_hw_csums = 0;
 	lp->rx_hw_csums = 0;
 
+	/* initialize the netdev structure */
+	ndev->netdev_ops = &axi_netdev_ops;
+	ndev->flags &= ~IFF_MULTICAST;
+	ndev->watchdog_timeo = TX_TIMEOUT;
+#if TX_HW_CSUM
+	ndev->features |= NETIF_F_IP_CSUM;
+	ndev->features |= NETIF_F_SG | NETIF_F_FRAGLIST;
+#endif
+
 	err = register_netdev(ndev);
 	if (err) {
 		dev_err(lp->dev, "%s: Cannot register net device, aborting.\n", ndev->name);
+		goto error;
+	}
+	return 0;
+error:
+	return -1;
+}
+
+static int __init axi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+{
+	struct axi_local *lp = NULL;
+	struct net_device *ndev = NULL;
+	int err = 0;
+
+	/* Create an ethernet device instance */
+	ndev = alloc_etherdev(sizeof(struct axi_local));
+	if (!ndev) {
+		printk("Could not allocate net device.\n");
+		goto error;
+	}
+
+	err = pci_enable_device(pdev);
+	if (err) {
+		dev_err(&pdev->dev, "PCI device enable failed.ERR= %d\n", err);
+		return err;
+	}
+
+	pci_set_drvdata(pdev, ndev);
+	SET_NETDEV_DEV(ndev, &pdev->dev);
+	ndev->irq = pdev->irq;
+	
+	/* Initialize the private data*/
+	lp = netdev_priv(ndev);
+	lp->ndev = ndev;
+	lp->dev = &pdev->dev;
+	lp->irq = ndev->irq;
+	
+	err = pci_request_regions(pdev, DRIVER_NAME);
+	if (err) {
+			dev_err(&pdev->dev, "PCI device get region failed.ERR= %d\n", err);
+			goto error;
+	}
+	
+	pci_set_master(pdev);
+	if (!pci_set_dma_mask(pdev, DMA_BIT_MASK(64))) {
+			err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
+	} else {
+			err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
+			if (!err)
+					err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
+	}
+	
+	if (err) {
+			dev_err(&pdev->dev, "No usable DMA configuration.\n");
+			goto error;
+	}
+	
+	lp->base= pci_resource_start(pdev, 0);
+	lp->base_len= pci_resource_len(pdev, 0);
+	lp->_reg_base= ioremap(lp->base, lp->base_len);
+	
+	if (!lp->_reg_base)
+		goto error;
+	lp->reg_base = lp->_reg_base + 0x20000;
+
+
+	err = eth_probe_common(lp, ndev);
+	if (err) {
 		goto error;
 	}
 	
@@ -1400,14 +1397,58 @@ static struct pci_driver axi_driver = {
 #ifdef CONFIG_VPCI
 static int __init eth_probe(struct platform_device *pdev)
 {
+	struct axi_local *lp = NULL;
+	struct net_device *ndev = NULL;
+	int err = 0;
+	struct resource *res;
+
+	printk("%s:%d\n", __func__, __LINE__);
+	/* Create an ethernet device instance */
+	ndev = alloc_etherdev(sizeof(struct axi_local));
+	if (!ndev) {
+		printk("Could not allocate net device.\n");
+		goto error;
+	}
+
+	dev_set_drvdata(&pdev->dev, ndev);
+	SET_NETDEV_DEV(ndev, &pdev->dev);
+	ndev->irq = 0;
+
+	/* Initialize the private data*/
+	lp = netdev_priv(ndev);
+	lp->ndev = ndev;
+	lp->mdev = pdev;
+	lp->dev = &pdev->dev;
+	lp->irq = ndev->irq;
+
+	res = platform_get_resource(pdev, IORESOURCE_DMA, 0);
+	lp->base     = res->start;
+	lp->base_len = res->end - res->start;
+	lp->reg_base = res->start;
+
+	if (!lp->reg_base)
+		goto error;
+
+	err = eth_probe_common(lp, ndev);
+	if (err)
+		goto error;
+
+	return 0;
+
+error:
+	if (ndev) {
+		axi_remove_ndev(ndev);
+	}
+	return -1;
 }
+
 static int __exit eth_remove(struct platform_device *pdev)
 {
 	struct net_device *ndev = dev_get_drvdata(&pdev->dev);
 
 	unregister_netdev(ndev);
 	axi_remove_ndev(ndev);
-	dev_set_drvdata(pdev, NULL);
+	dev_set_drvdata(&pdev->dev, NULL);
 
 	return 0;
 }
@@ -1416,13 +1457,16 @@ static struct vpci_id vpci_id = {
 	.vendor = VPCI_FPGA_VENDOR,
 	.device = VPCI_10G_DEVICE,
 };
+
 static struct platform_device_id eth_id_table = {
-	.name = "eth 10g platform driver",
+	.name = "axi_eth_10g_driver",
 	.driver_data = (kernel_ulong_t)&vpci_id,
 };
+
 static struct platform_driver axi_mdriver = {
 	.driver = {
-		.name     = "eth 10g platform driver",
+		.name  = "axi_eth_10g_driver",
+		.owner = THIS_MODULE,
 	},
 	.id_table = &eth_id_table,
 	.probe    = eth_probe,
@@ -1450,6 +1494,7 @@ static int __init axi_init(void)
 #ifdef CONFIG_VPCI
 	vpci_driver_register(&axi_mdriver);
 #endif
+	return 0;
 }
 
 static void __exit axi_exit(void)

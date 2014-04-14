@@ -3,6 +3,7 @@
  *
  * base on drivers/net/ethernet/intel/e100.c
  */
+#define DEBUG
 #include <linux/init.h>
 #include <linux/interrupt.h>
 #include <linux/module.h>
@@ -67,7 +68,7 @@ vpci_driver_register(struct platform_driver *drv)
 				id->vendor, id->device,
 				vd->id.vendor, vd->id.device,
 				vd->drv);
-		if (vd->id.vendor != id->vendor &&
+		if (vd->id.vendor != id->vendor ||
 		    vd->id.device != id->device)
 			continue;
 		if (vd->drv)
@@ -246,7 +247,7 @@ static irqreturn_t vpci_isr(int irq, void *dev_id)
 }
 
 static DEFINE_PCI_DEVICE_TABLE(vpci_id_table) = {
-	{ 0x10ee, 0x0106, PCI_ANY_ID, PCI_ANY_ID, }, 
+	{ 0x10ee, 0x0505, PCI_ANY_ID, PCI_ANY_ID, }, 
 	{ 0, },
 };
 
@@ -277,7 +278,7 @@ static int  __init vpci_probe(struct pci_dev *pdev, const struct pci_device_id *
 	if (rc)
 		return rc;
 	
-	rc = pcim_iomap_regions_request_all(pdev, 0x3, "vpci");
+	rc = pcim_iomap_regions_request_all(pdev, 0x1, "vpci");
 	if (rc == -EBUSY)
 		pcim_pin_device(pdev);
 	if (rc)
@@ -287,12 +288,12 @@ static int  __init vpci_probe(struct pci_dev *pdev, const struct pci_device_id *
 	if (vp == NULL)
 		return -ENOMEM;
 	vp->pdev = pdev;
-	vp->mmio = pcim_iomap_table(pdev)[0];
-	vp->ctrl = pcim_iomap_table(pdev)[1];
+	vp->mmio = pcim_iomap_table(pdev)[0] + 0x10000;
+	vp->ctrl = pcim_iomap_table(pdev)[0] + 0x00000;
 	dev_dbg(&pdev->dev, "vp %p, mmio %p, ctrl %p\n",
 			vp, vp->mmio, vp->ctrl);
 
-	bar_size = 0x4000;
+	bar_size = 0x10000;
 	dev_dbg(&pdev->dev, "vp %p, fun reg %08x, hw version %08x\n",
 			vp, bar_size, VPCI_READ(vp->ctrl + HW_VER));
 	fun_num  = sizeof(vpci_funs)/sizeof(vpci_funs[0]);

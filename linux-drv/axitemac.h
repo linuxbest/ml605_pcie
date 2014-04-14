@@ -19,8 +19,8 @@
  */
 
 #define PCIE_HW_IP_CRA		0x00000
-#define AXI_DMA_REG		0x20000
-#define MAC_ADDR_BASE 		0x28000
+#define AXI_DMA_REG		0x00000
+#define MAC_ADDR_BASE 		0x08000
 
 /* The next few constants help upper layers determine the size of memory
  * pools used for Ethernet buffers and descriptor lists.
