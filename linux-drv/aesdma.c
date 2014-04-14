@@ -1123,7 +1123,7 @@ static int __init aes_platform_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Could not alloc dma device.\n");
 		goto err_alloc_dmadev;
 	}
-	dev_set_drvdata(pdev, dma);
+	dev_set_drvdata(&pdev->dev, dma);
 	dma->dev  = &pdev->dev;
 	dma->irq  = 0;
 
@@ -1218,7 +1218,7 @@ static int __exit aes_platform_remove(struct platform_device *pdev)
 #if 0
 	free_irq(pdev->irq, dma);
 #endif	
-	dev_set_drvdata(pdev, NULL);
+	dev_set_drvdata(&pdev->dev, NULL);
 	aes_clean_desc(dma);
 
 	return 0;
