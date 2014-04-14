@@ -117,9 +117,33 @@ static int TxSetup(struct axi_dma_device *dma_dev);
 static int RxSetup(struct axi_dma_device *dma_dev);
 static int SendPacket(struct axi_dma_device *dma_dev);
 
+enum {
+	MDIO_CFG0 = 0x500,
+	MDIO_CFG1 = 0x504,
+	MDIO_TXD  = 0x508,
+	MDIO_RXD  = 0x50C,
+};
+
+static int mdio_write_reg(uint32_t prtad, uint32_t devad, uint32_t regad, uint32_t val)
+{
+	int res;
+	axi_mm_out32(0x41240000 + MDIO_TXD,  regad);
+	axi_mm_out32(0x41240000 + MDIO_CFG1, 0x0800 |(devad<<16)|(prtad<<24));
+	do {
+		res = axi_mm_in32 (0x41240000 + MDIO_CFG1);
+		printf("poll bit7 %08x\n", res);
+	} while ((res & (1<<7)) == 0);
+	axi_mm_out32(0x41240000 + MDIO_TXD,  0xffff);
+	axi_mm_out32(0x41240000 + MDIO_CFG1, 0x4800 |(devad<<16)|(prtad<<24));
+	do {
+		res = axi_mm_in32 (0x41240000 + MDIO_CFG1);
+		printf("poll bit7 %08x\n", res);
+	} while ((res & (1<<7)) == 0);
+}
+
 int osChip_init(uint32_t base)
 {
-	int err = 0;
+	int err = 0, res;
 	mem_size = 32*1024*1024;
 	mem0 = (unsigned char*)memalign(mem_size, mem_size);
 	tfile = fopen("rdma.log", "w+b");
@@ -139,6 +163,7 @@ int osChip_init(uint32_t base)
 	printf("base 0x%x, size 0x%x, mmr 0x%lx\n",
 			dma_dev->axi_base, dma_dev->axi_len, (unsigned long)dma_dev->reg_base);
 
+
 	Config = AxiDma_Config((u32)(dma_dev->reg_base));
 	/* Initialize DMA engine */
 	err = XAxiDma_CfgInitialize(&dma_dev->AxiDma, Config);
@@ -146,6 +171,19 @@ int osChip_init(uint32_t base)
 		printf("Cfg error!\n");
 	}
 	printf("Cfg pass!\n");
+
+	/* Cfg word 0 */
+	axi_mm_out32(0x41240000 + MDIO_CFG0, (1<<6)|1);
+
+	/* turn on tx disable 1.9.0  */
+	mdio_write_reg(0x0, 0x1, 0x9, 0x1);
+	/* reset the pma/pcs  3.0.15 */
+	mdio_write_reg(0x0, 0x3, 0x0, 0x1<<15);
+	/* turn off tx disable 1.9.0  */
+	//mdio_write_reg(0x0, 0x1, 0x9, 0x0);
+
+	/* doing reset */
+	XAxiDma_Reset(&dma_dev->AxiDma);
 
 	if(!XAxiDma_HasSg(&dma_dev->AxiDma)) {
 		printf("Device configured as Simple mode \n");

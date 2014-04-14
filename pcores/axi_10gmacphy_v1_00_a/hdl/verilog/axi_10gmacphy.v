@@ -54,14 +54,15 @@ module axi_10gmacphy (/*AUTOARG*/
    // Inputs
    tx_fault, tx_axis_tvalid, tx_axis_tuser, tx_axis_tlast,
    tx_axis_tkeep, tx_axis_tdata, signal_detect, rxp, rxn,
-   rx_axis_tready, reset, refclk_p, refclk_n, bus2ip_rnw,
-   bus2ip_reset, bus2ip_data, bus2ip_cs, bus2ip_clk, bus2ip_addr
+   rx_axis_tready, refclk_p, refclk_n, bus2ip_rnw, bus2ip_reset,
+   bus2ip_data, bus2ip_cs, bus2ip_clk, hw_reset, bus2ip_addr
    );
    parameter C_FAMILY = "";
    parameter C_MDIO_ADDR = 5'h0;
    parameter EXAMPLE_SIM_GTRESET_SPEEDUP = "FALSE";
    parameter C_DBG_PORT = 0;
-   
+  
+   input                hw_reset;
    input [31:0]		bus2ip_addr;		// To xgmac of xgmac.v
    /*AUTOINPUT*/
    // Beginning of automatic inputs (from unused autoinst inputs)
@@ -72,7 +73,6 @@ module axi_10gmacphy (/*AUTOARG*/
    input		bus2ip_rnw;		// To xgmac of xgmac.v
    input		refclk_n;		// To xphy_block of xphy_block.v
    input		refclk_p;		// To xphy_block of xphy_block.v
-   input		reset;			// To xgmac of xgmac.v, ...
    input		rx_axis_tready;		// To xphy_int of xphy_int.v
    input		rxn;			// To xphy_block of xphy_block.v
    input		rxp;			// To xphy_block of xphy_block.v
@@ -116,7 +116,6 @@ module axi_10gmacphy (/*AUTOARG*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire			areset;			// From xphy_int of xphy_int.v
    wire			clk156;			// From xphy_block of xphy_block.v
    wire			core_reset_tx;		// From xphy_int of xphy_int.v
    wire [7:0]		core_status;		// From xphy_block of xphy_block.v
@@ -159,6 +158,7 @@ module axi_10gmacphy (/*AUTOARG*/
     .mdio_in                   (mdio_in_int),
     .mdio_out                  (mdio_out_int),
     .mdio_tri                  (),    
+    .reset                     (hw_reset),
     );*/
    xgmac
      xgmac (/*AUTOINST*/
@@ -184,7 +184,7 @@ module axi_10gmacphy (/*AUTOARG*/
 	    .xgmii_txd			(xgmii_txd[63:0]),
 	    .xgmii_txc			(xgmii_txc[7:0]),
 	    // Inputs
-	    .reset			(reset),
+	    .reset			(hw_reset),		 // Templated
 	    .tx_axis_aresetn		(tx_axis_aresetn),
 	    .tx_axis_tvalid		(tx_axis_tvalid),
 	    .tx_axis_tlast		(tx_axis_tlast),
@@ -232,6 +232,7 @@ module axi_10gmacphy (/*AUTOARG*/
     .xgmii_txd             (xgmii_txd_int[]),
     .xgmii_txc             (xgmii_txc_int[]),
     .reset		   (core_reset_tx),
+    .areset                (hw_reset),
     );*/
    xphy_block  #(/*AUTOINSTPARAM*/
 		 // Parameters
@@ -255,7 +256,7 @@ module axi_10gmacphy (/*AUTOARG*/
 		 // Inputs
 		 .refclk_n		(refclk_n),
 		 .refclk_p		(refclk_p),
-		 .areset		(areset),
+		 .areset		(hw_reset),		 // Templated
 		 .reset			(core_reset_tx),	 // Templated
 		 .txreset322		(txreset322),
 		 .rxreset322		(rxreset322),
@@ -276,7 +277,6 @@ module axi_10gmacphy (/*AUTOARG*/
 		.EXAMPLE_SIM_GTRESET_SPEEDUP(EXAMPLE_SIM_GTRESET_SPEEDUP))
      xphy_int  (/*AUTOINST*/
 		// Outputs
-		.areset			(areset),
 		.dclk_reset		(dclk_reset),
 		.resetdone		(resetdone),
 		.rx_axis_aresetn	(rx_axis_aresetn),
@@ -304,7 +304,6 @@ module axi_10gmacphy (/*AUTOARG*/
 		.rx_reset		(rx_reset),
 		.linkup			(linkup),
 		// Inputs
-		.reset			(reset),
 		.dclk			(dclk),
 		.tx_resetdone		(tx_resetdone),
 		.rx_resetdone		(rx_resetdone),

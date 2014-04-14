@@ -215,11 +215,11 @@ void axi_mm_systemc::axi_mm_master_init(void)
 	obj = this;
 
 	printf("calling %s, %d\n", __func__, __LINE__);
-	for (i = 0; i < 100; i++) 
+	for (i = 0; i < 1000; i++) 
 		wait (axi_aclk->posedge_event());
 	
-	for (i = 0; ready.read() == 0; i++) 
-		wait (axi_aclk->posedge_event());
+	/*for (i = 0; ready.read() == 0; i++) 
+		wait (axi_aclk->posedge_event());*/
 
 	printf("calling %s, %d\n", __func__, __LINE__);
 	osChip_init(base);

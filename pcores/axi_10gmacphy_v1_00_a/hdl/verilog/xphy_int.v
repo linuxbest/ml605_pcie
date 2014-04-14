@@ -46,24 +46,20 @@
 `timescale 1ns / 1ps
 module xphy_int (/*AUTOARG*/
    // Outputs
-   areset, dclk_reset, resetdone, rx_axis_aresetn, tx_axis_aresetn,
+   dclk_reset, resetdone, rx_axis_aresetn, tx_axis_aresetn,
    core_clk156_out, core_reset_tx, txreset322, rxreset322,
    xgmii_txd_int, xgmii_txc_int, xgmii_rxd, xgmii_rxc, xgmii_txd_dbg,
    xgmii_rxd_dbg, xgmii_txc_dbg, xgmii_rxc_dbg, rx_dcm_lock,
    tx_dcm_lock, prtad, tx_ifg_delay, sfp_rs, tx_mac_aclk, tx_reset,
    rx_mac_aclk, rx_reset, linkup,
    // Inputs
-   reset, dclk, tx_resetdone, rx_resetdone, clk156, tx_fault,
-   signal_detect, txclk322, xgmii_txd, xgmii_txc, xgmii_rxd_int,
-   xgmii_rxc_int, rxclk322, core_status, rx_axis_tready
+   dclk, tx_resetdone, rx_resetdone, clk156, tx_fault, signal_detect,
+   txclk322, xgmii_txd, xgmii_txc, xgmii_rxd_int, xgmii_rxc_int,
+   rxclk322, core_status, rx_axis_tready
    );
    parameter C_MDIO_ADDR = 5'h0;
    parameter EXAMPLE_SIM_GTRESET_SPEEDUP = "FALSE";
    
-   output areset;
-   input  reset;
-   assign areset = reset;
-
    input  dclk;
    output dclk_reset;
    

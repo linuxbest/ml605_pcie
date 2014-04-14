@@ -527,6 +527,7 @@ begin
 
   rx_axis_mac_rden       <= rx_axis_mac_tvalid_int and rx_axis_mac_tready_int;
   rx_axis_mac_tvalid_int <= not rx_axis_mac_empty;
+  rx_axis_mac_tready     <= not rx_axis_mac_full;
 
    I_RX_FIFO: entity axi_ethernet_v3_01_a.axi_async_fifo(axi_async_fifo_a)
      generic map(

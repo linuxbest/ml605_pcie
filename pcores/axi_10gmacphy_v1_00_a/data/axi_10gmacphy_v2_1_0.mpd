@@ -23,7 +23,7 @@ PARAMETER C_DBG_PORT = 0, DT = integer
 # GTX
 PORT refclk_p = "", DIR = I, SIGIS = CLK
 PORT refclk_n = "", DIR = I, SIGIS = CLK
-PORT reset    = "", DIR = I, SIGIS = RST, INITIALVAL = GND
+PORT hw_reset = "", DIR = I, SIGIS = RST, INITIALVAL = GND
 
 PORT rxp      = "", DIR = I
 PORT rxn      = "", DIR = I
