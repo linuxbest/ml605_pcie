@@ -135,11 +135,7 @@ struct axi_local {
 	
 	struct net_device *ndev;
 	struct device *dev;
-#ifdef CONFIG_VPCI
-	struct platform_device *mdev;
-#else
-	struct pci_dev *pdev;
-#endif
+
 	/* IO registers, dma functions and IRQs */
 	u32 base;
 	u32 base_len;
@@ -1402,7 +1398,6 @@ static int __init eth_probe(struct platform_device *pdev)
 	int err = 0;
 	struct resource *res;
 
-	printk("%s:%d\n", __func__, __LINE__);
 	/* Create an ethernet device instance */
 	ndev = alloc_etherdev(sizeof(struct axi_local));
 	if (!ndev) {
@@ -1417,7 +1412,6 @@ static int __init eth_probe(struct platform_device *pdev)
 	/* Initialize the private data*/
 	lp = netdev_priv(ndev);
 	lp->ndev = ndev;
-	lp->mdev = pdev;
 	lp->dev = &pdev->dev;
 	lp->irq = ndev->irq;
 

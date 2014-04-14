@@ -10,8 +10,8 @@ lib axi_10gmacphy_v1_00_a xphy_example_design.v verilog
 lib axi_10gmacphy_v1_00_a icon3.v verilog
 lib axi_10gmacphy_v1_00_a ila256_16.v verilog
 
-lib axi_10gmacphy_v1_00_a xphy_mod.v verilog
-lib axi_10gmacphy_v1_00_a xgmac_mod.v verilog
+lib axi_10gmacphy_v1_00_a xphy.v verilog
+lib axi_10gmacphy_v1_00_a xgmac.v verilog
 
 simlib axi_10gmacphy_v1_00_a xphy.v verilog
 simlib axi_10gmacphy_v1_00_a xgmac.v verilog
