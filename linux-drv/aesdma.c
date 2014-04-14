@@ -3,7 +3,7 @@
  
  Hu Gang <linuxbest@gmail.com> 
 *******************************************************************************/
-//#define DEBUG 1
+#define DEBUG 1
 #include <linux/hardirq.h>
 #include <linux/interrupt.h>
 #include <linux/module.h>
@@ -54,7 +54,7 @@ struct aes_dev {
 
 	u32 base;
 	u32 blen;
-	void __iomem *reg;
+	void __iomem *reg, *_reg;
 
 	XAxiDma AxiDma;
 
@@ -999,15 +999,16 @@ static int aes_probe(struct pci_dev *pdev,
 
 	dma->base = pci_resource_start(pdev, 0);
 	dma->blen = pci_resource_len(pdev, 0);
-	dma->reg  = ioremap_nocache(dma->base, dma->blen);
-	if (!dma->reg) {
+	dma->_reg = ioremap_nocache(dma->base, dma->blen);
+	if (!dma->_reg) {
 		dev_err(&pdev->dev, "ioremap reg base error.\n");
 		goto err_ioremap;
 	}
 	dev_info(&pdev->dev, "Base 0x%08x, size 0x%x, mmr 0x%p, irq %d\n",
-			dma->base, dma->blen, dma->reg,
+			dma->base, dma->blen, dma->_reg,
 			dma->pdev->irq);
 
+	dma->reg = dma->_reg + 0x10000;
 	Config.BaseAddr   = dma->reg;
 	Config.DeviceId   = 0xe001;
 	Config.HasMm2S    = 1;
@@ -1059,11 +1060,11 @@ static int aes_probe(struct pci_dev *pdev,
 	XAxiDma_BdRingSetCoalesce(XAxiDma_GetTxRing(&dma->AxiDma),    24, 254);
 	XAxiDma_BdRingSetCoalesce(XAxiDma_GetRxRing(&dma->AxiDma, 0), 12, 254);
 
-	aes_self_test(dma);
 	_dma = dma;
-
 	/* TODO */
 	mod_timer(&dma->poll_timer, jiffies + (1 * HZ));
+
+	aes_self_test(dma);
 
 	return 0;
 
@@ -1088,7 +1089,7 @@ static void aes_remove(struct pci_dev *pdev)
 	del_timer(&dma->timer);
 	AxiDma_Stop(dma->reg);
 	free_irq(pdev->irq, dma);
-	iounmap(dma->reg);
+	iounmap(dma->_reg);
 	pci_release_regions(pdev);
 	pci_set_drvdata(pdev, NULL);
 	pci_disable_device(pdev);
