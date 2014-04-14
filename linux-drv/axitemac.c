@@ -39,12 +39,15 @@ static int mdio_write_reg(void *reg, uint32_t prtad, uint32_t devad,
 int axitemac_init(void *reg_base)
 {
 	XAxiDma_WriteReg((u32)reg_base + MAC_ADDR_BASE, CFG0, (1<<6)|(19));
-#if 0	
-	/* reset the phy 1.0.15 */
+#if 0
+	/* reset the phy 3.0.15 */
 	res = mdio_write_reg(reg_base, 0x0, 0x3, 0x0, 1<<15);
 	if (res != 0) {
 		printk("%s: mdio write 3.0.15 reg failed\n", __func__);
 	}
+#endif
+	/* reset the phy 1.0.15 */
+#if 0
 	res = mdio_write_reg(reg_base, 0x0, 0x1, 0x0, 1<<15);
 	if (res != 0) {
 		printk("%s: mdio write 1.0.15 reg failed\n", __func__);

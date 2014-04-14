@@ -698,13 +698,15 @@ static int axi_close(struct net_device *ndev)
 {
 	unsigned long flags;
 	struct axi_local *lp = (struct axi_local *) netdev_priv(ndev);
-	
+
 	/* Stop Send queue */
 	netif_stop_queue(ndev);
 	
 	/*Stop AXI DMA Engine*/
 	AxiDma_Stop((u32)(lp->reg_base + AXI_DMA_REG));
-
+	
+	del_timer(&lp->poll_timer);
+	axitemac_stop(lp->reg_base);
 	/*
 	 * Free the interrupt - not polled mode.
 	 */
