@@ -22,6 +22,14 @@
 #include <linux/device.h>
 #include <linux/ethtool.h>
 
+#ifdef CONFIG_VPCI
+#include <linux/of_platform.h>
+#include <linux/of.h>
+#include <linux/of_device.h>
+#include <linux/mod_devicetable.h>
+#include "vpci.h"
+#endif
+
 #define CONFIG_INET_LRO	1
 #ifdef CONFIG_INET_LRO
 #include <linux/inet_lro.h>
@@ -128,7 +136,9 @@ struct axi_local {
 	struct net_device *ndev;
 	struct device *dev;
 	struct pci_dev *pdev;
-
+#ifdef CONFIG_VPCI
+	struct platform_device *mdev;
+#endif
 	/* IO registers, dma functions and IRQs */
 	u32 base;
 	u32 base_len;
@@ -1174,8 +1184,7 @@ static struct net_device_ops axi_netdev_ops = {
 	.ndo_set_mac_address = netdev_set_mac_address,
 };
 
-static int __init axi_probe(struct pci_dev *pdev,
-	const struct pci_device_id *id)
+static int __init axi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	struct axi_local *lp = NULL;
 	struct net_device *ndev = NULL;
@@ -1381,6 +1390,39 @@ static struct pci_driver axi_driver = {
 	.remove   = axi_remove,
 };
 
+#ifdef CONFIG_VPCI
+static int __init eth_probe(struct platform_device *pdev)
+{
+}
+static int __exit eth_remove(struct platform_device *pdev)
+{
+	struct net_device *ndev = dev_get_drvdata(&pdev->dev);
+
+	unregister_netdev(ndev);
+	axi_remove_ndev(ndev);
+	dev_set_drvdata(pdev, NULL);
+
+	return 0;
+}
+
+static struct vpci_id vpci_id = {
+	.vendor = VPCI_FPGA_VENDOR,
+	.device = VPCI_10G_DEVICE,
+};
+static struct platform_device_id eth_id_table = {
+	.name = "eth 10g platform driver",
+	.driver_data = (kernel_ulong_t)&vpci_id,
+};
+static struct platform_driver axi_mdriver = {
+	.driver = {
+		.name     = "eth 10g platform driver",
+	},
+	.id_table = &eth_id_table,
+	.probe    = eth_probe,
+	.remove   = eth_remove,
+};
+#endif
+
 static int __init axi_init(void)
 {
 	printk("Axi Ethernet Driver Init\n");
@@ -1397,13 +1439,19 @@ static int __init axi_init(void)
 
 	spin_lock_init(&sentQueueSpin);
 	spin_lock_init(&receivedQueueSpin);
-	return pci_register_driver(&axi_driver);
+	pci_register_driver(&axi_driver);
+#ifdef CONFIG_VPCI
+	vpci_driver_register(&axi_mdriver);
+#endif
 }
 
 static void __exit axi_exit(void)
 {
 	printk("Axi Ethernet Driver Exit\n");
 	pci_unregister_driver(&axi_driver);
+#ifdef CONFIG_VPCI
+	vpci_driver_unregister(&axi_mdriver);
+#endif
 }
 
 module_init(axi_init);

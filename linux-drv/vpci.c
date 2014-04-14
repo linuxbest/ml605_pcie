@@ -255,8 +255,12 @@ static struct vpci_struct {
 	uint32_t subsystem_device;
 } vpci_funs [] = {
 	[0] = {
-		.subsystem_vendor = 0x0,
-		.subsystem_device = 0x1,
+		.subsystem_vendor = VPCI_FPGA_VENDOR,
+		.subsystem_device = VPCI_AES_DEVICE,
+	},
+	[1] = {
+		.subsystem_vendor = VPCI_FPGA_VENDOR,
+		.subsystem_device = VPCI_10G_DEVICE,
 	},
 };
 

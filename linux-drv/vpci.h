@@ -16,6 +16,10 @@ extern int vpci_request_irq(struct platform_device *pdev,
 		unsigned int irq, irq_handler_t handler, unsigned long flags,
 		const char *name, void *dev);
 
+#define VPCI_FPGA_VENDOR 0xAA55
+#define VPCI_AES_DEVICE  0x2013
+#define VPCI_10G_DEVICE  0x2014
+
 #if 0
 extern int vpci_spi_flash_open(struct platform_device *pdev);
 extern int vpci_spi_flash_close(struct platform_device *pdev);
