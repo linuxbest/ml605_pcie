@@ -121,6 +121,19 @@ eval add wave -noupdate $binopt $txpath${ps}TX_EMAC_INTERFACE${ps}tx_axis_mac_tl
 eval add wave -noupdate $binopt $txpath${ps}TX_EMAC_INTERFACE${ps}tx_axis_mac_tuser
 eval add wave -noupdate $binopt $txpath${ps}TX_EMAC_INTERFACE${ps}tx_axis_mac_tready
 
+eval add wave -noupdate -divider {"ethernet rx fifo"}
+eval add wave -noupdate $binopt $ethpath${ps}rx_mac_aclk
+eval add wave -noupdate $hexopt $ethpath${ps}rx_axis_mac_data_wr
+eval add wave -noupdate $binopt $ethpath${ps}rx_axis_mac_tvalid
+eval add wave -noupdate $binopt $ethpath${ps}rx_axis_mac_full
+
+eval add wave -noupdate $binopt $ethpath${ps}AXI_STR_RXD_ACLK
+eval add wave -noupdate $hexopt $ethpath${ps}rx_axis_mac_data_rd
+eval add wave -noupdate $binopt $ethpath${ps}rx_axis_mac_rden
+eval add wave -noupdate $binopt $ethpath${ps}rx_axis_mac_empty
+eval add wave -noupdate $binopt $ethpath${ps}rx_axis_mac_tvalid_int
+eval add wave -noupdate $binopt $ethpath${ps}rx_axis_mac_tready_int
+
 eval add wave -noupdate -divider {"ethernet rx if"}
 eval add wave -noupdate $binopt $rxpath${ps}clk
 eval add wave -noupdate $binopt $rxpath${ps}reset

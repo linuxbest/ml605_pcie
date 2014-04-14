@@ -38,7 +38,7 @@ module system_tb
   reg refclk_p;
   reg rxn;
   reg rxp;
-  reg sfp_rs;
+  wire sfp_rs;
   reg sfp_sgd;
   wire sfp_txd;
   reg sfp_txf;

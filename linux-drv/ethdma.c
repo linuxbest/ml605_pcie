@@ -248,7 +248,6 @@ static void DmaRecvHandlerBH(unsigned long p);
 DECLARE_TASKLET(DmaSendBH, DmaSendHandlerBH, 0);
 DECLARE_TASKLET(DmaRecvBH, DmaRecvHandlerBH, 0);
 
-
 static void axi_reset(struct net_device *ndev, u32 line_num)
 {
 	u32 TxThreshold, TxWaitBound, RxThreshold, RxWaitBound;
@@ -298,7 +297,6 @@ static void axi_reset(struct net_device *ndev, u32 line_num)
 	XAxiDma_mBdRingIntEnable(RxRingPtr, XAXIDMA_IRQ_ALL_MASK);
 	XAxiDma_mBdRingIntEnable(TxRingPtr, XAXIDMA_IRQ_ALL_MASK);
 	
-
 	if (lp->deferred_skb) {
 		dev_kfree_skb_any(lp->deferred_skb);
 		lp->deferred_skb = NULL;
@@ -320,7 +318,12 @@ static irqreturn_t axi_dma_rx_interrupt(struct net_device *ndev, u32 irq_status)
 	struct axi_local *lp = (struct axi_local *) netdev_priv(ndev);
 	RingPtr = XAxiDma_GetRxRing(&lp->AxiDma, RingIndex);
 
+#if SSTG_DEBUG
+	printk("IrqStatusRx: %x\n", irq_status);
+#endif
+
 	if ((irq_status & XAXIDMA_ERR_ALL_MASK)) {
+		printk(KERN_ERR "%s: XAxiDma: rx irq (%08x)\n", ndev->name, irq_status);
 		XAxiDma_Reset(&lp->AxiDma);
 		return IRQ_HANDLED;
 	}
@@ -351,7 +354,11 @@ static irqreturn_t axi_dma_tx_interrupt(struct net_device *ndev, u32 irq_status)
 	struct axi_local *lp = (struct axi_local *) netdev_priv(ndev);
 	RingPtr = XAxiDma_GetTxRing(&lp->AxiDma);
 
+#if SSTG_DEBUG
+	printk("IrqStatusTx: %x\n", irq_status);
+#endif
 	if ((irq_status & XAXIDMA_ERR_ALL_MASK)) {
+		printk(KERN_ERR "%s: XAxiDma: tx irq (%08x)\n", ndev->name, irq_status);
 		XAxiDma_Reset(&lp->AxiDma);
 		return IRQ_HANDLED;
 	}
@@ -515,7 +522,7 @@ static void DmaRecvHandlerBH(unsigned long p)
 #ifdef CONFIG_INET_LRO
 	bool lro_flush_needed = false;
 #endif
-	
+
 	while (1) {
 		spin_lock_irqsave(&receivedQueueSpin, flags);
 		if (list_empty(&receivedQueue)) {

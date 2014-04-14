@@ -51,8 +51,8 @@
 
 #define RX_FRAME_CTL_REG                          (0x2000)
 #define RX_FRAME_MAXLEN_REG                       (0x2004)
-#define RX_FRAME_ADDR0_REG                        (0x2008)
-#define RX_FRAME_ADDR1_REG                        (0x200c)
+#define RX_FRAME_ADDR0_REG                        (0x400)
+#define RX_FRAME_ADDR1_REG                        (0x404)
 
 /*fields in FRAME_CTL_REG*/
 #define CTL_EN_ALLUCASE_MASK                      (1)
