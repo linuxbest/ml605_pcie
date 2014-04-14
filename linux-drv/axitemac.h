@@ -19,8 +19,8 @@
  */
 
 #define PCIE_HW_IP_CRA		0x00000
-#define AXI_DMA_REG		0x10000
-#define MAC_ADDR_BASE 		0x18000
+#define AXI_DMA_REG		0x20000
+#define MAC_ADDR_BASE 		0x28000
 
 /* The next few constants help upper layers determine the size of memory
  * pools used for Ethernet buffers and descriptor lists.
@@ -245,7 +245,11 @@
  */
 
 
+int axitemac_init (void *reg_base);
+int axitemac_exit (void *reg_base);
+
 int axitemac_start(void *reg_base);
+int axitemac_stop (void *reg_base);
 
 #endif/*MAC_REGS_H_ */
 

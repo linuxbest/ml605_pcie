@@ -333,7 +333,7 @@ static irqreturn_t axi_dma_rx_interrupt(struct net_device *ndev, u32 irq_status)
 #endif
 
 	if ((irq_status & XAXIDMA_ERR_ALL_MASK)) {
-		printk(KERN_ERR "%s: XAxiDma: rx irq (%08x)\n", ndev->name, irq_status);
+		printk(KERN_ERR "%s: XAxiDma: error rx irq (%08x)\n", ndev->name, irq_status);
 		XAxiDma_Reset(&lp->AxiDma);
 		return IRQ_HANDLED;
 	}
@@ -368,7 +368,7 @@ static irqreturn_t axi_dma_tx_interrupt(struct net_device *ndev, u32 irq_status)
 	printk("IrqStatusTx: %x\n", irq_status);
 #endif
 	if ((irq_status & XAXIDMA_ERR_ALL_MASK)) {
-		printk(KERN_ERR "%s: XAxiDma: tx irq (%08x)\n", ndev->name, irq_status);
+		printk(KERN_ERR "%s: XAxiDma: error tx irq (%08x)\n", ndev->name, irq_status);
 		XAxiDma_Reset(&lp->AxiDma);
 		return IRQ_HANDLED;
 	}
@@ -670,7 +670,6 @@ static int axi_open(struct net_device *ndev)
 	axitemac_start(lp->reg_base);
 
 	axi_irq_setup(ndev);
-
 
 	if (XAxiDma_BdRingStart(TxRingPtr, RingIndex) == XST_FAILURE) {
 		printk(KERN_ERR "%s: XAxiDma: could not start dma tx channel\n", ndev->name);
@@ -1097,6 +1096,9 @@ static void axi_remove_ndev(struct net_device *ndev)
 
 	del_timer(&lp->poll_timer);
 
+	axitemac_stop(lp->reg_base);
+	axitemac_exit(lp->reg_base);
+
 	/*Stop AXI DMA Engine*/
 	AxiDma_Stop((u32)(lp->reg_base + AXI_DMA_REG));
 	
@@ -1150,7 +1152,7 @@ static void axi_set_mac_address(struct net_device *ndev, void *address)
 
 	if (!is_valid_ether_addr(ndev->dev_addr))
 		random_ether_addr(ndev->dev_addr);
-
+#if 0
 	/*
 	 * Set up unicast MAC address filter set its mac address
 	 */
@@ -1163,6 +1165,7 @@ static void axi_set_mac_address(struct net_device *ndev, void *address)
 	XAxiDma_WriteReg((u32)lp->reg_base + MAC_ADDR_BASE, RX_FRAME_ADDR1_REG,
 				(ndev->dev_addr[4] |
 				(ndev->dev_addr[5] << 8)));
+#endif
 }
 
 static int netdev_set_mac_address(struct net_device *ndev, void *p)
@@ -1296,6 +1299,9 @@ static int __init axi_probe(struct pci_dev *pdev, const struct pci_device_id *id
 	lp->lro_state = XTE_LRO_INIT;
 #endif
 
+	axitemac_init(lp->reg_base);
+	axitemac_stop(lp->reg_base);
+
 	/* Set the MAC address from platform data */
 	axi_set_mac_address(ndev,(void *)addr);
 	printk("Set Mac addr %pM\n", ndev->dev_addr);
@@ -1370,7 +1376,6 @@ error:
 	}
 	return XST_FAILURE;
 }
-
 
 static void __exit axi_remove(struct pci_dev *pdev)
 {
@@ -1460,4 +1465,3 @@ module_exit(axi_exit);
 MODULE_DESCRIPTION("Axi Ethernet driver");
 MODULE_AUTHOR("Hu Gang");
 MODULE_LICENSE("GPL");
-
