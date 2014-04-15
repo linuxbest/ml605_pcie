@@ -43,6 +43,7 @@
 // 	device pins                        : "*_pin"
 // 	ports                              : - Names begin with Uppercase
 // Code:
+`timescale 1ps/1ps
 module axi_eth_ifm (/*AUTOARG*/
    // Outputs
    rx_axis_mac_tready, mac_tvalid, mac_tlast, mac_tkeep, mac_tdata,

@@ -2,7 +2,7 @@
 if { [info exists PathSeparator] } { set ps $PathSeparator } else { set ps "/" }
 set ethpath "/system_tb/dut/ETHERNET/ETHERNET/"
 set txpath "/system_tb/dut/ETHERNET/ETHERNET/I_EMBEDDED_TOP${ps}TX_INTFCE_I"
-set rxpath "/system_tb/dut/ETHERNET/ETHERNET/I_EMBEDDED_TOP${ps}RCV_INTFCE_I"
+set rxpath "/system_tb/dut/ETHERNET/ETHERNET/I_AXI_ETH_RX"
 set macpath "/system_tb/dut/ten_mac_phy/ten_mac_phy"
 
 set binopt {-logic}
@@ -122,27 +122,32 @@ eval add wave -noupdate $binopt $txpath${ps}TX_EMAC_INTERFACE${ps}tx_axis_mac_tl
 eval add wave -noupdate $binopt $txpath${ps}TX_EMAC_INTERFACE${ps}tx_axis_mac_tuser
 eval add wave -noupdate $binopt $txpath${ps}TX_EMAC_INTERFACE${ps}tx_axis_mac_tready
 
-eval add wave -noupdate -divider {"ethernet rx if"}
-eval add wave -noupdate $binopt $rxpath${ps}AXI_STR_RXD_ACLK
+eval add wave -noupdate -divider {"ethernet rx"}
+eval add wave -noupdate $binopt $ethpath${ps}AXI_STR_RXD_ACLK
 
-eval add wave -noupdate $binopt $rxpath${ps}AXI_STR_RXD_VALID
-eval add wave -noupdate $binopt $rxpath${ps}AXI_STR_RXD_READY
-eval add wave -noupdate $binopt $rxpath${ps}AXI_STR_RXD_LAST
-eval add wave -noupdate $hexopt $rxpath${ps}AXI_STR_RXD_STRB
-eval add wave -noupdate $hexopt $rxpath${ps}AXI_STR_RXD_DATA
+eval add wave -noupdate $binopt $ethpath${ps}AXI_STR_RXD_TVALID
+eval add wave -noupdate $binopt $ethpath${ps}AXI_STR_RXD_TREADY
+eval add wave -noupdate $binopt $ethpath${ps}AXI_STR_RXD_TLAST
+eval add wave -noupdate $hexopt $ethpath${ps}AXI_STR_RXD_TKEEP
+eval add wave -noupdate $hexopt $ethpath${ps}AXI_STR_RXD_TDATA
 
-eval add wave -noupdate $binopt $rxpath${ps}AXI_STR_RXS_VALID
-eval add wave -noupdate $binopt $rxpath${ps}AXI_STR_RXS_READY
-eval add wave -noupdate $binopt $rxpath${ps}AXI_STR_RXS_LAST
-eval add wave -noupdate $hexopt $rxpath${ps}AXI_STR_RXS_STRB
-eval add wave -noupdate $hexopt $rxpath${ps}AXI_STR_RXS_DATA
+eval add wave -noupdate $binopt $ethpath${ps}AXI_STR_RXS_TVALID
+eval add wave -noupdate $binopt $ethpath${ps}AXI_STR_RXS_TREADY
+eval add wave -noupdate $binopt $ethpath${ps}AXI_STR_RXS_TLAST
+eval add wave -noupdate $hexopt $ethpath${ps}AXI_STR_RXS_TKEEP
+eval add wave -noupdate $hexopt $ethpath${ps}AXI_STR_RXS_TDATA
 
-eval add wave -noupdate $binopt $rxpath${ps}rx_mac_aclk
-eval add wave -noupdate $binopt $rxpath${ps}rx_reset
+eval add wave -noupdate $binopt $ethpath${ps}rx_mac_aclk
+eval add wave -noupdate $binopt $ethpath${ps}rx_reset
 
-eval add wave -noupdate $hexopt $rxpath${ps}rx_axis_mac_tdata
-eval add wave -noupdate $hexopt $rxpath${ps}rx_axis_mac_tkeep
-eval add wave -noupdate $binopt $rxpath${ps}rx_axis_mac_tlast
-eval add wave -noupdate $binopt $rxpath${ps}rx_axis_mac_tvalid
-#eval add wave -noupdate $binopt $rxpath${ps}rx_axis_mac_tready
-eval add wave -noupdate $binopt $rxpath${ps}rx_axis_mac_tuser
+eval add wave -noupdate $hexopt $ethpath${ps}rx_axis_mac_tdata
+eval add wave -noupdate $hexopt $ethpath${ps}rx_axis_mac_tkeep
+eval add wave -noupdate $binopt $ethpath${ps}rx_axis_mac_tlast
+eval add wave -noupdate $binopt $ethpath${ps}rx_axis_mac_tvalid
+eval add wave -noupdate $binopt $ethpath${ps}rx_axis_mac_tuser
+
+eval add wave -noupdate $hexopt $ethpath${ps}rx_mac_tdata
+eval add wave -noupdate $hexopt $ethpath${ps}rx_mac_tkeep
+eval add wave -noupdate $binopt $ethpath${ps}rx_mac_tlast
+eval add wave -noupdate $binopt $ethpath${ps}rx_mac_tvalid
+eval add wave -noupdate $binopt $ethpath${ps}rx_mac_tready

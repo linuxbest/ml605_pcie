@@ -43,6 +43,7 @@
 // 	device pins                        : "*_pin"
 // 	ports                              : - Names begin with Uppercase
 // Code:
+`timescale 1ps/1ps
 module ifm_fifo (/*AUTOARG*/
    // Outputs
    data_fifo_afull, data_fifo_rdata, info_fifo_empty, info_fifo_rdata,

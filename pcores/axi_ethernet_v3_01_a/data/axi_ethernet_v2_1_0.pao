@@ -106,6 +106,12 @@ lib axi_ethernet_v3_01_a  rx_emac_if.vhd   vhdl
 lib axi_ethernet_v3_01_a  rx_emac_if_vlan.vhd   vhdl
 lib axi_ethernet_v3_01_a  rx_if.vhd   vhdl
 
+lib axi_ethernet_v3_01_a  axi_eth_ifm.v verilog
+lib axi_ethernet_v3_01_a  ifm_in_fsm.v verilog
+lib axi_ethernet_v3_01_a  ifm_out_fsm.v verilog
+lib axi_ethernet_v3_01_a  ifm_fifo.v verilog
+lib axi_ethernet_v3_01_a  small_async_fifo.v verilog
+
 lib axi_ethernet_v3_01_a  rx_csum_if.vhd vhdl
 lib axi_ethernet_v3_01_a  rx_csum_top.vhd vhdl
 lib axi_ethernet_v3_01_a  axi_async_fifo.vhd vhdl

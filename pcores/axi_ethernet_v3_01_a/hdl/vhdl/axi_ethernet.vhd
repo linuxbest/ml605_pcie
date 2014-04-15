@@ -358,25 +358,11 @@ architecture imp of axi_ethernet is
   attribute keep of  axirxd_aclk   : signal is true;
   attribute keep of  axirxs_aclk   : signal is true;
 
-  signal  AXIS_ETH_TXD_TVALID             : std_logic;
-  signal  AXIS_ETH_TXD_TREADY             : std_logic;
-  signal  AXIS_ETH_TXD_TLAST              : std_logic;
-  signal  AXIS_ETH_TXD_TKEEP              : std_logic_vector(7 downto 0);
-  signal  AXIS_ETH_TXD_TDATA              : std_logic_vector(63 downto 0);
-  signal  AXIS_ETH_TXC_TVALID             : std_logic;
-  signal  AXIS_ETH_TXC_TREADY             : std_logic;
-  signal  AXIS_ETH_TXC_TLAST              : std_logic;
-  signal  AXIS_ETH_TXC_TKEEP              : std_logic_vector(3 downto 0);
-  signal  AXIS_ETH_TXC_TDATA              : std_logic_vector(31 downto 0);
-
-  signal  rx_axis_mac_data_rd     : std_logic_vector(73 downto 0);
-  signal  rx_axis_mac_data_wr     : std_logic_vector(73 downto 0);
-  signal  rx_axis_mac_empty       : std_logic;
-  signal  rx_axis_mac_full        : std_logic;
-  
-  signal  rx_axis_mac_tready_int  : std_logic;
-  signal  rx_axis_mac_tvalid_int  : std_logic;
-  signal  rx_axis_mac_rden        : std_logic;
+  signal  rx_mac_tdata  : std_logic_vector(63 downto 0);
+  signal  rx_mac_tkeep  : std_logic_vector(7  downto 0);
+  signal  rx_mac_tvalid : std_logic;
+  signal  rx_mac_tready : std_logic;
+  signal  rx_mac_tlast  : std_logic;
 
 begin
 
@@ -512,39 +498,31 @@ begin
     AXI_STR_RXS_TKEEP  => AXI_STR_RXS_TKEEP,
     AXI_STR_RXS_TDATA  => AXI_STR_RXS_TDATA,
 
-    rx_axis_mac_tvalid => rx_axis_mac_tvalid_int,
-    rx_axis_mac_tready => rx_axis_mac_tready_int,
-    rx_axis_mac_tdata  => rx_axis_mac_data_rd(63 downto 0),
-    rx_axis_mac_tkeep  => rx_axis_mac_data_rd(71 downto 64),
-    rx_axis_mac_tlast  => rx_axis_mac_data_rd(72),
-    rx_axis_mac_tuser  => rx_axis_mac_data_rd(73)
+    rx_axis_mac_tvalid => rx_mac_tvalid,
+    rx_axis_mac_tready => rx_mac_tready,
+    rx_axis_mac_tdata  => rx_mac_tdata,
+    rx_axis_mac_tkeep  => rx_mac_tkeep,
+    rx_axis_mac_tlast  => rx_mac_tlast,
+    rx_axis_mac_tuser  => '0'
   );
 
-  rx_axis_mac_data_wr(63 downto  0) <= rx_axis_mac_tdata;
-  rx_axis_mac_data_wr(71 downto 64) <= rx_axis_mac_tkeep;
-  rx_axis_mac_data_wr(72)           <= rx_axis_mac_tlast;
-  rx_axis_mac_data_wr(73)           <= rx_axis_mac_tuser;
-
-  rx_axis_mac_rden       <= rx_axis_mac_tvalid_int and rx_axis_mac_tready_int;
-  rx_axis_mac_tvalid_int <= not rx_axis_mac_empty;
-  rx_axis_mac_tready     <= not rx_axis_mac_full;
-
-  I_RX_FIFO: rx_queue 
+  I_RX_FIFO: entity axi_ethernet_v3_01_a.axi_eth_ifm(rtl)
   port map (
-   tdata   => rx_axis_mac_tdata_int,
-   tstrb   => rx_axis_mac_tkeep_int,
-   tvalid  => rx_axis_mac_tvalid_int,
-   tlast   => rx_axis_mac_tlast_int,
-   tready  => rx_axis_mac_tready_int,
+  rx_clk            => rx_mac_aclk,
+  rx_reset          => rx_reset,
+  rx_axis_mac_tdata => rx_axis_mac_tdata,
+  rx_axis_mac_tkeep => rx_axis_mac_tkeep,
+  rx_axis_mac_tlast => rx_axis_mac_tlast,
+  rx_axis_mac_tuser => rx_axis_mac_tuser,
+  rx_axis_mac_tvalid=> rx_axis_mac_tvalid,
+  rx_axis_mac_tready=> rx_axis_mac_tready,
 
-   clk     => AXI_STR_RXD_TVALID,
-   reset   => rx_reset,
-   fifo_wr_en => open,
-
-   rx_data       => rx_axis_mac_tdata,
-   rx_data_valid => rx_axis_mac_tkeep,
-   rx_good_frame => rx_axis_mac_tuser,
-   rx_bad_frame  => rx_axis_mac_tuser
+  sys_clk           => AXI_STR_RXD_ACLK,
+  mac_tvalid        => rx_mac_tvalid,
+  mac_tready        => rx_mac_tready,
+  mac_tdata         => rx_mac_tdata,
+  mac_tkeep         => rx_mac_tkeep,
+  mac_tlast         => rx_mac_tlast
   );
 
 end imp;

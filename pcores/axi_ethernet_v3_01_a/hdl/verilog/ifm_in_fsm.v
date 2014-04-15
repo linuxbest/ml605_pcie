@@ -43,6 +43,7 @@
 // 	device pins                        : "*_pin"
 // 	ports                              : - Names begin with Uppercase
 // Code:
+`timescale 1ps/1ps
 module ifm_in_fsm (/*AUTOARG*/
    // Outputs
    rx_axis_mac_tready, data_fifo_wdata, data_fifo_wren,
