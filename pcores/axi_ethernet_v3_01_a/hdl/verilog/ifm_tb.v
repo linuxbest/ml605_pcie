@@ -43,6 +43,7 @@
 // 	device pins                        : "*_pin"
 // 	ports                              : - Names begin with Uppercase
 // Code:
+`timescale 1ps/1ps
 module ifm_tb;
    wire [63:0]	mac_tdata;		// From axi_eth_ifm of axi_eth_ifm.v
    wire [7:0]	mac_tkeep;		// From axi_eth_ifm of axi_eth_ifm.v
@@ -110,6 +111,7 @@ module ifm_tb;
       @(posedge rx_clk);
       @(posedge rx_clk);
       
+      send_packet(0, 200);
       send_packet(1, 10);
       send_packet(0, 23);
       send_packet(1, 11);      

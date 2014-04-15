@@ -403,10 +403,10 @@ AXI_STR_RXD_TDATA		<=   rxd_fifo_q(63 downto 0);
     I_rxd_fifo : entity axi_ethernet_v3_01_a.axi_async_fifo(axi_async_fifo_a)
     generic map(
     C_FAMILY              => "kintex7",
-    C_FIFO_DEPTH          => 8192,
-    C_PROG_FULL_THRESH    => 256,
+    C_FIFO_DEPTH          => 1024,
+    C_PROG_FULL_THRESH    => 700,
     C_DATA_WIDTH          => 73,
-    C_PTR_WIDTH           => 13,
+    C_PTR_WIDTH           => 10,
     C_MEMORY_TYPE         => 1,
     C_COMMON_CLOCK        => 1,
     C_IMPLEMENTATION_TYPE => 2,

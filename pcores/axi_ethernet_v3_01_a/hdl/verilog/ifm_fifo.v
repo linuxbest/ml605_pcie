@@ -66,7 +66,7 @@ module ifm_fifo (/*AUTOARG*/
 
    axi_async_fifo #(.C_FAMILY              ("kintex7"),
 		   .C_FIFO_DEPTH          (1024),
-		   .C_PROG_FULL_THRESH    (256),
+		   .C_PROG_FULL_THRESH    (700),
 		   .C_DATA_WIDTH          (73),
 		   .C_PTR_WIDTH           (10),
 		   .C_MEMORY_TYPE         (1),
@@ -124,7 +124,7 @@ module ifm_fifo (/*AUTOARG*/
    output 	good_fifo_afull;   
    axi_async_fifo #(.C_FAMILY              ("kintex7"),
 		   .C_FIFO_DEPTH          (1024),
-		   .C_PROG_FULL_THRESH    (256),
+		   .C_PROG_FULL_THRESH    (700),
 		   .C_DATA_WIDTH          (73),
 		   .C_PTR_WIDTH           (10),
 		   .C_MEMORY_TYPE         (1),
