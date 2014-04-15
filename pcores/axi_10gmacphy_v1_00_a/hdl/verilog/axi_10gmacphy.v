@@ -122,6 +122,7 @@ module axi_10gmacphy (/*AUTOARG*/
    wire			dclk;			// From xphy_block of xphy_block.v
    wire			dclk_reset;		// From xphy_int of xphy_int.v
    wire			mdc;			// From xgmac of xgmac.v
+   wire			mmcm_locked;		// From xphy_block of xphy_block.v
    wire			pause_req;		// From xgmac_int of xgmac_int.v
    wire [15:0]		pause_val;		// From xgmac_int of xgmac_int.v
    wire [4:0]		prtad;			// From xphy_int of xphy_int.v
@@ -253,6 +254,7 @@ module axi_10gmacphy (/*AUTOARG*/
 		 .tx_resetdone		(tx_resetdone),
 		 .rx_resetdone		(rx_resetdone),
 		 .tx_disable		(tx_disable),
+		 .mmcm_locked		(mmcm_locked),
 		 // Inputs
 		 .refclk_n		(refclk_n),
 		 .refclk_p		(refclk_p),
@@ -317,6 +319,7 @@ module axi_10gmacphy (/*AUTOARG*/
 		.xgmii_rxd_int		(xgmii_rxd_int[63:0]),
 		.xgmii_rxc_int		(xgmii_rxc_int[7:0]),
 		.rxclk322		(rxclk322),
+		.mmcm_locked		(mmcm_locked),
 		.core_status		(core_status[7:0]),
 		.rx_axis_tready		(rx_axis_tready));
 
@@ -348,6 +351,7 @@ module axi_10gmacphy (/*AUTOARG*/
    assign r_trig[0]   = rx_axis_tvalid;
    assign r_trig[1]   = rx_axis_tlast;
    assign r_trig[2]   = rx_axis_tready;
+   assign r_trig[3]   = rx_axis_tuser;
    assign r_trig[15:8]= xgmii_rxd_int;
    
    assign r_dbg[0]     = rx_axis_tvalid;

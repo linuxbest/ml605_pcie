@@ -438,19 +438,19 @@ begin
 
     AXI_STR_RXD_ACLK       => axirxd_aclk,
     AXI_STR_RXD_ARESETN    => AXI_STR_RXD_ARESETN,
-    AXI_STR_RXD_VALID      => open,
-    AXI_STR_RXD_READY      => '0',
-    AXI_STR_RXD_LAST       => open,
-    AXI_STR_RXD_STRB       => open,
-    AXI_STR_RXD_DATA       => open,
+    AXI_STR_RXD_VALID      => AXI_STR_RXD_TVALID,
+    AXI_STR_RXD_READY      => AXI_STR_RXD_TREADY,
+    AXI_STR_RXD_LAST       => AXI_STR_RXD_TLAST,
+    AXI_STR_RXD_STRB       => AXI_STR_RXD_TKEEP,
+    AXI_STR_RXD_DATA       => AXI_STR_RXD_TDATA,
 
     AXI_STR_RXS_ACLK       => axirxs_aclk,
     AXI_STR_RXS_ARESETN    => AXI_STR_RXS_ARESETN,
-    AXI_STR_RXS_VALID      => open,
-    AXI_STR_RXS_READY      => '0',
-    AXI_STR_RXS_LAST       => open,
-    AXI_STR_RXS_STRB       => open,
-    AXI_STR_RXS_DATA       => open,
+    AXI_STR_RXS_VALID      => AXI_STR_RXS_TVALID,
+    AXI_STR_RXS_READY      => AXI_STR_RXS_TREADY,
+    AXI_STR_RXS_LAST       => AXI_STR_RXS_TLAST,
+    AXI_STR_RXS_STRB       => AXI_STR_RXS_TKEEP,
+    AXI_STR_RXS_DATA       => AXI_STR_RXS_TDATA,
 
     -- 10GEMAC Interface
     ------------------------
@@ -479,50 +479,6 @@ begin
     mac_bus2ip_data         => mac_bus2ip_data, 
     mac_bus2ip_rnw          => mac_bus2ip_rnw, 
     mac_bus2ip_cs           => mac_bus2ip_cs    
-  );
-
-  I_AXI_ETH_RX: entity axi_ethernet_v3_01_a.axi_eth_rx(rtl)
-  port map (
-    clk   => AXI_STR_RXD_ACLK,
-    reset => rx_reset,
-
-    AXI_STR_RXD_TVALID => AXI_STR_RXD_TVALID,
-    AXI_STR_RXD_TREADY => AXI_STR_RXD_TREADY,
-    AXI_STR_RXD_TLAST  => AXI_STR_RXD_TLAST,
-    AXI_STR_RXD_TKEEP  => AXI_STR_RXD_TKEEP,
-    AXI_STR_RXD_TDATA  => AXI_STR_RXD_TDATA,
-
-    AXI_STR_RXS_TVALID => AXI_STR_RXS_TVALID,
-    AXI_STR_RXS_TREADY => AXI_STR_RXS_TREADY,
-    AXI_STR_RXS_TLAST  => AXI_STR_RXS_TLAST,
-    AXI_STR_RXS_TKEEP  => AXI_STR_RXS_TKEEP,
-    AXI_STR_RXS_TDATA  => AXI_STR_RXS_TDATA,
-
-    rx_axis_mac_tvalid => rx_mac_tvalid,
-    rx_axis_mac_tready => rx_mac_tready,
-    rx_axis_mac_tdata  => rx_mac_tdata,
-    rx_axis_mac_tkeep  => rx_mac_tkeep,
-    rx_axis_mac_tlast  => rx_mac_tlast,
-    rx_axis_mac_tuser  => '0'
-  );
-
-  I_RX_FIFO: entity axi_ethernet_v3_01_a.axi_eth_ifm(rtl)
-  port map (
-  rx_clk            => rx_mac_aclk,
-  rx_reset          => rx_reset,
-  rx_axis_mac_tdata => rx_axis_mac_tdata,
-  rx_axis_mac_tkeep => rx_axis_mac_tkeep,
-  rx_axis_mac_tlast => rx_axis_mac_tlast,
-  rx_axis_mac_tuser => rx_axis_mac_tuser,
-  rx_axis_mac_tvalid=> rx_axis_mac_tvalid,
-  rx_axis_mac_tready=> rx_axis_mac_tready,
-
-  sys_clk           => AXI_STR_RXD_ACLK,
-  mac_tvalid        => rx_mac_tvalid,
-  mac_tready        => rx_mac_tready,
-  mac_tdata         => rx_mac_tdata,
-  mac_tkeep         => rx_mac_tkeep,
-  mac_tlast         => rx_mac_tlast
   );
 
 end imp;

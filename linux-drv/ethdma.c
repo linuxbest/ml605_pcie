@@ -777,10 +777,12 @@ static int axi_open(struct net_device *ndev)
 	/* We're ready to go. */
 	netif_start_queue(ndev);
 
+#if 0
 	init_timer(&lp->poll_timer);
 	lp->poll_timer.data = ndev;
 	lp->poll_timer.function = axi_poll_isr;
 	mod_timer(&lp->poll_timer, jiffies + (1 * HZ));
+#endif
 
 	return 0;
 }
@@ -795,8 +797,10 @@ static int axi_close(struct net_device *ndev)
 	
 	/*Stop AXI DMA Engine*/
 	AxiDma_Stop((u32)(lp->reg_base + AXI_DMA_REG));
-	
+
+#if 0
 	del_timer(&lp->poll_timer);
+#endif
 	axitemac_stop(lp->reg_base);
 	/*
 	 * Free the interrupt - not polled mode.
@@ -1187,7 +1191,9 @@ static void axi_remove_ndev(struct net_device *ndev)
 	XAxiDma_mBdRingIntDisable(RxRingPtr, XAXIDMA_IRQ_ALL_MASK);
 	XAxiDma_mBdRingIntDisable(TxRingPtr, XAXIDMA_IRQ_ALL_MASK);
 
+#if 0
 	del_timer(&lp->poll_timer);
+#endif
 
 	axitemac_stop(lp->reg_base);
 	axitemac_exit(lp->reg_base);

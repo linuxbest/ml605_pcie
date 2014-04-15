@@ -87,7 +87,8 @@ module xphy_block #
   output          rx_resetdone,
   input           signal_detect,
   input           tx_fault,
-  output          tx_disable);   
+  output          tx_disable,
+  output  wire    mmcm_locked);   
     
   //  Static signal Assigments    
   wire            tied_to_ground_i;
@@ -146,7 +147,6 @@ module xphy_block #
   wire QPLLRESET_IN;
   reg [7:0] reset_counter = 8'h00;
   reg [3:0] reset_pulse;
-  wire mmcm_locked;
 
   reg [19:0] rxuserrdy_counter = 20'h0;
   // Nominal wait time of 50000 UI = 757 cyles of 156.25MHz clock

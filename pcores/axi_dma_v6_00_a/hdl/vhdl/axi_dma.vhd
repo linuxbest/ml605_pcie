@@ -926,6 +926,8 @@ signal cmpt_updt : std_logic_vector (1 downto 0);
 
 signal reset1, reset2 : std_logic;
 signal s_axis_s2mm_sts_tready_int : std_logic;
+signal control0 : std_logic_vector(35  downto 0);
+signal rx_dbg   : std_logic_vector(127 downto 0);
 -------------------------------------------------------------------------------
 -- Begin architecture logic
 -------------------------------------------------------------------------------
@@ -2137,8 +2139,6 @@ I_PRMRY_DATAMOVER : entity axi_datamover_v4_00_a.axi_datamover
     );
 
 GEN_CHIPSCOPE: if C_CHIPSCOPE = 1 generate
-   signal control0 : std_logic_vector(35  downto 0);
-   signal rx_dbg   : std_logic_vector(127 downto 0);
 begin
     I_CHIPSCOPE_ICON : entity axi_dma_v6_00_a.chipscope_icon1(rtl)
     port map (
@@ -2151,26 +2151,30 @@ begin
      TRIG0    => rx_dbg,
      TRIG_OUT => open
     );
-    rx_dbg(63 downto 0)   <= s_axis_s2mm_tdata;
-    rx_dbg(71 downto 64)  <= s_axis_s2mm_tkeep;
-    rx_dbg(103 downto 72) <= s_axis_s2mm_sts_tdata;
-    rx_dbg(111 downto 104)<= s_axis_s2mm_sts_tkeep;
-    rx_dbg(112)           <= s_axis_s2mm_tlast;
-    rx_dbg(113)           <= s_axis_s2mm_tvalid;
-    rx_dbg(114)           <= s_axis_s2mm_tready_i;
-    rx_dbg(115)           <= s_axis_s2mm_sts_tlast;
-    rx_dbg(116)           <= s_axis_s2mm_sts_tvalid;
-    rx_dbg(117)           <= s_axis_s2mm_sts_tready_int;
-    
-    rx_dbg(119)           <= s2mm_dma_interr_set;
-    rx_dbg(120)           <= s2mm_dma_slverr_set;
-    rx_dbg(121)           <= s2mm_dma_decerr_set;
-    rx_dbg(122)           <= s2mm_ftch_interr_set;
-    rx_dbg(123)           <= s2mm_ftch_slverr_set;
-    rx_dbg(124)           <= s2mm_ftch_decerr_set;
-    rx_dbg(125)           <= s2mm_updt_interr_set;
-    rx_dbg(126)           <= s2mm_updt_slverr_set;
-    rx_dbg(127)           <= s2mm_updt_decerr_set;
+    I_rx_dbg : process (m_axi_s2mm_aclk)
+    begin
+            rx_dbg(63 downto 0)   <= s_axis_s2mm_tdata;
+            rx_dbg(71 downto 64)  <= s_axis_s2mm_tkeep;
+            rx_dbg(103 downto 72) <= s_axis_s2mm_sts_tdata;
+            rx_dbg(107 downto 104)<= s_axis_s2mm_sts_tkeep;
+
+            rx_dbg(112)           <= s_axis_s2mm_tlast;
+            rx_dbg(113)           <= s_axis_s2mm_tvalid;
+            rx_dbg(114)           <= s_axis_s2mm_tready_i;
+            rx_dbg(115)           <= s_axis_s2mm_sts_tlast;
+            rx_dbg(116)           <= s_axis_s2mm_sts_tvalid;
+            rx_dbg(117)           <= s_axis_s2mm_sts_tready_int;
+
+            rx_dbg(119)           <= s2mm_dma_interr_set;
+            rx_dbg(120)           <= s2mm_dma_slverr_set;
+            rx_dbg(121)           <= s2mm_dma_decerr_set;
+            rx_dbg(122)           <= s2mm_ftch_interr_set;
+            rx_dbg(123)           <= s2mm_ftch_slverr_set;
+            rx_dbg(124)           <= s2mm_ftch_decerr_set;
+            rx_dbg(125)           <= s2mm_updt_interr_set;
+            rx_dbg(126)           <= s2mm_updt_slverr_set;
+            rx_dbg(127)           <= s2mm_updt_decerr_set;
+    end process;
 end generate;
 
 end implementation;
