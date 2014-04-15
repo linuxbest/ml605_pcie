@@ -135,6 +135,7 @@ struct axi_local {
 	
 	struct net_device *ndev;
 	struct device *dev;
+	struct platform_device *mdev;
 
 	/* IO registers, dma functions and IRQs */
 	u32 base;
@@ -316,18 +317,21 @@ static void axi_reset(struct net_device *ndev, u32 line_num)
 	netif_wake_queue(ndev);
 }
 
-static irqreturn_t axi_dma_rx_interrupt(struct net_device *ndev, u32 irq_status)
+static irqreturn_t axi_dma_rx_interrupt(int id, void *data)
 {
+	struct net_device *ndev = data;
 	struct list_head *cur_lp;
-	unsigned long flags;
+	unsigned long flags, irq_status;
 	int RingIndex = 0;
 	XAxiDma_BdRing *RingPtr;
 	struct axi_local *lp = (struct axi_local *) netdev_priv(ndev);
-	RingPtr = XAxiDma_GetRxRing(&lp->AxiDma, RingIndex);
 
+	RingPtr = XAxiDma_GetRxRing(&lp->AxiDma, RingIndex);
+	irq_status = XAxiDma_ReadReg(RingPtr->ChanBase, XAXIDMA_SR_OFFSET);
 #if SSTG_DEBUG
 	printk("IrqStatusRx: %x\n", irq_status);
 #endif
+	XAxiDma_mBdRingAckIrq(RingPtr, irq_status);
 
 	if ((irq_status & XAXIDMA_ERR_ALL_MASK)) {
 		printk(KERN_ERR "%s: XAxiDma: error rx irq (%08x)\n", ndev->name, irq_status);
@@ -353,17 +357,21 @@ static irqreturn_t axi_dma_rx_interrupt(struct net_device *ndev, u32 irq_status)
 	return IRQ_HANDLED;
 }
 
-static irqreturn_t axi_dma_tx_interrupt(struct net_device *ndev, u32 irq_status)
+static irqreturn_t axi_dma_tx_interrupt(int id, void *data)
 {
+	struct net_device *ndev = data;
 	struct list_head *cur_lp;
-	unsigned long flags;
+	unsigned long flags, irq_status;
 	XAxiDma_BdRing *RingPtr;
 	struct axi_local *lp = (struct axi_local *) netdev_priv(ndev);
-	RingPtr = XAxiDma_GetTxRing(&lp->AxiDma);
 
+	RingPtr = XAxiDma_GetTxRing(&lp->AxiDma);
+	irq_status = XAxiDma_ReadReg(RingPtr->ChanBase, XAXIDMA_SR_OFFSET);
 #if SSTG_DEBUG
 	printk("IrqStatusTx: %x\n", irq_status);
 #endif
+	XAxiDma_mBdRingAckIrq(RingPtr, irq_status);
+
 	if ((irq_status & XAXIDMA_ERR_ALL_MASK)) {
 		printk(KERN_ERR "%s: XAxiDma: error tx irq (%08x)\n", ndev->name, irq_status);
 		XAxiDma_Reset(&lp->AxiDma);
@@ -414,17 +422,15 @@ static irqreturn_t axi_interrupt(int irq, void *dev_id)
 #endif
 	/* Acknowledge pending interrupts */
 	if ((IrqStatusTx & XAXIDMA_IRQ_ALL_MASK)) {
-
-		axi_dma_tx_interrupt(ndev, IrqStatusTx);
+		axi_dma_tx_interrupt(0, ndev);
 		XAxiDma_mBdRingAckIrq(TxRingPtr, IrqStatusTx);
 	}
 	
 	/* Acknowledge pending interrupts */
 	if ((IrqStatusRx & XAXIDMA_IRQ_ALL_MASK)) {	
-
-		axi_dma_rx_interrupt(ndev, IrqStatusRx);
-		XAxiDma_mBdRingAckIrq(RxRingPtr, IrqStatusRx);
+		axi_dma_rx_interrupt(0, ndev);
 	}
+
 	return IRQ_HANDLED;
 }
 
@@ -641,6 +647,9 @@ static void axi_poll_isr(unsigned long data)
 static int axi_irq_free(struct net_device *ndev)
 {
 #ifdef CONFIG_VPCI
+	struct axi_local *lp = netdev_priv(ndev);
+	vpci_free_irq(lp->mdev, 0);
+	vpci_free_irq(lp->mdev, 1);
 #else
 	free_irq(ndev->irq, ndev);
 #endif
@@ -653,7 +662,8 @@ static int axi_irq_setup(struct net_device *ndev)
 	struct axi_local *lp = netdev_priv(ndev);
 
 #ifdef CONFIG_VPCI
-	res = 0;
+	res  = vpci_request_irq(lp->mdev, 0, axi_dma_tx_interrupt, IRQF_SHARED, DRIVER_NAME, lp->ndev);
+	res |= vpci_request_irq(lp->mdev, 1, axi_dma_rx_interrupt, IRQF_SHARED, DRIVER_NAME, lp->ndev);
 #else
 	res = request_irq(lp->irq, axi_interrupt, IRQF_SHARED, DRIVER_NAME, lp->ndev);
 	if (res) {
@@ -1414,6 +1424,7 @@ static int __init eth_probe(struct platform_device *pdev)
 	lp->ndev = ndev;
 	lp->dev = &pdev->dev;
 	lp->irq = ndev->irq;
+	lp->mdev = pdev;
 
 	res = platform_get_resource(pdev, IORESOURCE_DMA, 0);
 	lp->base     = res->start;

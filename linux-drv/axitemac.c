@@ -38,6 +38,8 @@ static int mdio_write_reg(void *reg, uint32_t prtad, uint32_t devad,
 
 int axitemac_init(void *reg_base)
 {
+	int res;
+
 	XAxiDma_WriteReg((u32)reg_base + MAC_ADDR_BASE, CFG0, (1<<6)|(19));
 #if 0
 	/* reset the phy 3.0.15 */

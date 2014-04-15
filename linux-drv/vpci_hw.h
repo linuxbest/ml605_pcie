@@ -9,10 +9,11 @@
  *  0x0C: irq sts
  */
 enum {
-	HW_VER   = 0x00,
-	IRQ_PEND = 0x04,
-	IRQ_EN   = 0x08,
-	IRQ_STS  = 0x0C,
+	IRQ_ISR = 0x00,
+	IRQ_IPR = 0x04,
+	IRQ_IER = 0x08,
+	IRQ_IAR = 0x0C,
+	IRQ_MER = 0x1C,
 };
 
 #endif

@@ -132,11 +132,11 @@ void vpci_free_irq(struct platform_device *pdev, unsigned int irq)
 	vd->irqs_priv[irq] = NULL;
 
 	/* disable the IRQ line */
-	irq_en = VPCI_READ(vd->vp->ctrl + IRQ_EN);
+	irq_en = VPCI_READ(vd->vp->ctrl + IRQ_IER);
 	dev_dbg(&pdev->dev, "irq_en %08x, port %d, irq %d\n",
 			irq_en, vd->port, irq);
-	irq_en &= ~(0x1 << (irq + (vd->port<<2)));
-	VPCI_WRITE(irq_en, vd->vp->ctrl + IRQ_EN);
+	irq_en &= ~(0x1 << (irq + (vd->port<<1)));
+	VPCI_WRITE(irq_en, vd->vp->ctrl + IRQ_IER);
 }
 
 int vpci_request_irq(struct platform_device *pdev, 
@@ -155,11 +155,11 @@ int vpci_request_irq(struct platform_device *pdev,
 	vd->irqs_priv[irq] = dev;
 	
 	/* enable the IRQ line */
-	irq_en = VPCI_READ(vd->vp->ctrl + IRQ_EN);
+	irq_en = VPCI_READ(vd->vp->ctrl + IRQ_IER);
 	dev_dbg(&pdev->dev, "irq_en %08x, port %d, irq %d",
 			irq_en, vd->port, irq);
-	irq_en |= (0x1 << (irq + (vd->port<<2)));
-	VPCI_WRITE(irq_en, vd->vp->ctrl + IRQ_EN);
+	irq_en |= (0x1 << (irq + (vd->port<<1)));
+	VPCI_WRITE(irq_en, vd->vp->ctrl + IRQ_IER);
 	
 	return 0;
 }
@@ -167,10 +167,11 @@ int vpci_request_irq(struct platform_device *pdev,
 static void vd_isr(struct virt_device *vd, uint8_t irq)
 {
 	int i;
+	uint32_t val;
 
 	if (vd == NULL)
 		return;
-	for (i = 0; i < 4; i ++) {
+	for (i = 0; i < 2; i ++) {
 		dev_dbg(&vd->pd->dev, "i %d, irq %02x, cb %p, prv %p\n",
 				i, irq, vd->irqs[i], vd->irqs_priv[i]);
 		if ((irq & (1<<i)) == 0)
@@ -179,6 +180,8 @@ static void vd_isr(struct virt_device *vd, uint8_t irq)
 			dev_err(&vd->pd->dev, "no irq handler\n");
 			return;
 		}
+		val = (0x1 << (irq + (vd->port<<1)));
+		VPCI_WRITE(val, vd->vp->ctrl + IRQ_IAR);
 		vd->irqs[i](i, vd->irqs_priv[i]);
 	}
 }
@@ -225,9 +228,9 @@ static irqreturn_t vpci_isr(int irq, void *dev_id)
 	u32 irq_en, irq_sts, irq_pending;
 	int i;
 
-	irq_en      = VPCI_READ(vp->ctrl + IRQ_EN);
-	irq_sts     = VPCI_READ(vp->ctrl + IRQ_STS);
-	irq_pending = VPCI_READ(vp->ctrl + IRQ_PEND);
+	irq_en      = VPCI_READ(vp->ctrl + IRQ_IER);
+	irq_sts     = VPCI_READ(vp->ctrl + IRQ_ISR);
+	irq_pending = VPCI_READ(vp->ctrl + IRQ_IPR);
 	
 	if (irq_pending == 0)
 		return IRQ_NONE;
@@ -238,10 +241,9 @@ static irqreturn_t vpci_isr(int irq, void *dev_id)
 	for (i = 0; i < 8; i ++) {
 		if (irq_pending == 0)
 			break;
-		vd_isr(vp->vd[i], irq_pending);
-		irq_pending = irq_pending >> 4;
+		vd_isr(vp->vd[i], irq_pending & 0x3);
+		irq_pending = irq_pending >> 2;
 	}
-	
 
 	return IRQ_HANDLED;
 }
@@ -295,7 +297,7 @@ static int  __init vpci_probe(struct pci_dev *pdev, const struct pci_device_id *
 
 	bar_size = 0x10000;
 	dev_dbg(&pdev->dev, "vp %p, fun reg %08x, hw version %08x\n",
-			vp, bar_size, VPCI_READ(vp->ctrl + HW_VER));
+			vp, bar_size, /*VPCI_READ(vp->ctrl + HW_VER)*/0x1);
 	fun_num  = sizeof(vpci_funs)/sizeof(vpci_funs[0]);
 
 	for (i = 0; i < fun_num; i ++) {
@@ -329,6 +331,8 @@ static int  __init vpci_probe(struct pci_dev *pdev, const struct pci_device_id *
 		/* TODO clean the resources */
 		return -ENODEV;
 	}
+	VPCI_WRITE(0x0, vp->ctrl + IRQ_IER);
+	VPCI_WRITE(0x1, vp->ctrl + IRQ_MER);
 	dev_set_drvdata(&pdev->dev, vp);
 
 	return 0;
@@ -338,6 +342,8 @@ static void __exit vpci_remove(struct pci_dev *pdev)
 {
 	struct vpci_device *vp = dev_get_drvdata(&pdev->dev);
 	/* TODO */
+	VPCI_WRITE(0x0, vp->ctrl + IRQ_IER);
+	VPCI_WRITE(0x0, vp->ctrl + IRQ_MER);
 	free_irq(pdev->irq, vp);
 	pci_set_drvdata(pdev, NULL);
 	pci_release_regions(pdev);

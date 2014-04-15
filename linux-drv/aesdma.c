@@ -286,10 +286,10 @@ static void aes_freeze(struct aes_dev *dma)
                        "r%02d: %08x "
                        "r%02d: %08x "
                        "r%02d: %08x\n",
-		       i,   readl(dma->reg + 0x1000 + i*4),
-		       i+1, readl(dma->reg + 0x1000 + (i+1)*4),
-		       i+2, readl(dma->reg + 0x1000 + (i+2)*4),
-		       i+3, readl(dma->reg + 0x1000 + (i+3)*4));
+		       i,   readl(dma->reg + 0x80000 + i*4),
+		       i+1, readl(dma->reg + 0x80000 + (i+1)*4),
+		       i+2, readl(dma->reg + 0x80000 + (i+2)*4),
+		       i+3, readl(dma->reg + 0x80000 + (i+3)*4));
 	}
 	list_for_each_entry(sw, &dma->hw_head, hw_entry) {
 		dev_info(dma->dev, "sw %p", sw);
@@ -821,6 +821,7 @@ static int aes_tx_isr(struct aes_dev *dma, u32 sts)
 {
 	XAxiDma_BdRing *ring = XAxiDma_GetTxRing(&dma->AxiDma);
 	XAxiDma_BdRing *rx_ring = XAxiDma_GetRxRing(&dma->AxiDma, 0);
+	unsigned long flags;
 	
 	/* clear ring irq */
 	XAxiDma_mBdRingAckIrq(ring, sts);
@@ -832,6 +833,7 @@ static int aes_tx_isr(struct aes_dev *dma, u32 sts)
 		return IRQ_HANDLED;
 	}
 
+	spin_lock_irqsave(&tx_bh_lock, flags);
 	if (sts & (XAXIDMA_IRQ_DELAY_MASK | XAXIDMA_IRQ_IOC_MASK)) {
 		struct list_head *cur_dma;
 
@@ -845,6 +847,7 @@ static int aes_tx_isr(struct aes_dev *dma, u32 sts)
 			tasklet_schedule(&tx_bh);
 		}
 	}
+	spin_unlock_irqrestore(&tx_bh_lock, flags);
 
 	return IRQ_HANDLED;
 }
@@ -853,6 +856,7 @@ static int aes_rx_isr(struct aes_dev *dma, u32 sts)
 {
 	XAxiDma_BdRing *ring = XAxiDma_GetRxRing(&dma->AxiDma, 0);
 	XAxiDma_BdRing *tx_ring = XAxiDma_GetTxRing(&dma->AxiDma);
+	unsigned long flags;
 	
 	/* clear ring irq */
 	XAxiDma_mBdRingAckIrq(ring, sts);
@@ -864,6 +868,7 @@ static int aes_rx_isr(struct aes_dev *dma, u32 sts)
 		return IRQ_HANDLED;
 	}
 
+	spin_lock_irqsave(&rx_bh_lock, flags);
 	if (sts & (XAXIDMA_IRQ_DELAY_MASK | XAXIDMA_IRQ_IOC_MASK)) {
 		struct list_head *cur_dma;
 
@@ -877,6 +882,7 @@ static int aes_rx_isr(struct aes_dev *dma, u32 sts)
 			tasklet_schedule(&rx_bh);
 		}
 	}
+	spin_unlock_irqrestore(&rx_bh_lock, flags);
 
 	return IRQ_HANDLED;
 }
@@ -887,7 +893,6 @@ static irqreturn_t aes_isr(int irq, void *dev_id)
 	XAxiDma_BdRing *RxRing, *TxRing;
 	u32 IrqStsTx, IrqStsRx;
 	irqreturn_t res = IRQ_NONE;
-	unsigned long flags;
 
 	RxRing = XAxiDma_GetRxRing(&dma->AxiDma, 0);
 	TxRing = XAxiDma_GetTxRing(&dma->AxiDma);
@@ -898,15 +903,11 @@ static irqreturn_t aes_isr(int irq, void *dev_id)
 		goto out;
 	dev_trace(dma->dev, "IrqSts: %08x/%08x.\n",IrqStsTx, IrqStsRx);
 
-	spin_lock_irqsave(&tx_bh_lock, flags);
 	if (IrqStsTx & XAXIDMA_IRQ_ALL_MASK)
 		res = aes_tx_isr(dma, IrqStsTx);
-	spin_unlock_irqrestore(&tx_bh_lock, flags);
 
-	spin_lock_irqsave(&rx_bh_lock, flags);
 	if (IrqStsRx & XAXIDMA_IRQ_ALL_MASK)
 		res = aes_rx_isr(dma, IrqStsRx);
-	spin_unlock_irqrestore(&rx_bh_lock, flags);
 
 out:
 	return res;
@@ -1161,14 +1162,12 @@ static int __init aes_platform_probe(struct platform_device *pdev)
 	if (err != 0) 
 		goto err_ioremap;
 
-#if 0
-	err = request_irq(dma->irq, aes_isr, IRQF_SHARED, DRIVER_NAME,
-			dma);
+	err  = vpci_request_irq(pdev, 0, aes_tx_isr, IRQF_SHARED, DRIVER_NAME, dma);
+	err |= vpci_request_irq(pdev, 1, aes_rx_isr, IRQF_SHARED, DRIVER_NAME, dma);
 	if (err) {
 		dev_err(&pdev->dev, "request irq failed %d\n", err);
 		goto err_ioremap;
 	}
-#endif
 
 	XAxiDma_mBdRingIntEnable(XAxiDma_GetRxRing(&dma->AxiDma, 0), XAXIDMA_IRQ_ALL_MASK);
 	XAxiDma_mBdRingIntEnable(XAxiDma_GetTxRing(&dma->AxiDma), XAXIDMA_IRQ_ALL_MASK);
@@ -1215,9 +1214,8 @@ static int __exit aes_platform_remove(struct platform_device *pdev)
 	del_timer(&dma->poll_timer);
 	del_timer(&dma->timer);
 	AxiDma_Stop(dma->reg);
-#if 0
-	free_irq(pdev->irq, dma);
-#endif	
+	vpci_free_irq(pdev, 0);
+	vpci_free_irq(pdev, 1);
 	dev_set_drvdata(&pdev->dev, NULL);
 	aes_clean_desc(dma);
 
