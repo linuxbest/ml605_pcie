@@ -865,55 +865,55 @@ begin
   --------------------------------------------------------------------------
   -- Instantiate receive interface
   --------------------------------------------------------------------------
----  RCV_INTFCE_I : entity axi_ethernet_v3_01_a.rx_if(rtl)
----  generic map (
----    C_FAMILY                  => C_FAMILY,
----    C_RXCSUM                  => C_RXCSUM,
----    C_RXMEM                   => C_RXMEM,
----    C_RXVLAN_TRAN             => C_RXVLAN_TRAN,
----    C_RXVLAN_TAG              => C_RXVLAN_TAG,
----    C_RXVLAN_STRP             => C_RXVLAN_STRP
----  )
----  port map(
----
----    AXI_STR_RXD_ACLK                =>  AXI_STR_RXD_ACLK,
----    AXI_STR_RXD_VALID               =>  AXI_STR_RXD_VALID,
----    AXI_STR_RXD_READY               =>  AXI_STR_RXD_READY,
----    AXI_STR_RXD_LAST                =>  AXI_STR_RXD_LAST,
----    AXI_STR_RXD_STRB                =>  AXI_STR_RXD_STRB,
----    AXI_STR_RXD_DATA                =>  AXI_STR_RXD_DATA,
----    RESET2AXI_STR_RXD               =>  reset2axi_str_rxd,
----   
----    AXI_STR_RXS_ACLK                =>  AXI_STR_RXS_ACLK,
----    AXI_STR_RXS_VALID               =>  AXI_STR_RXS_VALID,
----    AXI_STR_RXS_READY               =>  AXI_STR_RXS_READY,
----    AXI_STR_RXS_LAST                =>  AXI_STR_RXS_LAST,
----    AXI_STR_RXS_STRB                =>  AXI_STR_RXS_STRB,
----    AXI_STR_RXS_DATA                =>  AXI_STR_RXS_DATA,
----    RESET2AXI_STR_RXS               =>  reset2axi_str_rxs,
----
----    -- Receive Client Interface Signals                                                          
----    rx_mac_aclk                     =>  rx_mac_aclk,           
----    rx_reset                        =>  rx_reset,              
----    rx_axis_mac_tdata               =>  rx_axis_mac_tdata,     
----    rx_axis_mac_tvalid              =>  rx_axis_mac_tvalid, 
----    rx_axis_mac_tkeep               =>  rx_axis_mac_tkeep,   
----    rx_axis_mac_tlast               =>  rx_axis_mac_tlast,     
----    rx_axis_mac_tuser               =>  rx_axis_mac_tuser,     
----    
----    RX_CL_CLK_RX_TAG_REG_DATA       =>  rx_cl_clk_rx_tag_reg_data,  
----    RX_CL_CLK_TPID0_REG_DATA        =>  rx_cl_clk_tpid0_reg_data,   
----    RX_CL_CLK_TPID1_REG_DATA        =>  rx_cl_clk_tpid1_reg_data,         
---- 
----    RX_CL_CLK_VLAN_ADDR             =>  rx_cl_clk_vlan_addr,        
----    RX_CL_CLK_VLAN_RD_DATA          =>  rx_cl_clk_vlan_rd_data,     
----    RX_CL_CLK_VLAN_BRAM_EN_A        =>  rx_cl_clk_vlan_bram_en_a,   
----
----    RX_CL_CLK_NEW_FNC_ENBL          =>  rx_cl_clk_new_fnc_enbl,
----    RX_CL_CLK_VSTRP_MODE            =>  rx_cl_clk_vstrp_mode,       
----    RX_CL_CLK_VTAG_MODE             =>  rx_cl_clk_vtag_mode        
----  );
----      
+  RCV_INTFCE_I : entity axi_ethernet_v3_01_a.rx_if(rtl)
+  generic map (
+    C_FAMILY                  => C_FAMILY,
+    C_RXCSUM                  => C_RXCSUM,
+    C_RXMEM                   => C_RXMEM,
+    C_RXVLAN_TRAN             => C_RXVLAN_TRAN,
+    C_RXVLAN_TAG              => C_RXVLAN_TAG,
+    C_RXVLAN_STRP             => C_RXVLAN_STRP
+  )
+  port map(
+
+    AXI_STR_RXD_ACLK                =>  AXI_STR_RXD_ACLK,
+    AXI_STR_RXD_VALID               =>  AXI_STR_RXD_VALID,
+    AXI_STR_RXD_READY               =>  AXI_STR_RXD_READY,
+    AXI_STR_RXD_LAST                =>  AXI_STR_RXD_LAST,
+    AXI_STR_RXD_STRB                =>  AXI_STR_RXD_STRB,
+    AXI_STR_RXD_DATA                =>  AXI_STR_RXD_DATA,
+    RESET2AXI_STR_RXD               =>  reset2axi_str_rxd,
+   
+    AXI_STR_RXS_ACLK                =>  AXI_STR_RXS_ACLK,
+    AXI_STR_RXS_VALID               =>  AXI_STR_RXS_VALID,
+    AXI_STR_RXS_READY               =>  AXI_STR_RXS_READY,
+    AXI_STR_RXS_LAST                =>  AXI_STR_RXS_LAST,
+    AXI_STR_RXS_STRB                =>  AXI_STR_RXS_STRB,
+    AXI_STR_RXS_DATA                =>  AXI_STR_RXS_DATA,
+    RESET2AXI_STR_RXS               =>  reset2axi_str_rxs,
+
+    -- Receive Client Interface Signals                                                          
+    rx_mac_aclk                     =>  rx_mac_aclk,           
+    rx_reset                        =>  rx_reset,              
+    rx_axis_mac_tdata               =>  rx_axis_mac_tdata,     
+    rx_axis_mac_tvalid              =>  rx_axis_mac_tvalid, 
+    rx_axis_mac_tkeep               =>  rx_axis_mac_tkeep,   
+    rx_axis_mac_tlast               =>  rx_axis_mac_tlast,     
+    rx_axis_mac_tuser               =>  rx_axis_mac_tuser,     
+    
+    RX_CL_CLK_RX_TAG_REG_DATA       =>  rx_cl_clk_rx_tag_reg_data,  
+    RX_CL_CLK_TPID0_REG_DATA        =>  rx_cl_clk_tpid0_reg_data,   
+    RX_CL_CLK_TPID1_REG_DATA        =>  rx_cl_clk_tpid1_reg_data,         
+ 
+    RX_CL_CLK_VLAN_ADDR             =>  rx_cl_clk_vlan_addr,        
+    RX_CL_CLK_VLAN_RD_DATA          =>  rx_cl_clk_vlan_rd_data,     
+    RX_CL_CLK_VLAN_BRAM_EN_A        =>  rx_cl_clk_vlan_bram_en_a,   
+
+    RX_CL_CLK_NEW_FNC_ENBL          =>  rx_cl_clk_new_fnc_enbl,
+    RX_CL_CLK_VSTRP_MODE            =>  rx_cl_clk_vstrp_mode,       
+    RX_CL_CLK_VTAG_MODE             =>  rx_cl_clk_vtag_mode        
+  );
+      
   
   --------------------------------------------------------------------------
   -- Instantiate receive interface

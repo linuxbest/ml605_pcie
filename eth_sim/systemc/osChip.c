@@ -183,8 +183,7 @@ int osChip_init(uint32_t base)
 	/* turn off tx disable 1.9.0  */
 	//mdio_write_reg(0x0, 0x1, 0x9, 0x0);
 #endif
-	/* doing reset */
-	XAxiDma_Reset(&dma_dev->AxiDma);
+	/* XAxiDma_Reset(&dma_dev->AxiDma);*/
 
 	if(!XAxiDma_HasSg(&dma_dev->AxiDma)) {
 		printf("Device configured as Simple mode \n");

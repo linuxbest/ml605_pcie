@@ -12,6 +12,3 @@ lib axi_10gmacphy_v1_00_a ila256_16.v verilog
 
 lib axi_10gmacphy_v1_00_a xphy.v verilog
 lib axi_10gmacphy_v1_00_a xgmac.v verilog
-
-simlib axi_10gmacphy_v1_00_a xphy.v verilog
-simlib axi_10gmacphy_v1_00_a xgmac.v verilog

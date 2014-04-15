@@ -585,21 +585,21 @@ begin
   INCLUDE_RX_CSUM: if (C_RXCSUM = 2) generate
   begin
 
-	Inst_rx_csum_top: entity axi_ethernet_v3_01_a.rx_csum_top(rtl)
-		port map (
-			reset		=>	RESET2RX_CLIENT,
-			clk		=>	RX_CLIENT_CLK,
-			enable		=>	'1',
-			rx_data		=>	rx_data,
-	       		rx_valid	=>	EMAC_CLIENT_RXD_VLD_LEGACY(0),
-			rx_sop		=>	derived_sof,
-			rx_eop		=>	derived_eof,
-			rx_empty	=>	rx_empty,
-			rx_cnt		=>	rx_cnt(10 downto 0),
-			cs_raw		=>	rxCsum,
-			cs_valid	=>	rxCsumVld
-		);
-
+--	Inst_rx_csum_top: entity axi_ethernet_v3_01_a.rx_csum_top(rtl)
+--		port map (
+--			reset		=>	RESET2RX_CLIENT,
+--			clk		=>	RX_CLIENT_CLK,
+--			enable		=>	'1',
+--			rx_data		=>	rx_data,
+--	       		rx_valid	=>	EMAC_CLIENT_RXD_VLD_LEGACY(0),
+--			rx_sop		=>	derived_sof,
+--			rx_eop		=>	derived_eof,
+--			rx_empty	=>	rx_empty,
+--			rx_cnt		=>	rx_cnt(10 downto 0),
+--			cs_raw		=>	rxCsum,
+--			cs_valid	=>	rxCsumVld
+--		);
+--
   end generate INCLUDE_RX_CSUM;
 
   -------------------------------------------------------------------------

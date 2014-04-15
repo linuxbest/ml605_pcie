@@ -99,12 +99,12 @@ lib axi_ethernet_v3_01_a  tx_csum_if.vhd   vhdl
 lib axi_ethernet_v3_01_a  tx_basic_if.vhd   vhdl
 lib axi_ethernet_v3_01_a  tx_axistream_if.vhd   vhdl
 lib axi_ethernet_v3_01_a  tx_if.vhd   vhdl
-#lib axi_ethernet_v3_01_a  rx_axistream_if.vhd   vhdl
-#lib axi_ethernet_v3_01_a  rx_mem_if.vhd   vhdl
-#lib axi_ethernet_v3_01_a  rx_csum_if.vhd   vhdl
-#lib axi_ethernet_v3_01_a  rx_emac_if.vhd   vhdl
-#lib axi_ethernet_v3_01_a  rx_emac_if_vlan.vhd   vhdl
-#lib axi_ethernet_v3_01_a  rx_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  rx_axistream_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  rx_mem_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  rx_csum_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  rx_emac_if.vhd   vhdl
+lib axi_ethernet_v3_01_a  rx_emac_if_vlan.vhd   vhdl
+lib axi_ethernet_v3_01_a  rx_if.vhd   vhdl
 
 lib axi_ethernet_v3_01_a  rx_csum_if.vhd vhdl
 lib axi_ethernet_v3_01_a  rx_csum_top.vhd vhdl
