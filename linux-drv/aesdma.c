@@ -3,7 +3,7 @@
  
  Hu Gang <linuxbest@gmail.com> 
 *******************************************************************************/
-#define DEBUG 1
+//#define DEBUG 1
 #include <linux/hardirq.h>
 #include <linux/interrupt.h>
 #include <linux/module.h>

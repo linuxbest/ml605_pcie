@@ -3,7 +3,7 @@
  *
  * base on drivers/net/ethernet/intel/e100.c
  */
-#define DEBUG
+//#define DEBUG
 #include <linux/init.h>
 #include <linux/interrupt.h>
 #include <linux/module.h>
