@@ -1,0 +1,612 @@
+<html>
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<meta name=Generator content="Microsoft Word 12 (filtered)">
+<title>Change log for axi dma v6.00.a</title>
+<link rel=Stylesheet type="text/css" media=all
+href="../../../../../../doc/usenglish/css/xilhtml.css">
+<style>
+<!--
+ /* Font Definitions */
+ @font-face
+	{font-family:"MS Mincho";
+	panose-1:2 2 6 9 4 2 5 8 3 4;}
+@font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;}
+@font-face
+	{font-family:"Arial Unicode MS";
+	panose-1:2 11 6 4 2 2 2 2 2 4;}
+@font-face
+	{font-family:"\@Arial Unicode MS";
+	panose-1:2 11 6 4 2 2 2 2 2 4;}
+@font-face
+	{font-family:"\@MS Mincho";
+	panose-1:2 2 6 9 4 2 5 8 3 4;}
+@font-face
+	{font-family:Consolas;
+	panose-1:2 11 6 9 2 2 4 3 2 4;}
+ /* Style Definitions */
+ p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin:0in;
+	margin-bottom:.0001pt;
+	font-size:12.0pt;
+	font-family:"Times New Roman","serif";}
+h1
+	{mso-style-link:"Heading 1 Char";
+	margin-right:0in;
+	margin-left:0in;
+	font-size:24.0pt;
+	font-family:"Times New Roman","serif";}
+h3
+	{mso-style-link:"Heading 3 Char";
+	margin-right:0in;
+	margin-left:0in;
+	font-size:13.5pt;
+	font-family:"Times New Roman","serif";}
+pre
+	{mso-style-link:"HTML Preformatted Char";
+	margin:0in;
+	margin-bottom:.0001pt;
+	font-size:10.0pt;
+	font-family:"Courier New";}
+span.HTMLPreformattedChar
+	{mso-style-name:"HTML Preformatted Char";
+	mso-style-link:"HTML Preformatted";
+	font-family:"Consolas","serif";}
+p.level1heading, li.level1heading, div.level1heading
+	{mso-style-name:level1heading;
+	margin:0in;
+	margin-bottom:.0001pt;
+	font-size:12.5pt;
+	font-family:"Times New Roman","serif";
+	color:black;
+	font-weight:bold;}
+p.level2heading, li.level2heading, div.level2heading
+	{mso-style-name:level2heading;
+	margin-top:24.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	margin-bottom:.0001pt;
+	font-size:12.0pt;
+	font-family:"Times New Roman","serif";
+	font-weight:bold;}
+p.level3heading, li.level3heading, div.level3heading
+	{mso-style-name:level3heading;
+	margin-top:24.0pt;
+	margin-right:0in;
+	margin-left:0in;
+	font-size:12.0pt;
+	font-family:"Times New Roman","serif";
+	font-weight:bold;}
+p.greybackground, li.greybackground, div.greybackground
+	{mso-style-name:greybackground;
+	margin-right:0in;
+	margin-left:0in;
+	background:#CCCCCC;
+	font-size:12.0pt;
+	font-family:"Times New Roman","serif";}
+p.preformatfont, li.preformatfont, div.preformatfont
+	{mso-style-name:preformatfont;
+	margin-right:0in;
+	margin-left:0in;
+	font-size:11.5pt;
+	font-family:"Courier New";}
+p.copyright, li.copyright, div.copyright
+	{mso-style-name:copyright;
+	margin-right:0in;
+	margin-left:0in;
+	font-size:12.0pt;
+	font-family:"Times New Roman","serif";}
+span.Heading3Char
+	{mso-style-name:"Heading 3 Char";
+	mso-style-link:"Heading 3";
+	font-family:"Cambria","serif";
+	color:#4F81BD;
+	font-weight:bold;}
+span.Heading1Char
+	{mso-style-name:"Heading 1 Char";
+	mso-style-link:"Heading 1";
+	font-family:"Cambria","serif";
+	color:#365F91;
+	font-weight:bold;}
+.MsoChpDefault
+	{font-size:10.0pt;}
+@page WordSection1
+	{size:8.5in 11.0in;
+	margin:1.0in 1.25in 1.0in 1.25in;}
+div.WordSection1
+	{page:WordSection1;}
+ /* List Definitions */
+ ol
+	{margin-bottom:0in;}
+ul
+	{margin-bottom:0in;}
+-->
+</style>
+<!-- saved from url=(0100)http://xinc/sites/epd/ipcd/hardware/hw_process/Shared%20Documents/change_log_handwritten_syntax.html -->
+</head>
+
+<body lang=EN-US>
+
+<div class=WordSection1>
+
+<h3>Xilinx Processor IP Library</h3>
+
+<h1>Change log for axi_dma</h1>
+
+<div class=MsoNormal align=center style='text-align:center'>
+
+<hr size=2 width="100%" align=center>
+
+</div>
+
+<p class=MsoNormal style='margin-bottom:12.0pt'><br>
+<br>
+</p>
+
+<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=994
+ style='width:745.5pt'>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'>
+  <p class=MsoNormal>&nbsp;</p>
+  </td>
+ </tr>
+ <tr>
+  <td style='background:#CCCCCC;padding:.75pt .75pt .75pt .75pt;-moz-background-clip: -moz-initial;
+  -moz-background-origin: -moz-initial;-moz-background-inline-policy: -moz-initial;
+  background-attachment:scroll;background-position-x:0%;background-position-y:
+  50%'>
+  <p class=level1heading>Changes in 6.00.a introduced in 14.1</p>
+  </td>
+ </tr>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'>
+  <p class=level2heading>14.1 - Changes in VHDL/Verilog/Netlist sources (.vhd,
+  .v, .ngc, .edn) </p>
+  <div class=MsoNormal align=center style='text-align:center'>
+  <hr size=2 width="100%" align=center>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'><pre><span style='font-family:
+  "Arial","sans-serif"'>New Features:</span></pre>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>Multi Channel DMA support enabled. Channel selection is
+       based on TDEST. Refer UG for more information.</li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>A number of new registers have been added for S2MM path.
+       Refer the user guide for more information.</li>
+   <li class=MsoNormal>Enabled Keyhole read/write feature.</li>
+   <li class=MsoNormal>Store and Forward is now an optional feature when
+       streaming data width is same as Mmap data width.</li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <pre><span style='font-family:"Arial","sans-serif"'>Resolved Issues:</span></pre>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <p class=MsoNormal>&nbsp;</p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial","sans-serif"'>Known
+  Issues / Limitations:</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>Axi_dma_v6_00_a is fully backward compatible. To move your
+       existing designs to the new version make sure that parameters</li>
+  </ul>
+  <p class=MsoNormal style='margin-left:.5in'>C_ENABLE_MULTI_CHANNEL is set to 0,
+  C_NUM_MM2S_CHANNELS is set to 1 and C_NUM_S2MM_CHANNELS is set to 1.</p>
+  <p class=MsoNormal style='margin-left:.5in'>                   </p>
+  </td>
+ </tr>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'>
+  <p class=MsoNormal>&nbsp;</p>
+  <p class=MsoNormal>&nbsp;</p>
+  </td>
+ </tr>
+ <tr>
+  <td style='background:#CCCCCC;padding:.75pt .75pt .75pt .75pt;-moz-background-clip: -moz-initial;
+  -moz-background-origin: -moz-initial;-moz-background-inline-policy: -moz-initial;
+  background-attachment:scroll;background-position-x:0%;background-position-y:
+  50%'>
+  <p class=level1heading>Changes in 5.00.a introduced in 13.3</p>
+  </td>
+ </tr>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'>
+  <p class=level2heading>13.3 - Changes in VHDL/Verilog/Netlist sources (.vhd,
+  .v, .ngc, .edn) </p>
+  <div class=MsoNormal align=center style='text-align:center'>
+  <hr size=2 width="100%" align=center>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'><pre><span style='font-family:
+  "Arial","sans-serif"'>New Features:</span></pre>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>DMA now uses axi_datamover_v4_00_a and axi_sg_v4_00_a.</li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>New feature, Store and Forward is added
+       (C_INCLUDE_MM2S_SF, C_INCLUDE_S2MM_SF). This feature helps in reducing
+       the bubbles in the AXI transaction. This feature is enabled inside the
+       RTL.</li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <pre><span style='font-family:"Arial","sans-serif"'>Resolved Issues:</span></pre>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <p class=MsoNormal>&nbsp;</p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial","sans-serif"'>Known
+  Issues / Limitations:</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>When migrating from older version you may want to take
+       into consideration the new parameters.</li>
+  </ul>
+  </td>
+ </tr>
+</table>
+
+<p class=MsoNormal style='margin-bottom:12.0pt'><br>
+<br>
+</p>
+
+<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=994
+ style='width:745.5pt'>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'>
+  <p class=MsoNormal>&nbsp;</p>
+  </td>
+ </tr>
+<!-- BEGIN CHANGELOG FOR New core version --><!--spacer-->
+ <tr>
+  <td style='background:#CCCCCC;padding:.75pt .75pt .75pt .75pt;-moz-background-clip: -moz-initial;
+  -moz-background-origin: -moz-initial;-moz-background-inline-policy: -moz-initial;
+  background-attachment:scroll;background-position-x:0%;background-position-y:
+  50%'>
+  <p class=level1heading>Changes in 4.00.a introduced in 13.2</p>
+  </td>
+ </tr>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'>
+  <p class=level2heading>13.2 - Changes in VHDL/Verilog/Netlist sources (.vhd,
+  .v, .ngc, .edn) </p>
+  <div class=MsoNormal align=center style='text-align:center'>
+  <hr size=2 width="100%" align=center>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'><pre><span style='font-family:
+  "Arial","sans-serif"'>New Features:</span></pre>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>Made Scatter Gather Engine optional. When the Scatter
+       Gather engine is excluded then Simple DMA mode is enabled.</li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>CR589995 - Added TCL script process to detect
+       asynchronous clock mode and set/clear C_PRMRY_IS_ACLK_ASYNC
+       automatically.</li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>CR585409 - Optimized AXI4 Stream ports to remove resets
+       on data buses. This allows for easier FPGA placement and timing closure.</li>
+  </ul>
+  <p class=MsoNormal style='margin-bottom:12.0pt'><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <pre><span style='font-family:"Arial","sans-serif"'>Resolved Issues:</span></pre>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>CR587591 - Renamed AXI Control and Status Stream bus interfaces
+       in mpd to M_AXIS_MM2S_CNTRL and S_AXIS_S2MM_STS to allow automatic tool
+       connection of AXI Monitor.</li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <p class=MsoNormal>&nbsp;</p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial","sans-serif"'>Known
+  Issues / Limitations:</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial Unicode MS","sans-serif"'>No
+       known issues or limitations</span></li>
+  </ul>
+  </td>
+ </tr>
+</table>
+
+<p class=MsoNormal style='margin-bottom:12.0pt'><br>
+<br>
+<br>
+</p>
+
+<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=994
+ style='width:745.5pt'>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'>
+  <p class=MsoNormal>&nbsp;</p>
+  </td>
+ </tr>
+<!-- BEGIN CHANGELOG FOR New core version --><!--spacer-->
+ <tr>
+  <td style='background:#CCCCCC;padding:.75pt .75pt .75pt .75pt;-moz-background-clip: -moz-initial;
+  -moz-background-origin: -moz-initial;-moz-background-inline-policy: -moz-initial;
+  background-attachment:scroll;background-position-x:0%;background-position-y:
+  50%'>
+  <p class=level1heading>Changes in 3.00.a introduced in 13.1</p>
+  </td>
+ </tr>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'>
+  <p class=level2heading>13.1 - Changes in VHDL/Verilog/Netlist sources (.vhd,
+  .v, .ngc, .edn) </p>
+  <div class=MsoNormal align=center style='text-align:center'>
+  <hr size=2 width="100%" align=center>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'><pre><span style='font-family:
+  "Arial","sans-serif"'>New Features:</span></pre>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>Added option to clock all memory map interfaces
+       asynchronously from eachother. This modified clock interface to AXI DMA
+       giving four clock inputs, s_axi_lite_aclk, m_axi_sg_aclk,
+       m_axi_mm2s_aclk, and m_axi_s2mm_aclk.</li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>CR582801 Updated AXI Stream data width parameter to
+       ***_TDATA_WIDTH to allow tools to autoconnect AXI Stream Monitor.</li>
+  </ul>
+  <p class=MsoNormal style='margin-bottom:12.0pt'><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <pre><span style='font-family:"Arial","sans-serif"'>Resolved Issues:</span></pre>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>CR578807 - Renamed AXI Stream ports from *_tstrb to
+       *_tkeep</li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <p class=MsoNormal>&nbsp;</p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial","sans-serif"'>Known
+  Issues / Limitations:</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial Unicode MS","sans-serif"'>No
+       known issues or limitations</span></li>
+  </ul>
+  </td>
+ </tr>
+</table>
+
+<p class=MsoNormal style='margin-bottom:12.0pt'><br>
+<br>
+<br>
+<br>
+<br>
+</p>
+
+<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=994
+ style='width:745.5pt'>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'>
+  <p class=MsoNormal>&nbsp;</p>
+  </td>
+ </tr>
+<!-- BEGIN CHANGELOG FOR New core version --><!--spacer-->
+ <tr>
+  <td style='background:#CCCCCC;padding:.75pt .75pt .75pt .75pt;-moz-background-clip: -moz-initial;
+  -moz-background-origin: -moz-initial;-moz-background-inline-policy: -moz-initial;
+  background-attachment:scroll;background-position-x:0%;background-position-y:
+  50%'>
+  <p class=level1heading>Changes in 2.00.a introduced in 12.4</p>
+  </td>
+ </tr>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'>
+  <p class=level2heading>12.4 - Changes in VHDL/Verilog/Netlist sources (.vhd,
+  .v, .ngc, .edn) </p>
+  <div class=MsoNormal align=center style='text-align:center'>
+  <hr size=2 width="100%" align=center>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'><pre><span style='font-family:
+  "Arial","sans-serif"'>New Features:</span></pre>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>No New Features</li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <pre><span style='font-family:"Arial","sans-serif"'>Resolved Issues:</span></pre>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>CR573702 - Renamed
+       m_axis_mm2s_aresetn,m_axis_mm2s_cntrl_aresetn, s_axis_s2mm_aresetn, and
+       s_axis_s2mm_sts_aresetn to be non-AXI based. </li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>CR573642 - Added
+       C_INTERCONNECT_M_AXI_MM2S_READ_ISSUING=4 and
+       C_INTERCONNECT_M_AXI_S2MM_WRITE_ISSUING=4 to mpd and mui to improve AXI
+       DMA performance. </li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>CR574977 - Removed Frequency limit from input clocks in
+       MPD file. </li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>CR576999 - Fixed issue with back to back read and write
+       request on AXI Lite interface. Subsequent requests were ignored. </li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>CR576336 - Modified MPD and MUI file BUS_STD and added
+       PROTOCOL parameters for AXI Stream interface to support new tool
+       directive. </li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <p class=MsoNormal>&nbsp;</p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial","sans-serif"'>Known
+  Issues / Limitations:</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial Unicode MS","sans-serif"'>No
+       known issues or limitations</span></li>
+  </ul>
+  </td>
+ </tr>
+</table>
+
+<p class=MsoNormal style='margin-bottom:12.0pt'><br>
+<br>
+<br>
+</p>
+
+<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=994
+ style='width:745.5pt'>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'>
+  <p class=MsoNormal>&nbsp;</p>
+  </td>
+ </tr>
+<!-- BEGIN CHANGELOG FOR New core version --><!--spacer-->
+ <tr>
+  <td style='background:#CCCCCC;padding:.75pt .75pt .75pt .75pt;-moz-background-clip: -moz-initial;
+  -moz-background-origin: -moz-initial;-moz-background-inline-policy: -moz-initial;
+  background-attachment:scroll;background-position-x:0%;background-position-y:
+  50%'>
+  <p class=level1heading>Changes in 1.00.a introduced in 12.3</p>
+  </td>
+ </tr>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'>
+  <p class=level2heading>12.3 - Changes in VHDL/Verilog/Netlist sources (.vhd,
+  .v, .ngc, .edn) </p>
+  <div class=MsoNormal align=center style='text-align:center'>
+  <hr size=2 width="100%" align=center>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'><pre><span style='font-family:
+  "Arial","sans-serif"'>New Features:</span></pre>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>Initial Release</li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <pre><span style='font-family:"Arial","sans-serif"'>Resolved Issues:</span></pre>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>CR572744 - Aligned MPD parameters to match AXI End Point
+       IP Specification</li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>CR570806 - Modified Narrow Burst support parameters in
+       MPD and MUI to match EDK expectations.</li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>CR566306 - Fixed issue with double generate S2MM SLVERR
+       not being captured correctly in Buffer Descriptor.</li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <p class=MsoNormal>&nbsp;</p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial","sans-serif"'>Known
+  Issues / Limitations:</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial Unicode MS","sans-serif"'>No
+       known issues or limitations</span></li>
+  </ul>
+  </td>
+ </tr>
+</table>
+
+<p class=MsoNormal style='margin-bottom:12.0pt'><br>
+<br>
+<br>
+<br>
+</p>
+
+<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=994
+ style='width:745.5pt'>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'>
+  <p class=MsoNormal>&nbsp;</p>
+  </td>
+ </tr>
+<!-- BEGIN CHANGELOG FOR New core version --><!--spacer-->
+ <tr>
+  <td style='background:#CCCCCC;padding:.75pt .75pt .75pt .75pt;-moz-background-clip: -moz-initial;
+  -moz-background-origin: -moz-initial;-moz-background-inline-policy: -moz-initial;
+  background-attachment:scroll;background-position-x:0%;background-position-y:
+  50%'>
+  <p class=level1heading>Changes in 1.00.a introduced in 12.2</p>
+  </td>
+ </tr>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'>
+  <p class=level2heading>12.2 - Changes in VHDL/Verilog/Netlist sources (.vhd,
+  .v, .ngc, .edn) </p>
+  <div class=MsoNormal align=center style='text-align:center'>
+  <hr size=2 width="100%" align=center>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td style='padding:.75pt .75pt .75pt .75pt'><pre><span style='font-family:
+  "Arial","sans-serif"'>New Features:</span></pre>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal>Initial Release</li>
+  </ul>
+  <p class=MsoNormal><span style='font-size:10.0pt'>&nbsp;</span></p>
+  <pre><span style='font-family:"Arial","sans-serif"'>Resolved Issues:</span></pre>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial Unicode MS","sans-serif"'>No
+       issues to resolve</span></li>
+  </ul>
+  <p class=MsoNormal>&nbsp;</p>
+  <p class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial","sans-serif"'>Known
+  Issues / Limitations:</span></p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial Unicode MS","sans-serif"'>No
+       known issues or limitations</span></li>
+  </ul>
+  </td>
+ </tr>
+</table>
+
+<p class=MsoNormal style='margin-bottom:12.0pt'><br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+</p>
+
+<p class=copyright>&nbsp;</p>
+
+<p class=copyright style='margin-bottom:12.0pt'>&nbsp;</p>
+
+<p class=copyright><br>
+Copyright © 2010, 2011 Xilinx, Inc. All rights reserved. </p>
+
+</div>
+
+</body>
+
+</html>
