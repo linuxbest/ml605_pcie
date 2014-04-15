@@ -250,6 +250,76 @@ static XAxiDma_Config *AxiDma_Config(u32 reg_base)
 	return CfgPtr;
 }
 
+static void eth_ring_dump(XAxiDma_BdRing *bd_ring, char *prefix)
+{
+	int num_bds = bd_ring->AllCnt;
+	u32 *cur_bd_ptr = (u32 *) bd_ring->FirstBdAddr;
+	int idx;
+	
+	/*spin_lock_irqsave(&ETH_spinlock, flags);*/
+	printk("%s  ChanBase   : %p\n", prefix, (void *) bd_ring->ChanBase);
+	printk("FirstBdPhysAddr: %p\n", (void *) bd_ring->FirstBdPhysAddr);
+	printk("FirstBdAddr    : %p\n", (void *) bd_ring->FirstBdAddr);
+	printk("LastBdAddr     : %p\n", (void *) bd_ring->LastBdAddr);
+	printk("Length         : %d (0x%0x)\n", bd_ring->Length, bd_ring->Length);
+	printk("RunState       : %d (0x%0x)\n", bd_ring->RunState, bd_ring->RunState);
+	printk("Separation     : %d (0x%0x)\n", bd_ring->Separation, bd_ring->Separation);
+	printk("BD Count       : %d\n", bd_ring->AllCnt);
+	printk("\n");
+
+	printk("FreeHead       : %p\n", (void *) bd_ring->FreeHead);
+	printk("PreHead        : %p\n", (void *) bd_ring->PreHead);
+	printk("HwHead         : %p\n", (void *) bd_ring->HwHead);
+	printk("HwTail         : %p\n", (void *) bd_ring->HwTail);
+	printk("PostHead       : %p\n", (void *) bd_ring->PostHead);
+	printk("BdaRestart     : %p\n", (void *) bd_ring->BdaRestart);
+
+	printk("\n");
+	printk("CR             : %08x\n", XAxiDma_ReadReg(bd_ring->ChanBase, XAXIDMA_CR_OFFSET));
+	printk("SR             : %08x\n", XAxiDma_ReadReg(bd_ring->ChanBase, XAXIDMA_SR_OFFSET));
+	printk("CDESC          : %08x\n", XAxiDma_ReadReg(bd_ring->ChanBase, XAXIDMA_CDESC_OFFSET));
+	printk("TDESC          : %08x\n", XAxiDma_ReadReg(bd_ring->ChanBase, XAXIDMA_TDESC_OFFSET));
+
+	printk("\n");
+	printk("Ring Contents:\n");
+
+	dma_cache_sync(NULL, cur_bd_ptr, bd_ring->Length, DMA_FROM_DEVICE);
+/*
+* Buffer Descriptr
+* word byte    description
+* 0    0h      next ptr
+* 1    4h      buffer addr
+* 2    8h      buffer len
+* 3    ch      sts/ctrl | app data (0) [tx csum enable (bit 31 LSB)]
+* 4    10h     app data (1) [tx csum begin (bits 0-15 MSB) | csum insert (bits 16-31 LSB)]
+* 5    14h     app data (2) [tx csum seed (bits 16-31 LSB)]
+* 6    18h     app data (3) [rx raw csum (bits 16-31 LSB)]
+* 7    1ch     app data (4) [rx recv length (bits 18-31 LSB)]
+* 8    20h     sw app data (0) [id]
+*/
+	printk("Idx  NextBD  BuffAddr   CRTL    STATUS    APP0     APP1     APP2     APP3     APP4      ID\n");
+	printk("--- -------- -------- -------- -------- -------- -------- -------- -------- -------- --------\n");
+	for (idx = 0; idx < num_bds; idx++) {
+        if (cur_bd_ptr[XAXIDMA_BD_STS_OFFSET / sizeof(*cur_bd_ptr)] ||
+            cur_bd_ptr[XAXIDMA_BD_ID_OFFSET / sizeof(*cur_bd_ptr)])
+	printk("%3d %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x\n",
+		idx,
+		cur_bd_ptr[XAXIDMA_BD_NDESC_OFFSET / sizeof(*cur_bd_ptr)],
+		cur_bd_ptr[XAXIDMA_BD_BUFA_OFFSET / sizeof(*cur_bd_ptr)],
+		cur_bd_ptr[XAXIDMA_BD_CTRL_LEN_OFFSET / sizeof(*cur_bd_ptr)],
+		cur_bd_ptr[XAXIDMA_BD_STS_OFFSET / sizeof(*cur_bd_ptr)],
+		cur_bd_ptr[XAXIDMA_BD_USR0_OFFSET / sizeof(*cur_bd_ptr)],
+		cur_bd_ptr[XAXIDMA_BD_USR1_OFFSET / sizeof(*cur_bd_ptr)],
+		cur_bd_ptr[XAXIDMA_BD_USR2_OFFSET / sizeof(*cur_bd_ptr)],
+		cur_bd_ptr[XAXIDMA_BD_USR3_OFFSET / sizeof(*cur_bd_ptr)],
+		cur_bd_ptr[XAXIDMA_BD_USR4_OFFSET / sizeof(*cur_bd_ptr)],
+		cur_bd_ptr[XAXIDMA_BD_ID_OFFSET / sizeof(*cur_bd_ptr)]);
+		cur_bd_ptr += bd_ring->Separation / sizeof(int);
+	}
+	printk("--------------------------------------- Done ---------------------------------------\n");
+	/*spin_unlock_irqrestore(&ETH_spinlock, flags);*/
+}
+
 /* The callback function for completed frames sent in SGDMA mode. */
 static void DmaSendHandlerBH(unsigned long p);
 static void DmaRecvHandlerBH(unsigned long p);
@@ -336,7 +406,8 @@ static irqreturn_t axi_dma_rx_interrupt(int id, void *data)
 
 	if ((irq_status & XAXIDMA_ERR_ALL_MASK)) {
 		printk(KERN_ERR "%s: XAxiDma: error rx irq (%08x)\n", ndev->name, irq_status);
-		XAxiDma_Reset(&lp->AxiDma);
+		eth_ring_dump(RingPtr, "RX");
+		/* TODO */
 		return IRQ_HANDLED;
 	}
 	
@@ -375,7 +446,7 @@ static irqreturn_t axi_dma_tx_interrupt(int id, void *data)
 
 	if ((irq_status & XAXIDMA_ERR_ALL_MASK)) {
 		printk(KERN_ERR "%s: XAxiDma: error tx irq (%08x)\n", ndev->name, irq_status);
-		XAxiDma_Reset(&lp->AxiDma);
+		eth_ring_dump(RingPtr, "TX");
 		return IRQ_HANDLED;
 	}
 
@@ -424,7 +495,6 @@ static irqreturn_t axi_interrupt(int irq, void *dev_id)
 	/* Acknowledge pending interrupts */
 	if ((IrqStatusTx & XAXIDMA_IRQ_ALL_MASK)) {
 		axi_dma_tx_interrupt(0, ndev);
-		XAxiDma_mBdRingAckIrq(TxRingPtr, IrqStatusTx);
 	}
 	
 	/* Acknowledge pending interrupts */
@@ -1224,7 +1294,7 @@ static int eth_probe_common(struct axi_local *lp, struct net_device *ndev)
 	if (ndev->mtu > XTE_JUMBO_MTU)
 		ndev->mtu = XTE_JUMBO_MTU;
 
-	lp->frame_size = ndev->mtu + XTE_HDR_SIZE + XTE_TRL_SIZE;
+	lp->frame_size = /*ndev->mtu + XTE_HDR_SIZE + XTE_TRL_SIZE*/PAGE_SIZE;
 #ifdef CONFIG_INET_LRO
 	lp->lro_state = XTE_LRO_INIT;
 #endif
