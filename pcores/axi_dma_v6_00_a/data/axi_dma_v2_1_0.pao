@@ -90,3 +90,6 @@ lib axi_dma_v6_00_a axi_dma_s2mm_sts_strm.vhd vhdl
 lib axi_dma_v6_00_a axi_dma_s2mm_mngr.vhd vhdl
 lib axi_dma_v6_00_a axi_dma.vhd vhdl
 
+lib axi_dma_v6_00_a chipscope_icon3.v verilog
+lib axi_dma_v6_00_a chipscope_icon1.v verilog
+lib axi_dma_v6_00_a chipscope_ila_128x1.v verilog

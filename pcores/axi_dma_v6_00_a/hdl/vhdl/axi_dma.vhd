@@ -305,7 +305,8 @@ entity  axi_dma is
             -- Number of MM2S channels, primarily for MCDMA
         C_FAMILY                        : string            := "virtex6";
             -- Target FPGA Device Family
-        C_INSTANCE                      : string   := "axi_dma"
+        C_INSTANCE                      : string   := "axi_dma";
+        C_CHIPSCOPE                     : integer  range 0 to 1 := 0
     );
     port (
         s_axi_lite_aclk             : in  std_logic   := '0'                      ;              --
@@ -924,6 +925,7 @@ signal updt_cmpt : std_logic;
 signal cmpt_updt : std_logic_vector (1 downto 0);
 
 signal reset1, reset2 : std_logic;
+signal s_axis_s2mm_sts_tready_int : std_logic;
 -------------------------------------------------------------------------------
 -- Begin architecture logic
 -------------------------------------------------------------------------------
@@ -936,6 +938,8 @@ axi_dma_tstvec(3) <= s2mm_packet_eof;
 axi_dma_tstvec(2) <= s2mm_packet_sof;
 axi_dma_tstvec(1) <= mm2s_packet_eof;
 axi_dma_tstvec(0) <= mm2s_packet_sof;
+
+s_axis_s2mm_sts_tready <= s_axis_s2mm_sts_tready_int;
 
 -- Primary MM2S Stream outputs (used internally to gen eof and sof for
 -- interrupt coalescing
@@ -1761,7 +1765,7 @@ I_S2MM_DMA_MNGR : entity  axi_dma_v6_00_a.axi_dma_s2mm_mngr
         s_axis_s2mm_sts_tdata       => s_axis_s2mm_sts_tdata                ,
         s_axis_s2mm_sts_tkeep       => s_axis_s2mm_sts_tkeep                ,
         s_axis_s2mm_sts_tvalid      => s_axis_s2mm_sts_tvalid               ,
-        s_axis_s2mm_sts_tready      => s_axis_s2mm_sts_tready               ,
+        s_axis_s2mm_sts_tready      => s_axis_s2mm_sts_tready_int           ,
         s_axis_s2mm_sts_tlast       => s_axis_s2mm_sts_tlast
     );
 
@@ -2131,5 +2135,42 @@ I_PRMRY_DATAMOVER : entity axi_datamover_v4_00_a.axi_datamover
         s2mm_dbg_sel                  => (others => '0')                    ,
         s2mm_dbg_data                 => open
     );
+
+GEN_CHIPSCOPE: if C_CHIPSCOPE = 1 generate
+   signal control0 : std_logic_vector(35  downto 0);
+   signal rx_dbg   : std_logic_vector(127 downto 0);
+begin
+    I_CHIPSCOPE_ICON : entity axi_dma_v6_00_a.chipscope_icon1(rtl)
+    port map (
+     CONTROL0 => control0
+     );
+    I_CHIPSCOPE_RX : entity axi_dma_v6_00_a.chipscope_ila_128x1(rtl)
+    port map (
+     CONTROL  => control0,
+     CLK      => m_axi_s2mm_aclk,
+     TRIG0    => rx_dbg,
+     TRIG_OUT => open
+    );
+    rx_dbg(63 downto 0)   <= s_axis_s2mm_tdata;
+    rx_dbg(71 downto 64)  <= s_axis_s2mm_tkeep;
+    rx_dbg(103 downto 72) <= s_axis_s2mm_sts_tdata;
+    rx_dbg(111 downto 104)<= s_axis_s2mm_sts_tkeep;
+    rx_dbg(112)           <= s_axis_s2mm_tlast;
+    rx_dbg(113)           <= s_axis_s2mm_tvalid;
+    rx_dbg(114)           <= s_axis_s2mm_tready_i;
+    rx_dbg(115)           <= s_axis_s2mm_sts_tlast;
+    rx_dbg(116)           <= s_axis_s2mm_sts_tvalid;
+    rx_dbg(117)           <= s_axis_s2mm_sts_tready_int;
+    
+    rx_dbg(119)           <= s2mm_dma_interr_set;
+    rx_dbg(120)           <= s2mm_dma_slverr_set;
+    rx_dbg(121)           <= s2mm_dma_decerr_set;
+    rx_dbg(122)           <= s2mm_ftch_interr_set;
+    rx_dbg(123)           <= s2mm_ftch_slverr_set;
+    rx_dbg(124)           <= s2mm_ftch_decerr_set;
+    rx_dbg(125)           <= s2mm_updt_interr_set;
+    rx_dbg(126)           <= s2mm_updt_slverr_set;
+    rx_dbg(127)           <= s2mm_updt_decerr_set;
+end generate;
 
 end implementation;
