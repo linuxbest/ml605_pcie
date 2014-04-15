@@ -232,7 +232,7 @@ static irqreturn_t vpci_isr(int irq, void *dev_id)
 	irq_en      = VPCI_READ(vp->ctrl + IRQ_IER);
 	irq_sts     = VPCI_READ(vp->ctrl + IRQ_ISR);
 	irq_pending = VPCI_READ(vp->ctrl + IRQ_IPR);
-	
+
 	if (irq_pending == 0)
 		return IRQ_NONE;
 
