@@ -48,12 +48,12 @@ module axi_lite_slave (/*AUTOARG*/
    // Outputs
    s_axi_lite_awready, s_axi_lite_wready, s_axi_lite_bresp,
    s_axi_lite_bvalid, s_axi_lite_arready, s_axi_lite_rvalid,
-   s_axi_lite_rdata, s_axi_lite_rresp, intr_out,
+   s_axi_lite_rdata, s_axi_lite_rresp, axi_intr,
    // Inputs
    s_axi_lite_aclk, axi_resetn, s_axi_lite_awvalid, s_axi_lite_awaddr,
    s_axi_lite_wvalid, s_axi_lite_wdata, s_axi_lite_bready,
    s_axi_lite_arvalid, s_axi_lite_araddr, s_axi_lite_rready,
-   aes_sts_dbg, intr_in
+   aes_sts_dbg, mm2s_intr, s2mm_intr
    );
    parameter C_S_AXI_LITE_ADDR_WIDTH = 10;
    parameter C_S_AXI_LITE_DATA_WIDTH = 32;
@@ -83,12 +83,13 @@ module axi_lite_slave (/*AUTOARG*/
    output [1:0] 			s_axi_lite_rresp;
 
    input [31:0] 			aes_sts_dbg;
-   input [31:0]				intr_in;
-   output 				intr_out;
+   input 				mm2s_intr;
+   input 				s2mm_intr;
+   output 				axi_intr;
    /***************************************************************************/
    /*AUTOREG*/
    // Beginning of automatic regs (for this module's undeclared outputs)
-   reg			intr_out;
+   reg			axi_intr;
    reg [C_S_AXI_LITE_DATA_WIDTH-1:0] s_axi_lite_rdata;
    reg [1:0]		s_axi_lite_rresp;
    reg			s_axi_lite_rvalid;
@@ -219,36 +220,19 @@ module axi_lite_slave (/*AUTOARG*/
 	s_axi_lite_rdata  <= #1 rdata_i;
      end
 
-   reg [31:0] int_in_reg;
-   reg [31:0] int_en_reg;
-   reg [31:0] int_sts_reg;
    always @(posedge clk)
      begin
-	intr_out    <= #1 int_sts_reg != 0;
-	int_sts_reg <= #1 int_en_reg & int_in_reg;
-	int_in_reg  <= #1 intr_in;
+	axi_intr <= #1 s2mm_intr | mm2s_intr;
      end
-
-   always @(posedge clk)
-     begin
-	if (reset)
-	  begin
-	     int_en_reg <= #1 32'h0;
-	  end
-	else if (reg_data_addr[6:2] == 5'h2 && reg_data_write)
-	  begin
-	     int_en_reg <= #1 reg_data;
-	  end
-     end // always @ (posedge clk)
    
    always @(*)
      begin
 	rdata_i = 32'h0;
 	case (addr[6:2])
-	  5'h0: rdata_i = 32'hdead_beef;
-	  5'h1: rdata_i = int_in_reg;
-	  5'h2: rdata_i = int_en_reg;
-	  5'h3: rdata_i = int_sts_reg;
+	  5'h0: rdata_i = mm2s_intr;
+	  5'h1: rdata_i = s2mm_intr;
+	  5'h2: rdata_i = 32'h2;
+	  5'h3: rdata_i = 32'h3;
 
 	  5'h4: rdata_i = 32'h4;
 	  5'h5: rdata_i = 32'h5;
