@@ -172,17 +172,18 @@ static void vd_isr(struct virt_device *vd, uint8_t irq)
 	if (vd == NULL)
 		return;
 	for (i = 0; i < 2; i ++) {
-		dev_dbg(&vd->pd->dev, "i %d, irq %02x, cb %p, prv %p\n",
+		pr_debug("i %d, irq %02x, cb %p, prv %p\n",
 				i, irq, vd->irqs[i], vd->irqs_priv[i]);
 		if ((irq & (1<<i)) == 0)
 			continue;
-		if (vd->irqs[i] == NULL) {
-			dev_err(&vd->pd->dev, "no irq handler\n");
-			return;
-		}
-		val = (0x1 << (irq + (vd->port<<1)));
+
+		val = (0x1 << (i + (vd->port<<1)));
 		VPCI_WRITE(val, vd->vp->ctrl + IRQ_IAR);
-		vd->irqs[i](i, vd->irqs_priv[i]);
+
+		if (vd->irqs[i] == NULL)
+			pr_err("vpci: no irq handler, %d\n", irq);
+		else
+			vd->irqs[i](i, vd->irqs_priv[i]);
 	}
 }
 
@@ -231,9 +232,6 @@ static irqreturn_t vpci_isr(int irq, void *dev_id)
 	irq_en      = VPCI_READ(vp->ctrl + IRQ_IER);
 	irq_sts     = VPCI_READ(vp->ctrl + IRQ_ISR);
 	irq_pending = VPCI_READ(vp->ctrl + IRQ_IPR);
-	
-	dev_dbg(&vp->pdev->dev, "vp %p, en %08x, sts %08x, pend %08x\n",
-			vp, irq_en, irq_sts, irq_pending);
 	
 	if (irq_pending == 0)
 		return IRQ_NONE;

@@ -817,8 +817,9 @@ static void rx_handle_bh(unsigned long p)
 DECLARE_TASKLET(tx_bh, tx_handle_bh, 0);
 DECLARE_TASKLET(rx_bh, rx_handle_bh, 0);
 
-static int aes_tx_isr(struct aes_dev *dma, u32 sts)
+static int aes_tx_isr(int id, void *data)
 {
+	struct aes_dev *dma = data;
 	XAxiDma_BdRing *ring = XAxiDma_GetTxRing(&dma->AxiDma);
 	XAxiDma_BdRing *rx_ring = XAxiDma_GetRxRing(&dma->AxiDma, 0);
 	unsigned long flags;
@@ -852,8 +853,9 @@ static int aes_tx_isr(struct aes_dev *dma, u32 sts)
 	return IRQ_HANDLED;
 }
 
-static int aes_rx_isr(struct aes_dev *dma, u32 sts)
+static int aes_rx_isr(int id, void *data)
 {
+	struct aes_dev *dma = data;
 	XAxiDma_BdRing *ring = XAxiDma_GetRxRing(&dma->AxiDma, 0);
 	XAxiDma_BdRing *tx_ring = XAxiDma_GetTxRing(&dma->AxiDma);
 	unsigned long flags;
@@ -904,10 +906,10 @@ static irqreturn_t aes_isr(int irq, void *dev_id)
 	dev_trace(dma->dev, "IrqSts: %08x/%08x.\n",IrqStsTx, IrqStsRx);
 
 	if (IrqStsTx & XAXIDMA_IRQ_ALL_MASK)
-		res = aes_tx_isr(dma, IrqStsTx);
+		res = aes_tx_isr(0, dma);
 
 	if (IrqStsRx & XAXIDMA_IRQ_ALL_MASK)
-		res = aes_rx_isr(dma, IrqStsRx);
+		res = aes_rx_isr(0, dma);
 
 out:
 	return res;
