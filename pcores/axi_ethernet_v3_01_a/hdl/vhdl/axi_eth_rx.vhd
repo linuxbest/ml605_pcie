@@ -400,47 +400,31 @@ rxd_fifo_rdreq			<=   (not rxd_fifo_empty) and (not RXS_RXDn_flag) and AXI_STR_R
 AXI_STR_RXD_TKEEP		<=   rxd_fifo_q(71 downto 64);
 AXI_STR_RXD_TDATA		<=   rxd_fifo_q(63 downto 0);
 
-    I_rxd_fifo : entity proc_common_v3_00_a.basic_sfifo_fg
+    I_rxd_fifo : entity axi_ethernet_v3_01_a.axi_async_fifo(axi_async_fifo_a)
     generic map(
-      C_DWIDTH                      => 73,
-        -- FIFO data Width (Read and write data ports are symetric)
-      C_DEPTH                       => 1024,
-        -- FIFO Depth (set to power of 2)
-      C_HAS_DATA_COUNT              => 0,
-        -- 0 = DataCount not used
-        -- 1 = Data Count used 
-      C_DATA_COUNT_WIDTH            => 10,
-      -- Data Count bit width (Max value is log2(C_DEPTH))
-      C_IMPLEMENTATION_TYPE         => 0, 
-        --  0 = Common Clock BRAM / Distributed RAM (Synchronous FIFO)
-        --  1 = Common Clock Shift Register (Synchronous FIFO)
-      C_MEMORY_TYPE                 => 1,
-        --   0 = Any
-        --   1 = BRAM
-        --   2 = Distributed Memory  
-        --   3 = Shift Registers
-      C_PRELOAD_REGS                => 1, 
-        -- 0 = normal            
-        -- 1 for FWFT
-      C_PRELOAD_LATENCY             => 0,              
-        -- 0 for FWFT
-        -- 1 = normal            
-      C_USE_FWFT_DATA_COUNT         => 0, 
-        -- 0 = normal            
-        -- 1 for FWFT
-      C_FAMILY                      => "kintex7" 
-      )
+    C_FAMILY              => "kintex7",
+    C_FIFO_DEPTH          => 8192,
+    C_PROG_FULL_THRESH    => 256,
+    C_DATA_WIDTH          => 73,
+    C_PTR_WIDTH           => 13,
+    C_MEMORY_TYPE         => 1,
+    C_COMMON_CLOCK        => 1,
+    C_IMPLEMENTATION_TYPE => 2,
+    C_SYNCHRONIZER_STAGE  => 2
+    )
     port map(
-      CLK                           =>  clk,
-      DIN                           =>  rxd_fifo_data,                   
-      RD_EN                         =>  rxd_fifo_rdreq,                  
-      SRST                          =>  reset,            
-      WR_EN                         =>  rxd_fifo_wrreq,                  
-      DATA_COUNT                    =>  open,                
-      DOUT                          =>  rxd_fifo_q,                  
-      EMPTY                         =>  rxd_fifo_empty,                 
-      FULL                          =>  rxd_fifo_full
-      );    
+    rst        => reset,
+    wr_clk     => clk,
+    rd_clk     => clk,
+    sync_clk   =>clk,
+    din        => rxd_fifo_data,
+    wr_en      => rxd_fifo_wrreq,
+    rd_en      => rxd_fifo_rdreq,
+    dout       => rxd_fifo_q,
+    full       => open,
+    empty      => rxd_fifo_empty,
+    prog_full  => rxd_fifo_full
+    );
 
 -- RXS FIFO Write Data Path
 rxs_fifo_data(36)		<=   rxs_last;
