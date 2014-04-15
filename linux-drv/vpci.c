@@ -232,6 +232,9 @@ static irqreturn_t vpci_isr(int irq, void *dev_id)
 	irq_sts     = VPCI_READ(vp->ctrl + IRQ_ISR);
 	irq_pending = VPCI_READ(vp->ctrl + IRQ_IPR);
 	
+	dev_dbg(&vp->pdev->dev, "vp %p, en %08x, sts %08x, pend %08x\n",
+			vp, irq_en, irq_sts, irq_pending);
+	
 	if (irq_pending == 0)
 		return IRQ_NONE;
 
@@ -331,9 +334,12 @@ static int  __init vpci_probe(struct pci_dev *pdev, const struct pci_device_id *
 		/* TODO clean the resources */
 		return -ENODEV;
 	}
-	VPCI_WRITE(0x0, vp->ctrl + IRQ_IER);
-	VPCI_WRITE(0x1, vp->ctrl + IRQ_MER);
 	dev_set_drvdata(&pdev->dev, vp);
+	
+	VPCI_WRITE(0x0, vp->ctrl + IRQ_MER);
+	VPCI_WRITE(0x0, vp->ctrl + IRQ_IER);
+	VPCI_WRITE(0xffffffff, vp->ctrl + IRQ_IAR);
+	VPCI_WRITE(0x3, vp->ctrl + IRQ_MER);
 
 	return 0;
 }
