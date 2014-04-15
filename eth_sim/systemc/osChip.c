@@ -172,6 +172,7 @@ int osChip_init(uint32_t base)
 	}
 	printf("Cfg pass!\n");
 
+#if 0
 	/* Cfg word 0 */
 	axi_mm_out32(0x41240000 + MDIO_CFG0, (1<<6)|1);
 
@@ -181,7 +182,7 @@ int osChip_init(uint32_t base)
 	mdio_write_reg(0x0, 0x3, 0x0, 0x1<<15);
 	/* turn off tx disable 1.9.0  */
 	//mdio_write_reg(0x0, 0x1, 0x9, 0x0);
-
+#endif
 	/* doing reset */
 	XAxiDma_Reset(&dma_dev->AxiDma);
 
