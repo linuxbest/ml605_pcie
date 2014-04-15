@@ -823,7 +823,8 @@ static int aes_tx_isr(int id, void *data)
 	XAxiDma_BdRing *ring = XAxiDma_GetTxRing(&dma->AxiDma);
 	XAxiDma_BdRing *rx_ring = XAxiDma_GetRxRing(&dma->AxiDma, 0);
 	unsigned long flags;
-	
+	uint32_t sts = XAxiDma_ReadReg(ring->ChanBase, XAXIDMA_SR_OFFSET);
+
 	/* clear ring irq */
 	XAxiDma_mBdRingAckIrq(ring, sts);
 	if (sts & XAXIDMA_ERR_ALL_MASK) {
@@ -858,6 +859,7 @@ static int aes_rx_isr(int id, void *data)
 	struct aes_dev *dma = data;
 	XAxiDma_BdRing *ring = XAxiDma_GetRxRing(&dma->AxiDma, 0);
 	XAxiDma_BdRing *tx_ring = XAxiDma_GetTxRing(&dma->AxiDma);
+	uint32_t sts = XAxiDma_ReadReg(ring->ChanBase, XAXIDMA_SR_OFFSET);
 	unsigned long flags;
 	
 	/* clear ring irq */
