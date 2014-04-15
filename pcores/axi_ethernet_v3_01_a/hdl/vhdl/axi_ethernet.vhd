@@ -529,30 +529,22 @@ begin
   rx_axis_mac_tvalid_int <= not rx_axis_mac_empty;
   rx_axis_mac_tready     <= not rx_axis_mac_full;
 
-   I_RX_FIFO: entity axi_ethernet_v3_01_a.axi_async_fifo(axi_async_fifo_a)
-     generic map(
-     C_FAMILY           => C_FAMILY,
-     C_FIFO_DEPTH       => 1024,
-     C_PROG_FULL_THRESH => 256,
-     C_DATA_WIDTH       => 74,
-     C_PTR_WIDTH        => 10,
-     C_MEMORY_TYPE      => 1,
-     C_COMMON_CLOCK     => 0,
-     C_IMPLEMENTATION_TYPE => 2,
-     C_SYNCHRONIZER_STAGE  => 2
-     )
-     port map(
-       din            => rx_axis_mac_data_wr,
-       wr_en          => rx_axis_mac_tvalid,
-       wr_clk         => rx_mac_aclk,
-       rd_en          => rx_axis_mac_rden,
-       rd_clk         => AXI_STR_RXD_ACLK,
-       sync_clk       => rx_mac_aclk,
-       rst            => rx_reset,   
-       dout           => rx_axis_mac_data_rd,
-       full           => rx_axis_mac_full,
-       empty          => rx_axis_mac_empty,
-       prog_full      => open
-     );
+  I_RX_FIFO: rx_queue 
+  port map (
+   tdata   => rx_axis_mac_tdata_int,
+   tstrb   => rx_axis_mac_tkeep_int,
+   tvalid  => rx_axis_mac_tvalid_int,
+   tlast   => rx_axis_mac_tlast_int,
+   tready  => rx_axis_mac_tready_int,
+
+   clk     => AXI_STR_RXD_TVALID,
+   reset   => rx_reset,
+   fifo_wr_en => open,
+
+   rx_data       => rx_axis_mac_tdata,
+   rx_data_valid => rx_axis_mac_tkeep,
+   rx_good_frame => rx_axis_mac_tuser,
+   rx_bad_frame  => rx_axis_mac_tuser
+  );
 
 end imp;

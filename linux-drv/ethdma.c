@@ -30,7 +30,8 @@
 #include "vpci.h"
 #endif
 
-#define CONFIG_INET_LRO	1
+#define CONFIG_INET_LRO	0
+
 #ifdef CONFIG_INET_LRO
 #include <linux/inet_lro.h>
 enum lro_state {
