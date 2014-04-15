@@ -257,6 +257,19 @@ BEGIN axi_dma
  PORT s2mm_introut = ETHERNET_dma_s2mm_introut_0
 END
 
+BEGIN axi_gpio
+ PARAMETER INSTANCE = ten_eth_gpio_0
+ PARAMETER HW_VER = 1.01.b
+ PARAMETER C_BASEADDR = 0xC4021000
+ PARAMETER C_HIGHADDR = 0xC4021fff
+ PARAMETER C_GPIO_WIDTH = 2
+ PARAMETER C_DOUT_DEFAULT = 0xffffffff
+ BUS_INTERFACE S_AXI = axi4lite_0
+ PORT S_AXI_ACLK = clk_100_0000MHzMMCM0
+ PORT GPIO_IO_O = eth_hw_reset_0 & sfp_txd
+ PORT GPIO_IO_I = eth_hw_reset_0 & sfp_txd
+END
+
 BEGIN axi_ethernet
  PARAMETER INSTANCE = ten_eth_axis_0
  PARAMETER HW_VER = 3.01.a
@@ -293,7 +306,7 @@ BEGIN axi_10gmacphy
  PORT refclk_n = refclk_n
  PORT tx_fault = sfp_txf
  PORT sfp_rs = sfp_rs
- PORT tx_disable = sfp_txd
+#PORT tx_disable = sfp_txd
  PORT linkup = linkup
  PORT txp = txp
  PORT txn = txn
@@ -301,4 +314,5 @@ BEGIN axi_10gmacphy
  PORT rxn = rxn
  PORT bus2ip_clk = clk_100_0000MHzMMCM0
  PORT bus2ip_reset = proc_sys_reset_0_BUS_STRUCT_RESET
+ PORT hw_reset = eth_hw_reset_0
 END

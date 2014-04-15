@@ -249,7 +249,7 @@ static irqreturn_t vpci_isr(int irq, void *dev_id)
 }
 
 static DEFINE_PCI_DEVICE_TABLE(vpci_id_table) = {
-	{ 0x10ee, 0x0505, PCI_ANY_ID, PCI_ANY_ID, }, 
+	{ 0x10ee, 0x0106, PCI_ANY_ID, PCI_ANY_ID, }, 
 	{ 0, },
 };
 
@@ -471,5 +471,6 @@ static void __exit vpci_exit(void)
 module_init(vpci_init);
 module_exit(vpci_exit);
 
+MODULE_DESCRIPTION("vpci driver");
 MODULE_AUTHOR("HuGang");
 MODULE_LICENSE("GPL");

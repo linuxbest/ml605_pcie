@@ -304,6 +304,7 @@ module axi_10gmacphy (/*AUTOARG*/
 		.rx_reset		(rx_reset),
 		.linkup			(linkup),
 		// Inputs
+		.hw_reset		(hw_reset),
 		.dclk			(dclk),
 		.tx_resetdone		(tx_resetdone),
 		.rx_resetdone		(rx_resetdone),
@@ -330,7 +331,7 @@ module axi_10gmacphy (/*AUTOARG*/
    wire [15:0] 		r_trig;
    assign c_trig[7:0] = core_status; 
    assign c_dbg[7:0]  = core_status;
-   assign c_dbg[8]    = reset;
+   assign c_dbg[8]    = hw_reset;
    assign c_dbg[9]    = signal_detect;
    assign c_dbg[10]   = tx_fault;
    assign c_dbg[11]   = resetdone;
@@ -347,6 +348,7 @@ module axi_10gmacphy (/*AUTOARG*/
    assign r_trig[0]   = rx_axis_tvalid;
    assign r_trig[1]   = rx_axis_tlast;
    assign r_trig[2]   = rx_axis_tready;
+   assign r_trig[15:8]= xgmii_rxd_int;
    
    assign r_dbg[0]     = rx_axis_tvalid;
    assign r_dbg[1]     = rx_axis_tlast;
@@ -360,6 +362,7 @@ module axi_10gmacphy (/*AUTOARG*/
    assign t_trig[0]   = tx_axis_tvalid;
    assign t_trig[1]   = tx_axis_tlast;
    assign t_trig[2]   = tx_axis_tready;
+   assign t_trig[15:8]= xgmii_txd_int;
    
    assign t_dbg[0]     = tx_axis_tvalid;
    assign t_dbg[1]     = tx_axis_tlast;

@@ -53,13 +53,14 @@ module xphy_int (/*AUTOARG*/
    tx_dcm_lock, prtad, tx_ifg_delay, sfp_rs, tx_mac_aclk, tx_reset,
    rx_mac_aclk, rx_reset, linkup,
    // Inputs
-   dclk, tx_resetdone, rx_resetdone, clk156, tx_fault, signal_detect,
-   txclk322, xgmii_txd, xgmii_txc, xgmii_rxd_int, xgmii_rxc_int,
-   rxclk322, core_status, rx_axis_tready
+   hw_reset, dclk, tx_resetdone, rx_resetdone, clk156, tx_fault,
+   signal_detect, txclk322, xgmii_txd, xgmii_txc, xgmii_rxd_int,
+   xgmii_rxc_int, rxclk322, core_status, rx_axis_tready
    );
    parameter C_MDIO_ADDR = 5'h0;
    parameter EXAMPLE_SIM_GTRESET_SPEEDUP = "FALSE";
-   
+  
+   input  hw_reset;
    input  dclk;
    output dclk_reset;
    
@@ -88,9 +89,9 @@ module xphy_int (/*AUTOARG*/
    //synthesis attribute async_reg of core_reset_tx is "true";
    //synthesis attribute async_reg of core_reset_rx_tmp is "true";
    //synthesis attribute async_reg of core_reset_rx is "true";
-   always @(posedge clk156 or posedge reset)
+   always @(posedge clk156 or posedge hw_reset)
      begin
-	if (reset)
+	if (hw_reset)
 	  begin
 	     core_reset_rx_tmp <= #1 1'b1;
 	     core_reset_rx     <= #1 1'b1;
@@ -100,9 +101,9 @@ module xphy_int (/*AUTOARG*/
 	else
 	  begin
 	     // Hold core in reset until everything else is ready...
-	     core_reset_tx_tmp <= #1 (!(tx_resetdone) || reset || tx_fault || !(signal_detect));
+	     core_reset_tx_tmp <= #1 (!(tx_resetdone) || hw_reset || tx_fault || !(signal_detect));
 	     core_reset_tx     <= #1 core_reset_tx_tmp;
-	     core_reset_rx_tmp <= #1 (!(rx_resetdone) || reset || tx_fault || !(signal_detect));
+	     core_reset_rx_tmp <= #1 (!(rx_resetdone) || hw_reset || tx_fault || !(signal_detect));
 	     core_reset_rx     <= #1 core_reset_rx_tmp;
 	  end
      end // always @ (posedge clk156 or posedge reset)
@@ -123,9 +124,9 @@ module xphy_int (/*AUTOARG*/
    //synthesis attribute async_reg of rxreset322 is "true";//
    //synthesis attribute async_reg of dclk_reset_tmp is "true";
    //synthesis attribute async_reg of dclk_reset is "true";//       
-   always @(posedge txclk322 or posedge reset)
+   always @(posedge txclk322 or posedge hw_reset)
      begin
-	if (reset)
+	if (hw_reset)
 	  begin
 	     txreset322_tmp <= #1 1'b1;
 	     txreset322     <= #1 1'b1;
