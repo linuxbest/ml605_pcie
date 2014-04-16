@@ -6,7 +6,7 @@ set hexopt {-literal -hex}
 set ascopt {-literal -asc}
 
 eval add wave -noupdate -divider {"top"}
-eval add wave -noupdate $binopt $path${ps}sys_clk
+eval add wave -noupdate $binopt $path${ps}s2mm_clk
 
 eval add wave -noupdate $binopt $path${ps}rx_reset
 eval add wave -noupdate $binopt $path${ps}rx_clk
@@ -32,8 +32,8 @@ eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_in_fsm${ps}info_fi
 eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_in_fsm${ps}info_fifo_wren
 
 eval add wave -noupdate -divider {"out fsm"}
-eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}sys_clk
-eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}rx_reset
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}s2mm_clk
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}s2mm_resetn
 
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}state
 
@@ -47,14 +47,26 @@ eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}info_f
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}good_fifo_wdata
 eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}good_fifo_wren
 eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}good_fifo_afull
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}good_fifo_byte
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}bytecnt
 
-eval add wave -noupdate -divider {"out good frame"}
-eval add wave -noupdate $binopt $path${ps}sys_clk
-eval add wave -noupdate $hexopt $path${ps}mac_tdata
-eval add wave -noupdate $hexopt $path${ps}mac_tkeep
-eval add wave -noupdate $binopt $path${ps}mac_tlast
-eval add wave -noupdate $binopt $path${ps}mac_tvalid
-eval add wave -noupdate $binopt $path${ps}mac_tready
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}ctrl_fifo_wdata
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}ctrl_fifo_wren
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}ctrl_fifo_afull
+
+eval add wave -noupdate -divider {"out frame"}
+eval add wave -noupdate $binopt $path${ps}s2mm_clk
+eval add wave -noupdate $hexopt $path${ps}rxd_tdata
+eval add wave -noupdate $hexopt $path${ps}rxd_tkeep
+eval add wave -noupdate $binopt $path${ps}rxd_tlast
+eval add wave -noupdate $binopt $path${ps}rxd_tvalid
+eval add wave -noupdate $binopt $path${ps}rxd_tready
+
+eval add wave -noupdate $hexopt $path${ps}rxs_tdata
+eval add wave -noupdate $hexopt $path${ps}rxs_tkeep
+eval add wave -noupdate $binopt $path${ps}rxs_tlast
+eval add wave -noupdate $binopt $path${ps}rxs_tvalid
+eval add wave -noupdate $binopt $path${ps}rxs_tready
 
 configure  wave -justifyvalue          right
 configure  wave -signalnamewidth       1

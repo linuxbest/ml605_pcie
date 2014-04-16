@@ -47,11 +47,13 @@
 module ifm_fifo (/*AUTOARG*/
    // Outputs
    data_fifo_afull, data_fifo_rdata, info_fifo_empty, info_fifo_rdata,
-   mac_tdata, mac_tkeep, mac_tlast, mac_tvalid, good_fifo_afull,
+   rxd_tdata, rxd_tkeep, rxd_tlast, rxd_tvalid, good_fifo_afull,
+   rxs_tdata, rxs_tkeep, rxs_tlast, rxs_tvalid, ctrl_fifo_afull,
    // Inputs
    rx_clk, rx_reset, s2mm_clk, data_fifo_wdata, data_fifo_wren,
    data_fifo_rden, info_fifo_wdata, info_fifo_wren, info_fifo_rden,
-   mac_tready, good_fifo_wdata, good_fifo_wren
+   rxd_tready, good_fifo_wdata, good_fifo_wren, rxs_tready,
+   ctrl_fifo_wdata, ctrl_fifo_wren
    );
    input rx_clk;
    input rx_reset;
@@ -108,16 +110,16 @@ module ifm_fifo (/*AUTOARG*/
    wire [72:0] 	good_fifo_rdata;
    wire 	good_fifo_empty;
    wire 	good_fifo_rden;
-   output [63:0] mac_tdata;
-   output [7:0]  mac_tkeep;
-   output 	 mac_tlast;
-   output 	 mac_tvalid;
-   input 	 mac_tready;
-   assign mac_tdata = good_fifo_rdata[63:0];
-   assign mac_tkeep = good_fifo_rdata[71:64];
-   assign mac_tlast = good_fifo_rdata[72];
-   assign mac_tvalid=~good_fifo_empty;
-   assign good_fifo_rden = mac_tvalid && mac_tready;
+   output [63:0] rxd_tdata;
+   output [7:0]  rxd_tkeep;
+   output 	 rxd_tlast;
+   output 	 rxd_tvalid;
+   input 	 rxd_tready;
+   assign rxd_tdata = good_fifo_rdata[63:0];
+   assign rxd_tkeep = good_fifo_rdata[71:64];
+   assign rxd_tlast = good_fifo_rdata[72];
+   assign rxd_tvalid=~good_fifo_empty;
+   assign good_fifo_rden = rxd_tvalid && rxd_tready;
    
    input [72:0] good_fifo_wdata;
    input 	good_fifo_wren;
@@ -142,6 +144,44 @@ module ifm_fifo (/*AUTOARG*/
 	      .full    (),
 	      .empty   (good_fifo_empty),
 	      .prog_full(good_fifo_afull));
+
+   wire [36:0] 	ctrl_fifo_rdata;
+   wire 	ctrl_fifo_empty;
+   wire 	ctrl_fifo_rden;
+   output [31:0] rxs_tdata;
+   output [3:0]  rxs_tkeep;
+   output 	 rxs_tlast;
+   output 	 rxs_tvalid;
+   input 	 rxs_tready;
+   assign rxs_tdata = ctrl_fifo_rdata[31:0];
+   assign rxs_tkeep = ctrl_fifo_rdata[35:32];
+   assign rxs_tlast = ctrl_fifo_rdata[36];
+   assign rxs_tvalid=~ctrl_fifo_empty;
+   assign ctrl_fifo_rden = rxs_tvalid && rxs_tready;
+   
+   input [36:0] ctrl_fifo_wdata;
+   input 	ctrl_fifo_wren;
+   output 	ctrl_fifo_afull;   
+   axi_async_fifo #(.C_FAMILY              ("kintex7"),
+		   .C_FIFO_DEPTH          (512),
+		   .C_PROG_FULL_THRESH    (128),
+		   .C_DATA_WIDTH          (37),
+		   .C_PTR_WIDTH           (9),
+		   .C_MEMORY_TYPE         (1),
+		   .C_COMMON_CLOCK        (1),
+		   .C_IMPLEMENTATION_TYPE (2),
+		   .C_SYNCHRONIZER_STAGE  (2))
+   ctrl_fifo (.din     (ctrl_fifo_wdata),
+	      .wr_en   (ctrl_fifo_wren),
+	      .wr_clk  (s2mm_clk),
+	      .rd_en   (ctrl_fifo_rden),
+	      .rd_clk  (s2mm_clk),
+	      .sync_clk(s2mm_clk),
+	      .rst     (rx_reset),
+	      .dout    (ctrl_fifo_rdata),
+	      .full    (),
+	      .empty   (ctrl_fifo_empty),
+	      .prog_full(ctrl_fifo_afull));  
 endmodule
 // 
 // ifm_fifo.v ends here

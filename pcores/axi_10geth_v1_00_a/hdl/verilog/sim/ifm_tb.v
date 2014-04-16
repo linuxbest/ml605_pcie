@@ -45,14 +45,22 @@
 // Code:
 `timescale 1ps/1ps
 module ifm_tb;
-   wire [63:0]	mac_tdata;		// From axi_eth_ifm of axi_eth_ifm.v
-   wire [7:0]	mac_tkeep;		// From axi_eth_ifm of axi_eth_ifm.v
-   wire		mac_tlast;		// From axi_eth_ifm of axi_eth_ifm.v
-   wire		mac_tvalid;		// From axi_eth_ifm of axi_eth_ifm.v
+   wire [63:0]	rxd_tdata;		// From axi_eth_ifm of axi_eth_ifm.v
+   wire [7:0]	rxd_tkeep;		// From axi_eth_ifm of axi_eth_ifm.v
+   wire		rxd_tlast;		// From axi_eth_ifm of axi_eth_ifm.v
+   wire		rxd_tvalid;		// From axi_eth_ifm of axi_eth_ifm.v
    wire		rx_axis_mac_tready;	// From axi_eth_ifm of axi_eth_ifm.v
 
-   wire		mac_tready;
-   assign       mac_tready = 1'b1;
+   wire		rxd_tready;
+   assign       rxd_tready = 1'b1;
+
+   wire [31:0]	rxs_tdata;		// From axi_eth_ifm of axi_eth_ifm.v
+   wire [3:0]	rxs_tkeep;		// From axi_eth_ifm of axi_eth_ifm.v
+   wire		rxs_tlast;		// From axi_eth_ifm of axi_eth_ifm.v
+   wire		rxs_tvalid;		// From axi_eth_ifm of axi_eth_ifm.v
+
+   wire		rxs_tready;
+   assign       rxs_tready = 1'b1;
 
    reg [63:0] rx_axis_mac_tdata;
    reg [7:0]  rx_axis_mac_tkeep;
@@ -60,16 +68,18 @@ module ifm_tb;
    reg 	      rx_axis_mac_tuser;
    reg 	      rx_axis_mac_tvalid;
    reg 	      rx_clk;
-   reg 	      sys_clk;
+   reg 	      s2mm_clk;
    reg 	      rx_reset;
+   wire       s2mm_resetn;
+   assign s2mm_resetn = ~rx_reset;
 
    initial begin
       rx_clk = 1'b0;
       forever #(1000) rx_clk = ~rx_clk;
    end
    initial begin
-      sys_clk = 1'b0;
-      forever #(5333)  sys_clk = ~sys_clk;
+      s2mm_clk = 1'b0;
+      forever #(5333)  s2mm_clk = ~s2mm_clk;
    end
    initial begin
       rx_reset = 1'b1;
@@ -127,13 +137,16 @@ module ifm_tb;
    
    axi_eth_ifm axi_eth_ifm (/*AUTOINST*/
 			    // Outputs
-			    .mac_tdata		(mac_tdata[63:0]),
-			    .mac_tkeep		(mac_tkeep[7:0]),
-			    .mac_tlast		(mac_tlast),
-			    .mac_tvalid		(mac_tvalid),
 			    .rx_axis_mac_tready	(rx_axis_mac_tready),
+			    .rxd_tdata		(rxd_tdata[63:0]),
+			    .rxd_tkeep		(rxd_tkeep[7:0]),
+			    .rxd_tlast		(rxd_tlast),
+			    .rxd_tvalid		(rxd_tvalid),
+			    .rxs_tdata		(rxs_tdata[31:0]),
+			    .rxs_tkeep		(rxs_tkeep[3:0]),
+			    .rxs_tlast		(rxs_tlast),
+			    .rxs_tvalid		(rxs_tvalid),
 			    // Inputs
-			    .mac_tready		(mac_tready),
 			    .rx_axis_mac_tdata	(rx_axis_mac_tdata[63:0]),
 			    .rx_axis_mac_tkeep	(rx_axis_mac_tkeep[7:0]),
 			    .rx_axis_mac_tlast	(rx_axis_mac_tlast),
@@ -141,8 +154,16 @@ module ifm_tb;
 			    .rx_axis_mac_tvalid	(rx_axis_mac_tvalid),
 			    .rx_clk		(rx_clk),
 			    .rx_reset		(rx_reset),
-			    .sys_clk		(sys_clk));
+			    .rxd_tready		(rxd_tready),
+			    .rxs_tready		(rxs_tready),
+			    .s2mm_clk		(s2mm_clk),
+			    .s2mm_resetn	(s2mm_resetn));
    
-endmodule
+endmodule // ifm_tb
+// Local Variables:
+// verilog-library-directories:(".""../")
+// verilog-library-files:(".")
+// verilog-library-extensions:(".v" ".h")
+// End:
 // 
 // ifm_tb.v ends here
