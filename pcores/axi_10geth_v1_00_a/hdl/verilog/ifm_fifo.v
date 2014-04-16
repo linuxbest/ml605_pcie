@@ -49,13 +49,13 @@ module ifm_fifo (/*AUTOARG*/
    data_fifo_afull, data_fifo_rdata, info_fifo_empty, info_fifo_rdata,
    mac_tdata, mac_tkeep, mac_tlast, mac_tvalid, good_fifo_afull,
    // Inputs
-   rx_clk, rx_reset, sys_clk, data_fifo_wdata, data_fifo_wren,
+   rx_clk, rx_reset, s2mm_clk, data_fifo_wdata, data_fifo_wren,
    data_fifo_rden, info_fifo_wdata, info_fifo_wren, info_fifo_rden,
    mac_tready, good_fifo_wdata, good_fifo_wren
    );
    input rx_clk;
    input rx_reset;
-   input sys_clk;
+   input s2mm_clk;
 
    input [72:0] data_fifo_wdata;
    input 	data_fifo_wren;
@@ -77,8 +77,8 @@ module ifm_fifo (/*AUTOARG*/
 	      .wr_en   (data_fifo_wren),
 	      .wr_clk  (rx_clk),
 	      .rd_en   (data_fifo_rden),
-	      .rd_clk  (sys_clk),
-	      .sync_clk(sys_clk),
+	      .rd_clk  (s2mm_clk),
+	      .sync_clk(s2mm_clk),
 	      .rst     (rx_reset),
 	      .dout    (data_fifo_rdata),
 	      .full    (),
@@ -102,7 +102,7 @@ module ifm_fifo (/*AUTOARG*/
 	      .rempty        (info_fifo_empty),
 	      .r_almost_empty(),
 	      .rinc          (info_fifo_rden),
-	      .rclk          (sys_clk),
+	      .rclk          (s2mm_clk),
 	      .rrst_n        (~rx_reset));
 
    wire [72:0] 	good_fifo_rdata;
@@ -133,10 +133,10 @@ module ifm_fifo (/*AUTOARG*/
 		   .C_SYNCHRONIZER_STAGE  (2))
    good_fifo (.din     (good_fifo_wdata),
 	      .wr_en   (good_fifo_wren),
-	      .wr_clk  (sys_clk),
+	      .wr_clk  (s2mm_clk),
 	      .rd_en   (good_fifo_rden),
-	      .rd_clk  (sys_clk),
-	      .sync_clk(sys_clk),
+	      .rd_clk  (s2mm_clk),
+	      .sync_clk(s2mm_clk),
 	      .rst     (rx_reset),
 	      .dout    (good_fifo_rdata),
 	      .full    (),

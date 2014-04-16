@@ -48,10 +48,10 @@ module ifm_out_fsm (/*AUTOARG*/
    // Outputs
    data_fifo_rden, info_fifo_rden, good_fifo_wdata, good_fifo_wren,
    // Inputs
-   sys_clk, rx_reset, data_fifo_rdata, info_fifo_rdata,
+   s2mm_clk, rx_reset, data_fifo_rdata, info_fifo_rdata,
    info_fifo_empty, good_fifo_afull
    );
-   input sys_clk;
+   input s2mm_clk;
    input rx_reset;
    
    input [72:0] data_fifo_rdata;
@@ -79,7 +79,7 @@ module ifm_out_fsm (/*AUTOARG*/
      S_EOF  = 2'h3;
    reg [1:0] // synopsys enum state_info
 	     state, state_ns;
-   always @(posedge sys_clk or posedge rx_reset)
+   always @(posedge s2mm_clk or posedge rx_reset)
      begin
 	if (rx_reset)
 	  begin
@@ -111,7 +111,7 @@ module ifm_out_fsm (/*AUTOARG*/
 	    state_ns = S_IDLE;
 	endcase
      end // always @ (*)
-   always @(posedge sys_clk)
+   always @(posedge s2mm_clk)
      begin
 	info_fifo_rden <= #1 (state == S_DROP && data_fifo_rdata[72]) ||
 			  (state == S_WAIT && data_fifo_rdata[72]);

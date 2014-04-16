@@ -48,7 +48,7 @@ module axi_eth_ifm (/*AUTOARG*/
    // Outputs
    rx_axis_mac_tready, mac_tvalid, mac_tlast, mac_tkeep, mac_tdata,
    // Inputs
-   sys_clk, rx_reset, rx_clk, rx_axis_mac_tvalid, rx_axis_mac_tuser,
+   s2mm_clk, rx_reset, rx_clk, rx_axis_mac_tvalid, rx_axis_mac_tuser,
    rx_axis_mac_tlast, rx_axis_mac_tkeep, rx_axis_mac_tdata,
    mac_tready
    );
@@ -62,7 +62,7 @@ module axi_eth_ifm (/*AUTOARG*/
    input		rx_axis_mac_tvalid;	// To ifm_in_fsm of ifm_in_fsm.v
    input		rx_clk;			// To ifm_in_fsm of ifm_in_fsm.v, ...
    input		rx_reset;		// To ifm_in_fsm of ifm_in_fsm.v, ...
-   input		sys_clk;		// To ifsm_out_fsm of ifm_out_fsm.v, ...
+   input		s2mm_clk;		// To ifm_out_fsm of ifm_out_fsm.v, ...
    // End of automatics
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
@@ -77,15 +77,15 @@ module axi_eth_ifm (/*AUTOARG*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire			data_fifo_afull;	// From ifm_fifo of ifm_fifo.v
    wire [72:0]		data_fifo_rdata;	// From ifm_fifo of ifm_fifo.v
-   wire			data_fifo_rden;		// From ifsm_out_fsm of ifm_out_fsm.v
+   wire			data_fifo_rden;		// From ifm_out_fsm of ifm_out_fsm.v
    wire [72:0]		data_fifo_wdata;	// From ifm_in_fsm of ifm_in_fsm.v
    wire			data_fifo_wren;		// From ifm_in_fsm of ifm_in_fsm.v
    wire			good_fifo_afull;	// From ifm_fifo of ifm_fifo.v
-   wire [72:0]		good_fifo_wdata;	// From ifsm_out_fsm of ifm_out_fsm.v
-   wire			good_fifo_wren;		// From ifsm_out_fsm of ifm_out_fsm.v
+   wire [72:0]		good_fifo_wdata;	// From ifm_out_fsm of ifm_out_fsm.v
+   wire			good_fifo_wren;		// From ifm_out_fsm of ifm_out_fsm.v
    wire			info_fifo_empty;	// From ifm_fifo of ifm_fifo.v
    wire			info_fifo_rdata;	// From ifm_fifo of ifm_fifo.v
-   wire			info_fifo_rden;		// From ifsm_out_fsm of ifm_out_fsm.v
+   wire			info_fifo_rden;		// From ifm_out_fsm of ifm_out_fsm.v
    wire			info_fifo_wdata;	// From ifm_in_fsm of ifm_in_fsm.v
    wire			info_fifo_wren;		// From ifm_in_fsm of ifm_in_fsm.v
    // End of automatics
@@ -107,18 +107,18 @@ module axi_eth_ifm (/*AUTOARG*/
 			     .rx_axis_mac_tvalid(rx_axis_mac_tvalid),
 			     .data_fifo_afull	(data_fifo_afull));
    ifm_out_fsm ifm_out_fsm (/*AUTOINST*/
-			     // Outputs
-			     .data_fifo_rden	(data_fifo_rden),
-			     .info_fifo_rden	(info_fifo_rden),
-			     .good_fifo_wdata	(good_fifo_wdata[72:0]),
-			     .good_fifo_wren	(good_fifo_wren),
-			     // Inputs
-			     .sys_clk		(sys_clk),
-			     .rx_reset		(rx_reset),
-			     .data_fifo_rdata	(data_fifo_rdata[72:0]),
-			     .info_fifo_rdata	(info_fifo_rdata),
-			     .info_fifo_empty	(info_fifo_empty),
-			     .good_fifo_afull	(good_fifo_afull));
+			    // Outputs
+			    .data_fifo_rden	(data_fifo_rden),
+			    .info_fifo_rden	(info_fifo_rden),
+			    .good_fifo_wdata	(good_fifo_wdata[72:0]),
+			    .good_fifo_wren	(good_fifo_wren),
+			    // Inputs
+			    .s2mm_clk		(s2mm_clk),
+			    .rx_reset		(rx_reset),
+			    .data_fifo_rdata	(data_fifo_rdata[72:0]),
+			    .info_fifo_rdata	(info_fifo_rdata),
+			    .info_fifo_empty	(info_fifo_empty),
+			    .good_fifo_afull	(good_fifo_afull));
 
    ifm_fifo ifm_fifo (/*AUTOINST*/
 		      // Outputs
@@ -134,7 +134,7 @@ module axi_eth_ifm (/*AUTOARG*/
 		      // Inputs
 		      .rx_clk		(rx_clk),
 		      .rx_reset		(rx_reset),
-		      .sys_clk		(sys_clk),
+		      .s2mm_clk		(s2mm_clk),
 		      .data_fifo_wdata	(data_fifo_wdata[72:0]),
 		      .data_fifo_wren	(data_fifo_wren),
 		      .data_fifo_rden	(data_fifo_rden),
