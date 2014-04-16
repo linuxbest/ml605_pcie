@@ -47,7 +47,7 @@
 module ofm_in_fsm (/*AUTOARG*/
    // Outputs
    txd_tready, txc_tready, ctrl_fifo_wdata, ctrl_fifo_wren,
-   data_fifo_wdata, data_fifo_wren, out_in_fsm_dbg,
+   data_fifo_wdata, data_fifo_wren, ofm_in_fsm_dbg,
    // Inputs
    mm2s_clk, mm2s_resetn, txd_tdata, txd_tkeep, txd_tvalid, txd_tlast,
    txc_tdata, txc_tkeep, txc_tvalid, txc_tlast, ctrl_fifo_afull,
@@ -197,8 +197,8 @@ module ofm_in_fsm (/*AUTOARG*/
 	data_fifo_wdata[72]    <= #1 txd_tlast;
      end
 
-   output [3:0]   out_in_fsm_dbg;
-   assign out_in_fsm_dbg = state;
+   output [3:0]   ofm_in_fsm_dbg;
+   assign ofm_in_fsm_dbg = state;
    /*AUTOASCIIENUM("state", "state_ascii", "S_")*/
    // Beginning of automatic ASCII enum decoding
    reg [31:0]		state_ascii;		// Decode of state
