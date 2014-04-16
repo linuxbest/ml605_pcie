@@ -159,9 +159,9 @@ module axi_10geth (/*AUTOARG*/
    wire [127:0] rx_mac_dbg;
    assign tx_dma_dbg [63:0]    = txd_tdata;
    assign tx_dma_dbg [71:64]   = txd_tkeep;
-   assign tx_dma_dbg [124]     = txd_tvalid;
-   assign tx_dma_dbg [126]     = txd_tlast;
-   assign tx_dma_dbg [125]     = txd_tready;
+   assign tx_dma_dbg [120]     = txd_tvalid;
+   assign tx_dma_dbg [121]     = txd_tlast;
+   assign tx_dma_dbg [122]     = txd_tready;
                                
    assign tx_dma_dbg [107:76]  = txc_tdata;
    assign tx_dma_dbg [111:108] = txc_tkeep;
@@ -171,10 +171,10 @@ module axi_10geth (/*AUTOARG*/
                                
    assign rx_dma_dbg [63:0]    = rxd_tdata;
    assign rx_dma_dbg [71:64]   = rxd_tkeep;
-   assign rx_dma_dbg [123]     = rxd_tvalid;
-   assign rx_dma_dbg [124]     = rxd_tlast;
-   assign rx_dma_dbg [125]     = rxd_tready;
-                               
+   assign rx_dma_dbg [120]     = rxd_tvalid;
+   assign rx_dma_dbg [121]     = rxd_tlast;
+   assign rx_dma_dbg [122]     = rxd_tready;
+
    assign rx_dma_dbg [107:76]  = rxs_tdata;
    assign rx_dma_dbg [111:108] = rxs_tkeep;
    assign rx_dma_dbg [123]     = rxs_tvalid;
@@ -183,10 +183,10 @@ module axi_10geth (/*AUTOARG*/
                                
    assign rx_mac_dbg [63:0]    = rx_axis_mac_tdata;
    assign rx_mac_dbg [71:64]   = rx_axis_mac_tkeep;
-   assign rx_mac_dbg [123]     = rx_axis_mac_tvalid;
-   assign rx_mac_dbg [124]     = rx_axis_mac_tlast;
-   assign rx_mac_dbg [125]     = rx_axis_mac_tready;  
-   assign rx_mac_dbg [126]     = rx_axis_mac_tuser;  
+   assign rx_mac_dbg [119]     = rx_axis_mac_tvalid;
+   assign rx_mac_dbg [120]     = rx_axis_mac_tlast;
+   assign rx_mac_dbg [121]     = rx_axis_mac_tready;  
+   assign rx_mac_dbg [122]     = rx_axis_mac_tuser;  
                                
    assign tx_mac_dbg [63:0]    = tx_axis_mac_tdata;
    assign tx_mac_dbg [71:64]   = tx_axis_mac_tkeep;
