@@ -1,0 +1,14 @@
+lib axi_10geth_v1_00_a  axi_eth_ifm.v verilog
+lib axi_10geth_v1_00_a  ifm_in_fsm.v verilog
+lib axi_10geth_v1_00_a  ifm_out_fsm.v verilog
+lib axi_10geth_v1_00_a  ifm_fifo.v verilog
+lib axi_10geth_v1_00_a  small_async_fifo.v verilog
+
+lib axi_10geth_v1_00_a  axi_eth_ofm.v verilog
+lib axi_10geth_v1_00_a  ofm_fifo.v verilog
+lib axi_10geth_v1_00_a  ofm_in_fsm.v verilog
+lib axi_10geth_v1_00_a  ofm_out_fsm.v verilog
+
+lib axi_10geth_v1_00_a  axi_10geth.v verilog
+
+lib axi_10geth_v1_00_a  axi_async_fifo.vhd vhdl
