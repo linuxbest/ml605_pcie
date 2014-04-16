@@ -82,8 +82,6 @@ module ofm_in_fsm (/*AUTOARG*/
    reg			ctrl_fifo_wren;
    reg [72:0]		data_fifo_wdata;
    reg			data_fifo_wren;
-   reg			txc_tready;
-   reg			txd_tready;
    // End of automatics
 
    localparam [1:0] 		// synopsys enum state_info
@@ -147,8 +145,9 @@ module ofm_in_fsm (/*AUTOARG*/
    always @(posedge mm2s_clk)
      begin
 	ctrl_fifo_afull_reg <= #1 ctrl_fifo_afull;
-	txc_tready          <= #1 state == S_CTRL;
      end
+   assign txc_tready = state == S_CTRL;
+		       
    reg [15:0] TxCsBegin;
    reg [15:0] TxCsInsert;
    reg [15:0] TxCsInit;
@@ -187,8 +186,9 @@ module ofm_in_fsm (/*AUTOARG*/
    always @(posedge mm2s_clk)
      begin
 	data_fifo_afull_reg <= #1 data_fifo_afull;
-	txd_tready          <= #1 state == S_DATA;
+
      end
+   assign txd_tready = state == S_DATA;
    always @(posedge mm2s_clk)
      begin
 	data_fifo_wren         <= #1 txd_tready && txd_tvalid;
