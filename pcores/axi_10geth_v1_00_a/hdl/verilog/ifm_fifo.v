@@ -89,7 +89,7 @@ module ifm_fifo (/*AUTOARG*/
 	      .wdata         (info_fifo_wdata),
 	      .winc          (info_fifo_wren),
 	      .wclk          (rx_clk),
-	      .wrst_n        (~rx_reset),
+	      .wrst_n        (s2mm_resetn),
 
 	      .rdata         (info_fifo_rdata),
 	      .rempty        (info_fifo_empty),

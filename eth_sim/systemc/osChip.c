@@ -117,6 +117,8 @@ static int TxSetup(struct axi_dma_device *dma_dev);
 static int RxSetup(struct axi_dma_device *dma_dev);
 static int SendPacket(struct axi_dma_device *dma_dev);
 
+static int SendArp(struct axi_dma_device *dma_dev);
+
 enum {
 	MDIO_CFG0 = 0x500,
 	MDIO_CFG1 = 0x504,
@@ -562,6 +564,76 @@ static int SendPacket(struct axi_dma_device *dma_dev)
 			(int)XAxiDma_BdGetLength(BdPtr,
 					TxRingPtr->MaxTransferLen));
 
+		return XST_FAILURE;
+	}
+
+	return XST_SUCCESS;
+}
+
+static int SendArp(struct axi_dma_device *dma_dev)
+{
+	XAxiDma *AxiDmaInstPtr = &dma_dev->AxiDma;
+	XAxiDma_BdRing *TxRingPtr = XAxiDma_GetTxRing(AxiDmaInstPtr);
+	XAxiDma_Bd *BdPtr, *BdCurPtr;
+	int Status;
+	int Index, Pkts;
+	u32 BufferAddr;
+	int RingIndex = 0;
+	u32 CrBits = 0;
+
+	Status = XAxiDma_BdRingAlloc(TxRingPtr, 1, &BdPtr);
+	if (Status != XST_SUCCESS) {
+		printf("Failed bd alloc\n");
+		return XST_FAILURE;
+	}
+
+	u8 *dbuf  = (u8 *)dma_dev->page_src[0];
+	/* dst */
+	dbuf[0] = 0xff;
+	dbuf[1] = 0xff;
+	dbuf[2] = 0xff;
+	dbuf[3] = 0xff;
+	dbuf[4] = 0xff;
+	dbuf[5] = 0xff;
+	/* src */
+	dbuf[6] = 0x01;
+	dbuf[7] = 0x02;
+	dbuf[8] = 0x03;
+	dbuf[9] = 0x04;
+	dbuf[10]= 0x05;
+	dbuf[11]= 0x06;
+	/* arp header */
+	BufferAddr = dma_dev->dma_src[0];
+	BdCurPtr = BdPtr;
+	/*
+	 * Set up the BD using the information of the packet to transmit
+	 * Each transfer has NUMBER_OF_BDS_PER_PKT BDs
+	 */
+	Status = XAxiDma_BdSetBufAddr(BdCurPtr, BufferAddr);
+	if (Status != XST_SUCCESS) {
+		printf("Tx set buffer addr %x on BD %x failed %d\n",
+				(unsigned int)BufferAddr, (unsigned int)BdCurPtr, Status);
+		return XST_FAILURE;
+	}
+
+	Status = XAxiDma_BdSetLength(BdCurPtr, SIZE, TxRingPtr->MaxTransferLen);
+	if (Status != XST_SUCCESS) {
+		printf("Tx set length %ld on BD %x failed %d\n",
+				SIZE, (unsigned int)BdCurPtr, Status);
+
+		return XST_FAILURE;
+	}
+	CrBits  = XAXIDMA_BD_CTRL_TXSOF_MASK;
+	CrBits |= XAXIDMA_BD_CTRL_TXEOF_MASK;
+
+	XAxiDma_BdSetCtrl(BdCurPtr, CrBits);
+	XAxiDma_BdSetId(BdCurPtr, BufferAddr);
+
+	/* Give the BD to hardware */
+	Status = XAxiDma_BdRingToHw(TxRingPtr, 1, BdPtr, RingIndex);
+	if (Status != XST_SUCCESS) {
+		printf("Failed to hw, length %d\n",
+			(int)XAxiDma_BdGetLength(BdPtr, TxRingPtr->MaxTransferLen));
 		return XST_FAILURE;
 	}
 

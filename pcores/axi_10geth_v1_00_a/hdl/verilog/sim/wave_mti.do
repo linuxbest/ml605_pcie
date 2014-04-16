@@ -35,6 +35,7 @@ eval add wave -noupdate -divider {"out fsm"}
 eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}s2mm_clk
 eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}s2mm_resetn
 
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}ready_sof
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}state
 
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}data_fifo_rdata
