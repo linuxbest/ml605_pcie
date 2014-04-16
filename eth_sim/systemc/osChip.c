@@ -124,19 +124,21 @@ enum {
 	MDIO_RXD  = 0x50C,
 };
 
+static uint32_t mac_base = 0x41250000;
+
 static int mdio_write_reg(uint32_t prtad, uint32_t devad, uint32_t regad, uint32_t val)
 {
 	int res;
-	axi_mm_out32(0x41240000 + MDIO_TXD,  regad);
-	axi_mm_out32(0x41240000 + MDIO_CFG1, 0x0800 |(devad<<16)|(prtad<<24));
+	axi_mm_out32(mac_base + MDIO_TXD,  regad);
+	axi_mm_out32(mac_base + MDIO_CFG1, 0x0800 |(devad<<16)|(prtad<<24));
 	do {
-		res = axi_mm_in32 (0x41240000 + MDIO_CFG1);
+		res = axi_mm_in32 (mac_base + MDIO_CFG1);
 		printf("poll bit7 %08x\n", res);
 	} while ((res & (1<<7)) == 0);
-	axi_mm_out32(0x41240000 + MDIO_TXD,  0xffff);
-	axi_mm_out32(0x41240000 + MDIO_CFG1, 0x4800 |(devad<<16)|(prtad<<24));
+	axi_mm_out32(mac_base + MDIO_TXD,  0xffff);
+	axi_mm_out32(mac_base + MDIO_CFG1, 0x4800 |(devad<<16)|(prtad<<24));
 	do {
-		res = axi_mm_in32 (0x41240000 + MDIO_CFG1);
+		res = axi_mm_in32 (mac_base + MDIO_CFG1);
 		printf("poll bit7 %08x\n", res);
 	} while ((res & (1<<7)) == 0);
 }
@@ -172,19 +174,18 @@ int osChip_init(uint32_t base)
 	}
 	printf("Cfg pass!\n");
 
-#if 0
+#if 1
 	/* Cfg word 0 */
-	axi_mm_out32(0x41240000 + MDIO_CFG0, (1<<6)|1);
-
+	axi_mm_out32(mac_base + MDIO_CFG0, (1<<6)|1);
 	/* turn on tx disable 1.9.0  */
-	mdio_write_reg(0x0, 0x1, 0x9, 0x1);
+	//mdio_write_reg(0x0, 0x1, 0x9, 0x1);
+	//mdio_write_reg(0x0, 0x1, 0x9, 0x0);
 	/* reset the pma/pcs  3.0.15 */
-	mdio_write_reg(0x0, 0x3, 0x0, 0x1<<15);
+	//mdio_write_reg(0x0, 0x3, 0x0, 0x1<<15);
 	/* turn off tx disable 1.9.0  */
 	//mdio_write_reg(0x0, 0x1, 0x9, 0x0);
-#endif
 	/* XAxiDma_Reset(&dma_dev->AxiDma);*/
-
+#endif
 	if(!XAxiDma_HasSg(&dma_dev->AxiDma)) {
 		printf("Device configured as Simple mode \n");
 		return 1;
@@ -210,7 +211,7 @@ int osChip_init(uint32_t base)
 	printf("Rx  ok!\n");
 
 	/* testing mac register read */
-	uint32_t macbase = 0x41240000 + 0x4F8;
+	uint32_t macbase = mac_base + 0x4F8;
 	printf("verstion %08x\n", axi_mm_in32(macbase));
 
 	/* Initialize flags before start transfer test  */

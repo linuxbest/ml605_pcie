@@ -47,35 +47,51 @@ module axi_10gmacphy (/*AUTOARG*/
    // Outputs
    xgmii_txd_dbg, xgmii_txc_dbg, xgmii_rxd_dbg, xgmii_rxc_dbg,
    xgmacint, txp, txn, tx_reset, tx_mac_aclk, tx_disable,
-   tx_axis_tready, sfp_rs, rx_reset, rx_mac_aclk, rx_axis_tvalid,
+   tx_axis_tready, sfp_rs, s_axi_wready, s_axi_rvalid, s_axi_rresp,
+   s_axi_rdata, s_axi_bvalid, s_axi_bresp, s_axi_awready,
+   s_axi_arready, rx_reset, rx_mac_aclk, rx_axis_tvalid,
    rx_axis_tuser, rx_axis_tlast, rx_axis_tkeep, rx_axis_tdata,
-   resetdone, linkup, ip2bus_wrack, ip2bus_rdack, ip2bus_error,
-   ip2bus_data, core_clk156_out,
+   resetdone, linkup, core_clk156_out,
    // Inputs
    tx_fault, tx_axis_tvalid, tx_axis_tuser, tx_axis_tlast,
-   tx_axis_tkeep, tx_axis_tdata, signal_detect, rxp, rxn,
-   rx_axis_tready, refclk_p, refclk_n, bus2ip_rnw, bus2ip_reset,
-   bus2ip_data, bus2ip_cs, bus2ip_clk, hw_reset, bus2ip_addr
+   tx_axis_tkeep, tx_axis_tdata, signal_detect, s_axi_wvalid,
+   s_axi_wdata, s_axi_rready, s_axi_bready, s_axi_awvalid,
+   s_axi_awaddr, s_axi_arvalid, s_axi_aresetn, s_axi_araddr,
+   s_axi_aclk, rxp, rxn, rx_axis_tready, refclk_p, refclk_n, hw_reset,
+   s_axi_wstrb
    );
    parameter C_FAMILY = "";
    parameter C_MDIO_ADDR = 5'h0;
    parameter EXAMPLE_SIM_GTRESET_SPEEDUP = "FALSE";
    parameter C_DBG_PORT = 0;
-  
+
+   parameter C_BASEADDR = 32'h0000_0000;
+   parameter C_HIGHADDR = 32'h0000_0000;
+   parameter C_S_AXI_ADDR_WIDTH = 32;
+   parameter C_S_AXI_DATA_WIDTH = 32;
+   parameter C_S_AXI_ID_WIDTH = 2;
+   
    input                hw_reset;
-   input [31:0]		bus2ip_addr;		// To xgmac of xgmac.v
+   wire [31:0] 		bus2ip_addr;		// To xgmac of xgmac.v
+   input [3:0]          s_axi_wstrb;
+
    /*AUTOINPUT*/
    // Beginning of automatic inputs (from unused autoinst inputs)
-   input		bus2ip_clk;		// To xgmac of xgmac.v
-   input		bus2ip_cs;		// To xgmac of xgmac.v
-   input [31:0]		bus2ip_data;		// To xgmac of xgmac.v
-   input		bus2ip_reset;		// To xgmac of xgmac.v
-   input		bus2ip_rnw;		// To xgmac of xgmac.v
    input		refclk_n;		// To xphy_block of xphy_block.v
    input		refclk_p;		// To xphy_block of xphy_block.v
    input		rx_axis_tready;		// To xphy_int of xphy_int.v
    input		rxn;			// To xphy_block of xphy_block.v
    input		rxp;			// To xphy_block of xphy_block.v
+   input		s_axi_aclk;		// To xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   input [31:0]		s_axi_araddr;		// To xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   input		s_axi_aresetn;		// To xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   input		s_axi_arvalid;		// To xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   input [31:0]		s_axi_awaddr;		// To xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   input		s_axi_awvalid;		// To xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   input		s_axi_bready;		// To xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   input		s_axi_rready;		// To xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   input [31:0]		s_axi_wdata;		// To xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   input		s_axi_wvalid;		// To xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
    input		signal_detect;		// To xphy_block of xphy_block.v, ...
    input [63:0]		tx_axis_tdata;		// To xgmac of xgmac.v
    input [7:0]		tx_axis_tkeep;		// To xgmac of xgmac.v
@@ -87,10 +103,6 @@ module axi_10gmacphy (/*AUTOARG*/
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
    output		core_clk156_out;	// From xphy_int of xphy_int.v
-   output [31:0]	ip2bus_data;		// From xgmac of xgmac.v
-   output		ip2bus_error;		// From xgmac of xgmac.v
-   output		ip2bus_rdack;		// From xgmac of xgmac.v
-   output		ip2bus_wrack;		// From xgmac of xgmac.v
    output		linkup;			// From xphy_int of xphy_int.v
    output		resetdone;		// From xphy_int of xphy_int.v
    output [63:0]	rx_axis_tdata;		// From xgmac of xgmac.v
@@ -100,6 +112,14 @@ module axi_10gmacphy (/*AUTOARG*/
    output		rx_axis_tvalid;		// From xgmac of xgmac.v
    output		rx_mac_aclk;		// From xphy_int of xphy_int.v
    output		rx_reset;		// From xphy_int of xphy_int.v
+   output		s_axi_arready;		// From xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   output		s_axi_awready;		// From xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   output [1:0]		s_axi_bresp;		// From xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   output		s_axi_bvalid;		// From xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   output [31:0]	s_axi_rdata;		// From xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   output [1:0]		s_axi_rresp;		// From xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   output		s_axi_rvalid;		// From xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   output		s_axi_wready;		// From xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
    output		sfp_rs;			// From xphy_int of xphy_int.v
    output		tx_axis_tready;		// From xgmac of xgmac.v
    output		tx_disable;		// From xphy_block of xphy_block.v
@@ -116,11 +136,20 @@ module axi_10gmacphy (/*AUTOARG*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   wire			bus2ip_clk;		// From xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   wire			bus2ip_cs;		// From xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   wire [31:0]		bus2ip_data;		// From xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   wire			bus2ip_reset;		// From xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
+   wire			bus2ip_rnw;		// From xgmac_axi4_lite_ipif_wrapper of xgmac_axi4_lite_ipif_wrapper.v
    wire			clk156;			// From xphy_block of xphy_block.v
    wire			core_reset_tx;		// From xphy_int of xphy_int.v
    wire [7:0]		core_status;		// From xphy_block of xphy_block.v
    wire			dclk;			// From xphy_block of xphy_block.v
    wire			dclk_reset;		// From xphy_int of xphy_int.v
+   wire [31:0]		ip2bus_data;		// From xgmac of xgmac.v
+   wire			ip2bus_error;		// From xgmac of xgmac.v
+   wire			ip2bus_rdack;		// From xgmac of xgmac.v
+   wire			ip2bus_wrack;		// From xgmac of xgmac.v
    wire			mdc;			// From xgmac of xgmac.v
    wire			mmcm_locked;		// From xphy_block of xphy_block.v
    wire			pause_req;		// From xgmac_int of xgmac_int.v
@@ -322,6 +351,40 @@ module axi_10gmacphy (/*AUTOARG*/
 		.mmcm_locked		(mmcm_locked),
 		.core_status		(core_status[7:0]),
 		.rx_axis_tready		(rx_axis_tready));
+   
+   xgmac_axi4_lite_ipif_wrapper #(.C_BASE_ADDRESS	(C_BASEADDR),
+                                  .C_HIGH_ADDRESS       (C_HIGHADDR))
+   xgmac_axi4_lite_ipif_wrapper  (/*AUTOINST*/
+				  // Outputs
+				  .s_axi_awready	(s_axi_awready),
+				  .s_axi_wready		(s_axi_wready),
+				  .s_axi_bresp		(s_axi_bresp[1:0]),
+				  .s_axi_bvalid		(s_axi_bvalid),
+				  .s_axi_arready	(s_axi_arready),
+				  .s_axi_rdata		(s_axi_rdata[31:0]),
+				  .s_axi_rresp		(s_axi_rresp[1:0]),
+				  .s_axi_rvalid		(s_axi_rvalid),
+				  .bus2ip_clk		(bus2ip_clk),
+				  .bus2ip_reset		(bus2ip_reset),
+				  .bus2ip_addr		(bus2ip_addr[31:0]),
+				  .bus2ip_cs		(bus2ip_cs),
+				  .bus2ip_rnw		(bus2ip_rnw),
+				  .bus2ip_data		(bus2ip_data[31:0]),
+				  // Inputs
+				  .s_axi_aclk		(s_axi_aclk),
+				  .s_axi_aresetn	(s_axi_aresetn),
+				  .s_axi_awaddr		(s_axi_awaddr[31:0]),
+				  .s_axi_awvalid	(s_axi_awvalid),
+				  .s_axi_wdata		(s_axi_wdata[31:0]),
+				  .s_axi_wvalid		(s_axi_wvalid),
+				  .s_axi_bready		(s_axi_bready),
+				  .s_axi_araddr		(s_axi_araddr[31:0]),
+				  .s_axi_arvalid	(s_axi_arvalid),
+				  .s_axi_rready		(s_axi_rready),
+				  .ip2bus_data		(ip2bus_data[31:0]),
+				  .ip2bus_wrack		(ip2bus_wrack),
+				  .ip2bus_rdack		(ip2bus_rdack),
+				  .ip2bus_error		(ip2bus_error));
 
    wire [35:0] 		CONTROL0;
    wire [35:0] 		CONTROL1;
@@ -409,7 +472,7 @@ module axi_10gmacphy (/*AUTOARG*/
    endgenerate
 endmodule // axi_10gmacphy
 // Local Variables:
-// verilog-library-directories:("../../loopback" ".")
+// verilog-library-directories:("../../loopback" "." "axi_ipif")
 // verilog-library-files:("")
 // verilog-library-extensions:(".v" ".h")
 // End:

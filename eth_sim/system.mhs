@@ -148,7 +148,6 @@ BEGIN axi_ethernet
  BUS_INTERFACE AXI_STR_RXD = ETHERNET_dma_rxd
  BUS_INTERFACE AXI_MAC_TX = mac_axis_tx
  BUS_INTERFACE AXI_MAC_RX = mac_axis_rx
- BUS_INTERFACE DEVICE_IF  = mac_ipif
  PORT AXI_STR_TXD_ACLK = clk_200_0000MHzPLLE0
  PORT AXI_STR_TXC_ACLK = clk_200_0000MHzPLLE0
  PORT AXI_STR_RXD_ACLK = clk_200_0000MHzPLLE0
@@ -162,7 +161,11 @@ BEGIN axi_10gmacphy
  PARAMETER EXAMPLE_SIM_GTRESET_SPEEDUP = TRUE
  BUS_INTERFACE AXI_MAC_TX = mac_axis_tx
  BUS_INTERFACE AXI_MAC_RX = mac_axis_rx
- BUS_INTERFACE DEVICE_IF  = mac_ipif
+ PARAMETER C_BASEADDR = 0x41250000
+ PARAMETER C_HIGHADDR = 0x4125ffff
+ PARAMETER C_INTERCONNECT_S_AXI_MASTERS = axi_systemc_0.M_AXI
+ BUS_INTERFACE S_AXI = axi4_0
+ PORT s_axi_aclk = clk_100_0000MHzPLLE0
  PORT refclk_p = refclk_p
  PORT refclk_n = refclk_n
  PORT signal_detect = sfp_sgd
@@ -174,7 +177,5 @@ BEGIN axi_10gmacphy
  PORT rxp = rxp
  PORT rxn = rxn
  PORT hw_reset = proc_sys_reset_0_BUS_STRUCT_RESET
- PORT bus2ip_clk = clk_100_0000MHzPLLE0
- PORT bus2ip_reset = proc_sys_reset_0_BUS_STRUCT_RESET
  PORT linkup = ten_mac_phy_linkup
 END

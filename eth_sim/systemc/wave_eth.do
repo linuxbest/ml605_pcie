@@ -151,3 +151,9 @@ eval add wave -noupdate $hexopt $ethpath${ps}rx_mac_tkeep
 eval add wave -noupdate $binopt $ethpath${ps}rx_mac_tlast
 eval add wave -noupdate $binopt $ethpath${ps}rx_mac_tvalid
 eval add wave -noupdate $binopt $ethpath${ps}rx_mac_tready
+
+eval add wave -noupdate -divider {"mdc"}
+eval add wave -noupdate $binopt $macpath${ps}xgmac${ps}mdc
+eval add wave -noupdate $binopt $macpath${ps}xgmac${ps}mdio_out
+eval add wave -noupdate $binopt $macpath${ps}xgmac${ps}mdio_in
+
