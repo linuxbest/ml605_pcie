@@ -48,7 +48,7 @@ module axi_eth_ofm (/*AUTOARG*/
    // Outputs
    txd_tready, txc_tready, tx_axis_mac_tvalid, tx_axis_mac_tuser,
    tx_axis_mac_tlast, tx_axis_mac_tkeep, tx_axis_mac_tdata,
-   ofm_out_fsm_dbg,
+   out_in_fsm_dbg, ofm_out_fsm_dbg,
    // Inputs
    txd_tvalid, txd_tlast, txd_tkeep, txd_tdata, txc_tvalid, txc_tlast,
    txc_tkeep, txc_tdata, tx_reset, tx_clk, tx_axis_mac_tready,
@@ -73,6 +73,7 @@ module axi_eth_ofm (/*AUTOARG*/
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
    output [3:0]		ofm_out_fsm_dbg;	// From ofm_out_fsm of ofm_out_fsm.v
+   output [3:0]		out_in_fsm_dbg;		// From ofm_in_fsm of ofm_in_fsm.v
    output [63:0]	tx_axis_mac_tdata;	// From ofm_out_fsm of ofm_out_fsm.v
    output [7:0]		tx_axis_mac_tkeep;	// From ofm_out_fsm of ofm_out_fsm.v
    output		tx_axis_mac_tlast;	// From ofm_out_fsm of ofm_out_fsm.v
@@ -106,6 +107,7 @@ module axi_eth_ofm (/*AUTOARG*/
 			   .ctrl_fifo_wren	(ctrl_fifo_wren),
 			   .data_fifo_wdata	(data_fifo_wdata[72:0]),
 			   .data_fifo_wren	(data_fifo_wren),
+			   .out_in_fsm_dbg	(out_in_fsm_dbg[3:0]),
 			   // Inputs
 			   .mm2s_clk		(mm2s_clk),
 			   .mm2s_resetn		(mm2s_resetn),

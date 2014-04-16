@@ -48,8 +48,8 @@ module axi_10geth (/*AUTOARG*/
    txd_tready, txc_tready, tx_axis_mac_tvalid, tx_axis_mac_tuser,
    tx_axis_mac_tlast, tx_axis_mac_tkeep, tx_axis_mac_tdata,
    rxs_tvalid, rxs_tlast, rxs_tkeep, rxs_tdata, rxd_tvalid, rxd_tlast,
-   rxd_tkeep, rxd_tdata, rx_axis_mac_tready, ofm_out_fsm_dbg,
-   ifm_out_fsm_dbg, ifm_in_fsm_dbg,
+   rxd_tkeep, rxd_tdata, rx_axis_mac_tready, out_in_fsm_dbg,
+   ofm_out_fsm_dbg, ifm_out_fsm_dbg, ifm_in_fsm_dbg,
    // Inputs
    txd_tvalid, txd_tlast, txd_tkeep, txd_tdata, txc_tvalid, txc_tlast,
    txc_tkeep, txc_tdata, tx_reset, tx_clk, tx_axis_mac_tready,
@@ -92,6 +92,7 @@ module axi_10geth (/*AUTOARG*/
    output [3:0]		ifm_in_fsm_dbg;		// From axi_eth_ifm of axi_eth_ifm.v
    output [3:0]		ifm_out_fsm_dbg;	// From axi_eth_ifm of axi_eth_ifm.v
    output [3:0]		ofm_out_fsm_dbg;	// From axi_eth_ofm of axi_eth_ofm.v
+   output [3:0]		out_in_fsm_dbg;		// From axi_eth_ofm of axi_eth_ofm.v
    output		rx_axis_mac_tready;	// From axi_eth_ifm of axi_eth_ifm.v
    output [63:0]	rxd_tdata;		// From axi_eth_ifm of axi_eth_ifm.v
    output [7:0]		rxd_tkeep;		// From axi_eth_ifm of axi_eth_ifm.v
@@ -138,6 +139,7 @@ module axi_10geth (/*AUTOARG*/
    axi_eth_ofm axi_eth_ofm (/*AUTOINST*/
 			    // Outputs
 			    .ofm_out_fsm_dbg	(ofm_out_fsm_dbg[3:0]),
+			    .out_in_fsm_dbg	(out_in_fsm_dbg[3:0]),
 			    .tx_axis_mac_tdata	(tx_axis_mac_tdata[63:0]),
 			    .tx_axis_mac_tkeep	(tx_axis_mac_tkeep[7:0]),
 			    .tx_axis_mac_tlast	(tx_axis_mac_tlast),
@@ -170,6 +172,7 @@ module axi_10geth (/*AUTOARG*/
    assign tx_dma_dbg [73]      = txd_tlast;
    assign tx_dma_dbg [74]      = txd_tready;
    /* trig */
+   assign tx_dma_dbg [119:116] = ofm_in_fsm_dbg;
    assign tx_dma_dbg [120]     = txd_tvalid;
    assign tx_dma_dbg [121]     = txd_tlast;
    assign tx_dma_dbg [122]     = txd_tready;
@@ -186,6 +189,7 @@ module axi_10geth (/*AUTOARG*/
    assign rx_dma_dbg [73]      = rxd_tlast;
    assign rx_dma_dbg [74]      = rxd_tready;
    /* trig */
+   assign rx_dma_dbg [119:116] = ifm_out_fsm_dbg;
    assign rx_dma_dbg [120]     = rxd_tvalid;
    assign rx_dma_dbg [121]     = rxd_tlast;
    assign rx_dma_dbg [122]     = rxd_tready;
@@ -202,6 +206,8 @@ module axi_10geth (/*AUTOARG*/
    assign rx_mac_dbg [73]      = rx_axis_mac_tlast;
    assign rx_mac_dbg [74]      = rx_axis_mac_tready;  
    assign rx_mac_dbg [75]      = rx_axis_mac_tuser;
+
+   assign rx_mac_dbg [122:119] = ifm_in_fsm_dbg;
    assign rx_mac_dbg [123]     = rx_axis_mac_tvalid;
    assign rx_mac_dbg [124]     = rx_axis_mac_tlast;
    assign rx_mac_dbg [125]     = rx_axis_mac_tready;  
@@ -213,6 +219,8 @@ module axi_10geth (/*AUTOARG*/
    assign tx_mac_dbg [73]      = tx_axis_mac_tlast;
    assign tx_mac_dbg [74]      = tx_axis_mac_tready;  
    assign tx_mac_dbg [75]      = tx_axis_mac_tuser;
+   
+   assign tx_mac_dbg [122:119] = ofm_out_fsm_dbg;
    assign tx_mac_dbg [123]     = tx_axis_mac_tvalid;
    assign tx_mac_dbg [124]     = tx_axis_mac_tlast;
    assign tx_mac_dbg [125]     = tx_axis_mac_tready;  
@@ -231,12 +239,12 @@ module axi_10geth (/*AUTOARG*/
    wire 	rx_trig0;
    wire 	tx_trig1;
    wire 	rx_trig1;
-   always @(posedge tx_clk)
+   always @(posedge mm2s_clk)
      begin
 	tx_dma_reg <= #1 tx_dma_dbg;
 	rx_dma_reg <= #1 rx_dma_dbg;
      end
-   always @(posedge mm2s_clk)
+   always @(posedge tx_clk)
      begin
 	tx_mac_reg <= #1 tx_mac_dbg;
 	rx_mac_reg <= #1 rx_mac_dbg;
