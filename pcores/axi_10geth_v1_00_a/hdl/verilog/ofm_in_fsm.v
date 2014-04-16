@@ -171,11 +171,23 @@ module ofm_in_fsm (/*AUTOARG*/
 	     endcase
 	  end
      end // always @ (posedge mm2s_clk)
-   
+
+   always @(posedge mm2s_clk or negedge mm2s_resetn)
+     begin
+	if (~mm2s_resetn)
+	  begin
+	     ctrl_fifo_wren <= #1 1'b0;
+	     data_fifo_wren <= #1 1'b0;
+	  end
+	else
+	  begin
+	     ctrl_fifo_wren <= #1 state == S_DATA && txd_tvalid && txd_tlast;
+	     data_fifo_wren <= #1 txd_tready && txd_tvalid;
+	  end
+     end // always @ (posedge mm2s_clk)
    // ctrl fifo write port
    always @(posedge mm2s_clk)
      begin
-	ctrl_fifo_wren         <= #1 state == S_DATA && txd_tvalid && txd_tlast;
 	ctrl_fifo_wdata[15:0]  <= #1 TxCsBegin;
 	ctrl_fifo_wdata[31:16] <= #1 TxCsInsert;
 	ctrl_fifo_wdata[47:32] <= #1 TxCsInsert;
@@ -186,12 +198,10 @@ module ofm_in_fsm (/*AUTOARG*/
    always @(posedge mm2s_clk)
      begin
 	data_fifo_afull_reg <= #1 data_fifo_afull;
-
      end
    assign txd_tready = state == S_DATA;
    always @(posedge mm2s_clk)
      begin
-	data_fifo_wren         <= #1 txd_tready && txd_tvalid;
 	data_fifo_wdata[63:0]  <= #1 txd_tdata;
 	data_fifo_wdata[71:64] <= #1 txd_tkeep;
 	data_fifo_wdata[72]    <= #1 txd_tlast;

@@ -141,12 +141,14 @@ module ifm_out_fsm (/*AUTOARG*/
 	  begin
 	     good_fifo_wren <= #1 1'b0;
 	     info_fifo_rden <= #1 1'b0;
+	     ctrl_fifo_wren <= #1 1'b0;
 	  end
 	else
 	  begin
 	     good_fifo_wren <= #1 state == S_WAIT;
 	     info_fifo_rden <= #1 (state == S_DROP && data_fifo_rdata[72]) ||
 			       (state == S_WAIT && data_fifo_rdata[72]);
+	     ctrl_fifo_wren <= #1 state == S_EOF;
 	  end
      end // always @ (posedge s2mm_clk or negedge s2mm_resetn)
    always @(posedge s2mm_clk)
@@ -191,10 +193,9 @@ module ifm_out_fsm (/*AUTOARG*/
 	     bytecnt <= #1 bytecnt + good_fifo_byte;
 	  end
      end // always @ (posedge s2mm_clk)
-   
+
    always @(posedge s2mm_clk)
      begin
-	ctrl_fifo_wren              <= #1 state == S_EOF;
 	case (wcnt)
 	  4'h0: begin		// flags
 	     ctrl_fifo_wdata[36]    <= #1 1'b0;

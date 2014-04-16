@@ -67,15 +67,16 @@ module ifm_fifo (/*AUTOARG*/
    output [72:0]data_fifo_rdata;
    input 	data_fifo_rden;
 
+   wire         data_fifo_empty;
    afifo73_512 data_fifo(.din     (data_fifo_wdata),
 			 .wr_en   (data_fifo_wren),
 			 .wr_clk  (rx_clk),
-			 .rd_en   (data_fifo_rden),
+			 .rd_en   (data_fifo_rden && ~data_fifo_empty),
 			 .rd_clk  (s2mm_clk),
 			 .rst     (~s2mm_resetn),
 			 .dout    (data_fifo_rdata),
 			 .full    (),
-			 .empty   (),
+			 .empty   (data_fifo_empty),
 			 .prog_full(data_fifo_afull));
 
    input [7:0]	info_fifo_wdata;
@@ -94,7 +95,7 @@ module ifm_fifo (/*AUTOARG*/
 	      .rdata         (info_fifo_rdata),
 	      .rempty        (info_fifo_empty),
 	      .r_almost_empty(),
-	      .rinc          (info_fifo_rden),
+	      .rinc          (info_fifo_rden && ~info_fifo_empty),
 	      .rclk          (s2mm_clk),
 	      .rrst_n        (s2mm_resetn));
 

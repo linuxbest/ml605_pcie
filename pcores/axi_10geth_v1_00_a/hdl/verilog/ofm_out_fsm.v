@@ -126,10 +126,17 @@ module ofm_out_fsm (/*AUTOARG*/
    assign data_fifo_rden     = tx_axis_mac_tvalid && tx_axis_mac_tready;
    
    // ctrl fifo side
-   always @(posedge tx_clk)
+   always @(posedge tx_clk or posedge tx_reset)
      begin
-	ctrl_fifo_rden <= #1 state == S_EOF;
-     end
+	if (tx_reset)
+	  begin
+	     ctrl_fifo_rden <= #1 1'b0;
+	  end
+	else
+	  begin
+	     ctrl_fifo_rden <= #1 state == S_EOF;
+	  end
+     end // always @ (posedge tx_clk or posedge tx_reset)
 
    output [3:0] ofm_out_fsm_dbg;
    assign ofm_out_fsm_dbg = state;
