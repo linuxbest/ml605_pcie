@@ -98,7 +98,7 @@ BEGIN axi_dma
  PARAMETER C_INCLUDE_MM2S_DRE = 1
  PARAMETER C_INCLUDE_S2MM_DRE = 1
  PARAMETER C_DLYTMR_RESOLUTION = 1250
- PARAMETER C_PRMRY_IS_ACLK_ASYNC = 1
+ PARAMETER C_PRMRY_IS_ACLK_ASYNC = 0
  PARAMETER C_SG_INCLUDE_STSCNTRL_STRM = 1
  PARAMETER C_SG_LENGTH_WIDTH = 16
  PARAMETER C_INCLUDE_MM2S = 1
@@ -119,9 +119,9 @@ BEGIN axi_dma
  BUS_INTERFACE S_AXIS_S2MM_STS = ETHERNET_dma_rxs
  BUS_INTERFACE S_AXIS_S2MM = ETHERNET_dma_rxd
  PORT s_axi_lite_aclk = clk_100_0000MHzPLLE0
- PORT m_axi_sg_aclk = clk_200_0000MHzPLLE0
- PORT m_axi_mm2s_aclk = clk_200_0000MHzPLLE0
- PORT m_axi_s2mm_aclk = clk_200_0000MHzPLLE0
+ PORT m_axi_sg_aclk = clk_100_0000MHzPLLE0
+ PORT m_axi_mm2s_aclk = clk_100_0000MHzPLLE0
+ PORT m_axi_s2mm_aclk = clk_100_0000MHzPLLE0
  PORT mm2s_prmry_reset_out_n = mm2s_resetn
  PORT s2mm_sts_reset_out_n = s2mm_resetn
  PORT mm2s_introut = ETHERNET_dma_mm2s_introut
@@ -143,9 +143,9 @@ BEGIN axi_10geth
  BUS_INTERFACE AXI_MAC_TX = mac_axis_tx
  BUS_INTERFACE AXI_MAC_RX = mac_axis_rx
 #PORT S_AXI_ACLK = clk_100_0000MHzPLLE0
- PORT mm2s_clk    = clk_200_0000MHzPLLE0
+ PORT mm2s_clk    = clk_100_0000MHzPLLE0
  PORT mm2s_resetn = mm2s_resetn
- PORT s2mm_clk    = clk_200_0000MHzPLLE0
+ PORT s2mm_clk    = clk_100_0000MHzPLLE0
  PORT s2mm_resetn = s2mm_resetn
 END
 
