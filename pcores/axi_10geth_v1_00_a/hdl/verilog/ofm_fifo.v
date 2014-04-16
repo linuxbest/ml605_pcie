@@ -93,7 +93,7 @@ module ofm_fifo (/*AUTOARG*/
 			 .wr_clk   (mm2s_clk),
 			 .rd_en    (data_fifo_rden),
 			 .rd_clk   (tx_clk),
-			 .rst      (tx_reset),
+			 .rst      (~mm2s_resetn),
 			 .dout     (data_fifo_rdata),
 			 .full     (),
 			 .empty    (data_fifo_empty),

@@ -43,6 +43,7 @@
 // 	device pins                        : "*_pin"
 // 	ports                              : - Names begin with Uppercase
 // Code:
+`timescale 1ps/1ps
 module axi_10geth (/*AUTOARG*/
    // Outputs
    txd_tready, txc_tready, tx_axis_mac_tvalid, tx_axis_mac_tuser,

@@ -66,7 +66,7 @@ module axi_eth_ifm (/*AUTOARG*/
    input		rxd_tready;		// To ifm_fifo of ifm_fifo.v
    input		rxs_tready;		// To ifm_fifo of ifm_fifo.v
    input		s2mm_clk;		// To ifm_out_fsm of ifm_out_fsm.v, ...
-   input		s2mm_resetn;		// To ifm_out_fsm of ifm_out_fsm.v
+   input		s2mm_resetn;		// To ifm_out_fsm of ifm_out_fsm.v, ...
    // End of automatics
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
@@ -158,6 +158,7 @@ module axi_eth_ifm (/*AUTOARG*/
 		      .rx_clk		(rx_clk),
 		      .rx_reset		(rx_reset),
 		      .s2mm_clk		(s2mm_clk),
+		      .s2mm_resetn	(s2mm_resetn),
 		      .data_fifo_wdata	(data_fifo_wdata[72:0]),
 		      .data_fifo_wren	(data_fifo_wren),
 		      .data_fifo_rden	(data_fifo_rden),

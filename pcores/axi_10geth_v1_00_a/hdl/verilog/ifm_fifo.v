@@ -50,14 +50,15 @@ module ifm_fifo (/*AUTOARG*/
    rxd_tdata, rxd_tkeep, rxd_tlast, rxd_tvalid, good_fifo_afull,
    rxs_tdata, rxs_tkeep, rxs_tlast, rxs_tvalid, ctrl_fifo_afull,
    // Inputs
-   rx_clk, rx_reset, s2mm_clk, data_fifo_wdata, data_fifo_wren,
-   data_fifo_rden, info_fifo_wdata, info_fifo_wren, info_fifo_rden,
-   rxd_tready, good_fifo_wdata, good_fifo_wren, rxs_tready,
-   ctrl_fifo_wdata, ctrl_fifo_wren
+   rx_clk, rx_reset, s2mm_clk, s2mm_resetn, data_fifo_wdata,
+   data_fifo_wren, data_fifo_rden, info_fifo_wdata, info_fifo_wren,
+   info_fifo_rden, rxd_tready, good_fifo_wdata, good_fifo_wren,
+   rxs_tready, ctrl_fifo_wdata, ctrl_fifo_wren
    );
    input rx_clk;
    input rx_reset;
    input s2mm_clk;
+   input s2mm_resetn;
 
    input [72:0] data_fifo_wdata;
    input 	data_fifo_wren;
@@ -71,7 +72,7 @@ module ifm_fifo (/*AUTOARG*/
 			 .wr_clk  (rx_clk),
 			 .rd_en   (data_fifo_rden),
 			 .rd_clk  (s2mm_clk),
-			 .rst     (rx_reset),
+			 .rst     (~s2mm_resetn),
 			 .dout    (data_fifo_rdata),
 			 .full    (),
 			 .empty   (),
@@ -88,14 +89,14 @@ module ifm_fifo (/*AUTOARG*/
 	      .wdata         (info_fifo_wdata),
 	      .winc          (info_fifo_wren),
 	      .wclk          (rx_clk),
-	      .wrst_n        (~rx_reset),
+	      .wrst_n        (s2mm_resetn),
 
 	      .rdata         (info_fifo_rdata),
 	      .rempty        (info_fifo_empty),
 	      .r_almost_empty(),
 	      .rinc          (info_fifo_rden),
 	      .rclk          (s2mm_clk),
-	      .rrst_n        (~rx_reset));
+	      .rrst_n        (s2mm_resetn));
 
    wire [72:0] 	good_fifo_rdata;
    wire 	good_fifo_empty;
@@ -145,7 +146,7 @@ module ifm_fifo (/*AUTOARG*/
 			 .wr_en   (ctrl_fifo_wren),
 			 .clk     (s2mm_clk),
 			 .rd_en   (ctrl_fifo_rden),
-			 .rst     (rx_reset),
+			 .rst     (~s2mm_resetn),
 			 .dout    (ctrl_fifo_rdata),
 			 .full    (),
 			 .empty   (ctrl_fifo_empty),
