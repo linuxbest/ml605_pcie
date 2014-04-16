@@ -77,7 +77,7 @@ module ifm_in_fsm (/*AUTOARG*/
    reg [7:0]		info_fifo_wdata;
    reg			info_fifo_wren;
    // End of automatics
-   
+
    localparam [1:0] 		// synopsys enum state_info
      S_IDLE = 2'h0,
      S_WAIT = 2'h1,
@@ -126,7 +126,7 @@ module ifm_in_fsm (/*AUTOARG*/
 	  begin
 	     data_fifo_wren <= #1 ((state == S_IDLE && rx_axis_mac_tvalid && ~data_fifo_afull) ||
 				   (state == S_WAIT && rx_axis_mac_tvalid));
-	     info_fifo_wren        <= #1 (state == S_WAIT && rx_axis_mac_tvalid && rx_axis_mac_tlast);	     
+	     info_fifo_wren        <= #1 (state == S_WAIT && rx_axis_mac_tvalid && rx_axis_mac_tlast);
 	  end
      end // always @ (posedge rx_clk or posedge rx_reset)
    always @(posedge rx_clk)
