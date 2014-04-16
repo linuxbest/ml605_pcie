@@ -88,26 +88,16 @@ module ofm_fifo (/*AUTOARG*/
    output [72:0] data_fifo_rdata;
    output 	 data_fifo_empty;
    input 	 data_fifo_rden;
-   axi_async_fifo #(.C_FAMILY              ("kintex7"),
-		   .C_FIFO_DEPTH          (1024),
-		   .C_PROG_FULL_THRESH    (700),
-		   .C_DATA_WIDTH          (73),
-		   .C_PTR_WIDTH           (10),
-		   .C_MEMORY_TYPE         (1),
-		   .C_COMMON_CLOCK        (0),
-		   .C_IMPLEMENTATION_TYPE (2),
-		   .C_SYNCHRONIZER_STAGE  (2))
-   data_fifo (.din      (data_fifo_wdata),
-	      .wr_en    (data_fifo_wren),
-	      .wr_clk   (mm2s_clk),
-	      .rd_en    (data_fifo_rden),
-	      .rd_clk   (tx_clk),
-	      .sync_clk (mm2s_clk),
-	      .rst      (tx_reset),
-	      .dout     (data_fifo_rdata),
-	      .full     (),
-	      .empty    (data_fifo_empty),
-	      .prog_full(data_fifo_afull));   
+   afifo73_512 data_fifo(.din      (data_fifo_wdata),
+			 .wr_en    (data_fifo_wren),
+			 .wr_clk   (mm2s_clk),
+			 .rd_en    (data_fifo_rden),
+			 .rd_clk   (tx_clk),
+			 .rst      (tx_reset),
+			 .dout     (data_fifo_rdata),
+			 .full     (),
+			 .empty    (data_fifo_empty),
+			 .prog_full(data_fifo_afull));   
 endmodule
 // 
 // ofm_fifo.v ends here

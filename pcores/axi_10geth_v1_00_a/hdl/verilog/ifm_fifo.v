@@ -66,26 +66,16 @@ module ifm_fifo (/*AUTOARG*/
    output [72:0]data_fifo_rdata;
    input 	data_fifo_rden;
 
-   axi_async_fifo #(.C_FAMILY              ("kintex7"),
-		   .C_FIFO_DEPTH          (1024),
-		   .C_PROG_FULL_THRESH    (700),
-		   .C_DATA_WIDTH          (73),
-		   .C_PTR_WIDTH           (10),
-		   .C_MEMORY_TYPE         (1),
-		   .C_COMMON_CLOCK        (0),
-		   .C_IMPLEMENTATION_TYPE (2),
-		   .C_SYNCHRONIZER_STAGE  (2))
-   data_fifo (.din     (data_fifo_wdata),
-	      .wr_en   (data_fifo_wren),
-	      .wr_clk  (rx_clk),
-	      .rd_en   (data_fifo_rden),
-	      .rd_clk  (s2mm_clk),
-	      .sync_clk(s2mm_clk),
-	      .rst     (rx_reset),
-	      .dout    (data_fifo_rdata),
-	      .full    (),
-	      .empty   (),
-	      .prog_full(data_fifo_afull));
+   afifo73_512 data_fifo(.din     (data_fifo_wdata),
+			 .wr_en   (data_fifo_wren),
+			 .wr_clk  (rx_clk),
+			 .rd_en   (data_fifo_rden),
+			 .rd_clk  (s2mm_clk),
+			 .rst     (rx_reset),
+			 .dout    (data_fifo_rdata),
+			 .full    (),
+			 .empty   (),
+			 .prog_full(data_fifo_afull));
 
    input 	info_fifo_wdata;
    input 	info_fifo_wren;
@@ -124,26 +114,15 @@ module ifm_fifo (/*AUTOARG*/
    input [72:0] good_fifo_wdata;
    input 	good_fifo_wren;
    output 	good_fifo_afull;   
-   axi_async_fifo #(.C_FAMILY              ("kintex7"),
-		   .C_FIFO_DEPTH          (1024),
-		   .C_PROG_FULL_THRESH    (700),
-		   .C_DATA_WIDTH          (73),
-		   .C_PTR_WIDTH           (10),
-		   .C_MEMORY_TYPE         (1),
-		   .C_COMMON_CLOCK        (1),
-		   .C_IMPLEMENTATION_TYPE (2),
-		   .C_SYNCHRONIZER_STAGE  (2))
-   good_fifo (.din     (good_fifo_wdata),
-	      .wr_en   (good_fifo_wren),
-	      .wr_clk  (s2mm_clk),
-	      .rd_en   (good_fifo_rden),
-	      .rd_clk  (s2mm_clk),
-	      .sync_clk(s2mm_clk),
-	      .rst     (rx_reset),
-	      .dout    (good_fifo_rdata),
-	      .full    (),
-	      .empty   (good_fifo_empty),
-	      .prog_full(good_fifo_afull));
+   fifo73_512   good_fifo (.din     (good_fifo_wdata),
+			   .wr_en   (good_fifo_wren),
+			   .clk     (s2mm_clk),
+			   .rd_en   (good_fifo_rden),
+			   .rst     (~s2mm_resetn),
+			   .dout    (good_fifo_rdata),
+			   .full    (),
+			   .empty   (good_fifo_empty),
+			   .prog_full(good_fifo_afull));
 
    wire [36:0] 	ctrl_fifo_rdata;
    wire 	ctrl_fifo_empty;
@@ -162,26 +141,15 @@ module ifm_fifo (/*AUTOARG*/
    input [36:0] ctrl_fifo_wdata;
    input 	ctrl_fifo_wren;
    output 	ctrl_fifo_afull;   
-   axi_async_fifo #(.C_FAMILY              ("kintex7"),
-		   .C_FIFO_DEPTH          (512),
-		   .C_PROG_FULL_THRESH    (128),
-		   .C_DATA_WIDTH          (37),
-		   .C_PTR_WIDTH           (9),
-		   .C_MEMORY_TYPE         (1),
-		   .C_COMMON_CLOCK        (1),
-		   .C_IMPLEMENTATION_TYPE (2),
-		   .C_SYNCHRONIZER_STAGE  (2))
-   ctrl_fifo (.din     (ctrl_fifo_wdata),
-	      .wr_en   (ctrl_fifo_wren),
-	      .wr_clk  (s2mm_clk),
-	      .rd_en   (ctrl_fifo_rden),
-	      .rd_clk  (s2mm_clk),
-	      .sync_clk(s2mm_clk),
-	      .rst     (rx_reset),
-	      .dout    (ctrl_fifo_rdata),
-	      .full    (),
-	      .empty   (ctrl_fifo_empty),
-	      .prog_full(ctrl_fifo_afull));  
+   fifo37_512 ctrl_fifo (.din     (ctrl_fifo_wdata),
+			 .wr_en   (ctrl_fifo_wren),
+			 .clk     (s2mm_clk),
+			 .rd_en   (ctrl_fifo_rden),
+			 .rst     (rx_reset),
+			 .dout    (ctrl_fifo_rdata),
+			 .full    (),
+			 .empty   (ctrl_fifo_empty),
+			 .prog_full(ctrl_fifo_afull));  
 endmodule
 // 
 // ifm_fifo.v ends here

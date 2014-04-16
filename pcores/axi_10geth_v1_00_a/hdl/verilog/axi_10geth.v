@@ -159,6 +159,10 @@ module axi_10geth (/*AUTOARG*/
    wire [127:0] rx_mac_dbg;
    assign tx_dma_dbg [63:0]    = txd_tdata;
    assign tx_dma_dbg [71:64]   = txd_tkeep;
+   assign tx_dma_dbg [72]      = txd_tvalid;
+   assign tx_dma_dbg [73]      = txd_tlast;
+   assign tx_dma_dbg [74]      = txd_tready;
+   /* trig */
    assign tx_dma_dbg [120]     = txd_tvalid;
    assign tx_dma_dbg [121]     = txd_tlast;
    assign tx_dma_dbg [122]     = txd_tready;
@@ -171,6 +175,10 @@ module axi_10geth (/*AUTOARG*/
                                
    assign rx_dma_dbg [63:0]    = rxd_tdata;
    assign rx_dma_dbg [71:64]   = rxd_tkeep;
+   assign rx_dma_dbg [72]      = rxd_tvalid;
+   assign rx_dma_dbg [73]      = rxd_tlast;
+   assign rx_dma_dbg [74]      = rxd_tready;
+   /* trig */
    assign rx_dma_dbg [120]     = rxd_tvalid;
    assign rx_dma_dbg [121]     = rxd_tlast;
    assign rx_dma_dbg [122]     = rxd_tready;
@@ -183,13 +191,21 @@ module axi_10geth (/*AUTOARG*/
                                
    assign rx_mac_dbg [63:0]    = rx_axis_mac_tdata;
    assign rx_mac_dbg [71:64]   = rx_axis_mac_tkeep;
-   assign rx_mac_dbg [119]     = rx_axis_mac_tvalid;
-   assign rx_mac_dbg [120]     = rx_axis_mac_tlast;
-   assign rx_mac_dbg [121]     = rx_axis_mac_tready;  
-   assign rx_mac_dbg [122]     = rx_axis_mac_tuser;  
+   assign rx_mac_dbg [72]      = rx_axis_mac_tvalid;
+   assign rx_mac_dbg [73]      = rx_axis_mac_tlast;
+   assign rx_mac_dbg [74]      = rx_axis_mac_tready;  
+   assign rx_mac_dbg [75]      = rx_axis_mac_tuser;
+   assign rx_mac_dbg [123]     = rx_axis_mac_tvalid;
+   assign rx_mac_dbg [124]     = rx_axis_mac_tlast;
+   assign rx_mac_dbg [125]     = rx_axis_mac_tready;  
+   assign rx_mac_dbg [126]     = rx_axis_mac_tuser;  
                                
    assign tx_mac_dbg [63:0]    = tx_axis_mac_tdata;
    assign tx_mac_dbg [71:64]   = tx_axis_mac_tkeep;
+   assign tx_mac_dbg [72]      = tx_axis_mac_tvalid;
+   assign tx_mac_dbg [73]      = tx_axis_mac_tlast;
+   assign tx_mac_dbg [74]      = tx_axis_mac_tready;  
+   assign tx_mac_dbg [75]      = tx_axis_mac_tuser;
    assign tx_mac_dbg [123]     = tx_axis_mac_tvalid;
    assign tx_mac_dbg [124]     = tx_axis_mac_tlast;
    assign tx_mac_dbg [125]     = tx_axis_mac_tready;  
@@ -204,8 +220,10 @@ module axi_10geth (/*AUTOARG*/
    wire [35:0] 	CONTROL1;
    wire [35:0] 	CONTROL2;
    wire [35:0] 	CONTROL3; 
-   wire 	tx_trig;
-   wire 	rx_trig;
+   wire 	tx_trig0;
+   wire 	rx_trig0;
+   wire 	tx_trig1;
+   wire 	rx_trig1;
    always @(posedge tx_clk)
      begin
 	tx_dma_reg <= #1 tx_dma_dbg;
@@ -216,8 +234,8 @@ module axi_10geth (/*AUTOARG*/
 	tx_mac_reg <= #1 tx_mac_dbg;
 	rx_mac_reg <= #1 rx_mac_dbg;
      end
-generate if (C_DBG_PORT == 1) 
-  begin
+
+generate if (C_DBG_PORT == 1) begin
      icon4 icon4 (/*AUTOINST*/
 		  // Inouts
 		  .CONTROL0		(CONTROL0[35:0]),
@@ -226,7 +244,7 @@ generate if (C_DBG_PORT == 1)
 		  .CONTROL3		(CONTROL3[35:0]));
      ila128_16 ila_txdma (
 			  // Outputs
-			  .TRIG_OUT	(tx_trig),
+			  .TRIG_OUT	(tx_trig0),
 			  // Inouts
 			  .CONTROL	(CONTROL0[35:0]),
 			  // Inputs
@@ -235,33 +253,32 @@ generate if (C_DBG_PORT == 1)
 			  .DATA		(tx_dma_reg[127:0]));
      ila128_16 ila_txmac (
 			  // Outputs
-			  .TRIG_OUT	(),
+			  .TRIG_OUT	(tx_trig1),
 			  // Inouts
 			  .CONTROL	(CONTROL1[35:0]),
 			  // Inputs
 			  .CLK		(tx_clk),
-			  .TRIG0	({tx_trig, tx_mac_reg[126:112]}),
+			  .TRIG0	({tx_trig0, tx_mac_reg[126:112]}),
 			  .DATA		(tx_mac_reg[127:0]));
      ila128_16 ila_rxdma (
 			  // Outputs
-			  .TRIG_OUT	(),
+			  .TRIG_OUT	(rx_trig0),
 			  // Inouts
 			  .CONTROL	(CONTROL2[35:0]),
 			  // Inputs
-			  .CLK		(s2mm_clk),
-			  .TRIG0	({rx_trig, rx_dma_reg[126:112]}),
+			  .CLK		(mm2s_clk),
+			  .TRIG0	({rx_trig1, rx_dma_reg[126:112]}),
 			  .DATA		(rx_dma_reg[127:0]));
      ila128_16 ila_rxmac (
 			  // Outputs
-			  .TRIG_OUT	(rx_trig),
+			  .TRIG_OUT	(rx_trig1),
 			  // Inouts
 			  .CONTROL	(CONTROL3[35:0]),
 			  // Inputs
-			  .CLK		(rx_clk),
+			  .CLK		(tx_clk),
 			  .TRIG0	(rx_mac_reg[127:112]),
 			  .DATA		(rx_mac_reg[127:0]));
-  end
-endgenerate
+end endgenerate
 endmodule
 // 
 // axi_10geth.v ends here

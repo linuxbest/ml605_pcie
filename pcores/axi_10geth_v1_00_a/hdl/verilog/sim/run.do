@@ -7,6 +7,11 @@ vlog -work work ../ifm_in_fsm.v
 vlog -work work ../ifm_out_fsm.v
 vlog -work work ../ifm_fifo.v
 vlog -work work ../small_async_fifo.v
+vlog -work work ../fifo37_512.v
+vlog -work work ../fifo73_512.v
+vlog -work work ../afifo73_512.v
+
+vlog -work work FIFO_GENERATOR_V9_3.v
 
 vcom -work work ../../vhdl/axi_async_fifo.vhd
 
