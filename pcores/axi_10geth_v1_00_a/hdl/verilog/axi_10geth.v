@@ -48,7 +48,8 @@ module axi_10geth (/*AUTOARG*/
    txd_tready, txc_tready, tx_axis_mac_tvalid, tx_axis_mac_tuser,
    tx_axis_mac_tlast, tx_axis_mac_tkeep, tx_axis_mac_tdata,
    rxs_tvalid, rxs_tlast, rxs_tkeep, rxs_tdata, rxd_tvalid, rxd_tlast,
-   rxd_tkeep, rxd_tdata, rx_axis_mac_tready,
+   rxd_tkeep, rxd_tdata, rx_axis_mac_tready, ofm_out_fsm_dbg,
+   ifm_out_fsm_dbg, ifm_in_fsm_dbg,
    // Inputs
    txd_tvalid, txd_tlast, txd_tkeep, txd_tdata, txc_tvalid, txc_tlast,
    txc_tkeep, txc_tdata, tx_reset, tx_clk, tx_axis_mac_tready,
@@ -88,6 +89,9 @@ module axi_10geth (/*AUTOARG*/
    // End of automatics
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
+   output [3:0]		ifm_in_fsm_dbg;		// From axi_eth_ifm of axi_eth_ifm.v
+   output [3:0]		ifm_out_fsm_dbg;	// From axi_eth_ifm of axi_eth_ifm.v
+   output [3:0]		ofm_out_fsm_dbg;	// From axi_eth_ofm of axi_eth_ofm.v
    output		rx_axis_mac_tready;	// From axi_eth_ifm of axi_eth_ifm.v
    output [63:0]	rxd_tdata;		// From axi_eth_ifm of axi_eth_ifm.v
    output [7:0]		rxd_tkeep;		// From axi_eth_ifm of axi_eth_ifm.v
@@ -108,6 +112,8 @@ module axi_10geth (/*AUTOARG*/
 
    axi_eth_ifm axi_eth_ifm (/*AUTOINST*/
 			    // Outputs
+			    .ifm_in_fsm_dbg	(ifm_in_fsm_dbg[3:0]),
+			    .ifm_out_fsm_dbg	(ifm_out_fsm_dbg[3:0]),
 			    .rx_axis_mac_tready	(rx_axis_mac_tready),
 			    .rxd_tdata		(rxd_tdata[63:0]),
 			    .rxd_tkeep		(rxd_tkeep[7:0]),
@@ -131,6 +137,7 @@ module axi_10geth (/*AUTOARG*/
 			    .s2mm_resetn	(s2mm_resetn));
    axi_eth_ofm axi_eth_ofm (/*AUTOINST*/
 			    // Outputs
+			    .ofm_out_fsm_dbg	(ofm_out_fsm_dbg[3:0]),
 			    .tx_axis_mac_tdata	(tx_axis_mac_tdata[63:0]),
 			    .tx_axis_mac_tkeep	(tx_axis_mac_tkeep[7:0]),
 			    .tx_axis_mac_tlast	(tx_axis_mac_tlast),

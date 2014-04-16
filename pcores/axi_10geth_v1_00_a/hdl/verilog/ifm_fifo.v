@@ -77,12 +77,12 @@ module ifm_fifo (/*AUTOARG*/
 			 .empty   (),
 			 .prog_full(data_fifo_afull));
 
-   input 	info_fifo_wdata;
+   input [7:0]	info_fifo_wdata;
    input 	info_fifo_wren;
    output 	info_fifo_empty;
-   output 	info_fifo_rdata;
+   output [7:0]	info_fifo_rdata;
    input 	info_fifo_rden;
-   small_async_fifo #(.DSIZE(1), .ASIZE(8))
+   small_async_fifo #(.DSIZE(8), .ASIZE(8))
    info_fifo (.wfull         (),
 	      .w_almost_full (),
 	      .wdata         (info_fifo_wdata),

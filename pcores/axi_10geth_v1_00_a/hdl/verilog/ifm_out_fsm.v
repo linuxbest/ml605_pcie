@@ -47,7 +47,7 @@
 module ifm_out_fsm (/*AUTOARG*/
    // Outputs
    data_fifo_rden, info_fifo_rden, good_fifo_wdata, good_fifo_wren,
-   ctrl_fifo_wdata, ctrl_fifo_wren,
+   ctrl_fifo_wdata, ctrl_fifo_wren, ifm_out_fsm_dbg,
    // Inputs
    s2mm_clk, s2mm_resetn, data_fifo_rdata, info_fifo_rdata,
    info_fifo_empty, good_fifo_afull, ctrl_fifo_afull
@@ -58,7 +58,7 @@ module ifm_out_fsm (/*AUTOARG*/
    input [72:0] data_fifo_rdata;
    output 	data_fifo_rden;
    
-   input 	info_fifo_rdata;
+   input [7:0]	info_fifo_rdata;
    input 	info_fifo_empty;
    output 	info_fifo_rden;
    
@@ -106,7 +106,7 @@ module ifm_out_fsm (/*AUTOARG*/
 	case (state)
 	  S_IDLE: if (ready_sof)
 	    begin
-	       state_ns = info_fifo_rdata ? S_WAIT : S_DROP;
+	       state_ns = info_fifo_rdata[7] ? S_DROP : S_WAIT;
 	    end
 	  S_DROP: if (data_fifo_rdata[72])
 	    begin
@@ -127,12 +127,20 @@ module ifm_out_fsm (/*AUTOARG*/
 	endcase
      end // always @ (*)
    
+   reg [7:0] info_fifo_reg;
+   always @(posedge s2mm_clk)
+     begin
+	if (state == S_IDLE)
+	  begin
+	     info_fifo_reg <= #1 info_fifo_rdata;
+	  end
+     end
    always @(posedge s2mm_clk)
      begin
 	info_fifo_rden <= #1 (state == S_DROP && data_fifo_rdata[72]) ||
 			  (state == S_WAIT && data_fifo_rdata[72]);
 	good_fifo_wdata<= #1 data_fifo_rdata;
-	good_fifo_wren <= #1 ((state == S_IDLE && ready_sof && info_fifo_rdata) ||
+	good_fifo_wren <= #1 ((state == S_IDLE && ready_sof && ~info_fifo_rdata[7]) ||
 			      (state == S_WAIT));
      end
    assign data_fifo_rden = (state == S_IDLE && ready_sof) ||
@@ -199,8 +207,9 @@ module ifm_out_fsm (/*AUTOARG*/
 	  4'h3: begin		// ... flags
 	     ctrl_fifo_wdata[36]    <= #1 1'b0;
 	     ctrl_fifo_wdata[35:32] <= #1 4'hf;
-	     ctrl_fifo_wdata[31:7]  <= #1 32'h0;
-	     ctrl_fifo_wdata[6]     <= #1 1'b1;
+	     ctrl_fifo_wdata[31:8]  <= #1 32'h0;
+	     ctrl_fifo_wdata[7]     <= #1~info_fifo_reg[0];
+	     ctrl_fifo_wdata[6]     <= #1 info_fifo_reg[0];
 	     ctrl_fifo_wdata[5:0]   <= #1 6'h0;
 	  end
 	  4'h4: begin		// T_L_TPID , RxCsRaw
@@ -219,6 +228,9 @@ module ifm_out_fsm (/*AUTOARG*/
 	  end
 	endcase
      end // always @ (posedge s2mm_clk)
+
+   output [3:0] ifm_out_fsm_dbg;
+   assign ifm_out_fsm_dbg = state;
 endmodule
 // 
 // ifm_out_fsm.v ends here

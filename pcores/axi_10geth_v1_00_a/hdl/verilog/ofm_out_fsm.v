@@ -48,7 +48,7 @@ module ofm_out_fsm (/*AUTOARG*/
    // Outputs
    ctrl_fifo_rden, data_fifo_rden, tx_axis_mac_tdata,
    tx_axis_mac_tkeep, tx_axis_mac_tvalid, tx_axis_mac_tlast,
-   tx_axis_mac_tuser,
+   tx_axis_mac_tuser, ofm_out_fsm_dbg,
    // Inputs
    tx_clk, tx_reset, ctrl_fifo_rdata, ctrl_fifo_empty,
    data_fifo_rdata, data_fifo_empty, tx_axis_mac_tready
@@ -130,6 +130,10 @@ module ofm_out_fsm (/*AUTOARG*/
      begin
 	ctrl_fifo_rden <= #1 state == S_EOF;
      end
+
+   output [3:0] ofm_out_fsm_dbg;
+   assign ofm_out_fsm_dbg = state;
+   
    /*AUTOASCIIENUM("state", "state_ascii", "S_")*/   
    // Beginning of automatic ASCII enum decoding
    reg [31:0]		state_ascii;		// Decode of state

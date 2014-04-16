@@ -47,7 +47,7 @@
 module ifm_in_fsm (/*AUTOARG*/
    // Outputs
    rx_axis_mac_tready, data_fifo_wdata, data_fifo_wren,
-   info_fifo_wdata, info_fifo_wren,
+   info_fifo_wdata, info_fifo_wren, ifm_in_fsm_dbg,
    // Inputs
    rx_clk, rx_reset, rx_axis_mac_tdata, rx_axis_mac_tkeep,
    rx_axis_mac_tlast, rx_axis_mac_tuser, rx_axis_mac_tvalid,
@@ -67,16 +67,15 @@ module ifm_in_fsm (/*AUTOARG*/
    output 	 data_fifo_wren;
    input 	 data_fifo_afull;
 
-   output 	 info_fifo_wdata;
+   output [7:0]  info_fifo_wdata;
    output 	 info_fifo_wren;
 
    /*AUTOREG*/
    // Beginning of automatic regs (for this module's undeclared outputs)
    reg [72:0]		data_fifo_wdata;
    reg			data_fifo_wren;
-   reg			info_fifo_wdata;
+   reg [7:0]		info_fifo_wdata;
    reg			info_fifo_wren;
-   reg			rx_axis_mac_tready;
    // End of automatics
    
    localparam [1:0] 		// synopsys enum state_info
@@ -114,7 +113,8 @@ module ifm_in_fsm (/*AUTOARG*/
 	    end
 	endcase
      end // always @ (*)
-   
+
+   assign rx_axis_mac_tready = 1'b1;
    always @(posedge rx_clk)
      begin
 	data_fifo_wren        <= #1 ((state == S_IDLE && rx_axis_mac_tvalid && ~data_fifo_afull) ||
@@ -124,9 +124,12 @@ module ifm_in_fsm (/*AUTOARG*/
 	data_fifo_wdata[72]   <= #1 rx_axis_mac_tlast;
 
 	info_fifo_wren        <= #1 (state == S_WAIT && rx_axis_mac_tvalid && rx_axis_mac_tlast);
-	info_fifo_wdata       <= #1 rx_axis_mac_tuser;
-     end
-   
+	info_fifo_wdata[0]    <= #1 rx_axis_mac_tuser;
+	info_fifo_wdata[7:1]  <= #1 0;
+     end // always @ (posedge rx_clk)
+
+   output [3:0] ifm_in_fsm_dbg;
+   assign ifm_in_fsm_dbg = state;
 endmodule
 // 
 // ifm_in_fsm.v ends here

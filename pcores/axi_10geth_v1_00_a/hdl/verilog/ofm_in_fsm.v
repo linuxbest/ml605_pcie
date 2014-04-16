@@ -197,6 +197,8 @@ module ofm_in_fsm (/*AUTOARG*/
 	data_fifo_wdata[72]    <= #1 txd_tlast;
      end
 
+   reg [3:0]   out_in_fsm_dbg;
+   assign out_in_fsm_dbg = state;
    /*AUTOASCIIENUM("state", "state_ascii", "S_")*/
    // Beginning of automatic ASCII enum decoding
    reg [31:0]		state_ascii;		// Decode of state
