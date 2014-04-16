@@ -83,7 +83,7 @@ module ofm_out_fsm (/*AUTOARG*/
      S_EOF  = 3'h3;
    reg [2:0] 	// synopsys enum state_info
 		state, state_ns;
-   always @(posedge tx_clk or tx_reset)
+   always @(posedge tx_clk or posedge tx_reset)
      begin
 	if (tx_reset)
 	  begin
