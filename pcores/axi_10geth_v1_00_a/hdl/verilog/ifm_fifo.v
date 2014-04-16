@@ -50,13 +50,12 @@ module ifm_fifo (/*AUTOARG*/
    rxd_tdata, rxd_tkeep, rxd_tlast, rxd_tvalid, good_fifo_afull,
    rxs_tdata, rxs_tkeep, rxs_tlast, rxs_tvalid, ctrl_fifo_afull,
    // Inputs
-   rx_clk, rx_reset, s2mm_clk, s2mm_resetn, data_fifo_wdata,
-   data_fifo_wren, data_fifo_rden, info_fifo_wdata, info_fifo_wren,
-   info_fifo_rden, rxd_tready, good_fifo_wdata, good_fifo_wren,
-   rxs_tready, ctrl_fifo_wdata, ctrl_fifo_wren
+   rx_clk, s2mm_clk, s2mm_resetn, data_fifo_wdata, data_fifo_wren,
+   data_fifo_rden, info_fifo_wdata, info_fifo_wren, info_fifo_rden,
+   rxd_tready, good_fifo_wdata, good_fifo_wren, rxs_tready,
+   ctrl_fifo_wdata, ctrl_fifo_wren
    );
    input rx_clk;
-   input rx_reset;
    input s2mm_clk;
    input s2mm_resetn;
 

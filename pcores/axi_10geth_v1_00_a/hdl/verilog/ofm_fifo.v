@@ -49,15 +49,13 @@ module ofm_fifo (/*AUTOARG*/
    ctrl_fifo_afull, ctrl_fifo_rdata, ctrl_fifo_empty, data_fifo_afull,
    data_fifo_rdata, data_fifo_empty,
    // Inputs
-   mm2s_clk, mm2s_resetn, tx_clk, tx_reset, ctrl_fifo_wdata,
-   ctrl_fifo_wren, ctrl_fifo_rden, data_fifo_wdata, data_fifo_wren,
-   data_fifo_rden
+   mm2s_clk, mm2s_resetn, tx_clk, ctrl_fifo_wdata, ctrl_fifo_wren,
+   ctrl_fifo_rden, data_fifo_wdata, data_fifo_wren, data_fifo_rden
    );
    input mm2s_clk;
    input mm2s_resetn;
 
    input tx_clk;
-   input tx_reset;
 
    input [63:0] ctrl_fifo_wdata;
    input 	ctrl_fifo_wren;
@@ -79,7 +77,7 @@ module ofm_fifo (/*AUTOARG*/
 	      .r_almost_empty(),
 	      .rinc          (ctrl_fifo_rden && ~ctrl_fifo_empty),
 	      .rclk          (tx_clk),
-	      .rrst_n        (~tx_reset));
+	      .rrst_n        (mm2s_resetn));
 
    input [72:0] data_fifo_wdata;
    input 	data_fifo_wren;

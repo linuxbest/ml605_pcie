@@ -70,8 +70,7 @@ module ifm_tb;
    reg 	      rx_clk;
    reg 	      s2mm_clk;
    reg 	      rx_reset;
-   wire       s2mm_resetn;
-   assign s2mm_resetn = ~rx_reset;
+   reg        s2mm_resetn;
 
    initial begin
       rx_clk = 1'b0;
@@ -83,7 +82,9 @@ module ifm_tb;
    end
    initial begin
       rx_reset = 1'b1;
+      s2mm_resetn = 1'b0;
       #(10000) rx_reset = ~rx_reset;
+      #(10000) s2mm_resetn = ~s2mm_resetn;      
    end
 
    task send_packet;
@@ -123,6 +124,17 @@ module ifm_tb;
       
       send_packet(0, 200);
       send_packet(1, 10);
+
+      @(posedge rx_clk);
+      @(posedge rx_clk);
+      s2mm_resetn = ~s2mm_resetn;
+      @(posedge rx_clk);
+      @(posedge rx_clk);
+      @(posedge rx_clk);
+      @(posedge rx_clk);
+      @(posedge rx_clk);
+      s2mm_resetn = ~s2mm_resetn;      
+      
       send_packet(0, 23);
       send_packet(1, 11);      
       send_packet(0, 30);
@@ -134,9 +146,13 @@ module ifm_tb;
       send_packet(0, 46);
       send_packet(1, 16);      
    end
-   
+
+   wire [31:0] ifm_in_fsm_dbg;
+   wire [31:0] ifm_out_fsm_dbg;
    axi_eth_ifm axi_eth_ifm (/*AUTOINST*/
 			    // Outputs
+			    .ifm_in_fsm_dbg	(ifm_in_fsm_dbg[3:0]),
+			    .ifm_out_fsm_dbg	(ifm_out_fsm_dbg[3:0]),
 			    .rx_axis_mac_tready	(rx_axis_mac_tready),
 			    .rxd_tdata		(rxd_tdata[63:0]),
 			    .rxd_tkeep		(rxd_tkeep[7:0]),
@@ -153,7 +169,6 @@ module ifm_tb;
 			    .rx_axis_mac_tuser	(rx_axis_mac_tuser),
 			    .rx_axis_mac_tvalid	(rx_axis_mac_tvalid),
 			    .rx_clk		(rx_clk),
-			    .rx_reset		(rx_reset),
 			    .rxd_tready		(rxd_tready),
 			    .rxs_tready		(rxs_tready),
 			    .s2mm_clk		(s2mm_clk),

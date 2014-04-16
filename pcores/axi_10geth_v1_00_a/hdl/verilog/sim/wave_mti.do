@@ -7,8 +7,8 @@ set ascopt {-literal -asc}
 
 eval add wave -noupdate -divider {"top"}
 eval add wave -noupdate $binopt $path${ps}s2mm_clk
+eval add wave -noupdate $binopt $path${ps}s2mm_resetn
 
-eval add wave -noupdate $binopt $path${ps}rx_reset
 eval add wave -noupdate $binopt $path${ps}rx_clk
 
 eval add wave -noupdate $binopt $path${ps}rx_axis_mac_tvalid
@@ -20,7 +20,7 @@ eval add wave -noupdate $binopt $path${ps}rx_axis_mac_tready
 
 eval add wave -noupdate -divider {"in fsm"}
 eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_in_fsm${ps}rx_clk
-eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_in_fsm${ps}rx_reset
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_in_fsm${ps}s2mm_resetn
 
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_in_fsm${ps}state
 

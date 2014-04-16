@@ -50,11 +50,11 @@ module ofm_out_fsm (/*AUTOARG*/
    tx_axis_mac_tkeep, tx_axis_mac_tvalid, tx_axis_mac_tlast,
    tx_axis_mac_tuser, ofm_out_fsm_dbg,
    // Inputs
-   tx_clk, tx_reset, ctrl_fifo_rdata, ctrl_fifo_empty,
+   tx_clk, mm2s_resetn, ctrl_fifo_rdata, ctrl_fifo_empty,
    data_fifo_rdata, data_fifo_empty, tx_axis_mac_tready
    );
    input tx_clk;
-   input tx_reset;
+   input mm2s_resetn;
    
    input [63:0] ctrl_fifo_rdata;
    input 	ctrl_fifo_empty;
@@ -72,9 +72,6 @@ module ofm_out_fsm (/*AUTOARG*/
    input 	 tx_axis_mac_tready;
 
    /*AUTOREG*/
-   // Beginning of automatic regs (for this module's undeclared outputs)
-   reg			ctrl_fifo_rden;
-   // End of automatics
 
    localparam [2:0] 		// synopsys enum state_info
      S_IDLE = 3'h0,
@@ -83,9 +80,9 @@ module ofm_out_fsm (/*AUTOARG*/
      S_EOF  = 3'h3;
    reg [2:0] 	// synopsys enum state_info
 		state, state_ns;
-   always @(posedge tx_clk or posedge tx_reset)
+   always @(posedge tx_clk or negedge mm2s_resetn)
      begin
-	if (tx_reset)
+	if (~mm2s_resetn)
 	  begin
 	     state <= #1 S_IDLE;
 	  end
@@ -93,7 +90,7 @@ module ofm_out_fsm (/*AUTOARG*/
 	  begin
 	     state <= #1 state_ns;
 	  end
-     end // always @ (posedge tx_clk or tx_reset)
+     end // always @ (posedge tx_clk or mm2s_resetn)
    always @(*)
      begin
 	state_ns = state;
@@ -126,17 +123,7 @@ module ofm_out_fsm (/*AUTOARG*/
    assign data_fifo_rden     = tx_axis_mac_tvalid && tx_axis_mac_tready;
    
    // ctrl fifo side
-   always @(posedge tx_clk or posedge tx_reset)
-     begin
-	if (tx_reset)
-	  begin
-	     ctrl_fifo_rden <= #1 1'b0;
-	  end
-	else
-	  begin
-	     ctrl_fifo_rden <= #1 state == S_EOF;
-	  end
-     end // always @ (posedge tx_clk or posedge tx_reset)
+   assign ctrl_fifo_rden     = state == S_EOF;
 
    output [3:0] ofm_out_fsm_dbg;
    assign ofm_out_fsm_dbg = state;

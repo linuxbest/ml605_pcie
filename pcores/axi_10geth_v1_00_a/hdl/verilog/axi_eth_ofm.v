@@ -51,8 +51,8 @@ module axi_eth_ofm (/*AUTOARG*/
    ofm_out_fsm_dbg, ofm_in_fsm_dbg,
    // Inputs
    txd_tvalid, txd_tlast, txd_tkeep, txd_tdata, txc_tvalid, txc_tlast,
-   txc_tkeep, txc_tdata, tx_reset, tx_clk, tx_axis_mac_tready,
-   mm2s_resetn, mm2s_clk
+   txc_tkeep, txc_tdata, tx_clk, tx_axis_mac_tready, mm2s_resetn,
+   mm2s_clk
    );
    /*AUTOINPUT*/
    // Beginning of automatic inputs (from unused autoinst inputs)
@@ -60,7 +60,6 @@ module axi_eth_ofm (/*AUTOARG*/
    input		mm2s_resetn;		// To ofm_in_fsm of ofm_in_fsm.v, ...
    input		tx_axis_mac_tready;	// To ofm_out_fsm of ofm_out_fsm.v
    input		tx_clk;			// To ofm_fifo of ofm_fifo.v, ...
-   input		tx_reset;		// To ofm_fifo of ofm_fifo.v, ...
    input [31:0]		txc_tdata;		// To ofm_in_fsm of ofm_in_fsm.v
    input [3:0]		txc_tkeep;		// To ofm_in_fsm of ofm_in_fsm.v
    input		txc_tlast;		// To ofm_in_fsm of ofm_in_fsm.v
@@ -133,7 +132,6 @@ module axi_eth_ofm (/*AUTOARG*/
 			   .mm2s_clk		(mm2s_clk),
 			   .mm2s_resetn		(mm2s_resetn),
 			   .tx_clk		(tx_clk),
-			   .tx_reset		(tx_reset),
 			   .ctrl_fifo_wdata	(ctrl_fifo_wdata[63:0]),
 			   .ctrl_fifo_wren	(ctrl_fifo_wren),
 			   .ctrl_fifo_rden	(ctrl_fifo_rden),
@@ -152,7 +150,7 @@ module axi_eth_ofm (/*AUTOARG*/
 			   .ofm_out_fsm_dbg	(ofm_out_fsm_dbg[3:0]),
 			   // Inputs
 			   .tx_clk		(tx_clk),
-			   .tx_reset		(tx_reset),
+			   .mm2s_resetn		(mm2s_resetn),
 			   .ctrl_fifo_rdata	(ctrl_fifo_rdata[63:0]),
 			   .ctrl_fifo_empty	(ctrl_fifo_empty),
 			   .data_fifo_rdata	(data_fifo_rdata[72:0]),

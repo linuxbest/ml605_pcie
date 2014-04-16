@@ -50,7 +50,7 @@ module axi_eth_ifm (/*AUTOARG*/
    rxd_tkeep, rxd_tdata, rx_axis_mac_tready, ifm_out_fsm_dbg,
    ifm_in_fsm_dbg,
    // Inputs
-   s2mm_resetn, s2mm_clk, rxs_tready, rxd_tready, rx_reset, rx_clk,
+   s2mm_resetn, s2mm_clk, rxs_tready, rxd_tready, rx_clk,
    rx_axis_mac_tvalid, rx_axis_mac_tuser, rx_axis_mac_tlast,
    rx_axis_mac_tkeep, rx_axis_mac_tdata
    );
@@ -62,11 +62,10 @@ module axi_eth_ifm (/*AUTOARG*/
    input		rx_axis_mac_tuser;	// To ifm_in_fsm of ifm_in_fsm.v
    input		rx_axis_mac_tvalid;	// To ifm_in_fsm of ifm_in_fsm.v
    input		rx_clk;			// To ifm_in_fsm of ifm_in_fsm.v, ...
-   input		rx_reset;		// To ifm_in_fsm of ifm_in_fsm.v, ...
    input		rxd_tready;		// To ifm_fifo of ifm_fifo.v
    input		rxs_tready;		// To ifm_fifo of ifm_fifo.v
    input		s2mm_clk;		// To ifm_out_fsm of ifm_out_fsm.v, ...
-   input		s2mm_resetn;		// To ifm_out_fsm of ifm_out_fsm.v, ...
+   input		s2mm_resetn;		// To ifm_in_fsm of ifm_in_fsm.v, ...
    // End of automatics
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
@@ -113,7 +112,7 @@ module axi_eth_ifm (/*AUTOARG*/
 			     .ifm_in_fsm_dbg	(ifm_in_fsm_dbg[3:0]),
 			     // Inputs
 			     .rx_clk		(rx_clk),
-			     .rx_reset		(rx_reset),
+			     .s2mm_resetn	(s2mm_resetn),
 			     .rx_axis_mac_tdata	(rx_axis_mac_tdata[63:0]),
 			     .rx_axis_mac_tkeep	(rx_axis_mac_tkeep[7:0]),
 			     .rx_axis_mac_tlast	(rx_axis_mac_tlast),
@@ -156,7 +155,6 @@ module axi_eth_ifm (/*AUTOARG*/
 		      .ctrl_fifo_afull	(ctrl_fifo_afull),
 		      // Inputs
 		      .rx_clk		(rx_clk),
-		      .rx_reset		(rx_reset),
 		      .s2mm_clk		(s2mm_clk),
 		      .s2mm_resetn	(s2mm_resetn),
 		      .data_fifo_wdata	(data_fifo_wdata[72:0]),

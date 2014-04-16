@@ -70,7 +70,7 @@ module ofm_tb;
    reg 	      tx_clk;
    reg 	      mm2s_clk;
    reg 	      tx_reset;
-   wire       mm2s_resetn;
+   reg        mm2s_resetn;
    
    initial begin
       tx_clk = 1'b0;
@@ -82,9 +82,10 @@ module ofm_tb;
    end
    initial begin
       tx_reset = 1'b1;
+      mm2s_resetn = 1'b0;
       #(10000) tx_reset = ~tx_reset;
+      #(10000) mm2s_resetn = ~mm2s_resetn;
    end
-   assign mm2s_resetn = ~tx_reset;
 
    reg [72:0] data_fifo_wdata;
    reg 	      data_fifo_wren;
@@ -155,13 +156,37 @@ module ofm_tb;
       @(posedge tx_clk);
       
       send_packet(32);
+      cnt = 0;
+      while (cnt != 50)
+      begin
+	 @(posedge tx_clk);
+	 cnt = cnt + 1;
+      end
+      
+      mm2s_resetn = ~mm2s_resetn;
+      @(posedge tx_clk);
+      @(posedge tx_clk);
+      @(posedge tx_clk);
+      @(posedge tx_clk);
+      mm2s_resetn = ~mm2s_resetn;
+      @(posedge tx_clk);
+      @(posedge tx_clk);
+      @(posedge tx_clk);
+      @(posedge tx_clk);
+
       send_packet(33);
-      send_packet(34);      
+      send_packet(34); 
+      send_packet(34); 
    end
   
    wire [31:0] ofm_in_fsm_dbg;
+   wire [31:0] ofm_out_fsm_dbg;
+   wire [31:0] ifm_in_fsm_dbg;
+   wire [31:0] ifm_out_fsm_dbg;
    axi_eth_ofm axi_eth_ofm (/*AUTOINST*/
 			    // Outputs
+			    .ofm_in_fsm_dbg	(ofm_in_fsm_dbg[3:0]),
+			    .ofm_out_fsm_dbg	(ofm_out_fsm_dbg[3:0]),
 			    .tx_axis_mac_tdata	(tx_axis_mac_tdata[63:0]),
 			    .tx_axis_mac_tkeep	(tx_axis_mac_tkeep[7:0]),
 			    .tx_axis_mac_tlast	(tx_axis_mac_tlast),
@@ -174,7 +199,6 @@ module ofm_tb;
 			    .mm2s_resetn	(mm2s_resetn),
 			    .tx_axis_mac_tready	(tx_axis_mac_tready),
 			    .tx_clk		(tx_clk),
-			    .tx_reset		(tx_reset),
 			    .txc_tdata		(txc_tdata[31:0]),
 			    .txc_tkeep		(txc_tkeep[3:0]),
 			    .txc_tlast		(txc_tlast),

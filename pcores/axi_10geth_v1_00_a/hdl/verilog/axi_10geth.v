@@ -53,10 +53,10 @@ module axi_10geth (/*AUTOARG*/
    ofm_in_fsm_dbg, ifm_out_fsm_dbg, ifm_in_fsm_dbg,
    // Inputs
    txd_tvalid, txd_tlast, txd_tkeep, txd_tdata, txc_tvalid, txc_tlast,
-   txc_tkeep, txc_tdata, tx_reset, tx_clk, tx_axis_mac_tready,
-   s2mm_resetn, s2mm_clk, rxs_tready, rxd_tready, rx_reset, rx_clk,
-   rx_axis_mac_tvalid, rx_axis_mac_tuser, rx_axis_mac_tlast,
-   rx_axis_mac_tkeep, rx_axis_mac_tdata, mm2s_resetn, mm2s_clk
+   txc_tkeep, txc_tdata, tx_clk, tx_axis_mac_tready, s2mm_resetn,
+   s2mm_clk, rxs_tready, rxd_tready, rx_clk, rx_axis_mac_tvalid,
+   rx_axis_mac_tuser, rx_axis_mac_tlast, rx_axis_mac_tkeep,
+   rx_axis_mac_tdata, mm2s_resetn, mm2s_clk
    );
    parameter C_FAMILY = "";
    parameter C_DBG_PORT = "";
@@ -71,14 +71,12 @@ module axi_10geth (/*AUTOARG*/
    input		rx_axis_mac_tuser;	// To axi_eth_ifm of axi_eth_ifm.v
    input		rx_axis_mac_tvalid;	// To axi_eth_ifm of axi_eth_ifm.v
    input		rx_clk;			// To axi_eth_ifm of axi_eth_ifm.v
-   input		rx_reset;		// To axi_eth_ifm of axi_eth_ifm.v
    input		rxd_tready;		// To axi_eth_ifm of axi_eth_ifm.v
    input		rxs_tready;		// To axi_eth_ifm of axi_eth_ifm.v
    input		s2mm_clk;		// To axi_eth_ifm of axi_eth_ifm.v
    input		s2mm_resetn;		// To axi_eth_ifm of axi_eth_ifm.v
    input		tx_axis_mac_tready;	// To axi_eth_ofm of axi_eth_ofm.v
    input		tx_clk;			// To axi_eth_ofm of axi_eth_ofm.v
-   input		tx_reset;		// To axi_eth_ofm of axi_eth_ofm.v
    input [31:0]		txc_tdata;		// To axi_eth_ofm of axi_eth_ofm.v
    input [3:0]		txc_tkeep;		// To axi_eth_ofm of axi_eth_ofm.v
    input		txc_tlast;		// To axi_eth_ofm of axi_eth_ofm.v
@@ -132,7 +130,6 @@ module axi_10geth (/*AUTOARG*/
 			    .rx_axis_mac_tuser	(rx_axis_mac_tuser),
 			    .rx_axis_mac_tvalid	(rx_axis_mac_tvalid),
 			    .rx_clk		(rx_clk),
-			    .rx_reset		(rx_reset),
 			    .rxd_tready		(rxd_tready),
 			    .rxs_tready		(rxs_tready),
 			    .s2mm_clk		(s2mm_clk),
@@ -153,7 +150,6 @@ module axi_10geth (/*AUTOARG*/
 			    .mm2s_resetn	(mm2s_resetn),
 			    .tx_axis_mac_tready	(tx_axis_mac_tready),
 			    .tx_clk		(tx_clk),
-			    .tx_reset		(tx_reset),
 			    .txc_tdata		(txc_tdata[31:0]),
 			    .txc_tkeep		(txc_tkeep[3:0]),
 			    .txc_tlast		(txc_tlast),
