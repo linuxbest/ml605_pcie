@@ -14,4 +14,4 @@ vsim -L unisims_ver -L secureip -t ps work.ofm_tb -novopt
 
 do wave_ofm.do
 
-run 1us
+run 5us

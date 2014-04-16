@@ -126,7 +126,7 @@ module ofm_in_fsm (/*AUTOARG*/
 	    end
 	  S_DATA: if (txd_tvalid && txd_tlast)
 	    begin
-	       state_ns = S_CTRL;
+	       state_ns = S_IDLE;
 	    end
 	endcase
      end // always @ (*)
@@ -166,7 +166,7 @@ module ofm_in_fsm (/*AUTOARG*/
 	       3'h1: TxCsCntrl <= #1 txc_tdata[1:0];
 	       3'h2: begin 
 		  TxCsBegin <= #1 txc_tdata[31:16]; 
-		  TxCsInit  <= #1 txc_tdata[15:0];
+		  TxCsInsert<= #1 txc_tdata[15:0];
 	       end
 	       3'h3: TxCsInit  <= #1 txc_tdata[15:0];
 	     endcase
@@ -176,7 +176,7 @@ module ofm_in_fsm (/*AUTOARG*/
    // ctrl fifo write port
    always @(posedge mm2s_clk)
      begin
-	ctrl_fifo_wren         <= #1 txc_tready && txc_tvalid && txc_tlast;
+	ctrl_fifo_wren         <= #1 state == S_DATA && txd_tvalid && txd_tlast;
 	ctrl_fifo_wdata[15:0]  <= #1 TxCsBegin;
 	ctrl_fifo_wdata[31:16] <= #1 TxCsInsert;
 	ctrl_fifo_wdata[47:32] <= #1 TxCsInsert;

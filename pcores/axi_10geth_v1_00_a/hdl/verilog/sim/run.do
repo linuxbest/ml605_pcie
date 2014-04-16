@@ -15,4 +15,4 @@ vsim -L unisims_ver -L secureip -t ps work.ifm_tb -novopt
 
 do wave_mti.do
 
-run 1us
+run 5us

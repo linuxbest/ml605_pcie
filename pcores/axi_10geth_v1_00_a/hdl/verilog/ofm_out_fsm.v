@@ -121,7 +121,7 @@ module ofm_out_fsm (/*AUTOARG*/
    assign tx_axis_mac_tdata  =  data_fifo_rdata[63:0];
    assign tx_axis_mac_tkeep  =  data_fifo_rdata[71:64];
    assign tx_axis_mac_tlast  =  data_fifo_rdata[72];
-   assign tx_axis_mac_tvalid = ~data_fifo_empty;
+   assign tx_axis_mac_tvalid = ~data_fifo_empty && ~ctrl_fifo_empty;
    assign tx_axis_mac_tuser  = 1'b0;
    assign data_fifo_rden     = tx_axis_mac_tvalid && tx_axis_mac_tready;
    
