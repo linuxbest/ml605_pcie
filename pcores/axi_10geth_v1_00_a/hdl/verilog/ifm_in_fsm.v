@@ -115,15 +115,25 @@ module ifm_in_fsm (/*AUTOARG*/
      end // always @ (*)
 
    assign rx_axis_mac_tready = 1'b1;
+   always @(posedge rx_clk or posedge rx_reset)
+     begin
+	if (rx_reset)
+	  begin
+	     data_fifo_wren <= #1 1'b0;
+	     info_fifo_wren <= #1 1'b0;
+	  end
+	else
+	  begin
+	     data_fifo_wren <= #1 ((state == S_IDLE && rx_axis_mac_tvalid && ~data_fifo_afull) ||
+				   (state == S_WAIT && rx_axis_mac_tvalid));
+	     info_fifo_wren        <= #1 (state == S_WAIT && rx_axis_mac_tvalid && rx_axis_mac_tlast);	     
+	  end
+     end // always @ (posedge rx_clk or posedge rx_reset)
    always @(posedge rx_clk)
      begin
-	data_fifo_wren        <= #1 ((state == S_IDLE && rx_axis_mac_tvalid && ~data_fifo_afull) ||
-				     (state == S_WAIT && rx_axis_mac_tvalid));
 	data_fifo_wdata[63:0] <= #1 rx_axis_mac_tdata[63:0];
 	data_fifo_wdata[71:64]<= #1 rx_axis_mac_tkeep[7:0];
 	data_fifo_wdata[72]   <= #1 rx_axis_mac_tlast;
-
-	info_fifo_wren        <= #1 (state == S_WAIT && rx_axis_mac_tvalid && rx_axis_mac_tlast);
 	info_fifo_wdata[0]    <= #1 rx_axis_mac_tuser;
 	info_fifo_wdata[7:1]  <= #1 0;
      end // always @ (posedge rx_clk)
