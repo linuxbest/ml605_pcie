@@ -140,12 +140,9 @@ module ifm_out_fsm (/*AUTOARG*/
 	info_fifo_rden <= #1 (state == S_DROP && data_fifo_rdata[72]) ||
 			  (state == S_WAIT && data_fifo_rdata[72]);
 	good_fifo_wdata<= #1 data_fifo_rdata;
-	good_fifo_wren <= #1 ((state == S_IDLE && ready_sof && ~info_fifo_rdata[7]) ||
-			      (state == S_WAIT));
+	good_fifo_wren <= #1 state == S_WAIT;
      end
-   assign data_fifo_rden = (state == S_IDLE && ready_sof) ||
-			   (state == S_WAIT) ||
-			   (state == S_DROP);
+   assign data_fifo_rden = (state == S_WAIT) || (state == S_DROP);
 
    always @(posedge s2mm_clk)
      begin
