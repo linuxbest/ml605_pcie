@@ -11,4 +11,7 @@ lib axi_10geth_v1_00_a  ofm_out_fsm.v verilog
 
 lib axi_10geth_v1_00_a  axi_10geth.v verilog
 
+lib axi_10geth_v1_00_a  icon4.v verilog
+lib axi_10geth_v1_00_a  ila_128x1.v verilog
+
 lib axi_10geth_v1_00_a  axi_async_fifo.vhd vhdl
