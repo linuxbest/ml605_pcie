@@ -114,7 +114,7 @@ module ifm_out_fsm (/*AUTOARG*/
 	    end
 	  S_WAIT: if (data_fifo_rdata[72])
 	    begin
-	       state_ns = S_EOF;	       
+	       state_ns = S_EOF;
 	    end
 	  S_EOF: if (wcnt == 5)
 	    begin
@@ -126,7 +126,7 @@ module ifm_out_fsm (/*AUTOARG*/
 	    end
 	endcase
      end // always @ (*)
-   
+ 
    reg [7:0] info_fifo_reg;
    always @(posedge s2mm_clk)
      begin
@@ -230,7 +230,8 @@ module ifm_out_fsm (/*AUTOARG*/
      end // always @ (posedge s2mm_clk)
 
    output [3:0] ifm_out_fsm_dbg;
-   assign ifm_out_fsm_dbg = state;
+   assign ifm_out_fsm_dbg[2:0] = state;
+   assign ifm_out_fsm_dbg[3]   = good_fifo_afull;
 endmodule
 // 
 // ifm_out_fsm.v ends here
