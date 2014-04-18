@@ -29,7 +29,6 @@ eval add wave -noupdate $hexopt $ethpath${ps}txc_tdata
 eval add wave -noupdate $hexopt $ethpath${ps}txc_tkeep
 
 eval add wave -noupdate $binopt $ethpath${ps}tx_clk
-eval add wave -noupdate $binopt $ethpath${ps}tx_reset
 
 eval add wave -noupdate $binopt $ethpath${ps}tx_axis_mac_tready
 eval add wave -noupdate $binopt $ethpath${ps}tx_axis_mac_tvalid
@@ -56,7 +55,6 @@ eval add wave -noupdate $hexopt $ethpath${ps}rxs_tdata
 eval add wave -noupdate $hexopt $ethpath${ps}rxs_tkeep
 
 eval add wave -noupdate $binopt $ethpath${ps}rx_clk
-eval add wave -noupdate $binopt $ethpath${ps}rx_reset
 
 eval add wave -noupdate $binopt $ethpath${ps}rx_axis_mac_tready
 eval add wave -noupdate $binopt $ethpath${ps}rx_axis_mac_tvalid

@@ -47,11 +47,12 @@
 module ofm_in_fsm (/*AUTOARG*/
    // Outputs
    txd_tready, txc_tready, ctrl_fifo_wdata, ctrl_fifo_wren,
-   data_fifo_wdata, data_fifo_wren, ofm_in_fsm_dbg,
+   data_fifo_wdata, data_fifo_wren, TxCsBegin, TxCsInsert, TxCsInit,
+   ofm_in_fsm_dbg,
    // Inputs
    mm2s_clk, mm2s_resetn, txd_tdata, txd_tkeep, txd_tvalid, txd_tlast,
    txc_tdata, txc_tkeep, txc_tvalid, txc_tlast, ctrl_fifo_afull,
-   data_fifo_afull
+   data_fifo_afull, TxSum
    );
    input mm2s_clk;
    input mm2s_resetn;
@@ -69,16 +70,21 @@ module ofm_in_fsm (/*AUTOARG*/
    output 	txc_tready;
 
    input 	ctrl_fifo_afull;
-   output [63:0] ctrl_fifo_wdata;
+   output [33:0] ctrl_fifo_wdata;
    output 	 ctrl_fifo_wren;
    
    input 	data_fifo_afull;
    output [72:0] data_fifo_wdata;
    output 	 data_fifo_wren;
+
+   input [15:0]  TxSum;
+   output [15:0] TxCsBegin;
+   output [15:0] TxCsInsert;
+   output [15:0] TxCsInit;
    
    /*AUTOREG*/
    // Beginning of automatic regs (for this module's undeclared outputs)
-   reg [63:0]		ctrl_fifo_wdata;
+   reg [33:0]		ctrl_fifo_wdata;
    reg			ctrl_fifo_wren;
    reg [72:0]		data_fifo_wdata;
    reg			data_fifo_wren;
@@ -147,27 +153,30 @@ module ofm_in_fsm (/*AUTOARG*/
 	ctrl_fifo_afull_reg <= #1 ctrl_fifo_afull;
      end
    assign txc_tready = state == S_CTRL;
-		       
+
+   // Only support Paritial transmit checksum offloading
+   // 1) TxCsCntrl must be 2'b00 or 2'b01
+   // 2) TxCsBegin  >= 14
+   // 3) TxCsInsert >   8
+   reg [3:0]  TxFlag;
    reg [15:0] TxCsBegin;
    reg [15:0] TxCsInsert;
    reg [15:0] TxCsInit;
    reg [1:0]  TxCsCntrl;
-   reg [3:0]  TxFlag;
    always @(posedge mm2s_clk)
      begin
 	if (txc_tready && txc_tvalid)
 	  begin
 	     case (tcnt)
 	       3'h0: begin
-		  TxFlag    <= #1 txc_tdata[31:28]; 
-		  tx_ok     <= #1 txc_tdata[31:28] == 4'b1000;
+		  TxFlag      <= #1 txc_tdata[31:28]; 
 	       end
-	       3'h1: TxCsCntrl <= #1 txc_tdata[1:0];
+	       3'h1: TxCsCntrl<= #1 txc_tdata[1:0];
 	       3'h2: begin 
-		  TxCsBegin <= #1 txc_tdata[31:16]; 
-		  TxCsInsert<= #1 txc_tdata[15:0];
+		  TxCsBegin   <= #1 txc_tdata[31:16]; 
+		  TxCsInsert  <= #1 txc_tdata[15:0];
 	       end
-	       3'h3: TxCsInit  <= #1 txc_tdata[15:0];
+	       3'h3: TxCsInit <= #1 txc_tdata[15:0];
 	     endcase
 	  end
      end // always @ (posedge mm2s_clk)
@@ -185,14 +194,14 @@ module ofm_in_fsm (/*AUTOARG*/
 	     data_fifo_wren <= #1 txd_tready && txd_tvalid;
 	  end
      end // always @ (posedge mm2s_clk)
-   // ctrl fifo write port
+
+   // we caculate the CheckSum in mm2s clock domain,
+   // insert the TxSum into stream in tx clock domain.
    always @(posedge mm2s_clk)
      begin
-	ctrl_fifo_wdata[15:0]  <= #1 TxCsBegin;
+	ctrl_fifo_wdata[15:0]  <= #1 TxSum;
 	ctrl_fifo_wdata[31:16] <= #1 TxCsInsert;
-	ctrl_fifo_wdata[47:32] <= #1 TxCsInsert;
-	ctrl_fifo_wdata[49:48] <= #1 TxCsCntrl;
-	ctrl_fifo_wdata[63:50] <= #1 0;
+	ctrl_fifo_wdata[33:32] <= #1 TxFlag;
      end
    
    always @(posedge mm2s_clk)

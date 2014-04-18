@@ -56,7 +56,7 @@ module ofm_out_fsm (/*AUTOARG*/
    input tx_clk;
    input mm2s_resetn;
    
-   input [63:0] ctrl_fifo_rdata;
+   input [33:0] ctrl_fifo_rdata;
    input 	ctrl_fifo_empty;
    output 	ctrl_fifo_rden;
    

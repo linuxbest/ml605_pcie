@@ -6,6 +6,9 @@ vlog -work work ../axi_eth_ofm.v
 vlog -work work ../ofm_in_fsm.v
 vlog -work work ../ofm_out_fsm.v
 vlog -work work ../ofm_fifo.v
+vlog -work work ../ofm_csum.v
+vlog -work work ../keep_to_cnt.v
+vlog -work work ../cnt_to_keep.v
 vlog -work work ../small_async_fifo.v
 vlog -work work ../afifo73_512.v
 vlog -work work ../fifo73_512.v

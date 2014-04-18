@@ -84,11 +84,15 @@ module axi_eth_ofm (/*AUTOARG*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   wire [15:0]		TxCsBegin;		// From ofm_in_fsm of ofm_in_fsm.v
+   wire [15:0]		TxCsInit;		// From ofm_in_fsm of ofm_in_fsm.v
+   wire [15:0]		TxCsInsert;		// From ofm_in_fsm of ofm_in_fsm.v
+   wire [15:0]		TxSum;			// From ofm_csum of ofm_csum.v
    wire			ctrl_fifo_afull;	// From ofm_fifo of ofm_fifo.v
    wire			ctrl_fifo_empty;	// From ofm_fifo of ofm_fifo.v
-   wire [63:0]		ctrl_fifo_rdata;	// From ofm_fifo of ofm_fifo.v
+   wire [33:0]		ctrl_fifo_rdata;	// From ofm_fifo of ofm_fifo.v
    wire			ctrl_fifo_rden;		// From ofm_out_fsm of ofm_out_fsm.v
-   wire [63:0]		ctrl_fifo_wdata;	// From ofm_in_fsm of ofm_in_fsm.v
+   wire [33:0]		ctrl_fifo_wdata;	// From ofm_in_fsm of ofm_in_fsm.v
    wire			ctrl_fifo_wren;		// From ofm_in_fsm of ofm_in_fsm.v
    wire			data_fifo_afull;	// From ofm_fifo of ofm_fifo.v
    wire			data_fifo_empty;	// From ofm_fifo of ofm_fifo.v
@@ -98,46 +102,61 @@ module axi_eth_ofm (/*AUTOARG*/
    wire			data_fifo_wren;		// From ofm_in_fsm of ofm_in_fsm.v
    // End of automatics
    
-   ofm_in_fsm  ofm_in_fsm (/*AUTOINST*/
-			   // Outputs
-			   .txd_tready		(txd_tready),
-			   .txc_tready		(txc_tready),
-			   .ctrl_fifo_wdata	(ctrl_fifo_wdata[63:0]),
-			   .ctrl_fifo_wren	(ctrl_fifo_wren),
-			   .data_fifo_wdata	(data_fifo_wdata[72:0]),
-			   .data_fifo_wren	(data_fifo_wren),
-			   .ofm_in_fsm_dbg	(ofm_in_fsm_dbg[3:0]),
-			   // Inputs
-			   .mm2s_clk		(mm2s_clk),
-			   .mm2s_resetn		(mm2s_resetn),
-			   .txd_tdata		(txd_tdata[63:0]),
-			   .txd_tkeep		(txd_tkeep[7:0]),
-			   .txd_tvalid		(txd_tvalid),
-			   .txd_tlast		(txd_tlast),
-			   .txc_tdata		(txc_tdata[31:0]),
-			   .txc_tkeep		(txc_tkeep[3:0]),
-			   .txc_tvalid		(txc_tvalid),
-			   .txc_tlast		(txc_tlast),
-			   .ctrl_fifo_afull	(ctrl_fifo_afull),
-			   .data_fifo_afull	(data_fifo_afull));
-   ofm_fifo    ofm_fifo   (/*AUTOINST*/
-			   // Outputs
-			   .ctrl_fifo_afull	(ctrl_fifo_afull),
-			   .ctrl_fifo_rdata	(ctrl_fifo_rdata[63:0]),
-			   .ctrl_fifo_empty	(ctrl_fifo_empty),
-			   .data_fifo_afull	(data_fifo_afull),
-			   .data_fifo_rdata	(data_fifo_rdata[72:0]),
-			   .data_fifo_empty	(data_fifo_empty),
-			   // Inputs
-			   .mm2s_clk		(mm2s_clk),
-			   .mm2s_resetn		(mm2s_resetn),
-			   .tx_clk		(tx_clk),
-			   .ctrl_fifo_wdata	(ctrl_fifo_wdata[63:0]),
-			   .ctrl_fifo_wren	(ctrl_fifo_wren),
-			   .ctrl_fifo_rden	(ctrl_fifo_rden),
-			   .data_fifo_wdata	(data_fifo_wdata[72:0]),
-			   .data_fifo_wren	(data_fifo_wren),
-			   .data_fifo_rden	(data_fifo_rden));
+   ofm_in_fsm ofm_in_fsm (/*AUTOINST*/
+			  // Outputs
+			  .txd_tready		(txd_tready),
+			  .txc_tready		(txc_tready),
+			  .ctrl_fifo_wdata	(ctrl_fifo_wdata[33:0]),
+			  .ctrl_fifo_wren	(ctrl_fifo_wren),
+			  .data_fifo_wdata	(data_fifo_wdata[72:0]),
+			  .data_fifo_wren	(data_fifo_wren),
+			  .TxCsBegin		(TxCsBegin[15:0]),
+			  .TxCsInsert		(TxCsInsert[15:0]),
+			  .TxCsInit		(TxCsInit[15:0]),
+			  .ofm_in_fsm_dbg	(ofm_in_fsm_dbg[3:0]),
+			  // Inputs
+			  .mm2s_clk		(mm2s_clk),
+			  .mm2s_resetn		(mm2s_resetn),
+			  .txd_tdata		(txd_tdata[63:0]),
+			  .txd_tkeep		(txd_tkeep[7:0]),
+			  .txd_tvalid		(txd_tvalid),
+			  .txd_tlast		(txd_tlast),
+			  .txc_tdata		(txc_tdata[31:0]),
+			  .txc_tkeep		(txc_tkeep[3:0]),
+			  .txc_tvalid		(txc_tvalid),
+			  .txc_tlast		(txc_tlast),
+			  .ctrl_fifo_afull	(ctrl_fifo_afull),
+			  .data_fifo_afull	(data_fifo_afull),
+			  .TxSum		(TxSum[15:0]));
+   ofm_csum ofm_csum (/*AUTOINST*/
+		      // Outputs
+		      .TxSum		(TxSum[15:0]),
+		      // Inputs
+		      .mm2s_clk		(mm2s_clk),
+		      .mm2s_resetn	(mm2s_resetn),
+		      .data_fifo_wren	(data_fifo_wren),
+		      .data_fifo_wdata	(data_fifo_wdata[72:0]),
+		      .TxCsBegin	(TxCsBegin[15:0]),
+		      .TxCsInit		(TxCsInit[15:0]),
+		      .TxCsInsert	(TxCsInsert[15:0]));
+   ofm_fifo ofm_fifo   (/*AUTOINST*/
+			// Outputs
+			.ctrl_fifo_afull(ctrl_fifo_afull),
+			.ctrl_fifo_rdata(ctrl_fifo_rdata[33:0]),
+			.ctrl_fifo_empty(ctrl_fifo_empty),
+			.data_fifo_afull(data_fifo_afull),
+			.data_fifo_rdata(data_fifo_rdata[72:0]),
+			.data_fifo_empty(data_fifo_empty),
+			// Inputs
+			.mm2s_clk	(mm2s_clk),
+			.mm2s_resetn	(mm2s_resetn),
+			.tx_clk		(tx_clk),
+			.ctrl_fifo_wdata(ctrl_fifo_wdata[33:0]),
+			.ctrl_fifo_wren	(ctrl_fifo_wren),
+			.ctrl_fifo_rden	(ctrl_fifo_rden),
+			.data_fifo_wdata(data_fifo_wdata[72:0]),
+			.data_fifo_wren	(data_fifo_wren),
+			.data_fifo_rden	(data_fifo_rden));
    ofm_out_fsm ofm_out_fsm(/*AUTOINST*/
 			   // Outputs
 			   .ctrl_fifo_rden	(ctrl_fifo_rden),
@@ -151,7 +170,7 @@ module axi_eth_ofm (/*AUTOARG*/
 			   // Inputs
 			   .tx_clk		(tx_clk),
 			   .mm2s_resetn		(mm2s_resetn),
-			   .ctrl_fifo_rdata	(ctrl_fifo_rdata[63:0]),
+			   .ctrl_fifo_rdata	(ctrl_fifo_rdata[33:0]),
 			   .ctrl_fifo_empty	(ctrl_fifo_empty),
 			   .data_fifo_rdata	(data_fifo_rdata[72:0]),
 			   .data_fifo_empty	(data_fifo_empty),

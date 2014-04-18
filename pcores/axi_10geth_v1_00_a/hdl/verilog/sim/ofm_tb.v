@@ -95,15 +95,19 @@ module ofm_tb;
    reg 	      ctrl_fifo_wren;
    wire       ctrl_fifo_afull;
 
-   reg [31:0]  cnt;
+   reg [15:0]  cnt;
    task send_packet;
-      input [31:0] num;
+      input [1:0]  CsCntrl;
+      input [15:0] CsBegin;
+      input [15:0] CsInsert;
+      input [15:0] CsInit;
+      input [15:0] num;
       begin
 	 ctrl_fifo_wren  = 0;
 	 ctrl_fifo_wdata = 0;
 	 data_fifo_wren  = 0;
 	 data_fifo_wdata = 0;
-	 while (ctrl_fifo_afull && data_fifo_afull)
+ 	 while (ctrl_fifo_afull && data_fifo_afull)
 	   @(posedge tx_clk);
 
 	 cnt = 0;
@@ -114,24 +118,33 @@ module ofm_tb;
 	      ctrl_fifo_wdata[35:32] = cnt;
 	      case (cnt)
 		0: ctrl_fifo_wdata[31:28] = 4'ha;
-		1: ctrl_fifo_wdata[1:0]   = 2'b00;
+		1: ctrl_fifo_wdata[1:0]   = CsCntrl;
 		2: begin 
-		   ctrl_fifo_wdata[15:0]  = 16'h1; ctrl_fifo_wdata[31:16] = 16'h2;
+		   ctrl_fifo_wdata[15:0]  = CsInsert; 
+		   ctrl_fifo_wdata[31:16] = CsBegin;
 		end
-		3: ctrl_fifo_wdata[15:0]  = 16'h3;
-		5: ctrl_fifo_wdata[36]    = 1'b1;
+		3: ctrl_fifo_wdata[15:0]  = CsInit;
+		5: ctrl_fifo_wdata[36]    = 1'b1; // EOF
 	      endcase
 	      cnt = cnt + 1;
 	      @(posedge mm2s_clk);
 	   end // while (cnt != 5)
 	 
 	 ctrl_fifo_wren  = 0;
-	 ctrl_fifo_wdata = 0;	 
+	 ctrl_fifo_wdata = 0;
 	 cnt = 0;
 	 while (cnt != num)
 	   begin
 	      data_fifo_wren  = 1;
-	      data_fifo_wdata = data_fifo_wdata + 1;
+	      data_fifo_wdata[7:0]   = cnt*8;
+	      data_fifo_wdata[15:8]  = cnt*8 + 1;
+	      data_fifo_wdata[23:16] = cnt*8 + 2;
+	      data_fifo_wdata[31:24] = cnt*8 + 3;
+	      data_fifo_wdata[39:32] = cnt*8 + 4;
+	      data_fifo_wdata[47:40] = cnt*8 + 5;
+	      data_fifo_wdata[55:48] = cnt*8 + 6;
+	      data_fifo_wdata[63:56] = cnt*8 + 7;
+	      data_fifo_wdata[71:64] = 8'b0011_1111;
 	      cnt = cnt + 1;
 	      data_fifo_wdata[72] = cnt == num;
 	      @(posedge mm2s_clk);
@@ -155,7 +168,7 @@ module ofm_tb;
       @(posedge tx_clk);
       @(posedge tx_clk);
       
-      send_packet(32);
+      send_packet(0, 0, 0, 0, 32);
       cnt = 0;
       while (cnt != 50)
       begin
@@ -174,9 +187,16 @@ module ofm_tb;
       @(posedge tx_clk);
       @(posedge tx_clk);
 
-      send_packet(33);
-      send_packet(34); 
-      send_packet(34); 
+      send_packet(0, 0, 0, 0, 33);
+      send_packet(0, 0, 0, 0, 34); 
+      send_packet(0, 0, 0, 0, 34);
+
+      send_packet(2'b01, 	// csum enable
+		  16'h15, 	// Beign
+		  16'h40, 	// Insert
+		  16'hf,	// Initial
+		  30);		// length
+      
    end
   
    wire [31:0] ofm_in_fsm_dbg;

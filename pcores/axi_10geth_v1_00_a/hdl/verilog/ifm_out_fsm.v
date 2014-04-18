@@ -169,16 +169,11 @@ module ifm_out_fsm (/*AUTOARG*/
 	  end
      end // always @ (posedge s2mm_clk)
    reg [3:0] good_fifo_byte;
+   wire [3:0] good_fifo_byte_wire;
+   keep_to_cnt good_fifo_byte_i (.keep(data_fifo_rdata), .cnt(good_fifo_byte_wire));
    always @(posedge s2mm_clk)
      begin
-	good_fifo_byte <= #1 data_fifo_rdata[71:64] == 8'b0000_0001 ? 4'h1 :
-			  data_fifo_rdata[71:64] == 8'b0000_0011 ? 4'h2 :
-			  data_fifo_rdata[71:64] == 8'b0000_0111 ? 4'h3 :
-			  data_fifo_rdata[71:64] == 8'b0000_1111 ? 4'h4 :
-			  data_fifo_rdata[71:64] == 8'b0001_1111 ? 4'h5 :
-			  data_fifo_rdata[71:64] == 8'b0011_1111 ? 4'h6 : 
-			  data_fifo_rdata[71:64] == 8'b0111_1111 ? 4'h7 :
-			  data_fifo_rdata[71:64] == 8'b1111_1111 ? 4'h8 : 4'h0;
+	good_fifo_byte <= good_fifo_byte_wire;
      end // always @ (posedge s2mm_clk)
    
    reg [15:0] bytecnt;

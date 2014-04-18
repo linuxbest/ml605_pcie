@@ -57,14 +57,15 @@ module ofm_fifo (/*AUTOARG*/
 
    input tx_clk;
 
-   input [63:0] ctrl_fifo_wdata;
+   // we can hold 255 packet
+   input [33:0] ctrl_fifo_wdata;
    input 	ctrl_fifo_wren;
    output 	ctrl_fifo_afull;
 
-   output [63:0] ctrl_fifo_rdata;
+   output [33:0] ctrl_fifo_rdata;
    output 	 ctrl_fifo_empty;
    input 	 ctrl_fifo_rden;
-   small_async_fifo #(.DSIZE(64), .ASIZE(8))
+   small_async_fifo #(.DSIZE(34), .ASIZE(8))
    info_fifo (.wfull         (),
 	      .w_almost_full (ctrl_fifo_afull),
 	      .wdata         (ctrl_fifo_wdata),
@@ -83,6 +84,7 @@ module ofm_fifo (/*AUTOARG*/
    input 	data_fifo_wren;
    output 	data_fifo_afull;
 
+   // 8x512 = 4096 byte, if we want support 
    output [72:0] data_fifo_rdata;
    output 	 data_fifo_empty;
    input 	 data_fifo_rden;

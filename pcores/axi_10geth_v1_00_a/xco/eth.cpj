@@ -1,5 +1,5 @@
 #ChipScope Pro Analyzer Project File, Version 3.0
-#Wed Apr 16 13:42:22 PDT 2014
+#Wed Apr 16 16:28:25 PDT 2014
 device.0.configFileDir=/p/hw/ml605_pcie/implementation
 device.0.configFilename=k7aes.bit
 device.0.inserterCDCFileDir=/p/hw/ml605_pcie/implementation
@@ -2037,7 +2037,7 @@ unit.0.1.1.HEIGHT1=1.0
 unit.0.1.1.WIDTH1=1.0
 unit.0.1.1.X1=0.0
 unit.0.1.1.Y1=0.0
-unit.0.1.MFBitsA0=XXXXXXXXXXXXXXX1
+unit.0.1.MFBitsA0=XXXXXXXXXXX1XXXX
 unit.0.1.MFBitsB0=0000000000000000
 unit.0.1.MFCompareA0=0
 unit.0.1.MFCompareB0=999
@@ -2961,12 +2961,12 @@ unit.0.1.rep_trigger.filename=waveform
 unit.0.1.rep_trigger.format=ASCII
 unit.0.1.rep_trigger.loggingEnabled=0
 unit.0.1.rep_trigger.signals=All Signals/Buses
-unit.0.1.samplesPerTrigger=1
-unit.0.1.triggerCapture=1
+unit.0.1.samplesPerTrigger=64
+unit.0.1.triggerCapture=2
 unit.0.1.triggerNSamplesTS=0
-unit.0.1.triggerPosition=0
-unit.0.1.triggerWindowCount=1
-unit.0.1.triggerWindowDepth=1024
+unit.0.1.triggerPosition=6
+unit.0.1.triggerWindowCount=64
+unit.0.1.triggerWindowDepth=16
 unit.0.1.triggerWindowTS=0
 unit.0.1.username=TX_MAC
 unit.0.1.waveform.count=14
