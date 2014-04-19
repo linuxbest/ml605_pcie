@@ -199,7 +199,7 @@ module ofm_tb;
 		  30);		// length
       send_packet(2'b01, 	// csum enable
 		  16'h18, 	// Beign
-		  16'h40, 	// Insert
+		  16'h42, 	// Insert
 		  16'h2,	// Initial
 		  30);		// length
    

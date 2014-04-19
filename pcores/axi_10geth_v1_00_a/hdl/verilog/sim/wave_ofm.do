@@ -99,6 +99,23 @@ eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}ctrl_f
 eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}ctrl_fifo_rdata
 eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}ctrl_fifo_rden
 
+eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}TxCsCntrl
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}TxCsSum
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}TxCsInsert
+
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}fifo_rdata
+eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}fifo_rden
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}bcnt
+
+eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}insert_hit
+eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}insert_hit_reg
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}insert_mask_bcnt
+eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}insert_mask
+
+eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}tx_fifo_afull
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}tx_fifo_wdata
+eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}tx_fifo_wren
+
 eval add wave -noupdate $binopt $path${ps}tx_axis_mac_tvalid
 eval add wave -noupdate $hexopt $path${ps}tx_axis_mac_tdata
 eval add wave -noupdate $hexopt $path${ps}tx_axis_mac_tkeep

@@ -204,7 +204,7 @@ module ofm_in_fsm (/*AUTOARG*/
 	  begin
 	     ctrl_fifo_wdata[15:0]  <= #1 TxSum;
 	     ctrl_fifo_wdata[31:16] <= #1 TxCsInsert;
-	     ctrl_fifo_wdata[33:32] <= #1 TxFlag;
+	     ctrl_fifo_wdata[33:32] <= #1 TxCsCntrl;
 	  end
      end
    

@@ -47,10 +47,13 @@
 module ofm_fifo (/*AUTOARG*/
    // Outputs
    ctrl_fifo_afull, ctrl_fifo_rdata, ctrl_fifo_empty, data_fifo_afull,
-   data_fifo_rdata, data_fifo_empty,
+   data_fifo_rdata, data_fifo_empty, tx_axis_mac_tdata,
+   tx_axis_mac_tkeep, tx_axis_mac_tlast, tx_axis_mac_tuser,
+   tx_axis_mac_tvalid, tx_fifo_afull,
    // Inputs
    mm2s_clk, mm2s_resetn, tx_clk, ctrl_fifo_wdata, ctrl_fifo_wren,
-   ctrl_fifo_rden, data_fifo_wdata, data_fifo_wren, data_fifo_rden
+   ctrl_fifo_rden, data_fifo_wdata, data_fifo_wren, data_fifo_rden,
+   tx_axis_mac_tready, tx_fifo_wdata, tx_fifo_wren
    );
    input mm2s_clk;
    input mm2s_resetn;
@@ -98,6 +101,35 @@ module ofm_fifo (/*AUTOARG*/
 			 .full     (),
 			 .empty    (data_fifo_empty),
 			 .prog_full(data_fifo_afull));   
+
+   wire [72:0]  tx_fifo_rdata;
+   wire 	tx_fifo_empty;
+   wire 	tx_fifo_rden;
+   output [63:0] tx_axis_mac_tdata;
+   output [7:0]  tx_axis_mac_tkeep;
+   output 	 tx_axis_mac_tlast;
+   output 	 tx_axis_mac_tuser;
+   output 	 tx_axis_mac_tvalid;
+   input 	 tx_axis_mac_tready;
+   assign tx_axis_mac_tdata = tx_fifo_rdata[63:0];
+   assign tx_axis_mac_tkeep = tx_fifo_rdata[71:64];
+   assign tx_axis_mac_tuser = 1'b0;
+   assign tx_axis_mac_tlast = tx_fifo_rdata[72];
+   assign tx_axis_mac_tvalid=~tx_fifo_empty;
+   assign tx_fifo_rden      = tx_axis_mac_tvalid && tx_axis_mac_tready;
+
+   input [72:0]  tx_fifo_wdata;
+   input 	 tx_fifo_wren;
+   output 	 tx_fifo_afull;
+   fifo73_512   txda_fifo (.din     (tx_fifo_wdata),
+			   .wr_en   (tx_fifo_wren),
+			   .clk     (tx_clk),
+			   .rd_en   (tx_fifo_rden),
+			   .rst     (~s2mm_resetn),
+			   .dout    (tx_fifo_rdata),
+			   .full    (),
+			   .empty   (tx_fifo_empty),
+			   .prog_full(tx_fifo_afull));   
 endmodule
 // 
 // ofm_fifo.v ends here
