@@ -73,7 +73,7 @@ module ofm_csum (/*AUTOARG*/
    assign tvalid= data_fifo_wren;
 
    reg [15:0] 	 TxSum;
-   reg [15:0] 	 sum;
+   reg [31:0] 	 sum;
    reg 		 sof;
    always @(posedge mm2s_clk or negedge mm2s_resetn)
      begin
@@ -106,7 +106,7 @@ module ofm_csum (/*AUTOARG*/
      begin
 	if (end_hit_reg)
 	  begin
-	     TxSum <= #1 sum;
+	     TxSum <= #1 sum[31:16] + sum[15:0];
 	  end
      end
 
