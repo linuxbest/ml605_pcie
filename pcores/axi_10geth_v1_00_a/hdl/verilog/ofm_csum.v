@@ -73,6 +73,7 @@ module ofm_csum (/*AUTOARG*/
    assign tvalid= data_fifo_wren;
 
    reg [15:0] 	 TxSum;
+   reg 		 TxSum_valid;
    reg [31:0] 	 sum;
    reg 		 sof;
    always @(posedge mm2s_clk or negedge mm2s_resetn)
@@ -100,13 +101,15 @@ module ofm_csum (/*AUTOARG*/
 	  end
      end // always @ (posedge mm2s_clk)
 
-   reg end_hit_reg;   
-   reg TxSum_valid;
+   wire [15:0] TxSum_int;
+   assign TxSum_int = sum[31:16] + sum[15:0];
+   
+   reg 	       end_hit_reg;   
    always @(posedge mm2s_clk)
      begin
 	if (end_hit_reg)
 	  begin
-	     TxSum <= #1 sum[31:16] + sum[15:0];
+	     TxSum <= #1 (TxSum_int == 16'hFFFF) ? 16'hFFFF : ~TxSum_int;
 	  end
      end
 

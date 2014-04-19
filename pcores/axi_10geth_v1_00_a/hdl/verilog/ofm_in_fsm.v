@@ -172,7 +172,9 @@ module ofm_in_fsm (/*AUTOARG*/
 	       3'h0: begin
 		  TxFlag      <= #1 txc_tdata[31:28]; 
 	       end
-	       3'h1: TxCsCntrl<= #1 txc_tdata[1:0];
+	       3'h1: begin 
+		  TxCsCntrl   <= #1 txc_tdata[1:0];
+	       end
 	       3'h2: begin 
 		  TxCsBegin   <= #1 {txc_tdata[31:17], 1'b0}; 
 		  TxCsInsert  <= #1 {txc_tdata[15:01], 1'b0};
