@@ -56,6 +56,45 @@ eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}ctrl_f
 eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}ctrl_fifo_wren
 eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}ctrl_fifo_afull
 
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}RxSum
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}RxSum_valid
+
+eval add wave -noupdate -divider {"out csum"}
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}clk
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}resetn
+
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}CsBegin
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}CsInit
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}RxSum
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}Sum_valid
+
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}tvalid
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}tdata
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}tkeep
+
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}sof
+
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}begin_hit_reg
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}begin_hit
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}end_hit
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}end_hit_reg
+
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}csum_mask
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}csum_mask_begin_bcnt
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}csum_mask_begin
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}cur_sum_int
+
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}bcnt
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}tdata_d1
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}tkeep_d1
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}tdata_bcnt
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}next_bcnt
+
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}cur_sum
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}cur_sum_en
+
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}sum
+
 eval add wave -noupdate -divider {"out frame"}
 eval add wave -noupdate $binopt $path${ps}s2mm_clk
 eval add wave -noupdate $binopt $path${ps}rxd_tvalid

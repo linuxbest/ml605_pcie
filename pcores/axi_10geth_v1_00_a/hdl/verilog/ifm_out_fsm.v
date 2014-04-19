@@ -50,7 +50,8 @@ module ifm_out_fsm (/*AUTOARG*/
    ctrl_fifo_wdata, ctrl_fifo_wren, ifm_out_fsm_dbg,
    // Inputs
    s2mm_clk, s2mm_resetn, data_fifo_rdata, info_fifo_rdata,
-   info_fifo_empty, good_fifo_afull, ctrl_fifo_afull
+   info_fifo_empty, good_fifo_afull, ctrl_fifo_afull, RxSum,
+   RxSum_valid
    );
    input s2mm_clk;
    input s2mm_resetn;
@@ -70,6 +71,9 @@ module ifm_out_fsm (/*AUTOARG*/
    output 	 ctrl_fifo_wren;
    input 	 ctrl_fifo_afull;
 
+   input [15:0]  RxSum;
+   input 	 RxSum_valid;
+   
    /*AUTOREG*/
    // Beginning of automatic regs (for this module's undeclared outputs)
    reg [36:0]		ctrl_fifo_wdata;

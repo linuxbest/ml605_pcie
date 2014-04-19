@@ -49,14 +49,13 @@ eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_in_fsm${ps}TxSum
 eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_in_fsm${ps}TxSum_valid
 
 eval add wave -noupdate -divider {"out csum"}
-eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}mm2s_clk
-eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}mm2s_resetn
+eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}clk
+eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}resetn
 
-eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}TxCsBegin
-eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}TxCsInsert
-eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}TxCsInit
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}CsBegin
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}CsInit
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}TxSum
-eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}TxSum_valid
+eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}Sum_valid
 
 eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}tvalid
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}tdata

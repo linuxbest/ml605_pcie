@@ -87,19 +87,28 @@ module ifm_tb;
       #(10000) s2mm_resetn = ~s2mm_resetn;      
    end
 
+   reg [31:0] cnt;
    task send_packet;
       input good;
       input [31:0] num;
       begin
 	  rx_axis_mac_tdata  = 0; rx_axis_mac_tkeep  = 0;
-	 while (num)
+	  cnt = 0;
+	 while (cnt != num)
 	   begin
 	      rx_axis_mac_tvalid = 1'b1;
-	      rx_axis_mac_tdata  = rx_axis_mac_tdata + 1;
-	      rx_axis_mac_tkeep  = rx_axis_mac_tkeep + 1;
-	      rx_axis_mac_tlast  = num == 1;
-	      rx_axis_mac_tuser  = num == 1 && good;
-	      num = num - 1;
+	      rx_axis_mac_tdata[7:0]   = cnt*8;
+	      rx_axis_mac_tdata[15:8]  = cnt*8 + 1;
+	      rx_axis_mac_tdata[23:16] = cnt*8 + 2;
+	      rx_axis_mac_tdata[31:24] = cnt*8 + 3;
+	      rx_axis_mac_tdata[39:32] = cnt*8 + 4;
+	      rx_axis_mac_tdata[47:40] = cnt*8 + 5;
+	      rx_axis_mac_tdata[55:48] = cnt*8 + 6;
+	      rx_axis_mac_tdata[63:56] = cnt*8 + 7;
+	      rx_axis_mac_tkeep[7:0]   = 8'b1111_1111;
+	      cnt = cnt + 1;
+	      rx_axis_mac_tlast  = cnt == num;
+	      rx_axis_mac_tuser  = cnt == num && good;
 	      @(posedge rx_clk);
 	   end
 	 rx_axis_mac_tvalid = 1'b0;

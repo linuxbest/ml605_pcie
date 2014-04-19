@@ -86,9 +86,8 @@ module axi_eth_ofm (/*AUTOARG*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire [15:0]		TxCsBegin;		// From ofm_in_fsm of ofm_in_fsm.v
    wire [15:0]		TxCsInit;		// From ofm_in_fsm of ofm_in_fsm.v
-   wire [15:0]		TxCsInsert;		// From ofm_in_fsm of ofm_in_fsm.v
-   wire [15:0]		TxSum;			// From ofm_csum of ofm_csum.v
-   wire			TxSum_valid;		// From ofm_csum of ofm_csum.v
+   wire [15:0]		TxSum;			// From ofm_csum of eth_csum.v
+   wire			TxSum_valid;		// From ofm_csum of eth_csum.v
    wire			ctrl_fifo_afull;	// From ofm_fifo of ofm_fifo.v
    wire			ctrl_fifo_empty;	// From ofm_fifo of ofm_fifo.v
    wire [33:0]		ctrl_fifo_rdata;	// From ofm_fifo of ofm_fifo.v
@@ -115,7 +114,6 @@ module axi_eth_ofm (/*AUTOARG*/
 			  .data_fifo_wdata	(data_fifo_wdata[72:0]),
 			  .data_fifo_wren	(data_fifo_wren),
 			  .TxCsBegin		(TxCsBegin[15:0]),
-			  .TxCsInsert		(TxCsInsert[15:0]),
 			  .TxCsInit		(TxCsInit[15:0]),
 			  .ofm_in_fsm_dbg	(ofm_in_fsm_dbg[3:0]),
 			  // Inputs
@@ -133,18 +131,30 @@ module axi_eth_ofm (/*AUTOARG*/
 			  .data_fifo_afull	(data_fifo_afull),
 			  .TxSum_valid		(TxSum_valid),
 			  .TxSum		(TxSum[15:0]));
-   ofm_csum ofm_csum (/*AUTOINST*/
+
+   /* eth_csum AUTO_TEMPLATE (
+    .clk             (mm2s_clk),
+    .resetn          (mm2s_resetn),
+    .RxSum           (),
+    .Sum_valid       (TxSum_valid),
+    .data_fifo_wren  (data_fifo_wren),
+    .data_fifo_wdata (data_fifo_wdata[]),
+    .CsBegin         (TxCsBegin[]),
+    .CsInit          (TxCsInit[]),
+    );*/
+   eth_csum ofm_csum (/*AUTOINST*/
 		      // Outputs
 		      .TxSum		(TxSum[15:0]),
-		      .TxSum_valid	(TxSum_valid),
+		      .RxSum		(),			 // Templated
+		      .Sum_valid	(TxSum_valid),		 // Templated
 		      // Inputs
-		      .mm2s_clk		(mm2s_clk),
-		      .mm2s_resetn	(mm2s_resetn),
-		      .data_fifo_wren	(data_fifo_wren),
-		      .data_fifo_wdata	(data_fifo_wdata[72:0]),
-		      .TxCsBegin	(TxCsBegin[15:0]),
-		      .TxCsInit		(TxCsInit[15:0]),
-		      .TxCsInsert	(TxCsInsert[15:0]));
+		      .clk		(mm2s_clk),		 // Templated
+		      .resetn		(mm2s_resetn),		 // Templated
+		      .data_fifo_wren	(data_fifo_wren),	 // Templated
+		      .data_fifo_wdata	(data_fifo_wdata[72:0]), // Templated
+		      .CsBegin		(TxCsBegin[15:0]),	 // Templated
+		      .CsInit		(TxCsInit[15:0]));	 // Templated
+   
    ofm_fifo ofm_fifo   (/*AUTOINST*/
 			// Outputs
 			.ctrl_fifo_afull(ctrl_fifo_afull),

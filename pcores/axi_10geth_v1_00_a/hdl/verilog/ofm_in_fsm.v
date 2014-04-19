@@ -47,7 +47,7 @@
 module ofm_in_fsm (/*AUTOARG*/
    // Outputs
    txd_tready, txc_tready, ctrl_fifo_wdata, ctrl_fifo_wren,
-   data_fifo_wdata, data_fifo_wren, TxCsBegin, TxCsInsert, TxCsInit,
+   data_fifo_wdata, data_fifo_wren, TxCsBegin, TxCsInit,
    ofm_in_fsm_dbg,
    // Inputs
    mm2s_clk, mm2s_resetn, txd_tdata, txd_tkeep, txd_tvalid, txd_tlast,
@@ -80,7 +80,6 @@ module ofm_in_fsm (/*AUTOARG*/
    input 	 TxSum_valid;
    input [15:0]  TxSum;
    output [15:0] TxCsBegin;
-   output [15:0] TxCsInsert;
    output [15:0] TxCsInit;
    
    /*AUTOREG*/

@@ -5,6 +5,7 @@ vlog -work work ifm_tb.v
 vlog -work work ../axi_eth_ifm.v
 vlog -work work ../ifm_in_fsm.v
 vlog -work work ../ifm_out_fsm.v
+vlog -work work ../eth_csum.v
 vlog -work work ../ifm_fifo.v
 vlog -work work ../small_async_fifo.v
 vlog -work work ../fifo37_512.v

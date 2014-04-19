@@ -84,6 +84,8 @@ module axi_eth_ifm (/*AUTOARG*/
    
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   wire [15:0]		RxSum;			// From ifm_csum of eth_csum.v
+   wire			RxSum_valid;		// From ifm_csum of eth_csum.v
    wire			ctrl_fifo_afull;	// From ifm_fifo of ifm_fifo.v
    wire [36:0]		ctrl_fifo_wdata;	// From ifm_out_fsm of ifm_out_fsm.v
    wire			ctrl_fifo_wren;		// From ifm_out_fsm of ifm_out_fsm.v
@@ -135,7 +137,32 @@ module axi_eth_ifm (/*AUTOARG*/
 			    .info_fifo_rdata	(info_fifo_rdata[7:0]),
 			    .info_fifo_empty	(info_fifo_empty),
 			    .good_fifo_afull	(good_fifo_afull),
-			    .ctrl_fifo_afull	(ctrl_fifo_afull));
+			    .ctrl_fifo_afull	(ctrl_fifo_afull),
+			    .RxSum		(RxSum[15:0]),
+			    .RxSum_valid	(RxSum_valid));
+
+   /* eth_csum AUTO_TEMPLATE (
+    .clk             (s2mm_clk),
+    .resetn          (s2mm_resetn),
+    .TxSum           (),
+    .Sum_valid       (RxSum_valid),
+    .data_fifo_wren  (good_fifo_wren),
+    .data_fifo_wdata (good_fifo_wdata[]),
+    .CsBegin         (16'he),
+    .CsInit          (16'h0),
+    );*/
+   eth_csum ifm_csum (/*AUTOINST*/
+		      // Outputs
+		      .TxSum		(),			 // Templated
+		      .RxSum		(RxSum[15:0]),
+		      .Sum_valid	(RxSum_valid),		 // Templated
+		      // Inputs
+		      .clk		(s2mm_clk),		 // Templated
+		      .resetn		(s2mm_resetn),		 // Templated
+		      .data_fifo_wren	(good_fifo_wren),	 // Templated
+		      .data_fifo_wdata	(good_fifo_wdata[72:0]), // Templated
+		      .CsBegin		(16'he),		 // Templated
+		      .CsInit		(16'h0));		 // Templated
 
    ifm_fifo ifm_fifo (/*AUTOINST*/
 		      // Outputs
