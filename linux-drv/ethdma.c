@@ -51,7 +51,7 @@ enum lro_state {
 
 #define SSTG_DEBUG 	1
 #define RX_HW_CSUM 	0
-#define TX_HW_CSUM	0
+#define TX_HW_CSUM	1
 
 /* Descriptors defines for Tx and Rx DMA - 2^n for the best performance */
 #define TX_BD_NUM	512

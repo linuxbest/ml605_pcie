@@ -98,6 +98,9 @@ module ifm_fifo (/*AUTOARG*/
 	      .rclk          (s2mm_clk),
 	      .rrst_n        (s2mm_resetn));
 
+   // must make sure the information status first
+   reg 		ready_for_data;
+   reg 		ready_for_sts;
    wire [72:0] 	good_fifo_rdata;
    wire 	good_fifo_empty;
    wire 	good_fifo_rden;
@@ -109,9 +112,9 @@ module ifm_fifo (/*AUTOARG*/
    assign rxd_tdata = good_fifo_rdata[63:0];
    assign rxd_tkeep = good_fifo_rdata[71:64];
    assign rxd_tlast = good_fifo_rdata[72];
-   assign rxd_tvalid=~good_fifo_empty;
+   assign rxd_tvalid=~good_fifo_empty && ready_for_data;
    assign good_fifo_rden = rxd_tvalid && rxd_tready;
-   
+
    input [72:0] good_fifo_wdata;
    input 	good_fifo_wren;
    output 	good_fifo_afull;   
@@ -136,7 +139,7 @@ module ifm_fifo (/*AUTOARG*/
    assign rxs_tdata = ctrl_fifo_rdata[31:0];
    assign rxs_tkeep = ctrl_fifo_rdata[35:32];
    assign rxs_tlast = ctrl_fifo_rdata[36];
-   assign rxs_tvalid=~ctrl_fifo_empty;
+   assign rxs_tvalid=~ctrl_fifo_empty && ready_for_sts;
    assign ctrl_fifo_rden = rxs_tvalid && rxs_tready;
    
    input [36:0] ctrl_fifo_wdata;
@@ -150,7 +153,21 @@ module ifm_fifo (/*AUTOARG*/
 			 .dout    (ctrl_fifo_rdata),
 			 .full    (),
 			 .empty   (ctrl_fifo_empty),
-			 .prog_full(ctrl_fifo_afull));  
+			 .prog_full(ctrl_fifo_afull));
+
+   always @(posedge s2mm_clk or negedge s2mm_resetn)
+     begin
+	if (~s2mm_resetn || (rxd_tvalid && rxd_tready && rxd_tlast))
+	  begin
+	     ready_for_data <= #1 1'b0;
+	     ready_for_sts  <= #1 1'b1;
+	  end
+	else if (rxs_tvalid && rxs_tready && rxs_tlast)
+	  begin
+	     ready_for_data <= #1 1'b1;
+	     ready_for_sts  <= #1 1'b0;
+	  end
+     end // always @ (posedge s2mm_clk or negedge s2mm_resetn)
 endmodule
 // 
 // ifm_fifo.v ends here
