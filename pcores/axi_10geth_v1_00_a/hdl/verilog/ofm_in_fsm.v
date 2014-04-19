@@ -52,7 +52,7 @@ module ofm_in_fsm (/*AUTOARG*/
    // Inputs
    mm2s_clk, mm2s_resetn, txd_tdata, txd_tkeep, txd_tvalid, txd_tlast,
    txc_tdata, txc_tkeep, txc_tvalid, txc_tlast, ctrl_fifo_afull,
-   data_fifo_afull, TxSum
+   data_fifo_afull, TxSum_valid, TxSum
    );
    input mm2s_clk;
    input mm2s_resetn;
@@ -77,6 +77,7 @@ module ofm_in_fsm (/*AUTOARG*/
    output [72:0] data_fifo_wdata;
    output 	 data_fifo_wren;
 
+   input 	 TxSum_valid;
    input [15:0]  TxSum;
    output [15:0] TxCsBegin;
    output [15:0] TxCsInsert;
@@ -173,8 +174,8 @@ module ofm_in_fsm (/*AUTOARG*/
 	       end
 	       3'h1: TxCsCntrl<= #1 txc_tdata[1:0];
 	       3'h2: begin 
-		  TxCsBegin   <= #1 txc_tdata[31:16]; 
-		  TxCsInsert  <= #1 txc_tdata[15:0];
+		  TxCsBegin   <= #1 {txc_tdata[31:17], 1'b0}; 
+		  TxCsInsert  <= #1 {txc_tdata[15:01], 1'b0};
 	       end
 	       3'h3: TxCsInit <= #1 txc_tdata[15:0];
 	     endcase
@@ -190,7 +191,7 @@ module ofm_in_fsm (/*AUTOARG*/
 	  end
 	else
 	  begin
-	     ctrl_fifo_wren <= #1 state == S_DATA && txd_tvalid && txd_tlast;
+	     ctrl_fifo_wren <= #1 TxSum_valid;
 	     data_fifo_wren <= #1 txd_tready && txd_tvalid;
 	  end
      end // always @ (posedge mm2s_clk)
@@ -199,9 +200,12 @@ module ofm_in_fsm (/*AUTOARG*/
    // insert the TxSum into stream in tx clock domain.
    always @(posedge mm2s_clk)
      begin
-	ctrl_fifo_wdata[15:0]  <= #1 TxSum;
-	ctrl_fifo_wdata[31:16] <= #1 TxCsInsert;
-	ctrl_fifo_wdata[33:32] <= #1 TxFlag;
+	if (txd_tready && txd_tvalid)
+	  begin
+	     ctrl_fifo_wdata[15:0]  <= #1 TxSum;
+	     ctrl_fifo_wdata[31:16] <= #1 TxCsInsert;
+	     ctrl_fifo_wdata[33:32] <= #1 TxFlag;
+	  end
      end
    
    always @(posedge mm2s_clk)

@@ -144,9 +144,10 @@ module ofm_tb;
 	      data_fifo_wdata[47:40] = cnt*8 + 5;
 	      data_fifo_wdata[55:48] = cnt*8 + 6;
 	      data_fifo_wdata[63:56] = cnt*8 + 7;
-	      data_fifo_wdata[71:64] = 8'b0011_1111;
+	      data_fifo_wdata[71:64] = 8'b1111_1111;
 	      cnt = cnt + 1;
 	      data_fifo_wdata[72] = cnt == num;
+	      if (data_fifo_wdata[72]) data_fifo_wdata[71] = 1'b0;
 	      @(posedge mm2s_clk);
 	   end
 	 
@@ -192,11 +193,16 @@ module ofm_tb;
       send_packet(0, 0, 0, 0, 34);
 
       send_packet(2'b01, 	// csum enable
-		  16'h15, 	// Beign
+		  16'h14, 	// Beign
 		  16'h40, 	// Insert
 		  16'hf,	// Initial
 		  30);		// length
-      
+      send_packet(2'b01, 	// csum enable
+		  16'h18, 	// Beign
+		  16'h40, 	// Insert
+		  16'h2,	// Initial
+		  30);		// length
+   
    end
   
    wire [31:0] ofm_in_fsm_dbg;

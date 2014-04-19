@@ -46,7 +46,7 @@
 `timescale 1ps/1ps
 module ofm_csum (/*AUTOARG*/
    // Outputs
-   TxSum,
+   TxSum, TxSum_valid,
    // Inputs
    mm2s_clk, mm2s_resetn, data_fifo_wren, data_fifo_wdata, TxCsBegin,
    TxCsInit, TxCsInsert
@@ -61,6 +61,7 @@ module ofm_csum (/*AUTOARG*/
    input [15:0] TxCsInit;
    input [15:0] TxCsInsert;
    output [15:0] TxSum;
+   output 	 TxSum_valid;
 
    wire [63:0] 	 tdata;
    wire [7:0] 	 tkeep;
@@ -79,7 +80,6 @@ module ofm_csum (/*AUTOARG*/
 	if (~mm2s_resetn || (tvalid && tlast))
 	  begin
 	     sof   <= #1 1'b1;
-	     TxSum <= #1 sum;
 	  end
 	else if (tvalid)
 	  begin
@@ -100,12 +100,24 @@ module ofm_csum (/*AUTOARG*/
 	  end
      end // always @ (posedge mm2s_clk)
 
+   reg end_hit_reg;   
+   reg TxSum_valid;
+   always @(posedge mm2s_clk)
+     begin
+	if (end_hit_reg)
+	  begin
+	     TxSum <= #1 sum;
+	  end
+     end
+
    reg [63:0] tdata_d1;
    reg [7:0]  tkeep_d1;
+   reg 	      tvalid_d1;
    always @(posedge mm2s_clk)
      begin
 	tdata_d1 <= #1 tdata;
 	tkeep_d1 <= #1 tkeep;
+	tvalid_d1<= #1 tvalid;
      end
    reg [15:0] bcnt;
    reg [15:0] bcntd;
@@ -140,23 +152,11 @@ module ofm_csum (/*AUTOARG*/
 	     begin_hit_reg <= #1 begin_hit;
 	  end
      end // always @ (posedge mm2s_clk)
-   assign begin_hit = (bcnt >= TxCsBegin) && ~begin_hit_reg;
+   assign begin_hit = (bcnt > TxCsBegin) && ~begin_hit_reg;
 
    // figure out the Csum end
-   reg end_hit_reg;
    wire end_hit;
-   always @(posedge mm2s_clk)
-     begin
-	if (tvalid && sof)
-	  begin
-	     end_hit_reg <= #1 1'b0;
-	  end
-	else if (~end_hit_reg)
-	  begin
-	     end_hit_reg <= #1 end_hit;
-	  end
-     end // always @ (posedge mm2s_clk)
-   assign end_hit = (bcnt >= TxCsInsert) && ~end_hit_reg;
+   assign end_hit = tvalid & tlast;
    always @(posedge mm2s_clk)
      begin
 	if ((tvalid && sof) || end_hit)
@@ -168,19 +168,19 @@ module ofm_csum (/*AUTOARG*/
 	     cur_sum_en <= #1 1'b1;
 	  end
      end // always @ (posedge mm2s_clk)
+   always @(posedge mm2s_clk)
+     begin
+	end_hit_reg <= #1 end_hit;
+	TxSum_valid <= #1 end_hit_reg;
+     end
 
    wire [7:0] csum_mask;
    wire [3:0] csum_mask_begin_bcnt;
-   wire [3:0] csum_mask_end_bcnt;
-   wire [7:0]  csum_mask_begin;
-   wire [7:0] csum_mask_end;
+   wire [7:0] csum_mask_begin;
    assign csum_mask_begin_bcnt  = bcnt - TxCsBegin;
-   assign csum_mask_end_bcnt    = TxCsInsert - bcntd;
    cnt_to_keep csum_mask_begin_i (.cnt(csum_mask_begin_bcnt), .keep(csum_mask_begin));
-   cnt_to_keep csum_mask_end_i   (.cnt(csum_mask_end_bcnt),   .keep(csum_mask_end));
 
-   assign csum_mask = begin_hit ? (~csum_mask_begin) & tkeep_d1 :
-		      end_hit   ?     csum_mask_end  & tkeep_d1 : tkeep_d1;
+   assign csum_mask = begin_hit ? (~csum_mask_begin) & tkeep_d1 : tkeep_d1;
    wire [15:0] cur_sum_int;
    assign cur_sum_int = (csum_mask[0] ? tdata_d1[07:00] : 8'h0) +
 			(csum_mask[1] ? tdata_d1[15:08] : 8'h0) +
@@ -194,7 +194,6 @@ module ofm_csum (/*AUTOARG*/
      begin
 	cur_sum <= #1 cur_sum_int;
      end
-   
 endmodule
 // 
 // ofm_csum.v ends here   

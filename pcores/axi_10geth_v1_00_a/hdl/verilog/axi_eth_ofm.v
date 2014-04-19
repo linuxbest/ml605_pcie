@@ -88,6 +88,7 @@ module axi_eth_ofm (/*AUTOARG*/
    wire [15:0]		TxCsInit;		// From ofm_in_fsm of ofm_in_fsm.v
    wire [15:0]		TxCsInsert;		// From ofm_in_fsm of ofm_in_fsm.v
    wire [15:0]		TxSum;			// From ofm_csum of ofm_csum.v
+   wire			TxSum_valid;		// From ofm_csum of ofm_csum.v
    wire			ctrl_fifo_afull;	// From ofm_fifo of ofm_fifo.v
    wire			ctrl_fifo_empty;	// From ofm_fifo of ofm_fifo.v
    wire [33:0]		ctrl_fifo_rdata;	// From ofm_fifo of ofm_fifo.v
@@ -127,10 +128,12 @@ module axi_eth_ofm (/*AUTOARG*/
 			  .txc_tlast		(txc_tlast),
 			  .ctrl_fifo_afull	(ctrl_fifo_afull),
 			  .data_fifo_afull	(data_fifo_afull),
+			  .TxSum_valid		(TxSum_valid),
 			  .TxSum		(TxSum[15:0]));
    ofm_csum ofm_csum (/*AUTOINST*/
 		      // Outputs
 		      .TxSum		(TxSum[15:0]),
+		      .TxSum_valid	(TxSum_valid),
 		      // Inputs
 		      .mm2s_clk		(mm2s_clk),
 		      .mm2s_resetn	(mm2s_resetn),
