@@ -86,20 +86,29 @@ module ofm_csum (/*AUTOARG*/
 	     sof <= #1 1'b0;
 	  end
      end // always @ (posedge mm2s_clk or negedge mm2s_resetn)
-   wire [15:0] cur_sum;
+   reg [15:0] cur_sum;
+   reg 	      cur_sum_en;
    always @(posedge mm2s_clk)
      begin
 	if (tvalid && sof)
 	  begin
 	     sum <= #1 TxCsInit;
 	  end
-	else if (tvalid)
+	else if (cur_sum_en)
 	  begin
 	     sum <= #1 sum + cur_sum;
 	  end
      end // always @ (posedge mm2s_clk)
 
-   reg [15:0] bcnt;		// 
+   reg [63:0] tdata_d1;
+   reg [7:0]  tkeep_d1;
+   always @(posedge mm2s_clk)
+     begin
+	tdata_d1 <= #1 tdata;
+	tkeep_d1 <= #1 tkeep;
+     end
+   reg [15:0] bcnt;
+   reg [15:0] bcntd;
    wire [15:0] next_bcnt;
    wire [3:0]  tdata_bcnt;
    keep_to_cnt tdata_i (.cnt(tdata_bcnt), .keep(tkeep));
@@ -113,6 +122,7 @@ module ofm_csum (/*AUTOARG*/
 	else if (tvalid)
 	  begin
 	     bcnt <= #1 next_bcnt;
+	     bcntd<= #1 bcnt;
 	  end
      end // always @ (posedge mm2s_clk)
 
@@ -147,6 +157,17 @@ module ofm_csum (/*AUTOARG*/
 	  end
      end // always @ (posedge mm2s_clk)
    assign end_hit = (bcnt >= TxCsInsert) && ~end_hit_reg;
+   always @(posedge mm2s_clk)
+     begin
+	if ((tvalid && sof) || end_hit)
+	  begin
+	     cur_sum_en <= #1 1'b0;
+	  end
+	else if (begin_hit)
+	  begin
+	     cur_sum_en <= #1 1'b1;
+	  end
+     end // always @ (posedge mm2s_clk)
 
    wire [7:0] csum_mask;
    wire [3:0] csum_mask_begin_bcnt;
@@ -154,14 +175,26 @@ module ofm_csum (/*AUTOARG*/
    wire [7:0]  csum_mask_begin;
    wire [7:0] csum_mask_end;
    assign csum_mask_begin_bcnt  = bcnt - TxCsBegin;
-   assign csum_mask_end_bcnt    = bcnt - TxCsInsert;
+   assign csum_mask_end_bcnt    = TxCsInsert - bcntd;
    cnt_to_keep csum_mask_begin_i (.cnt(csum_mask_begin_bcnt), .keep(csum_mask_begin));
-   cnt_to_keep csum_mask_end_i   (.cnt(csum_mask_end_bcnt),   .keep(csum_mask_end));   
+   cnt_to_keep csum_mask_end_i   (.cnt(csum_mask_end_bcnt),   .keep(csum_mask_end));
 
-   assign csum_mask = begin_hit ? csum_mask_begin : 
-		      end_hit   ? csum_mask_end   : tkeep;
+   assign csum_mask = begin_hit ? (~csum_mask_begin) & tkeep_d1 :
+		      end_hit   ?     csum_mask_end  & tkeep_d1 : tkeep_d1;
+   wire [15:0] cur_sum_int;
+   assign cur_sum_int = (csum_mask[0] ? tdata_d1[07:00] : 8'h0) +
+			(csum_mask[1] ? tdata_d1[15:08] : 8'h0) +
+			(csum_mask[2] ? tdata_d1[23:16] : 8'h0) +
+			(csum_mask[3] ? tdata_d1[31:24] : 8'h0) +
+			(csum_mask[4] ? tdata_d1[39:32] : 8'h0) +
+			(csum_mask[5] ? tdata_d1[47:40] : 8'h0) +
+			(csum_mask[6] ? tdata_d1[55:48] : 8'h0) +
+			(csum_mask[7] ? tdata_d1[63:56] : 8'h0);
+   always @(posedge mm2s_clk)
+     begin
+	cur_sum <= #1 cur_sum_int;
+     end
    
-   assign cur_sum = 16'h00;
 endmodule
 // 
 // ofm_csum.v ends here   
