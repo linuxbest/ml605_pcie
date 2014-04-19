@@ -223,7 +223,8 @@ module ifm_out_fsm (/*AUTOARG*/
 	  4'h4: begin		// T_L_TPID , RxCsRaw
 	     ctrl_fifo_wdata[36]    <= #1 1'b0;
 	     ctrl_fifo_wdata[35:32] <= #1 4'hf;
-	     ctrl_fifo_wdata[31:0]  <= #1 32'h0;
+	     ctrl_fifo_wdata[31:16] <= #1 32'h0;
+	     ctrl_fifo_wdata[15:0]  <= #1 RxSum;
 	  end
 	  4'h5: begin		// vlantag, RxByteCnt
 	     ctrl_fifo_wdata[36]    <= #1 1'b1;
