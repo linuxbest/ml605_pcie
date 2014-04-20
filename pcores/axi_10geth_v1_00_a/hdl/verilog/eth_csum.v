@@ -167,7 +167,7 @@ module eth_csum (/*AUTOARG*/
 	     begin_hit_reg <= #1 begin_hit;
 	  end
      end // always @ (posedge clk)
-   assign begin_hit = (bcnt > CsBegin) && ~begin_hit_reg;
+   assign begin_hit = (bcnt[15:3] > CsBegin[15:3]) && ~begin_hit_reg;
 
    // figure out the Csum end
    wire end_hit;
@@ -191,13 +191,19 @@ module eth_csum (/*AUTOARG*/
 	Sum_valid   <= #1 end_hit_d1;
      end
 
-   wire [7:0] csum_mask;
-   wire [3:0] csum_mask_begin_bcnt;
+   // calculate the mask when CsBegin is ready.
    wire [7:0] csum_mask_begin;
-   assign csum_mask_begin_bcnt  = bcnt - CsBegin;
+   reg [7:0] csum_mask_begin_reg;
+   reg [3:0] csum_mask_begin_bcnt;
+   always @(posedge clk)
+     begin
+	csum_mask_begin_bcnt <= #1 4'h8 - CsBegin[2:0];
+	csum_mask_begin_reg  <= #1 csum_mask_begin;
+     end
    left_to_keep csum_mask_begin_i (.cnt(csum_mask_begin_bcnt), .keep(csum_mask_begin));
 
-   assign csum_mask = begin_hit ? csum_mask_begin : tkeep_d1;
+   wire [7:0] csum_mask;
+   assign csum_mask = begin_hit ? csum_mask_begin_reg : tkeep_d1;
    wire [15:0] cur_sum_int;
    assign cur_sum_int = {(csum_mask[0] ? tdata_d1[07:00] : 8'h0), (csum_mask[1] ? tdata_d1[15:08] : 8'h0)} +
 			{(csum_mask[2] ? tdata_d1[23:16] : 8'h0), (csum_mask[3] ? tdata_d1[31:24] : 8'h0)} +
@@ -209,4 +215,4 @@ module eth_csum (/*AUTOARG*/
      end // always @ (posedge clk)
 endmodule
 // 
-// ofm_csum.v ends here   
+// ofm_csum.v ends here
