@@ -10,6 +10,7 @@ lib axi_10geth_v1_00_a  ofm_in_fsm.v verilog
 lib axi_10geth_v1_00_a  ofm_out_fsm.v verilog
 
 lib axi_10geth_v1_00_a  cnt_to_keep.v verilog
+lib axi_10geth_v1_00_a  left_to_keep.v verilog
 lib axi_10geth_v1_00_a  keep_to_cnt.v verilog
 lib axi_10geth_v1_00_a  eth_csum.v verilog
 
