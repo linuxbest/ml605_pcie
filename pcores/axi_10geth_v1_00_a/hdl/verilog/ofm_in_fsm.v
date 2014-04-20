@@ -116,7 +116,7 @@ module ofm_in_fsm (/*AUTOARG*/
      begin
 	state_ns = state;
 	case (state)
-	  S_IDLE: if (txc_tvalid && ~ctrl_fifo_afull_reg)
+	  S_IDLE: if (txc_tvalid && ~ctrl_fifo_afull_reg && txc_tdata[31:28] == 4'hA)
 	    begin
 	       state_ns = S_CTRL;
 	    end
