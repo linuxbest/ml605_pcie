@@ -101,13 +101,22 @@ module eth_csum (/*AUTOARG*/
 	  end
      end // always @ (posedge clk)
 
+   // cycle 0
+   //  tdata, tvalid,
+   // cycle 1
+   //  tdata_d1, tvalid_d1, cur_sum_int,
+   // cycle 2
+   //  cur_sum
+   // cycle 3
+   //  sum
    wire [15:0] Sum_int;
    assign Sum_int = sum[31:16] + sum[15:0];
-   
-   reg 	       end_hit_reg;   
+
+   reg 	       end_hit_reg;
+   reg 	       end_hit_d1;
    always @(posedge clk)
      begin
-	if (end_hit_reg)
+	if (end_hit_d1)
 	  begin
 	     TxSum <= #1 (Sum_int == 16'hFFFF) ? 16'hFFFFF :~Sum_int;
 	     RxSum <= #1 (Sum_int == 16'h0000) ? 16'hFFFFF : Sum_int;
@@ -117,11 +126,13 @@ module eth_csum (/*AUTOARG*/
    reg [63:0] tdata_d1;
    reg [7:0]  tkeep_d1;
    reg 	      tvalid_d1;
+   reg 	      tlast_d1;
    always @(posedge clk)
      begin
 	tdata_d1 <= #1 tdata;
-	tkeep_d1 <= #1 tkeep;
+	tkeep_d1 <= #1 tvalid ? tkeep : 8'h0;
 	tvalid_d1<= #1 tvalid;
+	tlast_d1 <= #1 tlast;
      end
    reg [15:0] bcnt;
    reg [15:0] bcntd;
@@ -160,10 +171,10 @@ module eth_csum (/*AUTOARG*/
 
    // figure out the Csum end
    wire end_hit;
-   assign end_hit = tvalid & tlast;
+   assign end_hit = tvalid_d1 & tlast_d1;
    always @(posedge clk)
      begin
-	if ((tvalid && sof) || end_hit)
+	if ((tvalid && sof) || end_hit_reg)
 	  begin
 	     cur_sum_en <= #1 1'b0;
 	  end
@@ -172,10 +183,12 @@ module eth_csum (/*AUTOARG*/
 	     cur_sum_en <= #1 1'b1;
 	  end
      end // always @ (posedge clk)
+
    always @(posedge clk)
      begin
 	end_hit_reg <= #1 end_hit;
-	Sum_valid <= #1 end_hit_reg;
+	end_hit_d1  <= #1 end_hit_reg;
+	Sum_valid   <= #1 end_hit_d1;
      end
 
    wire [7:0] csum_mask;
@@ -186,18 +199,14 @@ module eth_csum (/*AUTOARG*/
 
    assign csum_mask = begin_hit ? csum_mask_begin : tkeep_d1;
    wire [15:0] cur_sum_int;
-   assign cur_sum_int = (csum_mask[0] ? tdata_d1[07:00] : 8'h0) +
-			(csum_mask[1] ? tdata_d1[15:08] : 8'h0) +
-			(csum_mask[2] ? tdata_d1[23:16] : 8'h0) +
-			(csum_mask[3] ? tdata_d1[31:24] : 8'h0) +
-			(csum_mask[4] ? tdata_d1[39:32] : 8'h0) +
-			(csum_mask[5] ? tdata_d1[47:40] : 8'h0) +
-			(csum_mask[6] ? tdata_d1[55:48] : 8'h0) +
-			(csum_mask[7] ? tdata_d1[63:56] : 8'h0);
+   assign cur_sum_int = {(csum_mask[0] ? tdata_d1[07:00] : 8'h0), (csum_mask[1] ? tdata_d1[15:08] : 8'h0)} +
+			{(csum_mask[2] ? tdata_d1[23:16] : 8'h0), (csum_mask[3] ? tdata_d1[31:24] : 8'h0)} +
+			{(csum_mask[4] ? tdata_d1[39:32] : 8'h0), (csum_mask[5] ? tdata_d1[47:40] : 8'h0)} +
+			{(csum_mask[6] ? tdata_d1[55:48] : 8'h0), (csum_mask[7] ? tdata_d1[63:56] : 8'h0)};
    always @(posedge clk)
      begin
 	cur_sum <= #1 cur_sum_int;
-     end
+     end // always @ (posedge clk)
 endmodule
 // 
 // ofm_csum.v ends here   

@@ -207,7 +207,7 @@ module ofm_tb;
 	 data_fifo_wdata[63:0]  = 64'h04020000_ee4b0839; @(posedge mm2s_clk);
 	 data_fifo_wdata[63:0]  = 64'h0c000a08_0204b405; @(posedge mm2s_clk);
 	 data_fifo_wdata[63:0]  = 64'h03010000_00004f6b; @(posedge mm2s_clk);
-	 data_fifo_wdata[63:0]  = 64'h00000000_00000307; 
+	 data_fifo_wdata[63:0]  = 64'h00000000_00000703; 
 	 data_fifo_wdata[71:64] = 8'b0000_0011; 
 	 data_fifo_wdata[72]    = 1'b1;
 	 @(posedge mm2s_clk);
