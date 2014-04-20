@@ -180,8 +180,8 @@ module axi_10geth (/*AUTOARG*/
    assign tx_dma_dbg [72]      = txd_tvalid;
    assign tx_dma_dbg [73]      = txd_tlast;
    assign tx_dma_dbg [74]      = txd_tready;
-   assign tx_dma_dbg [76]      = sys_rst; 
-   assign tx_dma_dbg [77]      = mm2s_resetn; 
+   assign tx_dma_dbg [114]     = sys_rst; 
+   assign tx_dma_dbg [115]     = mm2s_resetn; 
    /* trig */
    assign tx_dma_dbg [119:116] = ofm_in_fsm_dbg;
    assign tx_dma_dbg [120]     = txd_tvalid;
@@ -199,8 +199,8 @@ module axi_10geth (/*AUTOARG*/
    assign rx_dma_dbg [72]      = rxd_tvalid;
    assign rx_dma_dbg [73]      = rxd_tlast;
    assign rx_dma_dbg [74]      = rxd_tready;
-   assign rx_dma_dbg [76]      = sys_rst; 
-   assign rx_dma_dbg [77]      = s2mm_resetn; 
+   assign rx_dma_dbg [114]      = sys_rst; 
+   assign rx_dma_dbg [115]      = s2mm_resetn; 
    /* trig */
    assign rx_dma_dbg [119:116] = ifm_out_fsm_dbg;
    assign rx_dma_dbg [120]     = rxd_tvalid;

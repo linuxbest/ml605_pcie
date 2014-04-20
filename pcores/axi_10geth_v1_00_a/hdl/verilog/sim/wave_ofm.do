@@ -7,7 +7,7 @@ set ascopt {-literal -asc}
 
 eval add wave -noupdate -divider {"top"}
 eval add wave -noupdate $binopt $path${ps}mm2s_clk
-eval add wave -noupdate $binopt $path${ps}mm2s_resetn
+eval add wave -noupdate $binopt $path${ps}sys_rst
 
 #eval add wave -noupdate $binopt $path${ps}tx_reset
 eval add wave -noupdate $binopt $path${ps}tx_clk
@@ -15,7 +15,7 @@ eval add wave -noupdate $binopt $path${ps}tx_clk
 
 eval add wave -noupdate -divider {"in fsm"}
 eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_in_fsm${ps}mm2s_clk
-eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_in_fsm${ps}mm2s_resetn
+eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_in_fsm${ps}sys_rst
 
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_in_fsm${ps}state
 
@@ -50,7 +50,7 @@ eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_in_fsm${ps}TxSum_v
 
 eval add wave -noupdate -divider {"out csum"}
 eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}clk
-eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}resetn
+eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}rst
 
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}CsBegin
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}CsInit
@@ -85,7 +85,7 @@ eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}cur_sum_e
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}sum
 
 eval add wave -noupdate -divider {"out fsm"}
-eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}mm2s_resetn
+eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}sys_rst
 eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}tx_clk
 
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_out_fsm${ps}state

@@ -125,7 +125,7 @@ module ofm_fifo (/*AUTOARG*/
 			   .wr_en   (tx_fifo_wren),
 			   .clk     (tx_clk),
 			   .rd_en   (tx_fifo_rden),
-			   .rst     (~sys_rst),
+			   .rst     (sys_rst),
 			   .dout    (tx_fifo_rdata),
 			   .full    (),
 			   .empty   (tx_fifo_empty),
