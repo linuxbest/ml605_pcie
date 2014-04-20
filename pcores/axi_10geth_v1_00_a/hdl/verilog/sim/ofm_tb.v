@@ -159,7 +159,7 @@ module ofm_tb;
 /*
  * 19:42:38.032398 IP (tos 0x10, ttl 64, id 27210, offset 0, flags [DF], proto TCP (6), length 60)
  *   192.168.101.50.43921 > 192.168.101.60.ssh: Flags [S], cksum 0x4bee (incorrect -> 0x890d), seq \
- *   572719365, win 14600, options [mss 1460,sackOK,TS val 813903 ecr 0,nop,wscale 7], length 0
+ *      572719365, win 14600, options [mss 1460,sackOK,TS val 813903 ecr 0,nop,wscale 7], length 0
  *      0x0000:  4510 003c 6a4a 4000 4006 84a2 c0a8 6532  E..<jJ@.@.....e2
  *      0x0010:  c0a8 653c ab91 0016 2223 0105 0000 0000  ..e<...."#......
  *      0x0020:  a002 3908 4bee 0000 0204 05b4 0402 080a  ..9.K...........
