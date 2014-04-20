@@ -50,12 +50,12 @@ module ofm_in_fsm (/*AUTOARG*/
    data_fifo_wdata, data_fifo_wren, TxCsBegin, TxCsInit,
    ofm_in_fsm_dbg,
    // Inputs
-   mm2s_clk, mm2s_resetn, txd_tdata, txd_tkeep, txd_tvalid, txd_tlast,
+   mm2s_clk, sys_rst, txd_tdata, txd_tkeep, txd_tvalid, txd_tlast,
    txc_tdata, txc_tkeep, txc_tvalid, txc_tlast, ctrl_fifo_afull,
    data_fifo_afull, TxSum_valid, TxSum
    );
    input mm2s_clk;
-   input mm2s_resetn;
+   input sys_rst;
 
    input [63:0] txd_tdata;
    input [7:0] 	txd_tkeep;
@@ -97,9 +97,9 @@ module ofm_in_fsm (/*AUTOARG*/
      S_DATA = 2'h3;
    reg [1:0] 	// synopsys enum state_info
 		state, state_ns;
-   always @(posedge mm2s_clk or negedge mm2s_resetn)
+   always @(posedge mm2s_clk or posedge sys_rst)
      begin
-	if (~mm2s_resetn)
+	if (sys_rst)
 	  begin
 	     state <= #1 S_IDLE;
 	  end
@@ -107,7 +107,7 @@ module ofm_in_fsm (/*AUTOARG*/
 	  begin
 	     state <= #1 state_ns;
 	  end
-     end // always @ (posedge mm2s_clk or negedge mm2s_resetn)
+     end // always @ (posedge mm2s_clk or posedge sys_rst)
 
    reg tx_ok;
    reg ctrl_fifo_afull_reg;
@@ -116,7 +116,7 @@ module ofm_in_fsm (/*AUTOARG*/
      begin
 	state_ns = state;
 	case (state)
-	  S_IDLE: if (txc_tvalid && ~ctrl_fifo_afull_reg && txc_tdata[31:28] == 4'hA)
+	  S_IDLE: if (txc_tvalid && ~ctrl_fifo_afull_reg)
 	    begin
 	       state_ns = S_CTRL;
 	    end
@@ -183,9 +183,9 @@ module ofm_in_fsm (/*AUTOARG*/
 	  end
      end // always @ (posedge mm2s_clk)
 
-   always @(posedge mm2s_clk or negedge mm2s_resetn)
+   always @(posedge mm2s_clk or posedge sys_rst)
      begin
-	if (~mm2s_resetn)
+	if (sys_rst)
 	  begin
 	     ctrl_fifo_wren <= #1 1'b0;
 	     data_fifo_wren <= #1 1'b0;

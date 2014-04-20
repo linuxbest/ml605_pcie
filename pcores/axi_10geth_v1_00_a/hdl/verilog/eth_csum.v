@@ -48,10 +48,10 @@ module eth_csum (/*AUTOARG*/
    // Outputs
    TxSum, RxSum, Sum_valid,
    // Inputs
-   clk, resetn, data_fifo_wren, data_fifo_wdata, CsBegin, CsInit
+   clk, rst, data_fifo_wren, data_fifo_wdata, CsBegin, CsInit
    );
    input clk;
-   input resetn;
+   input rst;
 
    input data_fifo_wren;
    input [72:0] data_fifo_wdata;
@@ -76,9 +76,9 @@ module eth_csum (/*AUTOARG*/
    reg 		 Sum_valid;
    reg [31:0] 	 sum;
    reg 		 sof;
-   always @(posedge clk or negedge resetn)
+   always @(posedge clk or posedge rst)
      begin
-	if (~resetn || (tvalid && tlast))
+	if (rst || (tvalid && tlast))
 	  begin
 	     sof   <= #1 1'b1;
 	  end
@@ -86,7 +86,7 @@ module eth_csum (/*AUTOARG*/
 	  begin
 	     sof <= #1 1'b0;
 	  end
-     end // always @ (posedge clk or negedge resetn)
+     end // always @ (posedge clk or posedge rst)
    reg [15:0] cur_sum;
    reg 	      cur_sum_en;
    always @(posedge clk)
@@ -184,11 +184,21 @@ module eth_csum (/*AUTOARG*/
 	  end
      end // always @ (posedge clk)
 
+   always @(posedge clk or posedge rst)
+     begin
+	if (rst)
+	  begin
+	     Sum_valid <= #1 1'b0;
+	  end
+	else
+	  begin
+	     Sum_valid <= #1 end_hit_d1;
+	  end
+     end
    always @(posedge clk)
      begin
 	end_hit_reg <= #1 end_hit;
 	end_hit_d1  <= #1 end_hit_reg;
-	Sum_valid   <= #1 end_hit_d1;
      end
 
    // calculate the mask when CsBegin is ready.

@@ -53,30 +53,32 @@ module axi_10geth (/*AUTOARG*/
    ofm_in_fsm_dbg, ifm_out_fsm_dbg, ifm_in_fsm_dbg,
    // Inputs
    txd_tvalid, txd_tlast, txd_tkeep, txd_tdata, txc_tvalid, txc_tlast,
-   txc_tkeep, txc_tdata, tx_clk, tx_axis_mac_tready, s2mm_resetn,
-   s2mm_clk, rxs_tready, rxd_tready, rx_clk, rx_axis_mac_tvalid,
-   rx_axis_mac_tuser, rx_axis_mac_tlast, rx_axis_mac_tkeep,
-   rx_axis_mac_tdata, mm2s_resetn, mm2s_clk
+   txc_tkeep, txc_tdata, tx_reset, tx_clk, tx_axis_mac_tready,
+   s2mm_resetn, s2mm_clk, rxs_tready, rxd_tready, rx_reset, rx_clk,
+   rx_axis_mac_tvalid, rx_axis_mac_tuser, rx_axis_mac_tlast,
+   rx_axis_mac_tkeep, rx_axis_mac_tdata, mm2s_resetn, mm2s_clk
    );
    parameter C_FAMILY = "";
    parameter C_DBG_PORT = "";
 
    /*AUTOINPUT*/
    // Beginning of automatic inputs (from unused autoinst inputs)
-   input		mm2s_clk;		// To axi_eth_ofm of axi_eth_ofm.v
-   input		mm2s_resetn;		// To axi_eth_ofm of axi_eth_ofm.v
+   input		mm2s_clk;		// To axi_eth_ofm of axi_eth_ofm.v, ...
+   input		mm2s_resetn;		// To eth_rst of eth_rst.v
    input [63:0]		rx_axis_mac_tdata;	// To axi_eth_ifm of axi_eth_ifm.v
    input [7:0]		rx_axis_mac_tkeep;	// To axi_eth_ifm of axi_eth_ifm.v
    input		rx_axis_mac_tlast;	// To axi_eth_ifm of axi_eth_ifm.v
    input		rx_axis_mac_tuser;	// To axi_eth_ifm of axi_eth_ifm.v
    input		rx_axis_mac_tvalid;	// To axi_eth_ifm of axi_eth_ifm.v
    input		rx_clk;			// To axi_eth_ifm of axi_eth_ifm.v
+   input		rx_reset;		// To eth_rst of eth_rst.v
    input		rxd_tready;		// To axi_eth_ifm of axi_eth_ifm.v
    input		rxs_tready;		// To axi_eth_ifm of axi_eth_ifm.v
-   input		s2mm_clk;		// To axi_eth_ifm of axi_eth_ifm.v
-   input		s2mm_resetn;		// To axi_eth_ifm of axi_eth_ifm.v
+   input		s2mm_clk;		// To axi_eth_ifm of axi_eth_ifm.v, ...
+   input		s2mm_resetn;		// To eth_rst of eth_rst.v
    input		tx_axis_mac_tready;	// To axi_eth_ofm of axi_eth_ofm.v
    input		tx_clk;			// To axi_eth_ofm of axi_eth_ofm.v
+   input		tx_reset;		// To eth_rst of eth_rst.v
    input [31:0]		txc_tdata;		// To axi_eth_ofm of axi_eth_ofm.v
    input [3:0]		txc_tkeep;		// To axi_eth_ofm of axi_eth_ofm.v
    input		txc_tlast;		// To axi_eth_ofm of axi_eth_ofm.v
@@ -133,7 +135,7 @@ module axi_10geth (/*AUTOARG*/
 			    .rxd_tready		(rxd_tready),
 			    .rxs_tready		(rxs_tready),
 			    .s2mm_clk		(s2mm_clk),
-			    .s2mm_resetn	(s2mm_resetn));
+			    .sys_rst		(sys_rst));
    axi_eth_ofm axi_eth_ofm (/*AUTOINST*/
 			    // Outputs
 			    .ofm_in_fsm_dbg	(ofm_in_fsm_dbg[3:0]),
@@ -147,7 +149,7 @@ module axi_10geth (/*AUTOARG*/
 			    .txd_tready		(txd_tready),
 			    // Inputs
 			    .mm2s_clk		(mm2s_clk),
-			    .mm2s_resetn	(mm2s_resetn),
+			    .sys_rst		(sys_rst),
 			    .tx_axis_mac_tready	(tx_axis_mac_tready),
 			    .tx_clk		(tx_clk),
 			    .txc_tdata		(txc_tdata[31:0]),
@@ -158,7 +160,17 @@ module axi_10geth (/*AUTOARG*/
 			    .txd_tkeep		(txd_tkeep[7:0]),
 			    .txd_tlast		(txd_tlast),
 			    .txd_tvalid		(txd_tvalid));
-
+   eth_rst eth_rst (/*AUTOINST*/
+		    // Outputs
+		    .sys_rst		(sys_rst),
+		    // Inputs
+		    .mm2s_resetn	(mm2s_resetn),
+		    .s2mm_resetn	(s2mm_resetn),
+		    .tx_reset		(tx_reset),
+		    .rx_reset		(rx_reset),
+		    .mm2s_clk		(mm2s_clk),
+		    .s2mm_clk		(s2mm_clk));
+   
    wire [127:0] tx_dma_dbg;
    wire [127:0] rx_dma_dbg;
    wire [127:0] tx_mac_dbg;
@@ -168,6 +180,8 @@ module axi_10geth (/*AUTOARG*/
    assign tx_dma_dbg [72]      = txd_tvalid;
    assign tx_dma_dbg [73]      = txd_tlast;
    assign tx_dma_dbg [74]      = txd_tready;
+   assign tx_dma_dbg [76]      = sys_rst; 
+   assign tx_dma_dbg [77]      = mm2s_resetn; 
    /* trig */
    assign tx_dma_dbg [119:116] = ofm_in_fsm_dbg;
    assign tx_dma_dbg [120]     = txd_tvalid;
@@ -185,6 +199,8 @@ module axi_10geth (/*AUTOARG*/
    assign rx_dma_dbg [72]      = rxd_tvalid;
    assign rx_dma_dbg [73]      = rxd_tlast;
    assign rx_dma_dbg [74]      = rxd_tready;
+   assign rx_dma_dbg [76]      = sys_rst; 
+   assign rx_dma_dbg [77]      = s2mm_resetn; 
    /* trig */
    assign rx_dma_dbg [119:116] = ifm_out_fsm_dbg;
    assign rx_dma_dbg [120]     = rxd_tvalid;
@@ -203,6 +219,8 @@ module axi_10geth (/*AUTOARG*/
    assign rx_mac_dbg [73]      = rx_axis_mac_tlast;
    assign rx_mac_dbg [74]      = rx_axis_mac_tready;  
    assign rx_mac_dbg [75]      = rx_axis_mac_tuser;
+   assign rx_mac_dbg [76]      = sys_rst; 
+   assign rx_mac_dbg [77]      = rx_reset; 
 
    assign rx_mac_dbg [122:119] = ifm_in_fsm_dbg;
    assign rx_mac_dbg [123]     = rx_axis_mac_tvalid;
@@ -216,6 +234,8 @@ module axi_10geth (/*AUTOARG*/
    assign tx_mac_dbg [73]      = tx_axis_mac_tlast;
    assign tx_mac_dbg [74]      = tx_axis_mac_tready;  
    assign tx_mac_dbg [75]      = tx_axis_mac_tuser;
+   assign tx_mac_dbg [76]      = sys_rst; 
+   assign tx_mac_dbg [77]      = tx_reset; 
    
    assign tx_mac_dbg [122:119] = ofm_out_fsm_dbg;
    assign tx_mac_dbg [123]     = tx_axis_mac_tvalid;

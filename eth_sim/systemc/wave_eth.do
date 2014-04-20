@@ -15,6 +15,7 @@ eval add wave -noupdate $binopt $macpath${ps}xgmac${ps}mdio_in
 eval add wave -noupdate -divider {"eth tx"}
 eval add wave -noupdate $binopt $ethpath${ps}mm2s_clk
 eval add wave -noupdate $binopt $ethpath${ps}mm2s_resetn
+eval add wave -noupdate $binopt $ethpath${ps}sys_rst
 
 eval add wave -noupdate $binopt $ethpath${ps}txd_tready
 eval add wave -noupdate $binopt $ethpath${ps}txd_tvalid
@@ -29,6 +30,7 @@ eval add wave -noupdate $hexopt $ethpath${ps}txc_tdata
 eval add wave -noupdate $hexopt $ethpath${ps}txc_tkeep
 
 eval add wave -noupdate $binopt $ethpath${ps}tx_clk
+eval add wave -noupdate $binopt $ethpath${ps}tx_reset
 
 eval add wave -noupdate $binopt $ethpath${ps}tx_axis_mac_tready
 eval add wave -noupdate $binopt $ethpath${ps}tx_axis_mac_tvalid
@@ -55,6 +57,7 @@ eval add wave -noupdate $hexopt $ethpath${ps}rxs_tdata
 eval add wave -noupdate $hexopt $ethpath${ps}rxs_tkeep
 
 eval add wave -noupdate $binopt $ethpath${ps}rx_clk
+eval add wave -noupdate $binopt $ethpath${ps}rx_reset
 
 eval add wave -noupdate $binopt $ethpath${ps}rx_axis_mac_tready
 eval add wave -noupdate $binopt $ethpath${ps}rx_axis_mac_tvalid

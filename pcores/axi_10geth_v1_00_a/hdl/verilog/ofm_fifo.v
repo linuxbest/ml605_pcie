@@ -51,12 +51,12 @@ module ofm_fifo (/*AUTOARG*/
    tx_axis_mac_tkeep, tx_axis_mac_tlast, tx_axis_mac_tuser,
    tx_axis_mac_tvalid, tx_fifo_afull,
    // Inputs
-   mm2s_clk, mm2s_resetn, tx_clk, ctrl_fifo_wdata, ctrl_fifo_wren,
+   mm2s_clk, sys_rst, tx_clk, ctrl_fifo_wdata, ctrl_fifo_wren,
    ctrl_fifo_rden, data_fifo_wdata, data_fifo_wren, data_fifo_rden,
    tx_axis_mac_tready, tx_fifo_wdata, tx_fifo_wren
    );
    input mm2s_clk;
-   input mm2s_resetn;
+   input sys_rst;
 
    input tx_clk;
 
@@ -74,14 +74,14 @@ module ofm_fifo (/*AUTOARG*/
 	      .wdata         (ctrl_fifo_wdata),
 	      .winc          (ctrl_fifo_wren),
 	      .wclk          (mm2s_clk),
-	      .wrst_n        (mm2s_resetn),
+	      .wrst_n        (~sys_rst),
 
 	      .rdata         (ctrl_fifo_rdata),
 	      .rempty        (ctrl_fifo_empty),
 	      .r_almost_empty(),
 	      .rinc          (ctrl_fifo_rden && ~ctrl_fifo_empty),
 	      .rclk          (tx_clk),
-	      .rrst_n        (mm2s_resetn));
+	      .rrst_n        (~sys_rst));
 
    input [72:0] data_fifo_wdata;
    input 	data_fifo_wren;
@@ -96,7 +96,7 @@ module ofm_fifo (/*AUTOARG*/
 			 .wr_clk   (mm2s_clk),
 			 .rd_en    (data_fifo_rden && ~data_fifo_empty),
 			 .rd_clk   (tx_clk),
-			 .rst      (~mm2s_resetn),
+			 .rst      (sys_rst),
 			 .dout     (data_fifo_rdata),
 			 .full     (),
 			 .empty    (data_fifo_empty),
@@ -125,7 +125,7 @@ module ofm_fifo (/*AUTOARG*/
 			   .wr_en   (tx_fifo_wren),
 			   .clk     (tx_clk),
 			   .rd_en   (tx_fifo_rden),
-			   .rst     (~s2mm_resetn),
+			   .rst     (~sys_rst),
 			   .dout    (tx_fifo_rdata),
 			   .full    (),
 			   .empty   (tx_fifo_empty),

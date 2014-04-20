@@ -49,12 +49,12 @@ module ifm_out_fsm (/*AUTOARG*/
    data_fifo_rden, info_fifo_rden, good_fifo_wdata, good_fifo_wren,
    ctrl_fifo_wdata, ctrl_fifo_wren, ifm_out_fsm_dbg,
    // Inputs
-   s2mm_clk, s2mm_resetn, data_fifo_rdata, info_fifo_rdata,
+   s2mm_clk, sys_rst, data_fifo_rdata, info_fifo_rdata,
    info_fifo_empty, good_fifo_afull, ctrl_fifo_afull, RxSum,
    RxSum_valid
    );
    input s2mm_clk;
-   input s2mm_resetn;
+   input sys_rst;
    
    input [72:0] data_fifo_rdata;
    output 	data_fifo_rden;
@@ -91,9 +91,9 @@ module ifm_out_fsm (/*AUTOARG*/
      S_DONE = 3'h4;
    reg [2:0] // synopsys enum state_info
 	     state, state_ns;
-   always @(posedge s2mm_clk or negedge s2mm_resetn)
+   always @(posedge s2mm_clk or posedge sys_rst)
      begin
-	if (~s2mm_resetn)
+	if (sys_rst)
 	  begin
 	     state <= #1 S_IDLE;
 	  end
@@ -139,9 +139,9 @@ module ifm_out_fsm (/*AUTOARG*/
 	     info_fifo_reg <= #1 info_fifo_rdata;
 	  end
      end
-   always @(posedge s2mm_clk or negedge s2mm_resetn)
+   always @(posedge s2mm_clk or posedge sys_rst)
      begin
-	if (~s2mm_resetn)
+	if (sys_rst)
 	  begin
 	     good_fifo_wren <= #1 1'b0;
 	     info_fifo_rden <= #1 1'b0;
@@ -154,7 +154,7 @@ module ifm_out_fsm (/*AUTOARG*/
 			       (state == S_WAIT && data_fifo_rdata[72]);
 	     ctrl_fifo_wren <= #1 state == S_EOF;
 	  end
-     end // always @ (posedge s2mm_clk or negedge s2mm_resetn)
+     end // always @ (posedge s2mm_clk or posedge sys_rst)
    always @(posedge s2mm_clk)
      begin
 	good_fifo_wdata<= #1 data_fifo_rdata;

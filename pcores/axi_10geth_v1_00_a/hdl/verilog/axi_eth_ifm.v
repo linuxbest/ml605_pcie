@@ -50,7 +50,7 @@ module axi_eth_ifm (/*AUTOARG*/
    rxd_tkeep, rxd_tdata, rx_axis_mac_tready, ifm_out_fsm_dbg,
    ifm_in_fsm_dbg,
    // Inputs
-   s2mm_resetn, s2mm_clk, rxs_tready, rxd_tready, rx_clk,
+   sys_rst, s2mm_clk, rxs_tready, rxd_tready, rx_clk,
    rx_axis_mac_tvalid, rx_axis_mac_tuser, rx_axis_mac_tlast,
    rx_axis_mac_tkeep, rx_axis_mac_tdata
    );
@@ -65,7 +65,7 @@ module axi_eth_ifm (/*AUTOARG*/
    input		rxd_tready;		// To ifm_fifo of ifm_fifo.v
    input		rxs_tready;		// To ifm_fifo of ifm_fifo.v
    input		s2mm_clk;		// To ifm_out_fsm of ifm_out_fsm.v, ...
-   input		s2mm_resetn;		// To ifm_in_fsm of ifm_in_fsm.v, ...
+   input		sys_rst;		// To ifm_in_fsm of ifm_in_fsm.v, ...
    // End of automatics
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
@@ -114,7 +114,7 @@ module axi_eth_ifm (/*AUTOARG*/
 			     .ifm_in_fsm_dbg	(ifm_in_fsm_dbg[3:0]),
 			     // Inputs
 			     .rx_clk		(rx_clk),
-			     .s2mm_resetn	(s2mm_resetn),
+			     .sys_rst		(sys_rst),
 			     .rx_axis_mac_tdata	(rx_axis_mac_tdata[63:0]),
 			     .rx_axis_mac_tkeep	(rx_axis_mac_tkeep[7:0]),
 			     .rx_axis_mac_tlast	(rx_axis_mac_tlast),
@@ -132,7 +132,7 @@ module axi_eth_ifm (/*AUTOARG*/
 			    .ifm_out_fsm_dbg	(ifm_out_fsm_dbg[3:0]),
 			    // Inputs
 			    .s2mm_clk		(s2mm_clk),
-			    .s2mm_resetn	(s2mm_resetn),
+			    .sys_rst		(sys_rst),
 			    .data_fifo_rdata	(data_fifo_rdata[72:0]),
 			    .info_fifo_rdata	(info_fifo_rdata[7:0]),
 			    .info_fifo_empty	(info_fifo_empty),
@@ -143,7 +143,7 @@ module axi_eth_ifm (/*AUTOARG*/
 
    /* eth_csum AUTO_TEMPLATE (
     .clk             (s2mm_clk),
-    .resetn          (s2mm_resetn),
+    .rst             (sys_rst),
     .TxSum           (),
     .Sum_valid       (RxSum_valid),
     .data_fifo_wren  (good_fifo_wren),
@@ -158,7 +158,7 @@ module axi_eth_ifm (/*AUTOARG*/
 		      .Sum_valid	(RxSum_valid),		 // Templated
 		      // Inputs
 		      .clk		(s2mm_clk),		 // Templated
-		      .resetn		(s2mm_resetn),		 // Templated
+		      .rst		(sys_rst),		 // Templated
 		      .data_fifo_wren	(good_fifo_wren),	 // Templated
 		      .data_fifo_wdata	(good_fifo_wdata[72:0]), // Templated
 		      .CsBegin		(16'he),		 // Templated
@@ -183,7 +183,7 @@ module axi_eth_ifm (/*AUTOARG*/
 		      // Inputs
 		      .rx_clk		(rx_clk),
 		      .s2mm_clk		(s2mm_clk),
-		      .s2mm_resetn	(s2mm_resetn),
+		      .sys_rst		(sys_rst),
 		      .data_fifo_wdata	(data_fifo_wdata[72:0]),
 		      .data_fifo_wren	(data_fifo_wren),
 		      .data_fifo_rden	(data_fifo_rden),

@@ -49,11 +49,11 @@ module ofm_out_fsm (/*AUTOARG*/
    ctrl_fifo_rden, data_fifo_rden, tx_fifo_wdata, tx_fifo_wren,
    ofm_out_fsm_dbg,
    // Inputs
-   tx_clk, mm2s_resetn, ctrl_fifo_rdata, ctrl_fifo_empty,
-   data_fifo_rdata, data_fifo_empty, tx_fifo_afull
+   tx_clk, sys_rst, ctrl_fifo_rdata, ctrl_fifo_empty, data_fifo_rdata,
+   data_fifo_empty, tx_fifo_afull
    );
    input tx_clk;
-   input mm2s_resetn;
+   input sys_rst;
    
    input [33:0] ctrl_fifo_rdata;
    input 	ctrl_fifo_empty;
@@ -80,9 +80,9 @@ module ofm_out_fsm (/*AUTOARG*/
      S_EOF  = 3'h3;
    reg [2:0] 	// synopsys enum state_info
 		state, state_ns;
-   always @(posedge tx_clk or negedge mm2s_resetn)
+   always @(posedge tx_clk or posedge sys_rst)
      begin
-	if (~mm2s_resetn)
+	if (sys_rst)
 	  begin
 	     state <= #1 S_IDLE;
 	  end
@@ -90,7 +90,7 @@ module ofm_out_fsm (/*AUTOARG*/
 	  begin
 	     state <= #1 state_ns;
 	  end
-     end // always @ (posedge tx_clk or mm2s_resetn)
+     end // always @ (posedge tx_clk or posedge sys_rst)
    always @(*)
      begin
 	state_ns = state;
@@ -170,9 +170,9 @@ module ofm_out_fsm (/*AUTOARG*/
      begin
 	fifo_rdata <= #1 data_fifo_rdata;
      end
-   always @(posedge tx_clk or negedge mm2s_resetn)
+   always @(posedge tx_clk or posedge sys_rst)
      begin
-	if (~mm2s_resetn)
+	if (sys_rst)
 	  begin
 	     fifo_rden <= #1 1'b0;
 	  end
@@ -180,7 +180,7 @@ module ofm_out_fsm (/*AUTOARG*/
 	  begin
 	     fifo_rden  <= #1 data_fifo_rden;
 	  end
-     end // always @ (posedge tx_clk or negedge mm2s_resetn)
+     end // always @ (posedge tx_clk or posedge sys_rst)
    assign data_fifo_rden     = (state == S_SOF && ~tx_fifo_afull && ~data_fifo_empty) ||
 			       (state == S_DATA && ~data_fifo_empty);
    always @(posedge tx_clk)
@@ -192,9 +192,9 @@ module ofm_out_fsm (/*AUTOARG*/
 	tx_fifo_wdata[72:64] <= #1 fifo_rdata[72:64];
      end
 
-   always @(posedge tx_clk or negedge mm2s_resetn)
+   always @(posedge tx_clk or posedge sys_rst)
      begin
-	if (~mm2s_resetn)
+	if (sys_rst)
 	  begin
 	     tx_fifo_wren <= #1 1'b0;
 	  end
@@ -202,7 +202,7 @@ module ofm_out_fsm (/*AUTOARG*/
 	  begin
 	     tx_fifo_wren <= #1 fifo_rden;
 	  end
-     end // always @ (posedge tx_clk or negedge mm2s_resetn)
+     end // always @ (posedge tx_clk or posedge sys_rst)
    assign ctrl_fifo_rden     = state == S_EOF;
 
    output [3:0] ofm_out_fsm_dbg;

@@ -49,12 +49,12 @@ module ifm_in_fsm (/*AUTOARG*/
    rx_axis_mac_tready, data_fifo_wdata, data_fifo_wren,
    info_fifo_wdata, info_fifo_wren, ifm_in_fsm_dbg,
    // Inputs
-   rx_clk, s2mm_resetn, rx_axis_mac_tdata, rx_axis_mac_tkeep,
+   rx_clk, sys_rst, rx_axis_mac_tdata, rx_axis_mac_tkeep,
    rx_axis_mac_tlast, rx_axis_mac_tuser, rx_axis_mac_tvalid,
    data_fifo_afull
    );
    input rx_clk;
-   input s2mm_resetn;
+   input sys_rst;
 
    input [63:0] rx_axis_mac_tdata;
    input [ 7:0] rx_axis_mac_tkeep;
@@ -84,9 +84,9 @@ module ifm_in_fsm (/*AUTOARG*/
      S_DROP = 2'h2;
    reg [1:0] // synopsys enum state_info
 	     state, state_ns;
-   always @(posedge rx_clk or negedge s2mm_resetn)
+   always @(posedge rx_clk or posedge sys_rst)
      begin
-	if (~s2mm_resetn)
+	if (sys_rst)
 	  begin
 	     state <= #1 S_IDLE;
 	  end
@@ -94,7 +94,7 @@ module ifm_in_fsm (/*AUTOARG*/
 	  begin
 	     state <= #1 state_ns;
 	  end
-     end // always @ (posedge rx_clk or posedge s2mm_resetn)
+     end // always @ (posedge rx_clk or posedge sys_rst)
    always @(*)
      begin
 	state_ns = state;
@@ -115,9 +115,9 @@ module ifm_in_fsm (/*AUTOARG*/
      end // always @ (*)
 
    assign rx_axis_mac_tready = 1'b1;
-   always @(posedge rx_clk or negedge s2mm_resetn)
+   always @(posedge rx_clk or posedge sys_rst)
      begin
-	if (~s2mm_resetn)
+	if (sys_rst)
 	  begin
 	     data_fifo_wren <= #1 1'b0;
 	     info_fifo_wren <= #1 1'b0;
@@ -128,7 +128,7 @@ module ifm_in_fsm (/*AUTOARG*/
 				   (state == S_WAIT && rx_axis_mac_tvalid));
 	     info_fifo_wren <= #1 (state == S_WAIT && rx_axis_mac_tvalid && rx_axis_mac_tlast);
 	  end
-     end // always @ (posedge rx_clk or posedge s2mm_resetn)
+     end // always @ (posedge rx_clk or posedge sys_rst)
    always @(posedge rx_clk)
      begin
 	data_fifo_wdata[63:0] <= #1 rx_axis_mac_tdata[63:0];
