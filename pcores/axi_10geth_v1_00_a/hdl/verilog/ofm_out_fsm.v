@@ -169,8 +169,18 @@ module ofm_out_fsm (/*AUTOARG*/
    always @(posedge tx_clk)
      begin
 	fifo_rdata <= #1 data_fifo_rdata;
-	fifo_rden  <= #1 data_fifo_rden;
      end
+   always @(posedge tx_clk or negedge mm2s_resetn)
+     begin
+	if (~mm2s_resetn)
+	  begin
+	     fifo_rden <= #1 1'b0;
+	  end
+	else
+	  begin
+	     fifo_rden  <= #1 data_fifo_rden;
+	  end
+     end // always @ (posedge tx_clk or negedge mm2s_resetn)
    assign data_fifo_rden     = (state == S_SOF && ~tx_fifo_afull && ~data_fifo_empty) ||
 			       (state == S_DATA && ~data_fifo_empty);
    always @(posedge tx_clk)
@@ -180,8 +190,19 @@ module ofm_out_fsm (/*AUTOARG*/
 	tx_fifo_wdata[47:32] <= #1 insert_hit && insert_mask[2] ? TxCsSum : fifo_rdata[47:32];
 	tx_fifo_wdata[63:48] <= #1 insert_hit && insert_mask[3] ? TxCsSum : fifo_rdata[63:48];	
 	tx_fifo_wdata[72:64] <= #1 fifo_rdata[72:64];
-	tx_fifo_wren         <= #1 fifo_rden;
      end
+
+   always @(posedge tx_clk or negedge mm2s_resetn)
+     begin
+	if (~mm2s_resetn)
+	  begin
+	     tx_fifo_wren <= #1 1'b0;
+	  end
+	else
+	  begin
+	     tx_fifo_wren <= #1 fifo_rden;
+	  end
+     end // always @ (posedge tx_clk or negedge mm2s_resetn)
    assign ctrl_fifo_rden     = state == S_EOF;
 
    output [3:0] ofm_out_fsm_dbg;
