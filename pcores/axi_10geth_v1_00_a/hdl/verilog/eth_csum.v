@@ -109,7 +109,7 @@ module eth_csum (/*AUTOARG*/
      begin
 	if (end_hit_reg)
 	  begin
-	     TxSum <= #1 (Sum_int == 16'hFFFF) ? 16'hFFFF : ~Sum_int;
+	     TxSum <= #1 (Sum_int == 16'hFFFF) ? 16'hFFFFF :~Sum_int;
 	     RxSum <= #1 (Sum_int == 16'h0000) ? 16'hFFFFF : Sum_int;
 	  end
      end
@@ -182,9 +182,9 @@ module eth_csum (/*AUTOARG*/
    wire [3:0] csum_mask_begin_bcnt;
    wire [7:0] csum_mask_begin;
    assign csum_mask_begin_bcnt  = bcnt - CsBegin;
-   cnt_to_keep csum_mask_begin_i (.cnt(csum_mask_begin_bcnt), .keep(csum_mask_begin));
+   left_to_keep csum_mask_begin_i (.cnt(csum_mask_begin_bcnt), .keep(csum_mask_begin));
 
-   assign csum_mask = begin_hit ? (~csum_mask_begin) & tkeep_d1 : tkeep_d1;
+   assign csum_mask = begin_hit ? csum_mask_begin : tkeep_d1;
    wire [15:0] cur_sum_int;
    assign cur_sum_int = (csum_mask[0] ? tdata_d1[07:00] : 8'h0) +
 			(csum_mask[1] ? tdata_d1[15:08] : 8'h0) +

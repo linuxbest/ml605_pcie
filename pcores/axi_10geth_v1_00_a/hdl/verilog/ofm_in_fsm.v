@@ -201,9 +201,12 @@ module ofm_in_fsm (/*AUTOARG*/
    // insert the TxSum into stream in tx clock domain.
    always @(posedge mm2s_clk)
      begin
-	if (txd_tready && txd_tvalid)
+	if (TxSum_valid)
 	  begin
 	     ctrl_fifo_wdata[15:0]  <= #1 TxSum;
+	  end
+	if (txd_tready && txd_tvalid)
+	  begin
 	     ctrl_fifo_wdata[31:16] <= #1 TxCsInsert;
 	     ctrl_fifo_wdata[33:32] <= #1 TxCsCntrl;
 	  end

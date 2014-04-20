@@ -89,7 +89,7 @@ static void axi_set_mac_address(struct net_device *ndev, void *address);
  */
 #define BdCsumEnable(BdPtr) \
 	XAxiDma_BdWrite((BdPtr), XAXIDMA_BD_USR0_OFFSET,             \
-		((XAxiDma_BdRead((BdPtr), XAXIDMA_BD_USR0_OFFSET)) | 0x2) & 0xFFFFFFFE)
+		((XAxiDma_BdRead((BdPtr), XAXIDMA_BD_USR0_OFFSET)) | 0x1) & 0xFFFFFFFE)
 
 /* Used for debugging */
 #define BdCsumEnabled(BdPtr) \

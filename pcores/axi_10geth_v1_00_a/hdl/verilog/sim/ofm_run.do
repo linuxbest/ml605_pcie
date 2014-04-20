@@ -9,6 +9,7 @@ vlog -work work ../ofm_fifo.v
 vlog -work work ../eth_csum.v
 vlog -work work ../keep_to_cnt.v
 vlog -work work ../cnt_to_keep.v
+vlog -work work ../left_to_keep.v
 vlog -work work ../small_async_fifo.v
 vlog -work work ../afifo73_512.v
 vlog -work work ../fifo73_512.v

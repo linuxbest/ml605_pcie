@@ -36,7 +36,7 @@ eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_in_fsm${ps}data_fi
 eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_in_fsm${ps}data_fifo_wren
 
 eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_in_fsm${ps}ctrl_fifo_afull
-eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_in_fsm${ps}ctrl_fifo_wdata
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_in_fsm${ps}ctrl_fifo_wdata
 eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_in_fsm${ps}ctrl_fifo_wren
 
 eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_in_fsm${ps}TxFlag
@@ -70,7 +70,7 @@ eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}end_hit_r
 
 eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}csum_mask
 eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}csum_mask_begin_bcnt
-eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}csum_mask_begin
+eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}csum_mask_begin
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}cur_sum_int
 
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}bcnt
