@@ -69,7 +69,7 @@ eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}end_hit
 eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}end_hit_reg
 
 eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}csum_mask
-eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}csum_mask_begin_bcnt
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}csum_mask_begin_bcnt
 eval add wave -noupdate $binopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}csum_mask_begin
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ofm${ps}ofm_csum${ps}cur_sum_int
 
