@@ -108,8 +108,10 @@ module eth_csum (/*AUTOARG*/
    //  cur_sum
    // cycle 3
    //  sum
+   wire [16:0] Sum_int_0;
    wire [15:0] Sum_int;
-   assign Sum_int = sum[31:16] + sum[15:0];
+   assign Sum_int_0 = sum[31:16] + sum[15:0];
+   assign Sum_int   = Sum_int_0[15:0] + Sum_int_0[16];
 
    reg 	       end_hit_reg;
    reg 	       end_hit_d1;
@@ -216,11 +218,17 @@ module eth_csum (/*AUTOARG*/
    left_to_keep csum_mask_begin_i (.cnt(csum_mask_begin_bcnt), .keep(csum_mask_begin));
 
    wire [7:0] csum_mask;
+   wire [15:0] tdata_w0;
+   wire [15:0] tdata_w1;
+   wire [15:0] tdata_w2;
+   wire [15:0] tdata_w3;
+   assign tdata_w0 = {(csum_mask[0] ? tdata_d1[07:00] : 8'h0), (csum_mask[1] ? tdata_d1[15:08] : 8'h0)};
+   assign tdata_w1 = {(csum_mask[2] ? tdata_d1[23:16] : 8'h0), (csum_mask[3] ? tdata_d1[31:24] : 8'h0)};
+   assign tdata_w2 = {(csum_mask[4] ? tdata_d1[39:32] : 8'h0), (csum_mask[5] ? tdata_d1[47:40] : 8'h0)};
+   assign tdata_w3 = {(csum_mask[6] ? tdata_d1[55:48] : 8'h0), (csum_mask[7] ? tdata_d1[63:56] : 8'h0)};
    assign csum_mask = begin_hit ? csum_mask_begin_reg : tkeep_d1;
-   assign cur_sum_int = {(csum_mask[0] ? tdata_d1[07:00] : 8'h0), (csum_mask[1] ? tdata_d1[15:08] : 8'h0)} +
-			{(csum_mask[2] ? tdata_d1[23:16] : 8'h0), (csum_mask[3] ? tdata_d1[31:24] : 8'h0)} +
-			{(csum_mask[4] ? tdata_d1[39:32] : 8'h0), (csum_mask[5] ? tdata_d1[47:40] : 8'h0)} +
-			{(csum_mask[6] ? tdata_d1[55:48] : 8'h0), (csum_mask[7] ? tdata_d1[63:56] : 8'h0)};
+   assign cur_sum_int = tdata_w0 + tdata_w1 + tdata_w2 + tdata_w3;
+
    always @(posedge clk)
      begin
 	cur_sum <= #1 cur_sum_int;
