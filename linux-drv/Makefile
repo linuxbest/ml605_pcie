@@ -5,9 +5,10 @@ EXTRA_CFLAGS += -DCONFIG_VPCI
 
 KERNELDIR ?= /lib/modules/`uname -r`/build
 
-obj-m := aes10g.o eth10g.o vpci.o
+obj-m := aes10g.o eth10g.o vpci.o #xilinx_emac.o
 aes10g-objs := aesdma.o xaxidma_bd.o xaxidma_bdring.o xaxidma.o xio.o
 eth10g-objs := ethdma.o xaxidma_bd.o xaxidma_bdring.o xaxidma.o xio.o axitemac.o
+xilinx_emac-objs := xilinx_axienet_main.o xilinx_axienet_mdio.o
 
 default:
 	        $(MAKE) -C $(KERNELDIR) SUBDIRS=$(PWD) modules
