@@ -50,7 +50,7 @@ enum lro_state {
 #define DRIVER_VERSION		"1.00a"
 
 #define SSTG_DEBUG 	1
-#define RX_HW_CSUM 	0
+#define RX_HW_CSUM 	1
 #define TX_HW_CSUM	1
 
 /* Descriptors defines for Tx and Rx DMA - 2^n for the best performance */
@@ -845,8 +845,6 @@ static int axi_DmaSend_internal(struct sk_buff *skb, struct net_device *ndev)
 		printk("%s : %d DmaSend Use SG I/O\n", __func__, total_frags);
 	}
 #endif
-
-
 	if (total_frags < TX_BD_NUM) {
 		result = XAxiDma_BdRingAlloc(RingPtr, total_frags,
 					    &bd_ptr);
@@ -918,7 +916,10 @@ static int axi_DmaSend_internal(struct sk_buff *skb, struct net_device *ndev)
 		phy_addr =
 			(u32) dma_map_single(ndev->dev.parent, virt_addr, frag->size,
 					     DMA_TO_DEVICE);
-
+#if SSTG_DEBUG
+		axi_trace("len: %d\n", len);
+		print_hex_dump(KERN_DEBUG, "TX ", DUMP_PREFIX_ADDRESS, 16, 1, virt_addr, frag->size, 1);
+#endif
 		XAxiDma_BdSetBufAddr(bd_ptr, phy_addr);
 		XAxiDma_BdSetLength(bd_ptr, frag->size, RingPtr->MaxTransferLen);
 		XAxiDma_BdSetId(bd_ptr, NULL);
