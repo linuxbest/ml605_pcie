@@ -214,7 +214,68 @@ module ofm_tb;
 	 @(posedge mm2s_clk);	 
       end
    endtask // axi_eth_ifm
-  
+/*
+ * 23:53:25.673489 IP (tos 0x10, ttl 64, id 61935, offset 0, flags [DF], proto TCP (6), length 60)
+ *  192.168.101.50.35230 > 192.168.101.60.ssh: Flags [S], cksum 0xf7d5 (incorrect -> 0xd5f5), seq \
+ *      1837036053, win 14600, options [mss 1460,sackOK,TS val 4294902778 ecr 0,nop,wscale 7], length 0
+ *      0x0000:  4510 003c f1ef 4000 4006 fcfc c0a8 6532  E..<..@.@.....e2
+ *      0x0010:  c0a8 653c 899e 0016 6d7e f215 0000 0000  ..e<....m~......
+ *      0x0020:  a002 3908 f7d5 0000 0204 05b4 0402 080a  ..9.............
+ *      0x0030:  ffff 03fa 0000 0000 0103 0307            ............
+ */
+   task send_packet_tcp2;
+      begin
+	 ctrl_fifo_wren  = 0;
+	 ctrl_fifo_wdata = 0;
+	 data_fifo_wren  = 0;
+	 data_fifo_wdata = 0;
+ 	 while (ctrl_fifo_afull && data_fifo_afull)
+	   @(posedge tx_clk);
+
+	 cnt = 0;
+	 while (cnt != 6)
+	   begin
+	      ctrl_fifo_wren  = 1;
+	      ctrl_fifo_wdata = 0;
+	      ctrl_fifo_wdata[35:32] = 4'hf;
+	      case (cnt)
+		0: ctrl_fifo_wdata[31:28] = 4'ha;
+		1: ctrl_fifo_wdata[1:0]   = 2'b01;
+		2: begin 
+		   ctrl_fifo_wdata[15:0]  = 16'h32; 
+		   ctrl_fifo_wdata[31:16] = 16'h22;
+		end
+		3: ctrl_fifo_wdata[15:0]  = 16'h00;
+		5: ctrl_fifo_wdata[36]    = 1'b1; // EOF
+	      endcase
+	      cnt = cnt + 1;
+	      @(posedge mm2s_clk);
+	   end // while (cnt != 5)
+	 
+	 ctrl_fifo_wren  = 0;
+	 ctrl_fifo_wdata = 0;
+	 data_fifo_wren  = 1;
+	 data_fifo_wdata[71:64] = 8'b1111_1111;
+	 data_fifo_wdata[63:0]  = 64'h999280df_16bae290; @(posedge mm2s_clk);
+	 data_fifo_wdata[63:0]  = 64'h10450008_05dd5521; @(posedge mm2s_clk);
+	 data_fifo_wdata[63:0]  = 64'h06400040_eff13c00; @(posedge mm2s_clk);
+	 data_fifo_wdata[63:0]  = 64'ha8c03265_a8c0fcfc; @(posedge mm2s_clk);
+	 data_fifo_wdata[63:0]  = 64'h7e6d1600_9e893c65; @(posedge mm2s_clk);
+	 data_fifo_wdata[63:0]  = 64'h02a00000_000015f2; @(posedge mm2s_clk);
+	 data_fifo_wdata[63:0]  = 64'h04020000_ee4b0839; @(posedge mm2s_clk);
+	 data_fifo_wdata[63:0]  = 64'hffff0a08_0204b405; @(posedge mm2s_clk);
+	 data_fifo_wdata[63:0]  = 64'h03010000_0000fa03; @(posedge mm2s_clk);
+	 data_fifo_wdata[63:0]  = 64'h00000000_00000703; 
+	 data_fifo_wdata[71:64] = 8'b0000_0011; 
+	 data_fifo_wdata[72]    = 1'b1;
+	 @(posedge mm2s_clk);
+
+	 data_fifo_wdata = 0;
+	 data_fifo_wren  = 0;
+	 @(posedge mm2s_clk);	 
+      end
+   endtask // axi_eth_ifm
+
    initial begin
       data_fifo_wdata = 0;
       data_fifo_wren  = 0;
@@ -251,6 +312,7 @@ module ofm_tb;
       send_packet(0, 0, 0, 0, 34);
   
       send_packet_tcp1();
+      send_packet_tcp2();
    end
   
    wire [31:0] ofm_in_fsm_dbg;

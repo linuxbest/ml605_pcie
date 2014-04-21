@@ -71,8 +71,6 @@ module eth_csum (/*AUTOARG*/
    assign tlast = data_fifo_wdata[72];
    assign tvalid= data_fifo_wren;
 
-   reg [15:0] 	 TxSum;
-   reg [15:0] 	 RxSum;   
    reg 		 Sum_valid;
    reg [31:0] 	 sum;
    reg 		 sof;
@@ -87,7 +85,8 @@ module eth_csum (/*AUTOARG*/
 	     sof <= #1 1'b0;
 	  end
      end // always @ (posedge clk or posedge rst)
-   reg [15:0] cur_sum;
+   reg [18:0] cur_sum;
+   wire [18:0]cur_sum_int;
    reg 	      cur_sum_en;
    always @(posedge clk)
      begin
@@ -114,12 +113,16 @@ module eth_csum (/*AUTOARG*/
 
    reg 	       end_hit_reg;
    reg 	       end_hit_d1;
+   reg [15:0]  TxSum_le;
+   reg [15:0]  RxSum_le;
+   assign TxSum = {TxSum_le[7:0], TxSum_le[15:8]};
+   assign RxSum = {RxSum_le[7:0], RxSum_le[15:8]};
    always @(posedge clk)
      begin
 	if (end_hit_d1)
 	  begin
-	     TxSum <= #1 (Sum_int == 16'hFFFF) ? 16'hFFFFF :~Sum_int;
-	     RxSum <= #1 (Sum_int == 16'h0000) ? 16'hFFFFF : Sum_int;
+	     TxSum_le <= #1 (Sum_int == 16'hFFFF) ? 16'hFFFFF :~Sum_int;
+	     RxSum_le <= #1 (Sum_int == 16'h0000) ? 16'hFFFFF : Sum_int;
 	  end
      end
 
@@ -214,7 +217,6 @@ module eth_csum (/*AUTOARG*/
 
    wire [7:0] csum_mask;
    assign csum_mask = begin_hit ? csum_mask_begin_reg : tkeep_d1;
-   wire [15:0] cur_sum_int;
    assign cur_sum_int = {(csum_mask[0] ? tdata_d1[07:00] : 8'h0), (csum_mask[1] ? tdata_d1[15:08] : 8'h0)} +
 			{(csum_mask[2] ? tdata_d1[23:16] : 8'h0), (csum_mask[3] ? tdata_d1[31:24] : 8'h0)} +
 			{(csum_mask[4] ? tdata_d1[39:32] : 8'h0), (csum_mask[5] ? tdata_d1[47:40] : 8'h0)} +
