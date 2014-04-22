@@ -459,10 +459,11 @@ static irqreturn_t axi_interrupt(int irq, void *dev_id)
 
 	IrqStatusTx = XAxiDma_ReadReg(TxRingPtr->ChanBase, XAXIDMA_SR_OFFSET);
 	IrqStatusRx = XAxiDma_ReadReg(RxRingPtr->ChanBase, XAXIDMA_SR_OFFSET);
-	
+#if 0	
 	if (((IrqStatusTx | IrqStatusRx) & XAXIDMA_IRQ_ALL_MASK) == 0) {
 		return IRQ_NONE;
 	}
+#endif
 #if SSTG_DEBUG
 	printk("IrqStatusTx: %x, IrqStatusRx: %x\n", IrqStatusTx, IrqStatusRx);
 #endif
