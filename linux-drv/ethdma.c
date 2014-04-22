@@ -30,13 +30,11 @@
 #include "vpci.h"
 #endif
 
-#ifdef CONFIG_INET_LRO
 #include <linux/inet_lro.h>
 enum lro_state {
 	XTE_LRO_INIT,
 	XTE_LRO_NORM,
 };
-#endif
 
 #include "xaxidma.h"
 #include "xaxidma_bdring.h"
@@ -162,13 +160,14 @@ struct axi_local {
 	unsigned long tx_hw_csums;
 	unsigned long rx_hw_csums;
 
-#ifdef CONFIG_INET_LRO
 #define MAX_LRO_DESCRIPTORS 8
 #define LRO_MAX_AGGR        64
 	enum lro_state lro_state;
 	struct net_lro_mgr lro_mgr;
 	struct net_lro_desc lro_arr[MAX_LRO_DESCRIPTORS];
-#endif
+#define AXI_NAPI_WEIGHT RX_BD_NUM
+	struct napi_struct napi;
+
 	struct timer_list poll_timer;
 };
 
@@ -210,20 +209,6 @@ void disp_bd(XAxiDma_Bd *BdPtr)
 	       BdCurPtr[XAXIDMA_BD_USR4_OFFSET / sizeof(*BdCurPtr)],
 	       BdCurPtr[XAXIDMA_BD_ID_OFFSET / sizeof(*BdCurPtr)]);
 	printk("--------------------------------------- Done ---------------------------------------\n");
-}
-
-static void sstg_dump_context(char *va, int len)
-{
-	char *context = va;
-	int i;
-	printk("Context:\n");
-	for (i = 0; i < len; i++) {
-		printk("%02x ", (unsigned char)*context);
-		if (i%16 == 15)
-			printk("\n");
-		context++;
-	}
-	printk("\n");
 }
 #endif
 
@@ -320,10 +305,10 @@ static void eth_ring_dump(XAxiDma_BdRing *bd_ring, char *prefix)
 
 /* The callback function for completed frames sent in SGDMA mode. */
 static void DmaSendHandlerBH(unsigned long p);
-static void DmaRecvHandlerBH(unsigned long p);
+/*static void DmaRecvHandlerBH(unsigned long p);*/
 
 DECLARE_TASKLET(DmaSendBH, DmaSendHandlerBH, 0);
-DECLARE_TASKLET(DmaRecvBH, DmaRecvHandlerBH, 0);
+/*DECLARE_TASKLET(DmaRecvBH, DmaRecvHandlerBH, 0);*/
 
 static void axi_reset(struct net_device *ndev, u32 line_num)
 {
@@ -384,13 +369,13 @@ static void axi_reset(struct net_device *ndev, u32 line_num)
 
 	/* We're all ready to go.  Start the queue in case it was stopped. */
 	netif_wake_queue(ndev);
+	napi_enable(&lp->napi);
 }
 
 static irqreturn_t axi_dma_rx_interrupt(int id, void *data)
 {
 	struct net_device *ndev = data;
-	struct list_head *cur_lp;
-	unsigned long flags, irq_status;
+	unsigned long irq_status;
 	int RingIndex = 0;
 	XAxiDma_BdRing *RingPtr;
 	struct axi_local *lp = (struct axi_local *) netdev_priv(ndev);
@@ -398,7 +383,7 @@ static irqreturn_t axi_dma_rx_interrupt(int id, void *data)
 	RingPtr = XAxiDma_GetRxRing(&lp->AxiDma, RingIndex);
 	irq_status = XAxiDma_ReadReg(RingPtr->ChanBase, XAXIDMA_SR_OFFSET);
 #if SSTG_DEBUG
-	printk("IrqStatusRx: %x\n", irq_status);
+	printk("IrqStatusRx: %lx\n", irq_status);
 #endif
 	XAxiDma_mBdRingAckIrq(RingPtr, irq_status);
 
@@ -410,19 +395,10 @@ static irqreturn_t axi_dma_rx_interrupt(int id, void *data)
 	}
 	
 	if ((irq_status & (XAXIDMA_IRQ_DELAY_MASK | XAXIDMA_IRQ_IOC_MASK))) {
-		spin_lock_irqsave(&receivedQueueSpin, flags);
-		list_for_each(cur_lp, &receivedQueue) {
-			if (cur_lp == &(lp->rcv)) {
-				break;
-			}
+		if (napi_schedule_prep(&lp->napi)) {
+			XAxiDma_mBdRingIntDisable(RingPtr, XAXIDMA_IRQ_ALL_MASK);
+			__napi_schedule(&lp->napi);
 		}
-		if (cur_lp != &(lp->rcv)) {
-			list_add_tail(&lp->rcv, &receivedQueue);
-			XAxiDma_mBdRingIntDisable(RingPtr,
-						 XAXIDMA_IRQ_ALL_MASK);
-			tasklet_schedule(&DmaRecvBH);
-		}
-		spin_unlock_irqrestore(&receivedQueueSpin, flags);
 	}
 	return IRQ_HANDLED;
 }
@@ -438,7 +414,7 @@ static irqreturn_t axi_dma_tx_interrupt(int id, void *data)
 	RingPtr = XAxiDma_GetTxRing(&lp->AxiDma);
 	irq_status = XAxiDma_ReadReg(RingPtr->ChanBase, XAXIDMA_SR_OFFSET);
 #if SSTG_DEBUG
-	printk("IrqStatusTx: %x\n", irq_status);
+	printk("IrqStatusTx: %lx\n", irq_status);
 #endif
 	XAxiDma_mBdRingAckIrq(RingPtr, irq_status);
 
@@ -503,20 +479,72 @@ static irqreturn_t axi_interrupt(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static void DmaSendHandlerBH(unsigned long p)
+static void DmaSendHandlerBH_netdev(struct axi_local *lp)
 {
-	struct net_device *ndev;
-	struct axi_local *lp;
+	struct net_device *ndev = lp->ndev;
 	XAxiDma_Bd *BdPtr, *BdCurPtr;
 	unsigned long len;
-	unsigned long flags;
 	struct sk_buff *skb;
 	dma_addr_t skb_dma_addr;
 	int result = XST_SUCCESS;
 	unsigned int bd_processed, bd_processed_save;
-	XAxiDma_BdRing *RingPtr;
+	XAxiDma_BdRing *RingPtr = XAxiDma_GetTxRing(&lp->AxiDma);
+
+	while ((bd_processed = XAxiDma_BdRingFromHw(RingPtr, TX_BD_NUM, &BdPtr)) > 0) {
+		bd_processed_save = bd_processed;
+		BdCurPtr = BdPtr;
+		do {
+			len = XAxiDma_BdGetLength(BdCurPtr, RingPtr->MaxTransferLen);
+			skb_dma_addr = (dma_addr_t) XAxiDma_BdGetBufAddr(BdCurPtr);
+			dma_unmap_single(ndev->dev.parent, skb_dma_addr, len,
+					DMA_TO_DEVICE);
+
+			/* get ptr to skb */
+			skb = (struct sk_buff *)XAxiDma_BdGetId(BdCurPtr);
+			if (skb)
+				dev_kfree_skb(skb);
+
+			/* reset BD id */
+			XAxiDma_BdSetId(BdCurPtr, NULL);
+
+			lp->stats.tx_bytes += len;
+			if (XAxiDma_BdGetCtrl(BdCurPtr) & XAXIDMA_BD_CTRL_TXEOF_MASK) {
+				lp->stats.tx_packets++;
+			}
+
+			BdCurPtr = XAxiDma_mBdRingNext(RingPtr, BdCurPtr);
+			bd_processed--;
+		} while (bd_processed > 0);
+
+		result = XAxiDma_BdRingFree(RingPtr, bd_processed_save, BdPtr);
+		if (result != XST_SUCCESS) {
+			printk(KERN_ERR
+					"%s: XAxiDma: BdRingFree() error %d.\n",
+					ndev->name, result);
+			XAxiDma_Reset(&lp->AxiDma);
+			return;
+		}
+	}
+	/* Send out the deferred skb if it exists */
+	if ((lp->deferred_skb) && bd_processed_save) {
+		skb = lp->deferred_skb;
+		lp->deferred_skb = NULL;
+
+		result = axi_DmaSend_internal(skb, ndev);
+	}
+
+	if (result == XST_SUCCESS) {
+		netif_wake_queue(ndev);	/* wake up send queue */
+	}
+}
+
+static void DmaSendHandlerBH(unsigned long p)
+{
+	struct axi_local *lp;
+	unsigned long flags;
 
 	while (1) {
+		XAxiDma_BdRing *RingPtr;
 		spin_lock_irqsave(&sentQueueSpin, flags);
 		if (list_empty(&sentQueue)) {
 			spin_unlock_irqrestore(&sentQueueSpin, flags);
@@ -528,175 +556,129 @@ static void DmaSendHandlerBH(unsigned long p)
 
 		list_del_init(&(lp->xmit));
 		spin_unlock_irqrestore(&sentQueueSpin, flags);
-
+		
 		spin_lock_irqsave(&XTE_tx_spinlock, flags);
-		ndev = lp->ndev;
-		bd_processed_save = 0;
-		while ((bd_processed =
-			XAxiDma_BdRingFromHw(RingPtr, TX_BD_NUM,
-					    &BdPtr)) > 0) {
-
-			bd_processed_save = bd_processed;
-			BdCurPtr = BdPtr;
-			do {
-				len = XAxiDma_BdGetLength(BdCurPtr, RingPtr->MaxTransferLen);
-				skb_dma_addr = (dma_addr_t) XAxiDma_BdGetBufAddr(BdCurPtr);
-				dma_unmap_single(ndev->dev.parent, skb_dma_addr, len,
-						 DMA_TO_DEVICE);
-
-				/* get ptr to skb */
-				skb = (struct sk_buff *)XAxiDma_BdGetId(BdCurPtr);
-				if (skb)
-					dev_kfree_skb(skb);
-
-				/* reset BD id */
-				XAxiDma_BdSetId(BdCurPtr, NULL);
-
-				lp->stats.tx_bytes += len;
-				if (XAxiDma_BdGetCtrl(BdCurPtr) & XAXIDMA_BD_CTRL_TXEOF_MASK) {
-					lp->stats.tx_packets++;
-				}
-
-				BdCurPtr = XAxiDma_mBdRingNext(RingPtr, BdCurPtr);
-				bd_processed--;
-			} while (bd_processed > 0);
-
-			result = XAxiDma_BdRingFree(RingPtr, bd_processed_save, BdPtr);
-			if (result != XST_SUCCESS) {
-				printk(KERN_ERR
-				       "%s: XAxiDma: BdRingFree() error %d.\n",
-				       ndev->name, result);
-				XAxiDma_Reset(&lp->AxiDma);
-				spin_unlock_irqrestore(&XTE_tx_spinlock, flags);
-				return;
-			}
-		}
-		/* Send out the deferred skb if it exists */
-		if ((lp->deferred_skb) && bd_processed_save) {
-			skb = lp->deferred_skb;
-			lp->deferred_skb = NULL;
-
-			result = axi_DmaSend_internal(skb, ndev);
-		}
-
-		if (result == XST_SUCCESS) {
-			netif_wake_queue(ndev);	/* wake up send queue */
-		}
+		DmaSendHandlerBH_netdev(lp);
 		XAxiDma_mBdRingIntEnable(RingPtr, XAXIDMA_IRQ_ALL_MASK);
 		spin_unlock_irqrestore(&XTE_tx_spinlock, flags);
 	}
 }
 
-
-static void DmaRecvHandlerBH(unsigned long p)
+static void DmaRecvHandlerBH_netdev(struct axi_local *lp, struct sk_buff_head *sk_buff_list)
 {
-	struct net_device *ndev;
-	struct axi_local *lp;
+	struct net_device *ndev = lp->ndev;
 	struct sk_buff *skb;
 	u32 len, skb_baddr;
 	int result;
-	unsigned long flags;
 	XAxiDma_Bd *BdPtr, *BdCurPtr;
 	unsigned int bd_processed, bd_processed_saved;
 	int RingIndex = 0;
-	XAxiDma_BdRing *RingPtr;
-#ifdef CONFIG_INET_LRO
-	bool lro_flush_needed = false;
-#endif
+	XAxiDma_BdRing *RingPtr = XAxiDma_GetRxRing(&lp->AxiDma, RingIndex);
 
-	while (1) {
-		spin_lock_irqsave(&receivedQueueSpin, flags);
-		if (list_empty(&receivedQueue)) {
-			spin_unlock_irqrestore(&receivedQueueSpin, flags);
-			break;
-		}
-		lp = list_entry(receivedQueue.next, struct axi_local, rcv);
-		RingPtr = XAxiDma_GetRxRing(&lp->AxiDma, RingIndex);
-		
-		list_del_init(&(lp->rcv));
-		spin_unlock_irqrestore(&receivedQueueSpin, flags);
-		ndev = lp->ndev;
+	if ((bd_processed = XAxiDma_BdRingFromHw(RingPtr, RX_BD_NUM, &BdPtr)) > 0) {
+		bd_processed_saved = bd_processed;
+		BdCurPtr = BdPtr;
+		do {
+			len = BdGetRxLen(BdCurPtr);
 
-		spin_lock_irqsave(&XTE_rx_spinlock, flags);
-		if ((bd_processed =
-		     XAxiDma_BdRingFromHw(RingPtr, RX_BD_NUM, &BdPtr)) > 0) {
+			/* get ptr to skb */
+			skb = (struct sk_buff *)XAxiDma_BdGetId(BdCurPtr);
 
-			bd_processed_saved = bd_processed;
-			BdCurPtr = BdPtr;
-			do {
-				len = BdGetRxLen(BdCurPtr);
-
-				/* get ptr to skb */
-				skb = (struct sk_buff *)XAxiDma_BdGetId(BdCurPtr);
-
-				/* get and free up dma handle used by skb->data */
-				skb_baddr = (dma_addr_t) XAxiDma_BdGetBufAddr(BdCurPtr);
-				dma_unmap_single(ndev->dev.parent, skb_baddr,
-						 lp->frame_size,
-						 DMA_FROM_DEVICE);
+			/* get and free up dma handle used by skb->data */
+			skb_baddr = (dma_addr_t) XAxiDma_BdGetBufAddr(BdCurPtr);
+			dma_unmap_single(ndev->dev.parent, skb_baddr, lp->frame_size,
+					DMA_FROM_DEVICE);
 #if SSTG_DEBUG
-				axi_trace("skb %p, len: %d\n", skb, len);
-				print_hex_dump(KERN_DEBUG, "RX ", DUMP_PREFIX_ADDRESS, 16, 1, 
-						skb->data, len, 1);
-				disp_bd(BdCurPtr);
+			axi_trace("skb %p, len: %d\n", skb, len);
+			print_hex_dump(KERN_DEBUG, "RX ", DUMP_PREFIX_ADDRESS, 16, 1, 
+					skb->data, len, 1);
+			disp_bd(BdCurPtr);
 #endif
-				/* reset ID */
-				XAxiDma_BdSetId(BdCurPtr, NULL);
+			XAxiDma_BdSetId(BdCurPtr, NULL);
 
-				/* setup received skb and send it upstream */
-				skb_put(skb, len);	/* Tell the skb how much data we got. */
-				skb->dev = ndev;
+			/* setup received skb and send it upstream */
+			skb_put(skb, len);	/* Tell the skb how much data we got. */
+			skb->dev = ndev;
 
-				/* this routine adjusts skb->data to skip the header */
-				skb->protocol = eth_type_trans(skb, ndev);
-				/* default the ip_summed value */
-				skb->ip_summed = CHECKSUM_NONE;
-				
+			/* this routine adjusts skb->data to skip the header */
+			skb->protocol = eth_type_trans(skb, ndev);
+			/* default the ip_summed value */
+			skb->ip_summed = CHECKSUM_NONE;
+
 #if RX_HW_CSUM
-				/* if we're doing rx csum offload, set it up */
-				if ((skb->protocol == __constant_htons(ETH_P_IP)) && (skb->len > 64)) {
-					/* we only support partial checksum */
-					skb->csum = BdCsumGet(BdCurPtr);
-					skb->ip_summed = CHECKSUM_COMPLETE;
-					lp->rx_hw_csums++;
-				}
-#endif
-				lp->stats.rx_packets++;
-				lp->stats.rx_bytes += len;
-#ifdef CONFIG_INET_LRO
-				if (lp->lro_state == XTE_LRO_NORM) {
-					lro_receive_skb(&lp->lro_mgr, skb, 0);
-					lro_flush_needed = true;
-				} else {
-					netif_rx(skb);	/* Send the packet upstream. */
-				}
-#else
-				netif_rx(skb);	/* Send the packet upstream. */
-#endif
-
-				BdCurPtr = XAxiDma_mBdRingNext(RingPtr, BdCurPtr);
-				bd_processed--;
-			} while (bd_processed > 0);
-
-#ifdef CONFIG_INET_LRO
-			if (lro_flush_needed)
-				lro_flush_all(&lp->lro_mgr);
-#endif
-			/* give the descriptor back to the driver */
-			result = XAxiDma_BdRingFree(RingPtr, bd_processed_saved, BdPtr);
-			if (result != XST_SUCCESS) {
-				printk(KERN_ERR
-				       "%s: XAxiDma: BdRingFree unsuccessful (%d)\n",
-				       ndev->name, result);
-				XAxiDma_Reset(&lp->AxiDma);
-				spin_unlock_irqrestore(&XTE_rx_spinlock, flags);
-				return;
+			/* if we're doing rx csum offload, set it up */
+			if ((skb->protocol == __constant_htons(ETH_P_IP)) && (skb->len > 64)) {
+				/* we only support partial checksum */
+				skb->csum = BdCsumGet(BdCurPtr);
+				skb->ip_summed = CHECKSUM_COMPLETE;
+				lp->rx_hw_csums++;
 			}
+#endif
+			lp->stats.rx_packets++;
+			lp->stats.rx_bytes += len;
+
+			__skb_queue_tail(sk_buff_list, skb);
+			BdCurPtr = XAxiDma_mBdRingNext(RingPtr, BdCurPtr);
+			bd_processed--;
+		} while (bd_processed > 0);
+
+		/* give the descriptor back to the driver */
+		result = XAxiDma_BdRingFree(RingPtr, bd_processed_saved, BdPtr);
+		if (result != XST_SUCCESS) {
+			printk(KERN_ERR
+					"%s: XAxiDma: BdRingFree unsuccessful (%d)\n",
+					ndev->name, result);
+			XAxiDma_Reset(&lp->AxiDma);
+			return;
 		}
-		axi_DmaSetupRecvBuffers(ndev);
-		XAxiDma_mBdRingIntEnable(RingPtr, XAXIDMA_IRQ_ALL_MASK);
-		spin_unlock_irqrestore(&XTE_rx_spinlock, flags);
 	}
+	axi_DmaSetupRecvBuffers(ndev);
+}
+
+static int axi_rx_clean(struct axi_local *lp)
+{
+	struct sk_buff_head sk_buff_list;
+	struct sk_buff *skb;
+	int done = 0;
+	unsigned long flags;
+	int lro_flush_needed = false;
+
+	skb_queue_head_init(&sk_buff_list);
+	
+	spin_lock_irqsave(&XTE_rx_spinlock, flags);
+	DmaRecvHandlerBH_netdev(lp, &sk_buff_list);
+	spin_unlock_irqrestore(&XTE_rx_spinlock, flags);
+
+	skb = skb_dequeue(&sk_buff_list);
+	while (skb) {
+		if (lp->lro_state == XTE_LRO_NORM) {
+			lro_receive_skb(&lp->lro_mgr, skb, 0);
+			lro_flush_needed = true;
+		} else 
+			netif_receive_skb(skb);
+		skb = skb_dequeue(&sk_buff_list);
+		done ++;
+	}
+
+	if (lro_flush_needed)
+		lro_flush_all(&lp->lro_mgr);
+
+	return done;
+}
+
+static int axi_poll(struct napi_struct *napi, int budget)
+{
+	struct axi_local *lp = container_of(napi, struct axi_local, napi);
+	unsigned int work_done = axi_rx_clean(lp);
+
+	if (work_done < budget) {
+		XAxiDma_BdRing *RingPtr = XAxiDma_GetTxRing(&lp->AxiDma);
+
+		napi_complete(napi);
+		XAxiDma_mBdRingIntEnable(RingPtr, XAXIDMA_IRQ_ALL_MASK);
+	}
+
+	return work_done;
 }
 
 static void axi_poll_isr(unsigned long data)
@@ -768,6 +750,7 @@ static int axi_open(struct net_device *ndev)
 #endif
 	/* We're ready to go. */
 	netif_start_queue(ndev);
+	napi_enable(&lp->napi);
 
 #if 1
 	init_timer(&lp->poll_timer);
@@ -798,6 +781,7 @@ static int axi_close(struct net_device *ndev)
 	 * Free the interrupt - not polled mode.
 	 */
 	axi_irq_free(ndev);
+	napi_disable(&lp->napi);
 
 	spin_lock_irqsave(&receivedQueueSpin, flags);
 	list_del(&(lp->rcv));
@@ -1201,7 +1185,6 @@ static void axi_remove_ndev(struct net_device *ndev)
 	}
 }
 
-#ifdef CONFIG_INET_LRO
 /* base on pasemi_mac.c */
 static int axi_get_skb_header(struct sk_buff *skb, void **iphdr,
 		void **tcph, u64 *hdr_flags, void *priv)
@@ -1230,10 +1213,10 @@ static int axi_get_skb_header(struct sk_buff *skb, void **iphdr,
 
 	return 0;
 }
-#endif
 
 static void axi_set_mac_address(struct net_device *ndev, void *address)
 {
+#if 0
 	struct axi_local *lp = netdev_priv(ndev);
 
 	if (ndev->flags & IFF_UP) 
@@ -1244,7 +1227,6 @@ static void axi_set_mac_address(struct net_device *ndev, void *address)
 
 	if (!is_valid_ether_addr(ndev->dev_addr))
 		random_ether_addr(ndev->dev_addr);
-#if 0
 	/*
 	 * Set up unicast MAC address filter set its mac address
 	 */
@@ -1293,10 +1275,8 @@ static int eth_probe_common(struct axi_local *lp, struct net_device *ndev)
 	if (ndev->mtu > XTE_JUMBO_MTU)
 		ndev->mtu = XTE_JUMBO_MTU;
 
-	lp->frame_size = /*ndev->mtu + XTE_HDR_SIZE + XTE_TRL_SIZE*/PAGE_SIZE;
-#ifdef CONFIG_INET_LRO
+	lp->frame_size = ndev->mtu + XTE_HDR_SIZE + XTE_TRL_SIZE;
 	lp->lro_state = XTE_LRO_INIT;
-#endif
 
 	axitemac_init(lp->reg_base);
 	axitemac_stop(lp->reg_base);
@@ -1340,7 +1320,6 @@ static int eth_probe_common(struct axi_local *lp, struct net_device *ndev)
 	}
 	XAxiDma_mBdRingIntEnable(RxRingPtr, XAXIDMA_IRQ_ALL_MASK);
 
-#ifdef CONFIG_INET_LRO
 	memset(&lp->lro_mgr.stats, 0, sizeof(lp->lro_mgr.stats));
 	memset(&lp->lro_arr, 0, sizeof(lp->lro_arr));
 
@@ -1348,7 +1327,7 @@ static int eth_probe_common(struct axi_local *lp, struct net_device *ndev)
 	lp->lro_mgr.max_desc = MAX_LRO_DESCRIPTORS;
 	lp->lro_mgr.lro_arr  = lp->lro_arr;
 	lp->lro_mgr.get_skb_header = axi_get_skb_header;
-	lp->lro_mgr.features = /*LRO_F_NAPI*/0;
+	lp->lro_mgr.features = LRO_F_NAPI;
 	lp->lro_mgr.dev      = ndev;
 
 	lp->lro_mgr.ip_summed = CHECKSUM_NONE;
@@ -1356,7 +1335,8 @@ static int eth_probe_common(struct axi_local *lp, struct net_device *ndev)
 
 	lp->lro_mgr.frag_align_pad = 0;
 	lp->lro_state = XTE_LRO_NORM;
-#endif
+
+	netif_napi_add(ndev, &lp->napi, axi_poll, AXI_NAPI_WEIGHT);
 
 	/* init the stats */
 	lp->tx_hw_csums = 0;
