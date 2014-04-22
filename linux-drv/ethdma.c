@@ -1193,9 +1193,13 @@ static int axi_get_skb_header(struct sk_buff *skb, void **iphdr,
 	struct iphdr *iph;
 	unsigned int ip_len;
 
-	/* TODO IPv4 header checksum failed */
+	if (unlikely(skb->protocol != __constant_htons(ETH_P_IP)))
+		return -1;
 
-	/* non tcp packet */
+	if (unlikely(skb->ip_summed != CHECKSUM_COMPLETE))
+		return -1;
+
+	/* Check for non-TCP packet */
 	skb_reset_network_header(skb);
 	iph = ip_hdr(skb);
 	if (iph->protocol != IPPROTO_TCP)
@@ -1210,7 +1214,7 @@ static int axi_get_skb_header(struct sk_buff *skb, void **iphdr,
 		return -1;
 
 	*hdr_flags = LRO_IPV4 | LRO_TCP;
-	*iphdr = ip_hdr(skb);
+	*iphdr = iph;
 
 	return 0;
 }
