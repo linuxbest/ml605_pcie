@@ -126,7 +126,7 @@ static void axi_set_mac_address(struct net_device *ndev, void *address);
  * Our private per device data.  When a net_device is allocated we will
  * ask for enough extra space for this.
  */
-struct axi_local {
+struct net_local {
 	struct list_head rcv;
 	struct list_head xmit;
 	
@@ -317,7 +317,7 @@ static void axi_reset(struct net_device *ndev, u32 line_num)
 	int status, TimeOut;
 	static u32 reset_cnt = 0;
 	int RingIndex = 0;
-	struct axi_local *lp = (struct axi_local *) netdev_priv(ndev);
+	struct net_local *lp = (struct net_local *) netdev_priv(ndev);
 	RxRingPtr = XAxiDma_GetRxRing(&lp->AxiDma, RingIndex);
 	TxRingPtr = XAxiDma_GetTxRing(&lp->AxiDma);
 
@@ -378,7 +378,7 @@ static irqreturn_t axi_dma_rx_interrupt(int id, void *data)
 	unsigned long irq_status;
 	int RingIndex = 0;
 	XAxiDma_BdRing *RingPtr;
-	struct axi_local *lp = (struct axi_local *) netdev_priv(ndev);
+	struct net_local *lp = (struct net_local *) netdev_priv(ndev);
 
 	RingPtr = XAxiDma_GetRxRing(&lp->AxiDma, RingIndex);
 	irq_status = XAxiDma_ReadReg(RingPtr->ChanBase, XAXIDMA_SR_OFFSET);
@@ -409,7 +409,7 @@ static irqreturn_t axi_dma_tx_interrupt(int id, void *data)
 	struct list_head *cur_lp;
 	unsigned long flags, irq_status;
 	XAxiDma_BdRing *RingPtr;
-	struct axi_local *lp = (struct axi_local *) netdev_priv(ndev);
+	struct net_local *lp = (struct net_local *) netdev_priv(ndev);
 
 	RingPtr = XAxiDma_GetTxRing(&lp->AxiDma);
 	irq_status = XAxiDma_ReadReg(RingPtr->ChanBase, XAXIDMA_SR_OFFSET);
@@ -446,7 +446,7 @@ static irqreturn_t axi_interrupt(int irq, void *dev_id)
 {
 	u32 IrqStatusTx, IrqStatusRx;
 	struct net_device *ndev = (struct net_device *)dev_id;
-	struct axi_local *lp = (struct axi_local *) netdev_priv(ndev);
+	struct net_local *lp = (struct net_local *) netdev_priv(ndev);
 	int RingIndex = 0;
 	XAxiDma_BdRing *RxRingPtr, *TxRingPtr;
 	RxRingPtr = XAxiDma_GetRxRing(&lp->AxiDma, RingIndex);
@@ -480,7 +480,7 @@ static irqreturn_t axi_interrupt(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static void DmaSendHandlerBH_netdev(struct axi_local *lp)
+static void DmaSendHandlerBH_netdev(struct net_local *lp)
 {
 	struct net_device *ndev = lp->ndev;
 	XAxiDma_Bd *BdPtr, *BdCurPtr;
@@ -541,7 +541,7 @@ static void DmaSendHandlerBH_netdev(struct axi_local *lp)
 
 static void DmaSendHandlerBH(unsigned long p)
 {
-	struct axi_local *lp;
+	struct net_local *lp;
 	unsigned long flags;
 
 	while (1) {
@@ -552,7 +552,7 @@ static void DmaSendHandlerBH(unsigned long p)
 			break;
 		}
 
-		lp = list_entry(sentQueue.next, struct axi_local, xmit);
+		lp = list_entry(sentQueue.next, struct net_local, xmit);
 		RingPtr = XAxiDma_GetTxRing(&lp->AxiDma);
 
 		list_del_init(&(lp->xmit));
@@ -565,7 +565,7 @@ static void DmaSendHandlerBH(unsigned long p)
 	}
 }
 
-static void DmaRecvHandlerBH_netdev(struct axi_local *lp, struct sk_buff_head *sk_buff_list)
+static void DmaRecvHandlerBH_netdev(struct net_local *lp, struct sk_buff_head *sk_buff_list)
 {
 	struct net_device *ndev = lp->ndev;
 	struct sk_buff *skb;
@@ -636,7 +636,7 @@ static void DmaRecvHandlerBH_netdev(struct axi_local *lp, struct sk_buff_head *s
 	axi_DmaSetupRecvBuffers(ndev);
 }
 
-static int axi_rx_clean(struct axi_local *lp)
+static int axi_rx_clean(struct net_local *lp)
 {
 	struct sk_buff_head sk_buff_list;
 	struct sk_buff *skb;
@@ -669,7 +669,7 @@ static int axi_rx_clean(struct axi_local *lp)
 
 static int axi_poll(struct napi_struct *napi, int budget)
 {
-	struct axi_local *lp = container_of(napi, struct axi_local, napi);
+	struct net_local *lp = container_of(napi, struct net_local, napi);
 	unsigned int work_done = axi_rx_clean(lp);
 
 	if (work_done < budget) {
@@ -685,7 +685,7 @@ static int axi_poll(struct napi_struct *napi, int budget)
 static void axi_poll_isr(unsigned long data)
 {
 	struct net_device *ndev = (struct net_device *)data;
-	struct axi_local *lp = netdev_priv(ndev);
+	struct net_local *lp = netdev_priv(ndev);
 	axi_interrupt(0, ndev);
 	mod_timer(&lp->poll_timer, jiffies + 1);
 }
@@ -693,7 +693,7 @@ static void axi_poll_isr(unsigned long data)
 static int axi_irq_free(struct net_device *ndev)
 {
 #ifdef CONFIG_VPCI
-	struct axi_local *lp = netdev_priv(ndev);
+	struct net_local *lp = netdev_priv(ndev);
 	vpci_free_irq(lp->mdev, 0);
 	vpci_free_irq(lp->mdev, 1);
 #else
@@ -705,7 +705,7 @@ static int axi_irq_free(struct net_device *ndev)
 static int axi_irq_setup(struct net_device *ndev)
 {
 	int res;
-	struct axi_local *lp = netdev_priv(ndev);
+	struct net_local *lp = netdev_priv(ndev);
 
 #ifdef CONFIG_VPCI
 	res  = vpci_request_irq(lp->mdev, 0, axi_dma_tx_interrupt, IRQF_SHARED, DRIVER_NAME, lp->ndev);
@@ -724,7 +724,7 @@ static int axi_open(struct net_device *ndev)
 {
 	int RingIndex = 0;
 	XAxiDma_BdRing *RxRingPtr, *TxRingPtr;
-	struct axi_local *lp = (struct axi_local *)netdev_priv(ndev);
+	struct net_local *lp = (struct net_local *)netdev_priv(ndev);
 	RxRingPtr = XAxiDma_GetRxRing(&lp->AxiDma, RingIndex);
 	TxRingPtr = XAxiDma_GetTxRing(&lp->AxiDma);
 
@@ -766,7 +766,7 @@ static int axi_open(struct net_device *ndev)
 static int axi_close(struct net_device *ndev)
 {
 	unsigned long flags;
-	struct axi_local *lp = (struct axi_local *) netdev_priv(ndev);
+	struct net_local *lp = (struct net_local *) netdev_priv(ndev);
 
 	/* Stop Send queue */
 	netif_stop_queue(ndev);
@@ -805,7 +805,7 @@ static int axi_DmaSend_internal(struct sk_buff *skb, struct net_device *ndev)
 	dma_addr_t phy_addr;
 	XAxiDma_Bd *bd_ptr, *first_bd_ptr, *last_bd_ptr;
 	skb_frag_t *frag;
-	struct axi_local *lp = (struct axi_local *) netdev_priv(ndev);
+	struct net_local *lp = (struct net_local *) netdev_priv(ndev);
 	int RingIndex = 0;
 	XAxiDma_BdRing  *RingPtr;
 	RingPtr = XAxiDma_GetTxRing(&lp->AxiDma);
@@ -945,14 +945,14 @@ static int axi_send(struct sk_buff *skb, struct net_device *ndev)
 
 static struct net_device_stats *axi_get_stats(struct net_device *ndev)
 {
-	struct axi_local *lp = (struct axi_local *)netdev_priv(ndev);
+	struct net_local *lp = (struct net_local *)netdev_priv(ndev);
 
 	return &lp->stats;
 }
 
 static void axi_tx_timeout(struct net_device *ndev)
 {
-	struct axi_local *lp = (struct axi_local *)netdev_priv(ndev);
+	struct net_local *lp = (struct net_local *)netdev_priv(ndev);
 	unsigned long flags;
 
 	/*
@@ -982,7 +982,7 @@ static void axi_DmaSetupRecvBuffers(struct net_device *ndev)
 	int free_bd_count;
 	XAxiDma_BdRing *RingPtr;
 	int RingIndex = 0;
-	struct axi_local *lp = (struct axi_local *)netdev_priv(ndev);
+	struct net_local *lp = (struct net_local *)netdev_priv(ndev);
 	RingPtr = XAxiDma_GetRxRing(&lp->AxiDma, RingIndex);
 	free_bd_count = XAxiDma_mBdRingGetFreeCnt(RingPtr);
 
@@ -1057,7 +1057,7 @@ static int descriptor_init(struct net_device *ndev)
 	int result;
 	int RingIndex = 0;
 	XAxiDma_BdRing *RxRingPtr, *TxRingPtr;
-	struct axi_local *lp = (struct axi_local *) netdev_priv(ndev);
+	struct net_local *lp = (struct net_local *) netdev_priv(ndev);
 	RxRingPtr = XAxiDma_GetRxRing(&lp->AxiDma, RingIndex);
 	TxRingPtr = XAxiDma_GetTxRing(&lp->AxiDma);
 
@@ -1103,7 +1103,7 @@ static void free_descriptor_skb(struct net_device *ndev)
 	u32 len, i;
 	int RingIndex = 0;
 	XAxiDma_BdRing *RxRingPtr, *TxRingPtr;
-	struct axi_local *lp = (struct axi_local *) netdev_priv(ndev);
+	struct net_local *lp = (struct net_local *) netdev_priv(ndev);
 	RxRingPtr = XAxiDma_GetRxRing(&lp->AxiDma, RingIndex);
 	TxRingPtr = XAxiDma_GetTxRing(&lp->AxiDma);
 
@@ -1158,7 +1158,7 @@ static void axi_remove_ndev(struct net_device *ndev)
 {
 	int RingIndex = 0;
 	XAxiDma_BdRing *RxRingPtr, *TxRingPtr;
-	struct axi_local *lp = (struct axi_local *) netdev_priv(ndev);
+	struct net_local *lp = (struct net_local *) netdev_priv(ndev);
 	RxRingPtr = XAxiDma_GetRxRing(&lp->AxiDma, RingIndex);
 	TxRingPtr = XAxiDma_GetTxRing(&lp->AxiDma);
 	
@@ -1218,7 +1218,7 @@ static int axi_get_skb_header(struct sk_buff *skb, void **iphdr,
 static void axi_set_mac_address(struct net_device *ndev, void *address)
 {
 #if 0
-	struct axi_local *lp = netdev_priv(ndev);
+	struct net_local *lp = netdev_priv(ndev);
 
 	if (ndev->flags & IFF_UP) 
 		return;
@@ -1262,7 +1262,7 @@ static struct net_device_ops axi_netdev_ops = {
 	.ndo_set_mac_address = netdev_set_mac_address,
 };
 
-static int eth_probe_common(struct axi_local *lp, struct net_device *ndev)
+static int eth_probe_common(struct net_local *lp, struct net_device *ndev)
 {
 	int RingIndex = 0;
 	XAxiDma_BdRing *RxRingPtr, *TxRingPtr;
@@ -1364,12 +1364,12 @@ error:
 
 static int __init axi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
-	struct axi_local *lp = NULL;
+	struct net_local *lp = NULL;
 	struct net_device *ndev = NULL;
 	int err = 0;
 
 	/* Create an ethernet device instance */
-	ndev = alloc_etherdev(sizeof(struct axi_local));
+	ndev = alloc_etherdev(sizeof(struct net_local));
 	if (!ndev) {
 		printk("Could not allocate net device.\n");
 		goto error;
@@ -1454,13 +1454,13 @@ static struct pci_driver axi_driver = {
 #ifdef CONFIG_VPCI
 static int __init eth_probe(struct platform_device *pdev)
 {
-	struct axi_local *lp = NULL;
+	struct net_local *lp = NULL;
 	struct net_device *ndev = NULL;
 	int err = 0;
 	struct resource *res;
 
 	/* Create an ethernet device instance */
-	ndev = alloc_etherdev(sizeof(struct axi_local));
+	ndev = alloc_etherdev(sizeof(struct net_local));
 	if (!ndev) {
 		printk("Could not allocate net device.\n");
 		goto error;
