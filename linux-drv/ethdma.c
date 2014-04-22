@@ -30,8 +30,6 @@
 #include "vpci.h"
 #endif
 
-#define CONFIG_INET_LRO	0
-
 #ifdef CONFIG_INET_LRO
 #include <linux/inet_lro.h>
 enum lro_state {
@@ -54,8 +52,8 @@ enum lro_state {
 #define TX_HW_CSUM	1
 
 /* Descriptors defines for Tx and Rx DMA - 2^n for the best performance */
-#define TX_BD_NUM	512
-#define RX_BD_NUM	512
+#define TX_BD_NUM	8192
+#define RX_BD_NUM	8192
 
 /* Default TX/RX Threshold and waitbound values for SGDMA mode */
 #define DFT_TX_THRESHOLD  24
@@ -573,8 +571,6 @@ static void DmaSendHandlerBH(unsigned long p)
 				return;
 			}
 		}
-		XAxiDma_mBdRingIntEnable(RingPtr, XAXIDMA_IRQ_ALL_MASK);
-
 		/* Send out the deferred skb if it exists */
 		if ((lp->deferred_skb) && bd_processed_save) {
 			skb = lp->deferred_skb;
@@ -586,6 +582,7 @@ static void DmaSendHandlerBH(unsigned long p)
 		if (result == XST_SUCCESS) {
 			netif_wake_queue(ndev);	/* wake up send queue */
 		}
+		XAxiDma_mBdRingIntEnable(RingPtr, XAXIDMA_IRQ_ALL_MASK);
 		spin_unlock_irqrestore(&XTE_tx_spinlock, flags);
 	}
 }
@@ -638,7 +635,7 @@ static void DmaRecvHandlerBH(unsigned long p)
 						 lp->frame_size,
 						 DMA_FROM_DEVICE);
 #if SSTG_DEBUG
-				axi_trace("len: %d\n", len);
+				axi_trace("skb %p, len: %d\n", skb, len);
 				print_hex_dump(KERN_DEBUG, "RX ", DUMP_PREFIX_ADDRESS, 16, 1, 
 						skb->data, len, 1);
 				disp_bd(BdCurPtr);
@@ -652,18 +649,15 @@ static void DmaRecvHandlerBH(unsigned long p)
 
 				/* this routine adjusts skb->data to skip the header */
 				skb->protocol = eth_type_trans(skb, ndev);
-#if RX_HW_CSUM
 				/* default the ip_summed value */
 				skb->ip_summed = CHECKSUM_NONE;
 				
+#if RX_HW_CSUM
 				/* if we're doing rx csum offload, set it up */
-				if ((skb->protocol == __constant_htons(ETH_P_IP)) &&
-					(skb->len > 64)) {
-					unsigned int csum;
-
-					csum = BdCsumGet(BdCurPtr);
-					skb->csum = csum;
-					skb->ip_summed = CHECKSUM_UNNECESSARY;		//CHECKSUM_COMPLETE;
+				if ((skb->protocol == __constant_htons(ETH_P_IP)) && (skb->len > 64)) {
+					/* we only support partial checksum */
+					skb->csum = BdCsumGet(BdCurPtr);
+					skb->ip_summed = CHECKSUM_COMPLETE;
 					lp->rx_hw_csums++;
 				}
 #endif
@@ -680,11 +674,6 @@ static void DmaRecvHandlerBH(unsigned long p)
 				netif_rx(skb);	/* Send the packet upstream. */
 #endif
 
-#if SSTG_DEBUG
-				axi_trace("len: %d\n", len);
-				print_hex_dump(KERN_DEBUG, "RX ", DUMP_PREFIX_ADDRESS, 16, 1, 
-						skb->data, len, 1);
-#endif
 				BdCurPtr = XAxiDma_mBdRingNext(RingPtr, BdCurPtr);
 				bd_processed--;
 			} while (bd_processed > 0);
@@ -703,9 +692,8 @@ static void DmaRecvHandlerBH(unsigned long p)
 				spin_unlock_irqrestore(&XTE_rx_spinlock, flags);
 				return;
 			}
-
-			axi_DmaSetupRecvBuffers(ndev);
 		}
+		axi_DmaSetupRecvBuffers(ndev);
 		XAxiDma_mBdRingIntEnable(RingPtr, XAXIDMA_IRQ_ALL_MASK);
 		spin_unlock_irqrestore(&XTE_rx_spinlock, flags);
 	}
