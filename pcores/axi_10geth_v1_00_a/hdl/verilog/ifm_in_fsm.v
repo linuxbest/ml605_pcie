@@ -51,7 +51,7 @@ module ifm_in_fsm (/*AUTOARG*/
    // Inputs
    rx_clk, sys_rst, rx_axis_mac_tdata, rx_axis_mac_tkeep,
    rx_axis_mac_tlast, rx_axis_mac_tuser, rx_axis_mac_tvalid,
-   data_fifo_afull
+   data_fifo_afull, info_fifo_wfull
    );
    input rx_clk;
    input sys_rst;
@@ -69,6 +69,7 @@ module ifm_in_fsm (/*AUTOARG*/
 
    output [7:0]  info_fifo_wdata;
    output 	 info_fifo_wren;
+   input         info_fifo_wfull;
 
    /*AUTOREG*/
    // Beginning of automatic regs (for this module's undeclared outputs)
@@ -101,7 +102,7 @@ module ifm_in_fsm (/*AUTOARG*/
 	case (state)
 	  S_IDLE: if (rx_axis_mac_tvalid)
 	    begin
-	       state_ns = data_fifo_afull ? S_DROP : S_WAIT;
+	       state_ns = (data_fifo_afull || info_fifo_wfull) ? S_DROP : S_WAIT;
 	    end
 	  S_DROP: if (rx_axis_mac_tvalid & rx_axis_mac_tlast)
 	    begin
