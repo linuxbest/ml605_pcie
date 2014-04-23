@@ -45,7 +45,7 @@ enum lro_state {
 #define DRIVER_DESCRIPTION	"Axi Ethernet driver"
 #define DRIVER_VERSION		"1.00a"
 
-#define SSTG_DEBUG 	0
+#define SSTG_DEBUG 	1
 #define RX_HW_CSUM 	1
 #define TX_HW_CSUM	1
 
@@ -56,7 +56,7 @@ enum lro_state {
 /* Default TX/RX Threshold and waitbound values for SGDMA mode */
 #define DFT_TX_THRESHOLD  24
 #define DFT_TX_WAITBOUND  254
-#define DFT_RX_THRESHOLD  4
+#define DFT_RX_THRESHOLD  1
 #define DFT_RX_WAITBOUND  254
 
 #define TX_TIMEOUT   (10*HZ)	/* Transmission timeout is 10 seconds. */
@@ -633,7 +633,6 @@ static void DmaRecvHandlerBH_netdev(struct net_local *lp, struct sk_buff_head *s
 			return;
 		}
 	}
-	axi_DmaSetupRecvBuffers(ndev);
 }
 
 static int axi_rx_clean(struct net_local *lp)
@@ -664,6 +663,10 @@ static int axi_rx_clean(struct net_local *lp)
 	if (lro_flush_needed)
 		lro_flush_all(&lp->lro_mgr);
 
+	spin_lock_irqsave(&XTE_rx_spinlock, flags);
+	axi_DmaSetupRecvBuffers(lp->ndev);
+	spin_unlock_irqrestore(&XTE_rx_spinlock, flags);
+
 	return done;
 }
 
@@ -672,11 +675,17 @@ static int axi_poll(struct napi_struct *napi, int budget)
 	struct net_local *lp = container_of(napi, struct net_local, napi);
 	unsigned int work_done = axi_rx_clean(lp);
 
+#if SSTG_DEBUG
+	axi_trace("axi_poll %d/%d\n", work_done, budget);
+#endif
 	if (work_done < budget) {
-		XAxiDma_BdRing *RingPtr = XAxiDma_GetTxRing(&lp->AxiDma);
+		unsigned long flags;
+		XAxiDma_BdRing *RingPtr = XAxiDma_GetRxRing(&lp->AxiDma, 0);
 
-		napi_complete(napi);
+		spin_lock_irqsave(&XTE_rx_spinlock, flags);
+		__napi_complete(napi);
 		XAxiDma_mBdRingIntEnable(RingPtr, XAXIDMA_IRQ_ALL_MASK);
+		spin_unlock_irqrestore(&XTE_rx_spinlock, flags);
 	}
 
 	return work_done;
@@ -687,7 +696,7 @@ static void axi_poll_isr(unsigned long data)
 	struct net_device *ndev = (struct net_device *)data;
 	struct net_local *lp = netdev_priv(ndev);
 	axi_interrupt(0, ndev);
-	mod_timer(&lp->poll_timer, jiffies + 1);
+	mod_timer(&lp->poll_timer, jiffies);
 }
 
 static int axi_irq_free(struct net_device *ndev)
@@ -753,7 +762,7 @@ static int axi_open(struct net_device *ndev)
 	netif_start_queue(ndev);
 	napi_enable(&lp->napi);
 
-#if 1
+#if 0
 	init_timer(&lp->poll_timer);
 	lp->poll_timer.data = ndev;
 	lp->poll_timer.function = axi_poll_isr;
@@ -774,7 +783,7 @@ static int axi_close(struct net_device *ndev)
 	/*Stop AXI DMA Engine*/
 	AxiDma_Stop((u32)(lp->reg_base + AXI_DMA_REG));
 
-#if 1
+#if 0
 	del_timer(&lp->poll_timer);
 #endif
 	axitemac_stop(lp->reg_base);
@@ -1169,7 +1178,7 @@ static void axi_remove_ndev(struct net_device *ndev)
 	XAxiDma_mBdRingIntDisable(RxRingPtr, XAXIDMA_IRQ_ALL_MASK);
 	XAxiDma_mBdRingIntDisable(TxRingPtr, XAXIDMA_IRQ_ALL_MASK);
 
-#if 1
+#if 0
 	del_timer(&lp->poll_timer);
 #endif
 
