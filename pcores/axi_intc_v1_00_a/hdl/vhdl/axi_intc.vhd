@@ -225,7 +225,9 @@ entity axi_intc is
     S_AXI_RREADY    : in  std_logic;
    -- Intc iInterface signals
     Intr            : in  std_logic_vector(C_NUM_INTR_INPUTS-1 downto 0);
-    Irq             : out std_logic
+    Irq             : out std_logic;
+    MSI_Irq         : out std_logic;
+    MSI_Vector      : out std_logic_vector(4 downto 0)
    );
 
 -------------------------------------------------------------------------------
@@ -393,7 +395,9 @@ begin
       Valid_wr => bus2ip_wrce,
       Wr_data  => write_data,
       Rd_data  => read_data,
-      Irq      => Irq
+      Irq      => Irq,
+      MSI_Irq  => MSI_Irq,
+      MSI_Vector => MSI_Vector
      );
    -----------------------------------------------------------------
    --Instantiating axi_lite_ipif from axi_lite_ipif_v1_00_a

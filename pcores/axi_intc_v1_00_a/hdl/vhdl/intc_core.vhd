@@ -88,6 +88,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.CONV_STD_LOGIC_VECTOR;
+use ieee.std_logic_unsigned.all;
+use ieee.numeric_std.all;
 
 -------------------------------------------------------------------------------
 -- Definition of Generics:
@@ -156,7 +158,9 @@ entity intc_core is
       Wr_data  : in  std_logic_vector(C_DWIDTH - 1 downto 0);
       -- Outputs
       Rd_data  : out std_logic_vector(C_DWIDTH - 1 downto 0);
-      Irq      : out std_logic
+      Irq      : out std_logic;
+      MSI_Irq  : out std_logic;
+      MSI_Vector: out std_logic_vector(4 downto 0) 
     );
 
 -------------------------------------------------------------------------------
@@ -197,8 +201,8 @@ architecture imp of intc_core is
     signal ier_out     : std_logic_vector(C_DWIDTH - 1 downto 0);
     signal isr_out     : std_logic_vector(C_DWIDTH - 1 downto 0);
     signal ack_or      : std_logic;
-
-
+   
+    signal cnt         : std_logic_vector(4 downto 0);
 -- Begin of architecture
 begin
 
@@ -759,5 +763,34 @@ begin
             Rd_data <= (others => '0');
         end if;
     end process OUTPUT_DATA_GEN_P;
+
+    OUTPUT_MSI_GEN: process (Clk)
+    begin
+	if (Clk'event and Clk = '1') then
+	    if (Rst = RESET_ACTIVE) then
+	        cnt <= "00000";
+	    else
+		cnt <= cnt + 1;
+	    end if;
+	end if;
+    end process OUTPUT_MSI_GEN;
+
+    OUTPUT_MSI_IRQ_GEN: process (Clk)
+    begin
+	if (Clk'event and Clk = '1') then
+	    if (Rst = RESET_ACTIVE) then
+	        MSI_Irq <= '0';
+	    else
+	        MSI_Irq <= ipr(to_integer(unsigned(cnt)));
+	    end if;
+	end if;
+    end process OUTPUT_MSI_IRQ_GEN;
+
+    OUTPUT_MSI_VECTOR_GEN: process (Clk)
+    begin
+	if (Clk'event and Clk = '1') then
+            MSI_Vector <= cnt;
+	end if;
+    end process OUTPUT_MSI_VECTOR_GEN;
 
 end imp;

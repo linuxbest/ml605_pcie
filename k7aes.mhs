@@ -134,6 +134,7 @@ BEGIN axi_pcie
  PARAMETER C_BASEADDR = 0x72e00000
  PARAMETER C_HIGHADDR = 0x72e0ffff
  PARAMETER C_PCIE_USE_MODE = 3.0
+ PARAMETER C_NUM_MSI_REQ = 4
  BUS_INTERFACE S_AXI_CTL = axi4lite_0
  BUS_INTERFACE M_AXI = axi4lite_0
  BUS_INTERFACE S_AXI = axi4_0
@@ -147,18 +148,20 @@ BEGIN axi_pcie
  PORT axi_ctl_aclk_out = axi_ctl_aclk_out
  PORT REFCLK = PCIe_Diff_Clk
  PORT mmcm_lock = PCIe_MMCM_Lock
- PORT INTX_MSI_Request = Irq
+ PORT INTX_MSI_Request = MSI_Irq
+ PORT MSI_Vector_Num = MSI_vector
 END
 
 BEGIN axi_intc
  PARAMETER INSTANCE = axi_intc_0
- PARAMETER HW_VER = 1.04.a
+ PARAMETER HW_VER = 1.00.a
  PARAMETER C_BASEADDR = 0xC4000000
  PARAMETER C_HIGHADDR = 0xC4000fff
  BUS_INTERFACE S_AXI = axi4lite_0
  PORT S_AXI_ACLK = clk_100_0000MHzMMCM0
  PORT intr = ETHERNET_dma_s2mm_introut_0 & ETHERNET_dma_mm2s_introut_0 & s2mm_intr_0 & mm2s_intr_0 
- PORT Irq = Irq 
+ PORT Irq = MSI_Irq 
+ PORT Vector = MSI_Vector
 END
 
 BEGIN axi_dma

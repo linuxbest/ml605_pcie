@@ -33,6 +33,8 @@ module system_tb
 
   reg CLK_N;
   reg CLK_P;
+  wire MSI_Irq;
+  wire [4:0] MSI_Vector;
   reg RESET;
   reg refclk_n;
   reg refclk_p;
@@ -59,7 +61,9 @@ module system_tb
       .rxp ( rxp ),
       .rxn ( rxn ),
       .refclk_p ( refclk_p ),
-      .refclk_n ( refclk_n )
+      .refclk_n ( refclk_n ),
+      .MSI_Irq ( MSI_Irq ),
+      .MSI_Vector ( MSI_Vector )
     );
 
   // Clock generator for CLK_P

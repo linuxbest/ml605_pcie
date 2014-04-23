@@ -56,12 +56,21 @@ static int rdma_test(uint32_t base);
  * We set the coalescing threshold to be the total number of packets.
  * The receive side will only get one completion interrupt for this example.
  */
-#define COALESCING_COUNT		8					//NUMBER_OF_PKTS_TO_TRANSFER
-#define DELAY_TIMER_COUNT		100
+#define COALESCING_COUNT		1
+#define DELAY_TIMER_COUNT		1
 
 #define TX_BD_CNT	10
 #define RX_BD_CNT	10
 #define SIZE 		256
+
+enum {
+	IRQ_ISR = 0x00,
+	IRQ_IPR = 0x04,
+	IRQ_IER = 0x08,
+	IRQ_IAR = 0x0C,
+	IRQ_MER = 0x1C,
+};
+static uint32_t intc_base = 0x42000000;
 
 volatile int TxDone;
 volatile int RxDone;
@@ -176,6 +185,12 @@ int osChip_init(uint32_t base)
 	}
 	printf("Cfg pass!\n");
 
+#if 1
+	axi_mm_out32(intc_base + IRQ_MER, 0);
+	axi_mm_out32(intc_base + IRQ_IER, 0xffffffff);
+	axi_mm_out32(intc_base + IRQ_IAR, 0xffffffff);
+	axi_mm_out32(intc_base + IRQ_MER, 3);
+#endif
 #if 1
 	/* Cfg word 0 */
 	axi_mm_out32(mac_base + MDIO_CFG0, (1<<6)|1);

@@ -24,7 +24,8 @@
  PORT rxn = rxn, DIR = I
  PORT refclk_p = refclk_p, DIR = I, SIGIS = CLK, CLK_FREQ = 156250000
  PORT refclk_n = refclk_n, DIR = I
-
+ PORT MSI_Irq = MSI_Irq, DIR = O
+ PORT MSI_Vector = MSI_Vector, DIR = O, VEC = [4:0]
 
 BEGIN proc_sys_reset
  PARAMETER INSTANCE = proc_sys_reset_0
@@ -88,6 +89,19 @@ BEGIN axi_interconnect
  PARAMETER HW_VER = 1.06.a
  PORT interconnect_aclk = clk_100_0000MHzPLLE0
  PORT INTERCONNECT_ARESETN = proc_sys_reset_0_Interconnect_aresetn
+END
+
+BEGIN axi_intc
+ PARAMETER INSTANCE = axi_intc_0
+ PARAMETER HW_VER = 1.00.a
+ PARAMETER C_BASEADDR = 0x42000000
+ PARAMETER C_HIGHADDR = 0x42000fff
+ PARAMETER C_INTERCONNECT_S_AXI_MASTERS = axi_systemc_0.M_AXI
+ BUS_INTERFACE S_AXI = axi4_0
+ PORT S_AXI_ACLK = clk_100_0000MHzPLLE0
+ PORT intr = ETHERNET_dma_s2mm_introut & ETHERNET_dma_mm2s_introut
+ PORT MSI_Irq = MSI_Irq 
+ PORT MSI_Vector = MSI_Vector
 END
 
 BEGIN axi_dma

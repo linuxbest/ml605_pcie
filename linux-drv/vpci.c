@@ -3,7 +3,7 @@
  *
  * base on drivers/net/ethernet/intel/e100.c
  */
-//#define DEBUG
+#define DEBUG
 #include <linux/init.h>
 #include <linux/interrupt.h>
 #include <linux/module.h>
@@ -133,9 +133,9 @@ void vpci_free_irq(struct platform_device *pdev, unsigned int irq)
 
 	/* disable the IRQ line */
 	irq_en = VPCI_READ(vd->vp->ctrl + IRQ_IER);
-	dev_dbg(&pdev->dev, "irq_en %08x, port %d, irq %d\n",
-			irq_en, vd->port, irq);
 	irq_en &= ~(0x1 << (irq + (vd->port<<1)));
+	dev_dbg(&pdev->dev, "vpci_free_irq: irq_en %08x, port %d, irq %d\n",
+			irq_en, vd->port, irq);
 	VPCI_WRITE(irq_en, vd->vp->ctrl + IRQ_IER);
 }
 
@@ -153,12 +153,12 @@ int vpci_request_irq(struct platform_device *pdev,
 		return -EBUSY;
 	vd->irqs[irq] = handler;
 	vd->irqs_priv[irq] = dev;
-	
+
 	/* enable the IRQ line */
 	irq_en = VPCI_READ(vd->vp->ctrl + IRQ_IER);
-	dev_dbg(&pdev->dev, "irq_en %08x, port %d, irq %d",
-			irq_en, vd->port, irq);
 	irq_en |= (0x1 << (irq + (vd->port<<1)));
+	dev_dbg(&pdev->dev, "vpci_request_irq: irq_en %08x, port %d, irq %d",
+			irq_en, vd->port, irq);
 	VPCI_WRITE(irq_en, vd->vp->ctrl + IRQ_IER);
 	
 	return 0;
@@ -233,11 +233,10 @@ static irqreturn_t vpci_isr(int irq, void *dev_id)
 	irq_sts     = VPCI_READ(vp->ctrl + IRQ_ISR);
 	irq_pending = VPCI_READ(vp->ctrl + IRQ_IPR);
 
-	if (irq_pending == 0)
-		return IRQ_NONE;
-
 	dev_dbg(&vp->pdev->dev, "vp %p, en %08x, sts %08x, pend %08x\n",
 			vp, irq_en, irq_sts, irq_pending);
+	if (irq_pending == 0) 
+		return IRQ_NONE;
 
 	for (i = 0; i < 8; i ++) {
 		if (irq_pending == 0)

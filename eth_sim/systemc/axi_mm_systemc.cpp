@@ -132,8 +132,7 @@ void axi_mm_systemc::iomem_out32(uint32_t off, uint32_t val)
 	m_axi_wlast.write(0);
 
 	for(;;) {
-		if (m_axi_bvalid.read() && 
-			m_axi_bresp.read() == 0x0) {
+		if (m_axi_bvalid.read() /*&& m_axi_bresp.read() == 0x0*/) {
 			m_axi_bready.write(1);
 			break;
 		}	

@@ -45,6 +45,7 @@ enum lro_state {
 #define DRIVER_DESCRIPTION	"Axi Ethernet driver"
 #define DRIVER_VERSION		"1.00a"
 
+#define POLL_TIMER      1
 #define SSTG_DEBUG 	1
 #define RX_HW_CSUM 	1
 #define TX_HW_CSUM	1
@@ -168,12 +169,13 @@ struct net_local {
 #define AXI_NAPI_WEIGHT RX_BD_NUM
 	struct napi_struct napi;
 
+#ifdef POLL_TIMER
 	struct timer_list poll_timer;
+#endif
 };
 
 static struct pci_device_id axi_pci_table[] = {
-	{ 0x1172, 0xe001, PCI_ANY_ID, PCI_ANY_ID},
-	{ 0x10ee, 0x0505, PCI_ANY_ID, PCI_ANY_ID},
+	{ 0x10ee, 0x0106, PCI_ANY_ID, PCI_ANY_ID},
 	{ 0 },
 };
 #if SSTG_DEBUG
@@ -385,9 +387,9 @@ static irqreturn_t axi_dma_rx_interrupt(int id, void *data)
 #if SSTG_DEBUG
 	printk("IrqStatusRx: %lx\n", irq_status);
 #endif
-	XAxiDma_mBdRingAckIrq(RingPtr, irq_status);
 
 	if ((irq_status & XAXIDMA_ERR_ALL_MASK)) {
+		XAxiDma_mBdRingAckIrq(RingPtr, irq_status);
 		printk(KERN_ERR "%s: XAxiDma: error rx irq (%08x)\n", ndev->name, irq_status);
 		eth_ring_dump(RingPtr, "RX");
 		/* TODO */
@@ -395,6 +397,7 @@ static irqreturn_t axi_dma_rx_interrupt(int id, void *data)
 	}
 	
 	if ((irq_status & (XAXIDMA_IRQ_DELAY_MASK | XAXIDMA_IRQ_IOC_MASK))) {
+		XAxiDma_mBdRingAckIrq(RingPtr, irq_status);
 		if (napi_schedule_prep(&lp->napi)) {
 			XAxiDma_mBdRingIntDisable(RingPtr, XAXIDMA_IRQ_ALL_MASK);
 			__napi_schedule(&lp->napi);
@@ -416,15 +419,16 @@ static irqreturn_t axi_dma_tx_interrupt(int id, void *data)
 #if SSTG_DEBUG
 	printk("IrqStatusTx: %lx\n", irq_status);
 #endif
-	XAxiDma_mBdRingAckIrq(RingPtr, irq_status);
 
 	if ((irq_status & XAXIDMA_ERR_ALL_MASK)) {
+		XAxiDma_mBdRingAckIrq(RingPtr, irq_status);
 		printk(KERN_ERR "%s: XAxiDma: error tx irq (%08x)\n", ndev->name, irq_status);
 		eth_ring_dump(RingPtr, "TX");
 		return IRQ_HANDLED;
 	}
 
 	if ((irq_status & (XAXIDMA_IRQ_DELAY_MASK | XAXIDMA_IRQ_IOC_MASK))) {
+		XAxiDma_mBdRingAckIrq(RingPtr, irq_status);
 		spin_lock_irqsave(&sentQueueSpin, flags);
 		list_for_each(cur_lp, &sentQueue) {
 			if (cur_lp == &(lp->xmit)) {
@@ -663,9 +667,11 @@ static int axi_rx_clean(struct net_local *lp)
 	if (lro_flush_needed)
 		lro_flush_all(&lp->lro_mgr);
 
-	spin_lock_irqsave(&XTE_rx_spinlock, flags);
-	axi_DmaSetupRecvBuffers(lp->ndev);
-	spin_unlock_irqrestore(&XTE_rx_spinlock, flags);
+	if (done) {
+		spin_lock_irqsave(&XTE_rx_spinlock, flags);
+		axi_DmaSetupRecvBuffers(lp->ndev);
+		spin_unlock_irqrestore(&XTE_rx_spinlock, flags);
+	}
 
 	return done;
 }
@@ -691,13 +697,20 @@ static int axi_poll(struct napi_struct *napi, int budget)
 	return work_done;
 }
 
+#ifdef POLL_TIMER
 static void axi_poll_isr(unsigned long data)
 {
 	struct net_device *ndev = (struct net_device *)data;
 	struct net_local *lp = netdev_priv(ndev);
-	axi_interrupt(0, ndev);
-	mod_timer(&lp->poll_timer, jiffies);
+	int res = axi_interrupt(0, ndev);
+	if (res == IRQ_HANDLED) {
+#if SSTG_DEBUG
+		axi_trace("eth10g: WARNNING irq lost\n");
+#endif
+	}
+	mod_timer(&lp->poll_timer, jiffies + HZ);
 }
+#endif
 
 static int axi_irq_free(struct net_device *ndev)
 {
@@ -762,7 +775,7 @@ static int axi_open(struct net_device *ndev)
 	netif_start_queue(ndev);
 	napi_enable(&lp->napi);
 
-#if 0
+#ifdef POLL_TIMER
 	init_timer(&lp->poll_timer);
 	lp->poll_timer.data = ndev;
 	lp->poll_timer.function = axi_poll_isr;
@@ -783,7 +796,7 @@ static int axi_close(struct net_device *ndev)
 	/*Stop AXI DMA Engine*/
 	AxiDma_Stop((u32)(lp->reg_base + AXI_DMA_REG));
 
-#if 0
+#ifdef POLL_TIMER
 	del_timer(&lp->poll_timer);
 #endif
 	axitemac_stop(lp->reg_base);
@@ -1178,7 +1191,7 @@ static void axi_remove_ndev(struct net_device *ndev)
 	XAxiDma_mBdRingIntDisable(RxRingPtr, XAXIDMA_IRQ_ALL_MASK);
 	XAxiDma_mBdRingIntDisable(TxRingPtr, XAXIDMA_IRQ_ALL_MASK);
 
-#if 0
+#ifdef POLL_TIMER
 	del_timer(&lp->poll_timer);
 #endif
 
@@ -1302,12 +1315,14 @@ static int eth_probe_common(struct net_local *lp, struct net_device *ndev)
 	Config = AxiDma_Config((u32)(lp->reg_base + AXI_DMA_REG));
 	/* Initialize DMA engine */
 	err = XAxiDma_CfgInitialize(&lp->AxiDma, Config);
-	if (err != XST_SUCCESS)
-		printk("Cfg initialize failed\n");
+	if (err != XST_SUCCESS) {
+		printk("Cfg initialize failed, err %d\n", err);
+		return -11;
+	}
 	
 	if(!XAxiDma_HasSg(&lp->AxiDma)) {
 		printk("Device configured as Simple mode \r\n");
-		return 1;
+		return -2;
 	}
 
 	err = descriptor_init(ndev);
@@ -1431,7 +1446,7 @@ static int __init axi_probe(struct pci_dev *pdev, const struct pci_device_id *id
 	
 	if (!lp->_reg_base)
 		goto error;
-	lp->reg_base = lp->_reg_base + 0x20000;
+	lp->reg_base = lp->_reg_base + 0x10000;
 
 
 	err = eth_probe_common(lp, ndev);
