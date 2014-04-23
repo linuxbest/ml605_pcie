@@ -245,6 +245,8 @@ static irqreturn_t vpci_isr(int irq, void *dev_id)
 		vd_isr(vp->vd[i], irq_pending & 0x3);
 		irq_pending = irq_pending >> 2;
 	}
+	/* flush write */
+	VPCI_READ(vp->ctrl + IRQ_IAR);
 
 	return IRQ_HANDLED;
 }

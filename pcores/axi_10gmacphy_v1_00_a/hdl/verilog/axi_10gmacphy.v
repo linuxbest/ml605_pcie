@@ -57,8 +57,8 @@ module axi_10gmacphy (/*AUTOARG*/
    tx_axis_tkeep, tx_axis_tdata, signal_detect, s_axi_wvalid,
    s_axi_wdata, s_axi_rready, s_axi_bready, s_axi_awvalid,
    s_axi_awaddr, s_axi_arvalid, s_axi_aresetn, s_axi_araddr,
-   s_axi_aclk, rxp, rxn, rx_axis_tready, refclk_p, refclk_n, hw_reset,
-   s_axi_wstrb
+   s_axi_aclk, rxp, rxn, rx_axis_tready, refclk_p, refclk_n,
+   pause_val, pause_req, hw_reset, s_axi_wstrb
    );
    parameter C_FAMILY = "";
    parameter C_MDIO_ADDR = 5'h0;
@@ -77,6 +77,8 @@ module axi_10gmacphy (/*AUTOARG*/
 
    /*AUTOINPUT*/
    // Beginning of automatic inputs (from unused autoinst inputs)
+   input		pause_req;		// To xgmac of xgmac.v
+   input [15:0]		pause_val;		// To xgmac of xgmac.v
    input		refclk_n;		// To xphy_block of xphy_block.v
    input		refclk_p;		// To xphy_block of xphy_block.v
    input		rx_axis_tready;		// To xphy_int of xphy_int.v
@@ -152,8 +154,6 @@ module axi_10gmacphy (/*AUTOARG*/
    wire			ip2bus_wrack;		// From xgmac of xgmac.v
    wire			mdc;			// From xgmac of xgmac.v
    wire			mmcm_locked;		// From xphy_block of xphy_block.v
-   wire			pause_req;		// From xgmac_int of xgmac_int.v
-   wire [15:0]		pause_val;		// From xgmac_int of xgmac_int.v
    wire [4:0]		prtad;			// From xphy_int of xphy_int.v
    wire			rx_axis_aresetn;	// From xphy_int of xphy_int.v
    wire			rx_clk0;		// From xgmac_int of xgmac_int.v
@@ -242,8 +242,6 @@ module axi_10gmacphy (/*AUTOARG*/
    xgmac_int
      xgmac_int (/*AUTOINST*/
 		// Outputs
-		.pause_req		(pause_req),
-		.pause_val		(pause_val[15:0]),
 		.tx_clk0		(tx_clk0),
 		.rx_clk0		(rx_clk0),
 		// Inputs

@@ -88,4 +88,7 @@ PORT tx_axis_tuser = TUSER,    DIR = I, BUS = AXI_MAC_TX
 
 PORT linkup = "", DIR = O
 
+PORT pause_req = "", DIR = I, INITIAL = GND
+PORT pause_val = "", DIR = I, VEC = [15:0], ENDIAN = LITTLE
+
 END

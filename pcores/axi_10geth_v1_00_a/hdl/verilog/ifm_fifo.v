@@ -46,10 +46,10 @@
 `timescale 1ps/1ps
 module ifm_fifo (/*AUTOARG*/
    // Outputs
-   data_fifo_afull, data_fifo_rdata, info_fifo_wfull, info_fifo_empty,
-   info_fifo_rdata, rxd_tdata, rxd_tkeep, rxd_tlast, rxd_tvalid,
-   good_fifo_afull, rxs_tdata, rxs_tkeep, rxs_tlast, rxs_tvalid,
-   ctrl_fifo_afull,
+   data_fifo_afull, data_fifo_rdata, wr_data_count, info_fifo_wfull,
+   info_fifo_empty, info_fifo_rdata, rxd_tdata, rxd_tkeep, rxd_tlast,
+   rxd_tvalid, good_fifo_afull, rxs_tdata, rxs_tkeep, rxs_tlast,
+   rxs_tvalid, ctrl_fifo_afull,
    // Inputs
    rx_clk, s2mm_clk, sys_rst, data_fifo_wdata, data_fifo_wren,
    data_fifo_rden, info_fifo_wdata, info_fifo_wren, info_fifo_rden,
@@ -68,16 +68,19 @@ module ifm_fifo (/*AUTOARG*/
    input 	data_fifo_rden;
 
    wire         data_fifo_empty;
-   afifo73_2048 data_fifo(.din     (data_fifo_wdata),
-			 .wr_en   (data_fifo_wren),
-			 .wr_clk  (rx_clk),
-			 .rd_en   (data_fifo_rden && ~data_fifo_empty),
-			 .rd_clk  (s2mm_clk),
-			 .rst     (sys_rst),
-			 .dout    (data_fifo_rdata),
-			 .full    (),
-			 .empty   (data_fifo_empty),
-			 .prog_full(data_fifo_afull));
+   output [11:0] wr_data_count;
+   afifo73_2048 data_fifo(.din           (data_fifo_wdata),
+			  .wr_en         (data_fifo_wren),
+			  .wr_clk        (rx_clk),
+			  .rd_en         (data_fifo_rden && ~data_fifo_empty),
+			  .rd_clk        (s2mm_clk),
+			  .rst           (sys_rst),
+			  .dout          (data_fifo_rdata),
+			  .full          (),
+			  .empty         (data_fifo_empty),
+			  .wr_data_count (wr_data_count),
+			  .prog_full     (data_fifo_afull));
+   
 
    input [7:0]	info_fifo_wdata;
    input 	info_fifo_wren;

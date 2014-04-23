@@ -49,8 +49,8 @@ module axi_10geth (/*AUTOARG*/
    txd_tready, txc_tready, tx_axis_mac_tvalid, tx_axis_mac_tuser,
    tx_axis_mac_tlast, tx_axis_mac_tkeep, tx_axis_mac_tdata,
    rxs_tvalid, rxs_tlast, rxs_tkeep, rxs_tdata, rxd_tvalid, rxd_tlast,
-   rxd_tkeep, rxd_tdata, rx_axis_mac_tready, ofm_out_fsm_dbg,
-   ofm_in_fsm_dbg, ifm_out_fsm_dbg, ifm_in_fsm_dbg,
+   rxd_tkeep, rxd_tdata, rx_axis_mac_tready, pause_val, pause_req,
+   ofm_out_fsm_dbg, ofm_in_fsm_dbg, ifm_out_fsm_dbg, ifm_in_fsm_dbg,
    // Inputs
    txd_tvalid, txd_tlast, txd_tkeep, txd_tdata, txc_tvalid, txc_tlast,
    txc_tkeep, txc_tdata, tx_reset, tx_clk, tx_axis_mac_tready,
@@ -94,6 +94,8 @@ module axi_10geth (/*AUTOARG*/
    output [3:0]		ifm_out_fsm_dbg;	// From axi_eth_ifm of axi_eth_ifm.v
    output [3:0]		ofm_in_fsm_dbg;		// From axi_eth_ofm of axi_eth_ofm.v
    output [3:0]		ofm_out_fsm_dbg;	// From axi_eth_ofm of axi_eth_ofm.v
+   output		pause_req;		// From axi_eth_ifm of axi_eth_ifm.v
+   output [15:0]	pause_val;		// From axi_eth_ifm of axi_eth_ifm.v
    output		rx_axis_mac_tready;	// From axi_eth_ifm of axi_eth_ifm.v
    output [63:0]	rxd_tdata;		// From axi_eth_ifm of axi_eth_ifm.v
    output [7:0]		rxd_tkeep;		// From axi_eth_ifm of axi_eth_ifm.v
@@ -116,6 +118,8 @@ module axi_10geth (/*AUTOARG*/
 			    // Outputs
 			    .ifm_in_fsm_dbg	(ifm_in_fsm_dbg[3:0]),
 			    .ifm_out_fsm_dbg	(ifm_out_fsm_dbg[3:0]),
+			    .pause_req		(pause_req),
+			    .pause_val		(pause_val[15:0]),
 			    .rx_axis_mac_tready	(rx_axis_mac_tready),
 			    .rxd_tdata		(rxd_tdata[63:0]),
 			    .rxd_tkeep		(rxd_tkeep[7:0]),
@@ -217,10 +221,11 @@ module axi_10geth (/*AUTOARG*/
    assign rx_mac_dbg [71:64]   = rx_axis_mac_tkeep;
    assign rx_mac_dbg [72]      = rx_axis_mac_tvalid;
    assign rx_mac_dbg [73]      = rx_axis_mac_tlast;
-   assign rx_mac_dbg [74]      = rx_axis_mac_tready;  
+   assign rx_mac_dbg [74]      = rx_axis_mac_tready;
    assign rx_mac_dbg [75]      = rx_axis_mac_tuser;
-   assign rx_mac_dbg [76]      = sys_rst; 
-   assign rx_mac_dbg [77]      = rx_reset; 
+   assign rx_mac_dbg [76]      = sys_rst;
+   assign rx_mac_dbg [77]      = rx_reset;
+   assign rx_mac_dbg [78]      = pause_req;
 
    assign rx_mac_dbg [122:119] = ifm_in_fsm_dbg;
    assign rx_mac_dbg [123]     = rx_axis_mac_tvalid;

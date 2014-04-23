@@ -45,17 +45,11 @@
 // Code:
 module xgmac_int (/*AUTOARG*/
    // Outputs
-   pause_req, pause_val, tx_clk0, rx_clk0,
+   tx_clk0, rx_clk0,
    // Inputs
    rx_statistics_valid, rx_statistics_vector, tx_statistics_valid,
    tx_statistics_vector, clk156
    );
-
-   output pause_req;
-   output [15:0] pause_val;
-   assign pause_req = 1'b0;
-   assign pause_val = 16'h0;
-
    input 	 rx_statistics_valid;
    input [29:0]  rx_statistics_vector;
 

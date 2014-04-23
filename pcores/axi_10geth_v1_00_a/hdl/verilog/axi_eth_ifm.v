@@ -47,8 +47,8 @@
 module axi_eth_ifm (/*AUTOARG*/
    // Outputs
    rxs_tvalid, rxs_tlast, rxs_tkeep, rxs_tdata, rxd_tvalid, rxd_tlast,
-   rxd_tkeep, rxd_tdata, rx_axis_mac_tready, ifm_out_fsm_dbg,
-   ifm_in_fsm_dbg,
+   rxd_tkeep, rxd_tdata, rx_axis_mac_tready, pause_val, pause_req,
+   ifm_out_fsm_dbg, ifm_in_fsm_dbg,
    // Inputs
    sys_rst, s2mm_clk, rxs_tready, rxd_tready, rx_clk,
    rx_axis_mac_tvalid, rx_axis_mac_tuser, rx_axis_mac_tlast,
@@ -71,6 +71,8 @@ module axi_eth_ifm (/*AUTOARG*/
    // Beginning of automatic outputs (from unused autoinst outputs)
    output [3:0]		ifm_in_fsm_dbg;		// From ifm_in_fsm of ifm_in_fsm.v
    output [3:0]		ifm_out_fsm_dbg;	// From ifm_out_fsm of ifm_out_fsm.v
+   output		pause_req;		// From ifm_in_fsm of ifm_in_fsm.v
+   output [15:0]	pause_val;		// From ifm_in_fsm of ifm_in_fsm.v
    output		rx_axis_mac_tready;	// From ifm_in_fsm of ifm_in_fsm.v
    output [63:0]	rxd_tdata;		// From ifm_fifo of ifm_fifo.v
    output [7:0]		rxd_tkeep;		// From ifm_fifo of ifm_fifo.v
@@ -103,6 +105,7 @@ module axi_eth_ifm (/*AUTOARG*/
    wire [7:0]		info_fifo_wdata;	// From ifm_in_fsm of ifm_in_fsm.v
    wire			info_fifo_wfull;	// From ifm_fifo of ifm_fifo.v
    wire			info_fifo_wren;		// From ifm_in_fsm of ifm_in_fsm.v
+   wire [11:0]		wr_data_count;		// From ifm_fifo of ifm_fifo.v
    // End of automatics
    
    ifm_in_fsm  ifm_in_fsm   (/*AUTOINST*/
@@ -110,6 +113,8 @@ module axi_eth_ifm (/*AUTOARG*/
 			     .rx_axis_mac_tready(rx_axis_mac_tready),
 			     .data_fifo_wdata	(data_fifo_wdata[72:0]),
 			     .data_fifo_wren	(data_fifo_wren),
+			     .pause_req		(pause_req),
+			     .pause_val		(pause_val[15:0]),
 			     .info_fifo_wdata	(info_fifo_wdata[7:0]),
 			     .info_fifo_wren	(info_fifo_wren),
 			     .ifm_in_fsm_dbg	(ifm_in_fsm_dbg[3:0]),
@@ -122,6 +127,7 @@ module axi_eth_ifm (/*AUTOARG*/
 			     .rx_axis_mac_tuser	(rx_axis_mac_tuser),
 			     .rx_axis_mac_tvalid(rx_axis_mac_tvalid),
 			     .data_fifo_afull	(data_fifo_afull),
+			     .wr_data_count	(wr_data_count[11:0]),
 			     .info_fifo_wfull	(info_fifo_wfull));
    ifm_out_fsm ifm_out_fsm (/*AUTOINST*/
 			    // Outputs
@@ -170,6 +176,7 @@ module axi_eth_ifm (/*AUTOARG*/
 		      // Outputs
 		      .data_fifo_afull	(data_fifo_afull),
 		      .data_fifo_rdata	(data_fifo_rdata[72:0]),
+		      .wr_data_count	(wr_data_count[11:0]),
 		      .info_fifo_wfull	(info_fifo_wfull),
 		      .info_fifo_empty	(info_fifo_empty),
 		      .info_fifo_rdata	(info_fifo_rdata[7:0]),
