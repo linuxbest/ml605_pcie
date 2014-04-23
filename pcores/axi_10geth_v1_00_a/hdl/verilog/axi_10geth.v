@@ -225,8 +225,8 @@ module axi_10geth (/*AUTOARG*/
    assign rx_mac_dbg [75]      = rx_axis_mac_tuser;
    assign rx_mac_dbg [76]      = sys_rst;
    assign rx_mac_dbg [77]      = rx_reset;
-   assign rx_mac_dbg [78]      = pause_req;
 
+   assign rx_mac_dbg [118]     = pause_req;
    assign rx_mac_dbg [122:119] = ifm_in_fsm_dbg;
    assign rx_mac_dbg [123]     = rx_axis_mac_tvalid;
    assign rx_mac_dbg [124]     = rx_axis_mac_tlast;
