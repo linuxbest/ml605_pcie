@@ -7,7 +7,7 @@ set ascopt {-literal -asc}
 
 eval add wave -noupdate -divider {"top"}
 eval add wave -noupdate $binopt $path${ps}s2mm_clk
-eval add wave -noupdate $binopt $path${ps}s2mm_resetn
+eval add wave -noupdate $binopt $path${ps}sys_rst
 
 eval add wave -noupdate $binopt $path${ps}rx_clk
 
@@ -20,7 +20,7 @@ eval add wave -noupdate $binopt $path${ps}rx_axis_mac_tready
 
 eval add wave -noupdate -divider {"in fsm"}
 eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_in_fsm${ps}rx_clk
-eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_in_fsm${ps}s2mm_resetn
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_in_fsm${ps}sys_rst
 
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_in_fsm${ps}state
 
@@ -31,9 +31,13 @@ eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_in_fsm${ps}data_fi
 eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_in_fsm${ps}info_fifo_wdata
 eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_in_fsm${ps}info_fifo_wren
 
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_in_fsm${ps}wr_data_count
+eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_in_fsm${ps}pause_val
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_in_fsm${ps}pause_req
+
 eval add wave -noupdate -divider {"out fsm"}
 eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}s2mm_clk
-eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}s2mm_resetn
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}sys_rst
 
 eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}ready_sof
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}state
@@ -61,7 +65,7 @@ eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_out_fsm${ps}RxSum_
 
 eval add wave -noupdate -divider {"out csum"}
 eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}clk
-eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}resetn
+eval add wave -noupdate $binopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}rst
 
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}CsBegin
 eval add wave -noupdate $hexopt $path${ps}axi_eth_ifm${ps}ifm_csum${ps}CsInit

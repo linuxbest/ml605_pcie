@@ -1340,6 +1340,7 @@ static int eth_probe_common(struct net_local *lp, struct net_device *ndev)
 
 	lp->lro_mgr.frag_align_pad = 0;
 	lp->lro_state = XTE_LRO_NORM;
+	ndev->features |= NETIF_F_LRO;
 
 	netif_napi_add(ndev, &lp->napi, axi_poll, AXI_NAPI_WEIGHT);
 

@@ -11,6 +11,7 @@ vlog -work work ../small_async_fifo.v
 vlog -work work ../fifo37_512.v
 vlog -work work ../fifo73_512.v
 vlog -work work ../afifo73_512.v
+vlog -work work ../afifo73_2048.v
 
 vlog -work work FIFO_GENERATOR_V9_3.v
 

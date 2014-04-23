@@ -54,6 +54,9 @@ module ifm_tb;
    wire		rxd_tready;
    assign       rxd_tready = 1'b1;
 
+   wire [15:0]  pause_val;
+   wire         pause_req;
+
    wire [31:0]	rxs_tdata;		// From axi_eth_ifm of axi_eth_ifm.v
    wire [3:0]	rxs_tkeep;		// From axi_eth_ifm of axi_eth_ifm.v
    wire		rxs_tlast;		// From axi_eth_ifm of axi_eth_ifm.v
@@ -69,7 +72,7 @@ module ifm_tb;
    reg 	      rx_axis_mac_tvalid;
    reg 	      rx_clk;
    reg 	      s2mm_clk;
-   reg 	      rx_reset;
+   reg 	      sys_rst;
    reg        s2mm_resetn;
 
    initial begin
@@ -81,9 +84,9 @@ module ifm_tb;
       forever #(5333)  s2mm_clk = ~s2mm_clk;
    end
    initial begin
-      rx_reset = 1'b1;
+      sys_rst = 1'b1;
       s2mm_resetn = 1'b0;
-      #(10000) rx_reset = ~rx_reset;
+      #(10000) sys_rst = ~sys_rst;
       #(10000) s2mm_resetn = ~s2mm_resetn;      
    end
 
@@ -125,7 +128,7 @@ module ifm_tb;
       rx_axis_mac_tuser  = 0;
       rx_axis_mac_tlast  = 0;
 
-      @(negedge rx_reset);
+      @(negedge sys_rst);
       @(posedge rx_clk);
       @(posedge rx_clk);
       @(posedge rx_clk);
@@ -162,6 +165,8 @@ module ifm_tb;
 			    // Outputs
 			    .ifm_in_fsm_dbg	(ifm_in_fsm_dbg[3:0]),
 			    .ifm_out_fsm_dbg	(ifm_out_fsm_dbg[3:0]),
+			    .pause_req		(pause_req),
+			    .pause_val		(pause_val[15:0]),
 			    .rx_axis_mac_tready	(rx_axis_mac_tready),
 			    .rxd_tdata		(rxd_tdata[63:0]),
 			    .rxd_tkeep		(rxd_tkeep[7:0]),
@@ -181,7 +186,7 @@ module ifm_tb;
 			    .rxd_tready		(rxd_tready),
 			    .rxs_tready		(rxs_tready),
 			    .s2mm_clk		(s2mm_clk),
-			    .s2mm_resetn	(s2mm_resetn));
+			    .sys_rst		(sys_rst));
    
 endmodule // ifm_tb
 // Local Variables:

@@ -147,7 +147,7 @@ module ifm_in_fsm (/*AUTOARG*/
 
    always @(posedge rx_clk)
      begin
-	pause_req <= #1 wr_data_count[11];
+	pause_req <= #1 wr_data_count[11] | wr_data_count[10];
 	pause_val <= #1 16'h80;	// pause for 8x128=1024 data cycle
      end
    
