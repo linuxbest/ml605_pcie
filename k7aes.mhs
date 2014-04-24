@@ -89,7 +89,7 @@ END
 BEGIN axi_interconnect
  PARAMETER INSTANCE = axi4_0
  PARAMETER HW_VER = 1.06.a
- PORT interconnect_aclk = clk_100_0000MHzMMCM0
+ PORT interconnect_aclk = clk_200_0000MHzMMCM0
  PORT INTERCONNECT_ARESETN = proc_sys_reset_0_Interconnect_aresetn
 END
 
@@ -135,6 +135,8 @@ BEGIN axi_pcie
  PARAMETER C_HIGHADDR = 0x72e0ffff
  PARAMETER C_PCIE_USE_MODE = 3.0
  PARAMETER C_NUM_MSI_REQ = 4
+ PARAMETER C_S_AXI_CTL_ACLK_FREQ_HZ = 100000000
+ PARAMETER C_AXI_ACLK_FREQ_HZ = 200000000
  BUS_INTERFACE S_AXI_CTL = axi4lite_0
  BUS_INTERFACE M_AXI = axi4lite_0
  BUS_INTERFACE S_AXI = axi4_0
@@ -153,7 +155,7 @@ BEGIN axi_pcie
 END
 
 BEGIN axi_intc
- PARAMETER INSTANCE = axi_intc_msi_0
+ PARAMETER INSTANCE = axi_intc_0
  PARAMETER HW_VER = 1.00.a
  PARAMETER C_BASEADDR = 0xC4000000
  PARAMETER C_HIGHADDR = 0xC4000fff
@@ -187,9 +189,9 @@ BEGIN axi_dma
  BUS_INTERFACE M_AXIS_MM2S_CNTRL = M_AXIS_MM2S_CNTRL_0
  BUS_INTERFACE S_AXIS_S2MM_STS = S_AXIS_S2MM_STS_0
  PORT s_axi_lite_aclk = clk_100_0000MHzMMCM0
- PORT m_axi_sg_aclk = clk_100_0000MHzMMCM0
- PORT m_axi_mm2s_aclk = clk_100_0000MHzMMCM0
- PORT m_axi_s2mm_aclk = clk_100_0000MHzMMCM0
+ PORT m_axi_sg_aclk = clk_200_0000MHzMMCM0
+ PORT m_axi_mm2s_aclk = clk_200_0000MHzMMCM0
+ PORT m_axi_s2mm_aclk = clk_200_0000MHzMMCM0
  PORT mm2s_prmry_reset_out_n = mm2s_prmry_reset_out_n_0
  PORT mm2s_cntrl_reset_out_n = mm2s_cntrl_reset_out_n_0
  PORT s2mm_prmry_reset_out_n = s2mm_prmry_reset_out_n_0
@@ -211,8 +213,8 @@ BEGIN axi_aes
  BUS_INTERFACE M_AXIS_MM2S_CNTRL = M_AXIS_MM2S_CNTRL_0
  BUS_INTERFACE S_AXIS_S2MM_STS = S_AXIS_S2MM_STS_0
  PORT s_axi_lite_aclk = clk_100_0000MHzMMCM0
- PORT m_axi_mm2s_aclk = clk_100_0000MHzMMCM0
- PORT m_axi_s2mm_aclk = clk_100_0000MHzMMCM0
+ PORT m_axi_mm2s_aclk = clk_200_0000MHzMMCM0
+ PORT m_axi_s2mm_aclk = clk_200_0000MHzMMCM0
  PORT mm2s_prmry_reset_out_n = mm2s_prmry_reset_out_n_0
  PORT mm2s_cntrl_reset_out_n = mm2s_cntrl_reset_out_n_0
  PORT s2mm_prmry_reset_out_n = s2mm_prmry_reset_out_n_0
