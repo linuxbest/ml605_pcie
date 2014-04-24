@@ -52,7 +52,7 @@
 
 //***************************** Entity Declaration ****************************
 
-module xphy_gtwizard_10gbaser_GT #
+module xphy_gtwizard_10gbaser_gt #
 (
     // Simulation attributes
     parameter   GT_SIM_GTRESET_SPEEDUP   =   "false",       // Set to 1 to speed up sim reset;
