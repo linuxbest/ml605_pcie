@@ -82,6 +82,7 @@ BEGIN axi_systemc
  BUS_INTERFACE S_AXI = axi4_0
  PORT axi_aclk = clk_100_0000MHzPLLE0
  PORT ready = ten_mac_phy_linkup
+ PORT interrupt = Irq
 END
 
 BEGIN axi_interconnect
@@ -100,6 +101,7 @@ BEGIN axi_intc
  BUS_INTERFACE S_AXI = axi4_0
  PORT S_AXI_ACLK = clk_100_0000MHzPLLE0
  PORT intr = ETHERNET_dma_s2mm_introut & ETHERNET_dma_mm2s_introut
+ PORT Irq = Irq 
  PORT MSI_Irq = MSI_Irq 
  PORT MSI_Vector = MSI_Vector
 END

@@ -657,6 +657,27 @@ static int SendArp(struct axi_dma_device *dma_dev)
 
 int osChip_interrupt(uint32_t base)
 {	
+	axi_dma_device *dma_dev = (axi_dma_device *)(mem0 + 0x7000000);
+	XAxiDma *AxiDmaInstPtr = &dma_dev->AxiDma;
+	XAxiDma_BdRing *TxRingPtr = XAxiDma_GetTxRing(AxiDmaInstPtr);
+	XAxiDma_BdRing *RxRingPtr = XAxiDma_GetRxRing(AxiDmaInstPtr, 0);
+	uint32_t rx, tx, ipr;
+
 	fmTraceFuncEnter("ab");
+	ipr = axi_mm_in32(intc_base + IRQ_IPR);
+
+	tx = XAxiDma_mBdRingGetIrq(TxRingPtr);
+	rx = XAxiDma_mBdRingGetIrq(RxRingPtr);
+
+	printf("irq: tx %08x, rx %08x, ipr %04x\n", tx, rx, ipr);
+
+	XAxiDma_mBdRingAckIrq(TxRingPtr, tx);
+	XAxiDma_mBdRingAckIrq(RxRingPtr, rx);
+
+	/* ack irq */
+	axi_mm_out32(intc_base + IRQ_IAR, ipr);
+
 	fmTraceFuncExit('a', "aa");
+
+	return 0;
 }

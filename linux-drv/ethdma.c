@@ -45,8 +45,8 @@ enum lro_state {
 #define DRIVER_DESCRIPTION	"Axi Ethernet driver"
 #define DRIVER_VERSION		"1.00a"
 
-#define POLL_TIMER      1
-#define SSTG_DEBUG 	1
+#define POLL_TIMER      0
+#define SSTG_DEBUG 	0
 #define RX_HW_CSUM 	1
 #define TX_HW_CSUM	1
 
@@ -1243,7 +1243,6 @@ static int axi_get_skb_header(struct sk_buff *skb, void **iphdr,
 
 static void axi_set_mac_address(struct net_device *ndev, void *address)
 {
-#if 0
 	struct net_local *lp = netdev_priv(ndev);
 
 	if (ndev->flags & IFF_UP) 
@@ -1254,6 +1253,7 @@ static void axi_set_mac_address(struct net_device *ndev, void *address)
 
 	if (!is_valid_ether_addr(ndev->dev_addr))
 		random_ether_addr(ndev->dev_addr);
+#if 0
 	/*
 	 * Set up unicast MAC address filter set its mac address
 	 */

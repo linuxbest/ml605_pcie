@@ -3,7 +3,7 @@
  *
  * base on drivers/net/ethernet/intel/e100.c
  */
-#define DEBUG
+//#define DEBUG
 #include <linux/init.h>
 #include <linux/interrupt.h>
 #include <linux/module.h>
@@ -45,6 +45,7 @@ struct vpci_device {
 	void __iomem *ctrl;
 	struct virt_device *vd[8];
 	struct pci_dev *pdev;
+	int msi;
 };
 
 int
@@ -178,7 +179,6 @@ static void vd_isr(struct virt_device *vd, uint8_t irq)
 			continue;
 
 		val = (0x1 << (i + (vd->port<<1)));
-		VPCI_WRITE(val, vd->vp->ctrl + IRQ_IAR);
 
 		if (vd->irqs[i] == NULL)
 			pr_err("vpci: no irq handler, %d\n", irq);
@@ -226,7 +226,7 @@ EXPORT_SYMBOL(vpci_spi_flash_write);
 static irqreturn_t vpci_isr(int irq, void *dev_id)
 {
 	struct vpci_device *vp = dev_id;
-	u32 irq_en, irq_sts, irq_pending;
+	u32 irq_en, irq_sts, irq_pending, iar;
 	int i;
 
 	irq_en      = VPCI_READ(vp->ctrl + IRQ_IER);
@@ -238,14 +238,17 @@ static irqreturn_t vpci_isr(int irq, void *dev_id)
 	if (irq_pending == 0) 
 		return IRQ_NONE;
 
+	iar = irq_pending;
 	for (i = 0; i < 8; i ++) {
 		if (irq_pending == 0)
 			break;
 		vd_isr(vp->vd[i], irq_pending & 0x3);
 		irq_pending = irq_pending >> 2;
 	}
-	/* flush write */
-	VPCI_READ(vp->ctrl + IRQ_IAR);
+	/* ack irq */
+	VPCI_WRITE(iar, vp->ctrl + IRQ_IAR);
+	/* flush it */
+	VPCI_READ(vp->ctrl + IRQ_IPR);
 
 	return IRQ_HANDLED;
 }
@@ -273,7 +276,7 @@ static int  __init vpci_probe(struct pci_dev *pdev, const struct pci_device_id *
 {
 	struct vpci_device *vp;
 	int rc, bar_size, fun_num, i;
-	u32 port_num = 0;
+	u32 port_num = 0, msi = 16;
 
 	dev_dbg(&pdev->dev, "probe\n");
 	
@@ -281,7 +284,16 @@ static int  __init vpci_probe(struct pci_dev *pdev, const struct pci_device_id *
 	rc = pcim_enable_device(pdev);
 	if (rc)
 		return rc;
-	
+	rc = pci_enable_msi_block(pdev, msi);
+	if (rc) 
+		msi = 1;
+	rc = pci_enable_msi_block(pdev, msi);
+	if (rc) {
+		dev_err(&pdev->dev, "Unable to allocate MSI interrupt, "
+				    "falling to leagcy, Error %d\n", rc);
+		msi = 0;
+	}
+
 	rc = pcim_iomap_regions_request_all(pdev, 0x1, "vpci");
 	if (rc == -EBUSY)
 		pcim_pin_device(pdev);
@@ -291,6 +303,7 @@ static int  __init vpci_probe(struct pci_dev *pdev, const struct pci_device_id *
 	vp = devm_kzalloc(&pdev->dev, sizeof(*vp), GFP_KERNEL);
 	if (vp == NULL)
 		return -ENOMEM;
+	vp->msi  = msi;
 	vp->pdev = pdev;
 	vp->mmio = pcim_iomap_table(pdev)[0] + 0x10000;
 	vp->ctrl = pcim_iomap_table(pdev)[0] + 0x00000;
@@ -328,7 +341,7 @@ static int  __init vpci_probe(struct pci_dev *pdev, const struct pci_device_id *
 		vd->res[1].flags = IORESOURCE_BUS;
 		vd->res[2].name  = "reg";
 	}
-	if (request_irq(pdev->irq, vpci_isr, IRQF_SHARED, "vpci", vp)) {
+	if (request_irq(pdev->irq, vpci_isr, msi ? 0 : IRQF_SHARED, "vpci", vp)) {
 		dev_err(&pdev->dev, "request_irq %d failed\n", pdev->irq);
 		/* TODO clean the resources */
 		return -ENODEV;

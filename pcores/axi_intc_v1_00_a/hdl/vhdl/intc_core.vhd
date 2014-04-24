@@ -203,6 +203,7 @@ architecture imp of intc_core is
     signal ack_or      : std_logic;
    
     signal cnt         : std_logic_vector(4 downto 0);
+    signal ipr_save    : std_logic_vector(31 downto 0);
 -- Begin of architecture
 begin
 
@@ -768,29 +769,15 @@ begin
     begin
 	if (Clk'event and Clk = '1') then
 	    if (Rst = RESET_ACTIVE) then
-	        cnt <= "00000";
+	        cnt      <= "00000";
+		ipr_save <= "11111111111111111111111111111111";
+	        MSI_Irq  <= '0';
 	    else
-		cnt <= cnt + 1;
+		cnt     <= cnt + 1;
+	        MSI_Irq <= ipr(to_integer(unsigned(cnt))) and ipr_save(to_integer(unsigned(cnt)));
+		ipr_save(to_integer(unsigned(cnt))) <= not ipr(to_integer(unsigned(cnt)));
 	    end if;
-	end if;
-    end process OUTPUT_MSI_GEN;
-
-    OUTPUT_MSI_IRQ_GEN: process (Clk)
-    begin
-	if (Clk'event and Clk = '1') then
-	    if (Rst = RESET_ACTIVE) then
-	        MSI_Irq <= '0';
-	    else
-	        MSI_Irq <= ipr(to_integer(unsigned(cnt)));
-	    end if;
-	end if;
-    end process OUTPUT_MSI_IRQ_GEN;
-
-    OUTPUT_MSI_VECTOR_GEN: process (Clk)
-    begin
-	if (Clk'event and Clk = '1') then
             MSI_Vector <= cnt;
 	end if;
-    end process OUTPUT_MSI_VECTOR_GEN;
-
+    end process OUTPUT_MSI_GEN;
 end imp;
