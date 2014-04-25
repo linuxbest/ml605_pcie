@@ -14,14 +14,14 @@
  PORT RESET = RESET, DIR = I, SIGIS = RST, RST_POLARITY = 1
  PORT CLK_P = CLK, DIR = I, DIFFERENTIAL_POLARITY = P, SIGIS = CLK, CLK_FREQ = 200000000
  PORT CLK_N = CLK, DIR = I, DIFFERENTIAL_POLARITY = N, SIGIS = CLK, CLK_FREQ = 200000000
- PORT sfp_sgd = sfp_sgd, DIR = I
- PORT sfp_txf = sfp_txf, DIR = I
- PORT sfp_rs = sfp_ss, DIR = O
- PORT sfp_txd = sfp_txd, DIR = O
- PORT txp = txp, DIR = O
- PORT txn = txn, DIR = O
- PORT rxp = rxp, DIR = I
- PORT rxn = rxn, DIR = I
+ PORT sfp_sgd = sfp_sgd, DIR = I, VEC = [3:0]
+ PORT sfp_txf = sfp_txf, DIR = I, VEC = [3:0]
+ PORT sfp_rs = sfp_rs, DIR = O, VEC = [3:0]
+ PORT sfp_txd = sfp_txd, DIR = O, VEC = [3:0]
+ PORT txp = txp, DIR = O, VEC = [3:0] 
+ PORT txn = txn, DIR = O, VEC = [3:0]
+ PORT rxp = rxp, DIR = I, VEC = [3:0]
+ PORT rxn = rxn, DIR = I, VEC = [3:0]
  PORT refclk_p = refclk_p, DIR = I, SIGIS = CLK, CLK_FREQ = 156250000
  PORT refclk_n = refclk_n, DIR = I
  PORT MSI_Irq = MSI_Irq, DIR = O
@@ -81,7 +81,7 @@ BEGIN axi_systemc
  BUS_INTERFACE M_AXI = axi4_0
  BUS_INTERFACE S_AXI = axi4_0
  PORT axi_aclk = clk_100_0000MHzPLLE0
- PORT ready = ten_mac_phy_linkup
+ PORT ready = 0b1
  PORT interrupt = Irq
 END
 
@@ -165,27 +165,35 @@ BEGIN axi_10geth
  PORT s2mm_resetn = s2mm_resetn
 END
 
-BEGIN axi_10gmacphy
- PARAMETER INSTANCE = ten_mac_phy
- PARAMETER HW_VER = 1.00.a
- PARAMETER EXAMPLE_SIM_GTRESET_SPEEDUP = TRUE
+BEGIN axi_10g_mac
+ PARAMETER INSTANCE = ten_eth_mac
+ PARAMETER HW_VER = 1.00.b
  BUS_INTERFACE AXI_MAC_TX = mac_axis_tx
  BUS_INTERFACE AXI_MAC_RX = mac_axis_rx
+ BUS_INTERFACE XGMII = xgmii0
  PARAMETER C_BASEADDR = 0x41250000
  PARAMETER C_HIGHADDR = 0x4125ffff
  PARAMETER C_INTERCONNECT_S_AXI_MASTERS = axi_systemc_0.M_AXI
  BUS_INTERFACE S_AXI = axi4_0
  PORT s_axi_aclk = clk_100_0000MHzPLLE0
+ PORT hw_reset = proc_sys_reset_0_BUS_STRUCT_RESET
+ PORT clk156 = clk156
+END
+
+BEGIN axi_10g_phy
+ PARAMETER INSTANCE = ten_eth_phy
+ PARAMETER HW_VER = 1.00.a
+ BUS_INTERFACE XGMII0 = xgmii0
  PORT refclk_p = refclk_p
  PORT refclk_n = refclk_n
- PORT signal_detect = sfp_sgd
- PORT tx_fault = sfp_txf
+ PORT sfp_sgd = sfp_sgd
+ PORT sfp_txf = sfp_txf
  PORT sfp_rs = sfp_rs
- PORT tx_disable = sfp_txd
+ PORT sfp_txd = sfp_txd
  PORT txp = txp
  PORT txn = txn
  PORT rxp = rxp
  PORT rxn = rxn
+ PORT clk156 = clk156
  PORT hw_reset = proc_sys_reset_0_BUS_STRUCT_RESET
- PORT linkup = ten_mac_phy_linkup
 END

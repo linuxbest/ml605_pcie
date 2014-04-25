@@ -46,8 +46,6 @@
 vlib work
 vmap work work
 vlog -work work \
-../hdl/verilog/gtx/xphy_gt_usrclk_source.v \
-../hdl/verilog/gtx/xphy_gtwizard_10gbaser.v \
 ../hdl/verilog/gtx/xphy_gtwizard_10gbaser_gt.v \
 ../hdl/verilog/gtx/xphy_gt_quad.v \
 ../hdl/verilog/xphy_block_clk.v \
@@ -55,7 +53,6 @@ vlog -work work \
 ../hdl/verilog/xphy.v \
 ../hdl/verilog/axi_10g_phy.v \
 ../sim/demo_tb.v
-
 
 vsim -L unisims_ver -L secureip -t ps work.demo_tb work.glbl -novopt
 

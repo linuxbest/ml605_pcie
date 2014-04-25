@@ -38,14 +38,14 @@ module system_tb
   reg RESET;
   reg refclk_n;
   reg refclk_p;
-  reg rxn;
-  reg rxp;
-  wire sfp_rs;
-  reg sfp_sgd;
-  wire sfp_txd;
-  reg sfp_txf;
-  wire txn;
-  wire txp;
+  reg [3:0] rxn;
+  reg [3:0] rxp;
+  wire [3:0] sfp_rs;
+  reg [3:0] sfp_sgd;
+  wire [3:0] sfp_txd;
+  reg [3:0] sfp_txf;
+  wire [3:0] txn;
+  wire [3:0] txp;
 
   system
     dut (
