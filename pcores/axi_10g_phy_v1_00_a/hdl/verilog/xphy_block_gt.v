@@ -160,12 +160,13 @@ module xphy_block_gt (/*AUTOARG*/
    wire [31:0] gt0_rxdata_i;
    wire gt0_rxclkout_bufg;
    wire gt0_rxpcsreset_i;
-   wire gt0_rxusrclk_i;
    wire gt0_rxusrclk2_i;
+   wire GTRXRESET_i;
    assign gt0_rxdata_i   = RXDATA_OUT;
    assign GTRXRESET_IN   = gt0_gtrxreset_i;
    assign RXPCSRESET_IN  = gt0_rxpcsreset_i;
-   assign gt0_rxusrclk_i = gt0_rxclkout_bufg;
+   assign RXUSRCLK_IN    = gt0_rxclkout_bufg;
+   assign RXUSRCLK2_IN   = gt0_rxclkout_bufg;
    assign gt0_rxusrclk2_i= gt0_rxclkout_bufg;
    BUFG rxoutclk_bufg_i (.I(RXOUTCLK_OUT), .O(gt0_rxclkout_bufg));
 
@@ -191,7 +192,7 @@ module xphy_block_gt (/*AUTOARG*/
    /* Transmit ports */
    output TXUSERRDY_IN;
    wire gt0_txuserrdy_i;
-   assign gt0_txuserrdy_i = TXUSERRDY_IN;
+   assign TXUSERRDY_IN = gt0_txuserrdy_i;
 
    /* Transmit port - 64b66b */
    output [1:0] TXHEADER_IN;
@@ -214,10 +215,14 @@ module xphy_block_gt (/*AUTOARG*/
    wire [31:0] gt0_txdata_i;
    wire gt0_txoutclk_bufg;
    wire gt0_txpcsreset_i;
-   assign GTTXRESET_IN = gt0_gttxreset_i;
-   assign TXDATA_IN    = gt0_txdata_i;
-   assign TXUSRCLK_IN  = gt0_txoutclk_bufg;
-   assign TXUSRCLK2_IN = gt0_txoutclk_bufg;
+   wire gt0_txusrclk2_i;
+   wire GTTXRESET_i;
+   assign GTTXRESET_IN    = gt0_gttxreset_i;
+   assign TXDATA_IN       = gt0_txdata_i;
+   assign TXPCSRESET_IN   = gt0_txpcsreset_i;
+   assign TXUSRCLK_IN     = gt0_txoutclk_bufg;
+   assign TXUSRCLK2_IN    = gt0_txoutclk_bufg;
+   assign gt0_txusrclk2_i = gt0_txoutclk_bufg;
    BUFG txoutclk_bufg_i (.I(TXOUTCLK_OUT), .O(gt0_txoutclk_bufg));
 
    /* Transmit port - TX and oob */
@@ -316,7 +321,7 @@ module xphy_block_gt (/*AUTOARG*/
    reg txreset322;
    reg rxreset322;
    reg dclk_reset;
-   xphy ten_gig_eth_pcs_pma_core (.reset(reset), 
+   xphy ten_gig_eth_pcs_pma_core (.reset(hw_reset), 
 				  .txreset322(txreset322),
 				  .rxreset322(rxreset322),
 				  .dclk_reset(dclk_reset),
@@ -359,7 +364,6 @@ module xphy_block_gt (/*AUTOARG*/
 				  .clear_rx_prbs_err_count(gt0_clear_rx_prbs_err_count_i),
 				  .loopback_ctrl(gt0_loopback_i));
    
-   wire 	  gt0_txusrclk2_i;
   
    assign txclk322 = gt0_txusrclk2_i;
    assign rxclk322 = gt0_rxusrclk2_i;
@@ -704,8 +708,8 @@ module xphy_block_gt (/*AUTOARG*/
           rxuserrdy_counter   <=   rxuserrdy_counter;
      end
    
-   assign   GTTXRESET_IN  =     reset_pulse[0];
-   assign   GTRXRESET_IN  =     reset_pulse[0];
+   assign   GTTXRESET_i   =     reset_pulse[0];
+   assign   GTRXRESET_i   =     reset_pulse[0];
    
    assign   QPLLRESET_IN  =     reset_pulse[0];
    
@@ -863,9 +867,9 @@ module xphy_block_gt (/*AUTOARG*/
    assign pcs_resetout_rising = pcs_resetout && !pcs_resetout_reg;
    
    // Incorporate the pma_resetout_rising and cable_pull/unpull_reset_rising bits generated in code below.
-   assign  gt0_gtrxreset_i = (GTRXRESET_IN || !gt0_qplllock_i || pma_resetout_rising ||
+   assign  gt0_gtrxreset_i = (GTRXRESET_i || !gt0_qplllock_i || pma_resetout_rising ||
                               cable_pull_reset_rising_reg || cable_unpull_reset_rising_reg) && reset_counter[7];
-   assign  gt0_gttxreset_i = (GTTXRESET_IN || !gt0_qplllock_i || pma_resetout_rising) && reset_counter[7];
+   assign  gt0_gttxreset_i = (GTTXRESET_i || !gt0_qplllock_i || pma_resetout_rising) && reset_counter[7];
    assign  gt0_qpllreset_i = QPLLRESET_IN;
    
    assign  gt0_rxpcsreset_i = pcs_resetout_rising;

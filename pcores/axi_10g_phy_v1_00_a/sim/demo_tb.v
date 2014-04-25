@@ -418,10 +418,9 @@ module demo_tb;
 
   wire [3:0]     txp;
   wire [3:0]     txn;
-  reg            rxp_r;
   wire [3:0]     rxp;
   wire [3:0]     rxn;
-
+  reg            rxp_r;
 
   wire           resetdone;
   wire           signal_detect;
@@ -498,14 +497,22 @@ module demo_tb;
    wire mdc1;
    wire mdc2;
    wire mdc3;
-   wire mdc_in0;
-   wire mdc_in1;
-   wire mdc_in2;
-   wire mdc_in3;
+   wire mdio_in0;
+   wire mdio_in1;
+   wire mdio_in2;
+   wire mdio_in3;
    wire [3:0] sfp_sgd;
    wire [3:0] sfp_txf;
    assign sfp_sgd = 4'b1111;
    assign sfp_txf = 4'b0000;
+   assign mdc0    = 1'b0;
+   assign mdc1    = 1'b0;
+   assign mdc2    = 1'b0;
+   assign mdc3    = 1'b0;
+   assign mdio_in0 = 1'b0;
+   assign mdio_in1 = 1'b0;
+   assign mdio_in2 = 1'b0;
+   assign mdio_in3 = 1'b0;
 
    wire [7:0] xgmii_txc0;
    wire [7:0] xgmii_txc1;
@@ -587,6 +594,15 @@ module demo_tb;
   defparam DUT.EXAMPLE_SIM_GTRESET_SPEEDUP = "TRUE";
   assign signal_detect = 1'b1;
   assign tx_fault = 1'b0;
+
+  ODDR #(.DDR_CLK_EDGE("SAME_EDGE")) 
+  rx_clk_ddr(.Q   (xgmii_rx_clk),
+             .D1  (1'b0),
+	     .D2  (1'b1),
+	     .C   (clk156),
+	     .CE  (1'b1),
+	     .R   (1'b0),
+	     .S   (1'b0));
 //-----------------------------------------------------------------------------
 // Clock Drivers
 //-----------------------------------------------------------------------------
@@ -797,7 +813,7 @@ module demo_tb;
      else // SLIP!!
      begin // Just grab single bit
        RxD[64:0] <= RxD[65:1];
-       RxD[65] <= txp;
+       RxD[65] <= txp_i;
        test_sh <= 1;
        nbits <= 0;
      end
