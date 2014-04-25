@@ -74,123 +74,123 @@ module xphy_gt_quad (/*AUTOARG*/
    parameter   WRAPPER_SIM_GTRESET_SPEEDUP    =   "false";     // Set to "true" to speed up sim reset
    parameter   RX_DFE_KL_CFG2_IN              =   32'h3010D90C;
    parameter   PMA_RSV_IN                     =   32'h001E7080;
-   parameter   SIM_VERSION                    =   "4.0"
+   parameter   SIM_VERSION                    =   "4.0";
    
    /*AUTOINPUT*/
    // Beginning of automatic inputs (from unused autoinst inputs)
-   input		GT0_DRPADDR_IN;		// To gt_0 of xphy_gtwizard_10gbaser_gt.v
+   input [8:0]		GT0_DRPADDR_IN;		// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_DRPCLK_IN;		// To gt_0 of xphy_gtwizard_10gbaser_gt.v
-   input		GT0_DRPDI_IN;		// To gt_0 of xphy_gtwizard_10gbaser_gt.v
+   input [15:0]		GT0_DRPDI_IN;		// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_DRPEN_IN;		// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_DRPWE_IN;		// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_GTRXRESET_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_GTTXRESET_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
-   input		GT0_LOOPBACK_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
+   input [2:0]		GT0_LOOPBACK_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_RXBUFRESET_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_RXGEARBOXSLIP_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_RXLPMEN_IN;		// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_RXPCSRESET_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_RXPRBSCNTRESET_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
-   input		GT0_RXPRBSSEL_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
+   input [2:0]		GT0_RXPRBSSEL_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_RXUSERRDY_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_RXUSRCLK2_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_RXUSRCLK_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
-   input		GT0_TXDATA_IN;		// To gt_0 of xphy_gtwizard_10gbaser_gt.v
-   input		GT0_TXHEADER_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
+   input [31:0]		GT0_TXDATA_IN;		// To gt_0 of xphy_gtwizard_10gbaser_gt.v
+   input [1:0]		GT0_TXHEADER_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_TXINHIBIT_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
-   input		GT0_TXMAINCURSOR_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
+   input [6:0]		GT0_TXMAINCURSOR_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_TXPCSRESET_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
-   input		GT0_TXPOSTCURSOR_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
-   input		GT0_TXPRBSSEL_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
-   input		GT0_TXPRECURSOR_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
-   input		GT0_TXSEQUENCE_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
+   input [4:0]		GT0_TXPOSTCURSOR_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
+   input [2:0]		GT0_TXPRBSSEL_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
+   input [4:0]		GT0_TXPRECURSOR_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
+   input [6:0]		GT0_TXSEQUENCE_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_TXUSERRDY_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_TXUSRCLK2_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
    input		GT0_TXUSRCLK_IN;	// To gt_0 of xphy_gtwizard_10gbaser_gt.v
-   input		GT1_DRPADDR_IN;		// To gt_1 of xphy_gtwizard_10gbaser_gt.v
+   input [8:0]		GT1_DRPADDR_IN;		// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_DRPCLK_IN;		// To gt_1 of xphy_gtwizard_10gbaser_gt.v
-   input		GT1_DRPDI_IN;		// To gt_1 of xphy_gtwizard_10gbaser_gt.v
+   input [15:0]		GT1_DRPDI_IN;		// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_DRPEN_IN;		// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_DRPWE_IN;		// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_GTRXRESET_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_GTTXRESET_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
-   input		GT1_LOOPBACK_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
+   input [2:0]		GT1_LOOPBACK_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_RXBUFRESET_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_RXGEARBOXSLIP_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_RXLPMEN_IN;		// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_RXPCSRESET_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_RXPRBSCNTRESET_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
-   input		GT1_RXPRBSSEL_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
+   input [2:0]		GT1_RXPRBSSEL_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_RXUSERRDY_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_RXUSRCLK2_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_RXUSRCLK_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
-   input		GT1_TXDATA_IN;		// To gt_1 of xphy_gtwizard_10gbaser_gt.v
-   input		GT1_TXHEADER_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
+   input [31:0]		GT1_TXDATA_IN;		// To gt_1 of xphy_gtwizard_10gbaser_gt.v
+   input [1:0]		GT1_TXHEADER_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_TXINHIBIT_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
-   input		GT1_TXMAINCURSOR_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
+   input [6:0]		GT1_TXMAINCURSOR_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_TXPCSRESET_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
-   input		GT1_TXPOSTCURSOR_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
-   input		GT1_TXPRBSSEL_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
-   input		GT1_TXPRECURSOR_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
-   input		GT1_TXSEQUENCE_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
+   input [4:0]		GT1_TXPOSTCURSOR_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
+   input [2:0]		GT1_TXPRBSSEL_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
+   input [4:0]		GT1_TXPRECURSOR_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
+   input [6:0]		GT1_TXSEQUENCE_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_TXUSERRDY_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_TXUSRCLK2_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
    input		GT1_TXUSRCLK_IN;	// To gt_1 of xphy_gtwizard_10gbaser_gt.v
-   input		GT2_DRPADDR_IN;		// To gt_2 of xphy_gtwizard_10gbaser_gt.v
+   input [8:0]		GT2_DRPADDR_IN;		// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_DRPCLK_IN;		// To gt_2 of xphy_gtwizard_10gbaser_gt.v
-   input		GT2_DRPDI_IN;		// To gt_2 of xphy_gtwizard_10gbaser_gt.v
+   input [15:0]		GT2_DRPDI_IN;		// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_DRPEN_IN;		// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_DRPWE_IN;		// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_GTRXRESET_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_GTTXRESET_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
-   input		GT2_LOOPBACK_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
+   input [2:0]		GT2_LOOPBACK_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_RXBUFRESET_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_RXGEARBOXSLIP_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_RXLPMEN_IN;		// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_RXPCSRESET_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_RXPRBSCNTRESET_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
-   input		GT2_RXPRBSSEL_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
+   input [2:0]		GT2_RXPRBSSEL_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_RXUSERRDY_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_RXUSRCLK2_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_RXUSRCLK_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
-   input		GT2_TXDATA_IN;		// To gt_2 of xphy_gtwizard_10gbaser_gt.v
-   input		GT2_TXHEADER_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
+   input [31:0]		GT2_TXDATA_IN;		// To gt_2 of xphy_gtwizard_10gbaser_gt.v
+   input [1:0]		GT2_TXHEADER_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_TXINHIBIT_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
-   input		GT2_TXMAINCURSOR_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
+   input [6:0]		GT2_TXMAINCURSOR_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_TXPCSRESET_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
-   input		GT2_TXPOSTCURSOR_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
-   input		GT2_TXPRBSSEL_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
-   input		GT2_TXPRECURSOR_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
-   input		GT2_TXSEQUENCE_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
+   input [4:0]		GT2_TXPOSTCURSOR_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
+   input [2:0]		GT2_TXPRBSSEL_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
+   input [4:0]		GT2_TXPRECURSOR_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
+   input [6:0]		GT2_TXSEQUENCE_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_TXUSERRDY_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_TXUSRCLK2_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
    input		GT2_TXUSRCLK_IN;	// To gt_2 of xphy_gtwizard_10gbaser_gt.v
-   input		GT3_DRPADDR_IN;		// To gt_3 of xphy_gtwizard_10gbaser_gt.v
+   input [8:0]		GT3_DRPADDR_IN;		// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_DRPCLK_IN;		// To gt_3 of xphy_gtwizard_10gbaser_gt.v
-   input		GT3_DRPDI_IN;		// To gt_3 of xphy_gtwizard_10gbaser_gt.v
+   input [15:0]		GT3_DRPDI_IN;		// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_DRPEN_IN;		// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_DRPWE_IN;		// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_GTRXRESET_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_GTTXRESET_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
-   input		GT3_LOOPBACK_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
+   input [2:0]		GT3_LOOPBACK_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_RXBUFRESET_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_RXGEARBOXSLIP_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_RXLPMEN_IN;		// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_RXPCSRESET_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_RXPRBSCNTRESET_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
-   input		GT3_RXPRBSSEL_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
+   input [2:0]		GT3_RXPRBSSEL_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_RXUSERRDY_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_RXUSRCLK2_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_RXUSRCLK_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
-   input		GT3_TXDATA_IN;		// To gt_3 of xphy_gtwizard_10gbaser_gt.v
-   input		GT3_TXHEADER_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
+   input [31:0]		GT3_TXDATA_IN;		// To gt_3 of xphy_gtwizard_10gbaser_gt.v
+   input [1:0]		GT3_TXHEADER_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_TXINHIBIT_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
-   input		GT3_TXMAINCURSOR_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
+   input [6:0]		GT3_TXMAINCURSOR_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_TXPCSRESET_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
-   input		GT3_TXPOSTCURSOR_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
-   input		GT3_TXPRBSSEL_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
-   input		GT3_TXPRECURSOR_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
-   input		GT3_TXSEQUENCE_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
+   input [4:0]		GT3_TXPOSTCURSOR_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
+   input [2:0]		GT3_TXPRBSSEL_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
+   input [4:0]		GT3_TXPRECURSOR_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
+   input [6:0]		GT3_TXSEQUENCE_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_TXUSERRDY_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_TXUSRCLK2_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
    input		GT3_TXUSRCLK_IN;	// To gt_3 of xphy_gtwizard_10gbaser_gt.v
@@ -199,16 +199,16 @@ module xphy_gt_quad (/*AUTOARG*/
    // End of automatics
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
-   output		GT0_DRPDO_OUT;		// From gt_0 of xphy_gtwizard_10gbaser_gt.v
+   output [15:0]	GT0_DRPDO_OUT;		// From gt_0 of xphy_gtwizard_10gbaser_gt.v
    output		GT0_DRPRDY_OUT;		// From gt_0 of xphy_gtwizard_10gbaser_gt.v
    output		GT0_EYESCANDATAERROR_OUT;// From gt_0 of xphy_gtwizard_10gbaser_gt.v
-   output		GT0_RXBUFSTATUS_OUT;	// From gt_0 of xphy_gtwizard_10gbaser_gt.v
+   output [2:0]		GT0_RXBUFSTATUS_OUT;	// From gt_0 of xphy_gtwizard_10gbaser_gt.v
    output		GT0_RXCDRLOCK_OUT;	// From gt_0 of xphy_gtwizard_10gbaser_gt.v
    output		GT0_RXDATAVALID_OUT;	// From gt_0 of xphy_gtwizard_10gbaser_gt.v
-   output		GT0_RXDATA_OUT;		// From gt_0 of xphy_gtwizard_10gbaser_gt.v
+   output [31:0]	GT0_RXDATA_OUT;		// From gt_0 of xphy_gtwizard_10gbaser_gt.v
    output		GT0_RXELECIDLE_OUT;	// From gt_0 of xphy_gtwizard_10gbaser_gt.v
    output		GT0_RXHEADERVALID_OUT;	// From gt_0 of xphy_gtwizard_10gbaser_gt.v
-   output		GT0_RXHEADER_OUT;	// From gt_0 of xphy_gtwizard_10gbaser_gt.v
+   output [1:0]		GT0_RXHEADER_OUT;	// From gt_0 of xphy_gtwizard_10gbaser_gt.v
    output		GT0_RXOUTCLK_OUT;	// From gt_0 of xphy_gtwizard_10gbaser_gt.v
    output		GT0_RXPRBSERR_OUT;	// From gt_0 of xphy_gtwizard_10gbaser_gt.v
    output		GT0_RXRESETDONE_OUT;	// From gt_0 of xphy_gtwizard_10gbaser_gt.v
@@ -216,16 +216,16 @@ module xphy_gt_quad (/*AUTOARG*/
    output		GT0_TXOUTCLKPCS_OUT;	// From gt_0 of xphy_gtwizard_10gbaser_gt.v
    output		GT0_TXOUTCLK_OUT;	// From gt_0 of xphy_gtwizard_10gbaser_gt.v
    output		GT0_TXRESETDONE_OUT;	// From gt_0 of xphy_gtwizard_10gbaser_gt.v
-   output		GT1_DRPDO_OUT;		// From gt_1 of xphy_gtwizard_10gbaser_gt.v
+   output [15:0]	GT1_DRPDO_OUT;		// From gt_1 of xphy_gtwizard_10gbaser_gt.v
    output		GT1_DRPRDY_OUT;		// From gt_1 of xphy_gtwizard_10gbaser_gt.v
    output		GT1_EYESCANDATAERROR_OUT;// From gt_1 of xphy_gtwizard_10gbaser_gt.v
-   output		GT1_RXBUFSTATUS_OUT;	// From gt_1 of xphy_gtwizard_10gbaser_gt.v
+   output [2:0]		GT1_RXBUFSTATUS_OUT;	// From gt_1 of xphy_gtwizard_10gbaser_gt.v
    output		GT1_RXCDRLOCK_OUT;	// From gt_1 of xphy_gtwizard_10gbaser_gt.v
    output		GT1_RXDATAVALID_OUT;	// From gt_1 of xphy_gtwizard_10gbaser_gt.v
-   output		GT1_RXDATA_OUT;		// From gt_1 of xphy_gtwizard_10gbaser_gt.v
+   output [31:0]	GT1_RXDATA_OUT;		// From gt_1 of xphy_gtwizard_10gbaser_gt.v
    output		GT1_RXELECIDLE_OUT;	// From gt_1 of xphy_gtwizard_10gbaser_gt.v
    output		GT1_RXHEADERVALID_OUT;	// From gt_1 of xphy_gtwizard_10gbaser_gt.v
-   output		GT1_RXHEADER_OUT;	// From gt_1 of xphy_gtwizard_10gbaser_gt.v
+   output [1:0]		GT1_RXHEADER_OUT;	// From gt_1 of xphy_gtwizard_10gbaser_gt.v
    output		GT1_RXOUTCLK_OUT;	// From gt_1 of xphy_gtwizard_10gbaser_gt.v
    output		GT1_RXPRBSERR_OUT;	// From gt_1 of xphy_gtwizard_10gbaser_gt.v
    output		GT1_RXRESETDONE_OUT;	// From gt_1 of xphy_gtwizard_10gbaser_gt.v
@@ -233,16 +233,16 @@ module xphy_gt_quad (/*AUTOARG*/
    output		GT1_TXOUTCLKPCS_OUT;	// From gt_1 of xphy_gtwizard_10gbaser_gt.v
    output		GT1_TXOUTCLK_OUT;	// From gt_1 of xphy_gtwizard_10gbaser_gt.v
    output		GT1_TXRESETDONE_OUT;	// From gt_1 of xphy_gtwizard_10gbaser_gt.v
-   output		GT2_DRPDO_OUT;		// From gt_2 of xphy_gtwizard_10gbaser_gt.v
+   output [15:0]	GT2_DRPDO_OUT;		// From gt_2 of xphy_gtwizard_10gbaser_gt.v
    output		GT2_DRPRDY_OUT;		// From gt_2 of xphy_gtwizard_10gbaser_gt.v
    output		GT2_EYESCANDATAERROR_OUT;// From gt_2 of xphy_gtwizard_10gbaser_gt.v
-   output		GT2_RXBUFSTATUS_OUT;	// From gt_2 of xphy_gtwizard_10gbaser_gt.v
+   output [2:0]		GT2_RXBUFSTATUS_OUT;	// From gt_2 of xphy_gtwizard_10gbaser_gt.v
    output		GT2_RXCDRLOCK_OUT;	// From gt_2 of xphy_gtwizard_10gbaser_gt.v
    output		GT2_RXDATAVALID_OUT;	// From gt_2 of xphy_gtwizard_10gbaser_gt.v
-   output		GT2_RXDATA_OUT;		// From gt_2 of xphy_gtwizard_10gbaser_gt.v
+   output [31:0]	GT2_RXDATA_OUT;		// From gt_2 of xphy_gtwizard_10gbaser_gt.v
    output		GT2_RXELECIDLE_OUT;	// From gt_2 of xphy_gtwizard_10gbaser_gt.v
    output		GT2_RXHEADERVALID_OUT;	// From gt_2 of xphy_gtwizard_10gbaser_gt.v
-   output		GT2_RXHEADER_OUT;	// From gt_2 of xphy_gtwizard_10gbaser_gt.v
+   output [1:0]		GT2_RXHEADER_OUT;	// From gt_2 of xphy_gtwizard_10gbaser_gt.v
    output		GT2_RXOUTCLK_OUT;	// From gt_2 of xphy_gtwizard_10gbaser_gt.v
    output		GT2_RXPRBSERR_OUT;	// From gt_2 of xphy_gtwizard_10gbaser_gt.v
    output		GT2_RXRESETDONE_OUT;	// From gt_2 of xphy_gtwizard_10gbaser_gt.v
@@ -250,16 +250,16 @@ module xphy_gt_quad (/*AUTOARG*/
    output		GT2_TXOUTCLKPCS_OUT;	// From gt_2 of xphy_gtwizard_10gbaser_gt.v
    output		GT2_TXOUTCLK_OUT;	// From gt_2 of xphy_gtwizard_10gbaser_gt.v
    output		GT2_TXRESETDONE_OUT;	// From gt_2 of xphy_gtwizard_10gbaser_gt.v
-   output		GT3_DRPDO_OUT;		// From gt_3 of xphy_gtwizard_10gbaser_gt.v
+   output [15:0]	GT3_DRPDO_OUT;		// From gt_3 of xphy_gtwizard_10gbaser_gt.v
    output		GT3_DRPRDY_OUT;		// From gt_3 of xphy_gtwizard_10gbaser_gt.v
    output		GT3_EYESCANDATAERROR_OUT;// From gt_3 of xphy_gtwizard_10gbaser_gt.v
-   output		GT3_RXBUFSTATUS_OUT;	// From gt_3 of xphy_gtwizard_10gbaser_gt.v
+   output [2:0]		GT3_RXBUFSTATUS_OUT;	// From gt_3 of xphy_gtwizard_10gbaser_gt.v
    output		GT3_RXCDRLOCK_OUT;	// From gt_3 of xphy_gtwizard_10gbaser_gt.v
    output		GT3_RXDATAVALID_OUT;	// From gt_3 of xphy_gtwizard_10gbaser_gt.v
-   output		GT3_RXDATA_OUT;		// From gt_3 of xphy_gtwizard_10gbaser_gt.v
+   output [31:0]	GT3_RXDATA_OUT;		// From gt_3 of xphy_gtwizard_10gbaser_gt.v
    output		GT3_RXELECIDLE_OUT;	// From gt_3 of xphy_gtwizard_10gbaser_gt.v
    output		GT3_RXHEADERVALID_OUT;	// From gt_3 of xphy_gtwizard_10gbaser_gt.v
-   output		GT3_RXHEADER_OUT;	// From gt_3 of xphy_gtwizard_10gbaser_gt.v
+   output [1:0]		GT3_RXHEADER_OUT;	// From gt_3 of xphy_gtwizard_10gbaser_gt.v
    output		GT3_RXOUTCLK_OUT;	// From gt_3 of xphy_gtwizard_10gbaser_gt.v
    output		GT3_RXPRBSERR_OUT;	// From gt_3 of xphy_gtwizard_10gbaser_gt.v
    output		GT3_RXRESETDONE_OUT;	// From gt_3 of xphy_gtwizard_10gbaser_gt.v
@@ -318,72 +318,72 @@ module xphy_gt_quad (/*AUTOARG*/
     .QPLLCLK_IN                     (gt_qplloutclk_i),
     .QPLLREFCLK_IN                  (gt_qpllrefclk_i),
     //-------------- Channel - Dynamic Reconfiguration Port (DRP) --------------
-    .DRPADDR_IN                     (GT@_DRPADDR_IN),
-    .DRPCLK_IN                      (GT@_DRPCLK_IN),
-    .DRPDI_IN                       (GT@_DRPDI_IN),
-    .DRPDO_OUT                      (GT@_DRPDO_OUT),
-    .DRPEN_IN                       (GT@_DRPEN_IN),
-    .DRPRDY_OUT                     (GT@_DRPRDY_OUT),
-    .DRPWE_IN                       (GT@_DRPWE_IN),
+    .DRPADDR_IN                     (GT@_DRPADDR_IN[]),
+    .DRPCLK_IN                      (GT@_DRPCLK_IN[]),
+    .DRPDI_IN                       (GT@_DRPDI_IN[]),
+    .DRPDO_OUT                      (GT@_DRPDO_OUT[]),
+    .DRPEN_IN                       (GT@_DRPEN_IN[]),
+    .DRPRDY_OUT                     (GT@_DRPRDY_OUT[]),
+    .DRPWE_IN                       (GT@_DRPWE_IN[]),
     //----------------------------- Eye Scan Ports -----------------------------
-    .EYESCANDATAERROR_OUT           (GT@_EYESCANDATAERROR_OUT),
+    .EYESCANDATAERROR_OUT           (GT@_EYESCANDATAERROR_OUT[]),
     //---------------------- Loopback and Powerdown Ports ----------------------
-    .LOOPBACK_IN                    (GT@_LOOPBACK_IN),
+    .LOOPBACK_IN                    (GT@_LOOPBACK_IN[]),
     //----------------------------- Receive Ports ------------------------------
-    .RXUSERRDY_IN                   (GT@_RXUSERRDY_IN),
+    .RXUSERRDY_IN                   (GT@_RXUSERRDY_IN[]),
     //------------ Receive Ports - 64b66b and 64b67b Gearbox Ports -------------
-    .RXDATAVALID_OUT                (GT@_RXDATAVALID_OUT),
-    .RXGEARBOXSLIP_IN               (GT@_RXGEARBOXSLIP_IN),
-    .RXHEADER_OUT                   (GT@_RXHEADER_OUT),
-    .RXHEADERVALID_OUT              (GT@_RXHEADERVALID_OUT),
+    .RXDATAVALID_OUT                (GT@_RXDATAVALID_OUT[]),
+    .RXGEARBOXSLIP_IN               (GT@_RXGEARBOXSLIP_IN[]),
+    .RXHEADER_OUT                   (GT@_RXHEADER_OUT[]),
+    .RXHEADERVALID_OUT              (GT@_RXHEADERVALID_OUT[]),
     //--------------------- Receive Ports - PRBS Detection ---------------------
-    .RXPRBSCNTRESET_IN              (GT@_RXPRBSCNTRESET_IN),
-    .RXPRBSERR_OUT                  (GT@_RXPRBSERR_OUT),
-    .RXPRBSSEL_IN                   (GT@_RXPRBSSEL_IN),
+    .RXPRBSCNTRESET_IN              (GT@_RXPRBSCNTRESET_IN[]),
+    .RXPRBSERR_OUT                  (GT@_RXPRBSERR_OUT[]),
+    .RXPRBSSEL_IN                   (GT@_RXPRBSSEL_IN[]),
     //----------------- Receive Ports - RX Data Path interface -----------------
-    .GTRXRESET_IN                   (GT@_GTRXRESET_IN),
-    .RXDATA_OUT                     (GT@_RXDATA_OUT),
-    .RXOUTCLK_OUT                   (GT@_RXOUTCLK_OUT),
-    .RXPCSRESET_IN                  (GT@_RXPCSRESET_IN),
-    .RXUSRCLK_IN                    (GT@_RXUSRCLK_IN),
-    .RXUSRCLK2_IN                   (GT@_RXUSRCLK2_IN),
+    .GTRXRESET_IN                   (GT@_GTRXRESET_IN[]),
+    .RXDATA_OUT                     (GT@_RXDATA_OUT[]),
+    .RXOUTCLK_OUT                   (GT@_RXOUTCLK_OUT[]),
+    .RXPCSRESET_IN                  (GT@_RXPCSRESET_IN[]),
+    .RXUSRCLK_IN                    (GT@_RXUSRCLK_IN[]),
+    .RXUSRCLK2_IN                   (GT@_RXUSRCLK2_IN[]),
     //----- Receive Ports - RX Driver,OOB signalling,Coupling and Eq.,CDR ------
     .GTXRXN_IN                      (rxn[@]),
     .GTXRXP_IN                      (rxp[@]),
-    .RXCDRLOCK_OUT                  (GT@_RXCDRLOCK_OUT),
-    .RXELECIDLE_OUT                 (GT@_RXELECIDLE_OUT),
+    .RXCDRLOCK_OUT                  (GT@_RXCDRLOCK_OUT[]),
+    .RXELECIDLE_OUT                 (GT@_RXELECIDLE_OUT[]),
     //------ Receive Ports - RX Elastic Buffer and Phase Alignment Ports -------
-    .RXBUFRESET_IN                  (GT@_RXBUFRESET_IN),
-    .RXBUFSTATUS_OUT                (GT@_RXBUFSTATUS_OUT),
+    .RXBUFRESET_IN                  (GT@_RXBUFRESET_IN[]),
+    .RXBUFSTATUS_OUT                (GT@_RXBUFSTATUS_OUT[]),
     //---------------------- Receive Ports - RX Equalizer ----------------------
-    .RXLPMEN_IN                     (GT@_RXLPMEN_IN),
+    .RXLPMEN_IN                     (GT@_RXLPMEN_IN[]),
     //---------------------- Receive Ports - RX PLL Ports ----------------------
-    .RXRESETDONE_OUT                (GT@_RXRESETDONE_OUT),
+    .RXRESETDONE_OUT                (GT@_RXRESETDONE_OUT[]),
     //----------------------------- Transmit Ports -----------------------------
-    .TXUSERRDY_IN                   (GT@_TXUSERRDY_IN),
+    .TXUSERRDY_IN                   (GT@_TXUSERRDY_IN[]),
     //------------ Transmit Ports - 64b66b and 64b67b Gearbox Ports ------------
-    .TXHEADER_IN                    (GT@_TXHEADER_IN),
-    .TXSEQUENCE_IN                  (GT@_TXSEQUENCE_IN),
+    .TXHEADER_IN                    (GT@_TXHEADER_IN[]),
+    .TXSEQUENCE_IN                  (GT@_TXSEQUENCE_IN[]),
     //---------------- Transmit Ports - TX Data Path interface -----------------
-    .GTTXRESET_IN                   (GT@_GTTXRESET_IN),
-    .TXDATA_IN                      (GT@_TXDATA_IN),
-    .TXOUTCLK_OUT                   (GT@_TXOUTCLK_OUT),
-    .TXOUTCLKFABRIC_OUT             (GT@_TXOUTCLKFABRIC_OUT),
-    .TXOUTCLKPCS_OUT                (GT@_TXOUTCLKPCS_OUT),
-    .TXPCSRESET_IN                  (GT@_TXPCSRESET_IN),
-    .TXUSRCLK_IN                    (GT@_TXUSRCLK_IN),
-    .TXUSRCLK2_IN                   (GT@_TXUSRCLK2_IN),
+    .GTTXRESET_IN                   (GT@_GTTXRESET_IN[]),
+    .TXDATA_IN                      (GT@_TXDATA_IN[]),
+    .TXOUTCLK_OUT                   (GT@_TXOUTCLK_OUT[]),
+    .TXOUTCLKFABRIC_OUT             (GT@_TXOUTCLKFABRIC_OUT[]),
+    .TXOUTCLKPCS_OUT                (GT@_TXOUTCLKPCS_OUT[]),
+    .TXPCSRESET_IN                  (GT@_TXPCSRESET_IN[]),
+    .TXUSRCLK_IN                    (GT@_TXUSRCLK_IN[]),
+    .TXUSRCLK2_IN                   (GT@_TXUSRCLK2_IN[]),
     //-------------- Transmit Ports - TX Driver and OOB signaling --------------
     .GTXTXN_OUT                     (txn[@]),
     .GTXTXP_OUT                     (txp[@]),
-    .TXINHIBIT_IN                   (GT@_TXINHIBIT_IN),
-    .TXPRECURSOR_IN                 (GT@_TXPRECURSOR_IN),
-    .TXPOSTCURSOR_IN                (GT@_TXPOSTCURSOR_IN),
-    .TXMAINCURSOR_IN                (GT@_TXMAINCURSOR_IN),
+    .TXINHIBIT_IN                   (GT@_TXINHIBIT_IN[]),
+    .TXPRECURSOR_IN                 (GT@_TXPRECURSOR_IN[]),
+    .TXPOSTCURSOR_IN                (GT@_TXPOSTCURSOR_IN[]),
+    .TXMAINCURSOR_IN                (GT@_TXMAINCURSOR_IN[]),
     //--------------------- Transmit Ports - TX PLL Ports ----------------------
-    .TXRESETDONE_OUT                (GT@_TXRESETDONE_OUT),
+    .TXRESETDONE_OUT                (GT@_TXRESETDONE_OUT[]),
     //------------------- Transmit Ports - TX PRBS Generator -------------------
-    .TXPRBSSEL_IN                   (GT@_TXPRBSSEL_IN),
+    .TXPRBSSEL_IN                   (GT@_TXPRBSSEL_IN[]),
     );*/
    
    //------------------------- GT Instances  -------------------------------
@@ -396,18 +396,18 @@ module xphy_gt_quad (/*AUTOARG*/
 			       .SIM_VERSION	(SIM_VERSION))	 // Templated
    gt_0  (/*AUTOINST*/
 	  // Outputs
-	  .DRPDO_OUT			(GT0_DRPDO_OUT),	 // Templated
+	  .DRPDO_OUT			(GT0_DRPDO_OUT[15:0]),	 // Templated
 	  .DRPRDY_OUT			(GT0_DRPRDY_OUT),	 // Templated
 	  .EYESCANDATAERROR_OUT		(GT0_EYESCANDATAERROR_OUT), // Templated
 	  .RXDATAVALID_OUT		(GT0_RXDATAVALID_OUT),	 // Templated
-	  .RXHEADER_OUT			(GT0_RXHEADER_OUT),	 // Templated
+	  .RXHEADER_OUT			(GT0_RXHEADER_OUT[1:0]), // Templated
 	  .RXHEADERVALID_OUT		(GT0_RXHEADERVALID_OUT), // Templated
 	  .RXPRBSERR_OUT		(GT0_RXPRBSERR_OUT),	 // Templated
-	  .RXDATA_OUT			(GT0_RXDATA_OUT),	 // Templated
+	  .RXDATA_OUT			(GT0_RXDATA_OUT[31:0]),	 // Templated
 	  .RXOUTCLK_OUT			(GT0_RXOUTCLK_OUT),	 // Templated
 	  .RXCDRLOCK_OUT		(GT0_RXCDRLOCK_OUT),	 // Templated
 	  .RXELECIDLE_OUT		(GT0_RXELECIDLE_OUT),	 // Templated
-	  .RXBUFSTATUS_OUT		(GT0_RXBUFSTATUS_OUT),	 // Templated
+	  .RXBUFSTATUS_OUT		(GT0_RXBUFSTATUS_OUT[2:0]), // Templated
 	  .RXRESETDONE_OUT		(GT0_RXRESETDONE_OUT),	 // Templated
 	  .TXOUTCLK_OUT			(GT0_TXOUTCLK_OUT),	 // Templated
 	  .TXOUTCLKFABRIC_OUT		(GT0_TXOUTCLKFABRIC_OUT), // Templated
@@ -418,16 +418,16 @@ module xphy_gt_quad (/*AUTOARG*/
 	  // Inputs
 	  .QPLLCLK_IN			(gt_qplloutclk_i),	 // Templated
 	  .QPLLREFCLK_IN		(gt_qpllrefclk_i),	 // Templated
-	  .DRPADDR_IN			(GT0_DRPADDR_IN),	 // Templated
+	  .DRPADDR_IN			(GT0_DRPADDR_IN[8:0]),	 // Templated
 	  .DRPCLK_IN			(GT0_DRPCLK_IN),	 // Templated
-	  .DRPDI_IN			(GT0_DRPDI_IN),		 // Templated
+	  .DRPDI_IN			(GT0_DRPDI_IN[15:0]),	 // Templated
 	  .DRPEN_IN			(GT0_DRPEN_IN),		 // Templated
 	  .DRPWE_IN			(GT0_DRPWE_IN),		 // Templated
-	  .LOOPBACK_IN			(GT0_LOOPBACK_IN),	 // Templated
+	  .LOOPBACK_IN			(GT0_LOOPBACK_IN[2:0]),	 // Templated
 	  .RXUSERRDY_IN			(GT0_RXUSERRDY_IN),	 // Templated
 	  .RXGEARBOXSLIP_IN		(GT0_RXGEARBOXSLIP_IN),	 // Templated
 	  .RXPRBSCNTRESET_IN		(GT0_RXPRBSCNTRESET_IN), // Templated
-	  .RXPRBSSEL_IN			(GT0_RXPRBSSEL_IN),	 // Templated
+	  .RXPRBSSEL_IN			(GT0_RXPRBSSEL_IN[2:0]), // Templated
 	  .GTRXRESET_IN			(GT0_GTRXRESET_IN),	 // Templated
 	  .RXPCSRESET_IN		(GT0_RXPCSRESET_IN),	 // Templated
 	  .RXUSRCLK_IN			(GT0_RXUSRCLK_IN),	 // Templated
@@ -437,18 +437,18 @@ module xphy_gt_quad (/*AUTOARG*/
 	  .RXBUFRESET_IN		(GT0_RXBUFRESET_IN),	 // Templated
 	  .RXLPMEN_IN			(GT0_RXLPMEN_IN),	 // Templated
 	  .TXUSERRDY_IN			(GT0_TXUSERRDY_IN),	 // Templated
-	  .TXHEADER_IN			(GT0_TXHEADER_IN),	 // Templated
-	  .TXSEQUENCE_IN		(GT0_TXSEQUENCE_IN),	 // Templated
+	  .TXHEADER_IN			(GT0_TXHEADER_IN[1:0]),	 // Templated
+	  .TXSEQUENCE_IN		(GT0_TXSEQUENCE_IN[6:0]), // Templated
 	  .GTTXRESET_IN			(GT0_GTTXRESET_IN),	 // Templated
-	  .TXDATA_IN			(GT0_TXDATA_IN),	 // Templated
+	  .TXDATA_IN			(GT0_TXDATA_IN[31:0]),	 // Templated
 	  .TXPCSRESET_IN		(GT0_TXPCSRESET_IN),	 // Templated
 	  .TXUSRCLK_IN			(GT0_TXUSRCLK_IN),	 // Templated
 	  .TXUSRCLK2_IN			(GT0_TXUSRCLK2_IN),	 // Templated
 	  .TXINHIBIT_IN			(GT0_TXINHIBIT_IN),	 // Templated
-	  .TXPRECURSOR_IN		(GT0_TXPRECURSOR_IN),	 // Templated
-	  .TXPOSTCURSOR_IN		(GT0_TXPOSTCURSOR_IN),	 // Templated
-	  .TXMAINCURSOR_IN		(GT0_TXMAINCURSOR_IN),	 // Templated
-	  .TXPRBSSEL_IN			(GT0_TXPRBSSEL_IN));	 // Templated
+	  .TXPRECURSOR_IN		(GT0_TXPRECURSOR_IN[4:0]), // Templated
+	  .TXPOSTCURSOR_IN		(GT0_TXPOSTCURSOR_IN[4:0]), // Templated
+	  .TXMAINCURSOR_IN		(GT0_TXMAINCURSOR_IN[6:0]), // Templated
+	  .TXPRBSSEL_IN			(GT0_TXPRBSSEL_IN[2:0])); // Templated
    xphy_gtwizard_10gbaser_gt #(/*AUTOINSTPARAM*/
 			       // Parameters
 			       .GT_SIM_GTRESET_SPEEDUP(WRAPPER_SIM_GTRESET_SPEEDUP), // Templated
@@ -458,18 +458,18 @@ module xphy_gt_quad (/*AUTOARG*/
 			       .SIM_VERSION	(SIM_VERSION))	 // Templated
    gt_1  (/*AUTOINST*/
 	  // Outputs
-	  .DRPDO_OUT			(GT1_DRPDO_OUT),	 // Templated
+	  .DRPDO_OUT			(GT1_DRPDO_OUT[15:0]),	 // Templated
 	  .DRPRDY_OUT			(GT1_DRPRDY_OUT),	 // Templated
 	  .EYESCANDATAERROR_OUT		(GT1_EYESCANDATAERROR_OUT), // Templated
 	  .RXDATAVALID_OUT		(GT1_RXDATAVALID_OUT),	 // Templated
-	  .RXHEADER_OUT			(GT1_RXHEADER_OUT),	 // Templated
+	  .RXHEADER_OUT			(GT1_RXHEADER_OUT[1:0]), // Templated
 	  .RXHEADERVALID_OUT		(GT1_RXHEADERVALID_OUT), // Templated
 	  .RXPRBSERR_OUT		(GT1_RXPRBSERR_OUT),	 // Templated
-	  .RXDATA_OUT			(GT1_RXDATA_OUT),	 // Templated
+	  .RXDATA_OUT			(GT1_RXDATA_OUT[31:0]),	 // Templated
 	  .RXOUTCLK_OUT			(GT1_RXOUTCLK_OUT),	 // Templated
 	  .RXCDRLOCK_OUT		(GT1_RXCDRLOCK_OUT),	 // Templated
 	  .RXELECIDLE_OUT		(GT1_RXELECIDLE_OUT),	 // Templated
-	  .RXBUFSTATUS_OUT		(GT1_RXBUFSTATUS_OUT),	 // Templated
+	  .RXBUFSTATUS_OUT		(GT1_RXBUFSTATUS_OUT[2:0]), // Templated
 	  .RXRESETDONE_OUT		(GT1_RXRESETDONE_OUT),	 // Templated
 	  .TXOUTCLK_OUT			(GT1_TXOUTCLK_OUT),	 // Templated
 	  .TXOUTCLKFABRIC_OUT		(GT1_TXOUTCLKFABRIC_OUT), // Templated
@@ -480,16 +480,16 @@ module xphy_gt_quad (/*AUTOARG*/
 	  // Inputs
 	  .QPLLCLK_IN			(gt_qplloutclk_i),	 // Templated
 	  .QPLLREFCLK_IN		(gt_qpllrefclk_i),	 // Templated
-	  .DRPADDR_IN			(GT1_DRPADDR_IN),	 // Templated
+	  .DRPADDR_IN			(GT1_DRPADDR_IN[8:0]),	 // Templated
 	  .DRPCLK_IN			(GT1_DRPCLK_IN),	 // Templated
-	  .DRPDI_IN			(GT1_DRPDI_IN),		 // Templated
+	  .DRPDI_IN			(GT1_DRPDI_IN[15:0]),	 // Templated
 	  .DRPEN_IN			(GT1_DRPEN_IN),		 // Templated
 	  .DRPWE_IN			(GT1_DRPWE_IN),		 // Templated
-	  .LOOPBACK_IN			(GT1_LOOPBACK_IN),	 // Templated
+	  .LOOPBACK_IN			(GT1_LOOPBACK_IN[2:0]),	 // Templated
 	  .RXUSERRDY_IN			(GT1_RXUSERRDY_IN),	 // Templated
 	  .RXGEARBOXSLIP_IN		(GT1_RXGEARBOXSLIP_IN),	 // Templated
 	  .RXPRBSCNTRESET_IN		(GT1_RXPRBSCNTRESET_IN), // Templated
-	  .RXPRBSSEL_IN			(GT1_RXPRBSSEL_IN),	 // Templated
+	  .RXPRBSSEL_IN			(GT1_RXPRBSSEL_IN[2:0]), // Templated
 	  .GTRXRESET_IN			(GT1_GTRXRESET_IN),	 // Templated
 	  .RXPCSRESET_IN		(GT1_RXPCSRESET_IN),	 // Templated
 	  .RXUSRCLK_IN			(GT1_RXUSRCLK_IN),	 // Templated
@@ -499,18 +499,18 @@ module xphy_gt_quad (/*AUTOARG*/
 	  .RXBUFRESET_IN		(GT1_RXBUFRESET_IN),	 // Templated
 	  .RXLPMEN_IN			(GT1_RXLPMEN_IN),	 // Templated
 	  .TXUSERRDY_IN			(GT1_TXUSERRDY_IN),	 // Templated
-	  .TXHEADER_IN			(GT1_TXHEADER_IN),	 // Templated
-	  .TXSEQUENCE_IN		(GT1_TXSEQUENCE_IN),	 // Templated
+	  .TXHEADER_IN			(GT1_TXHEADER_IN[1:0]),	 // Templated
+	  .TXSEQUENCE_IN		(GT1_TXSEQUENCE_IN[6:0]), // Templated
 	  .GTTXRESET_IN			(GT1_GTTXRESET_IN),	 // Templated
-	  .TXDATA_IN			(GT1_TXDATA_IN),	 // Templated
+	  .TXDATA_IN			(GT1_TXDATA_IN[31:0]),	 // Templated
 	  .TXPCSRESET_IN		(GT1_TXPCSRESET_IN),	 // Templated
 	  .TXUSRCLK_IN			(GT1_TXUSRCLK_IN),	 // Templated
 	  .TXUSRCLK2_IN			(GT1_TXUSRCLK2_IN),	 // Templated
 	  .TXINHIBIT_IN			(GT1_TXINHIBIT_IN),	 // Templated
-	  .TXPRECURSOR_IN		(GT1_TXPRECURSOR_IN),	 // Templated
-	  .TXPOSTCURSOR_IN		(GT1_TXPOSTCURSOR_IN),	 // Templated
-	  .TXMAINCURSOR_IN		(GT1_TXMAINCURSOR_IN),	 // Templated
-	  .TXPRBSSEL_IN			(GT1_TXPRBSSEL_IN));	 // Templated
+	  .TXPRECURSOR_IN		(GT1_TXPRECURSOR_IN[4:0]), // Templated
+	  .TXPOSTCURSOR_IN		(GT1_TXPOSTCURSOR_IN[4:0]), // Templated
+	  .TXMAINCURSOR_IN		(GT1_TXMAINCURSOR_IN[6:0]), // Templated
+	  .TXPRBSSEL_IN			(GT1_TXPRBSSEL_IN[2:0])); // Templated
    xphy_gtwizard_10gbaser_gt #(/*AUTOINSTPARAM*/
 			       // Parameters
 			       .GT_SIM_GTRESET_SPEEDUP(WRAPPER_SIM_GTRESET_SPEEDUP), // Templated
@@ -520,18 +520,18 @@ module xphy_gt_quad (/*AUTOARG*/
 			       .SIM_VERSION	(SIM_VERSION))	 // Templated
    gt_2  (/*AUTOINST*/
 	  // Outputs
-	  .DRPDO_OUT			(GT2_DRPDO_OUT),	 // Templated
+	  .DRPDO_OUT			(GT2_DRPDO_OUT[15:0]),	 // Templated
 	  .DRPRDY_OUT			(GT2_DRPRDY_OUT),	 // Templated
 	  .EYESCANDATAERROR_OUT		(GT2_EYESCANDATAERROR_OUT), // Templated
 	  .RXDATAVALID_OUT		(GT2_RXDATAVALID_OUT),	 // Templated
-	  .RXHEADER_OUT			(GT2_RXHEADER_OUT),	 // Templated
+	  .RXHEADER_OUT			(GT2_RXHEADER_OUT[1:0]), // Templated
 	  .RXHEADERVALID_OUT		(GT2_RXHEADERVALID_OUT), // Templated
 	  .RXPRBSERR_OUT		(GT2_RXPRBSERR_OUT),	 // Templated
-	  .RXDATA_OUT			(GT2_RXDATA_OUT),	 // Templated
+	  .RXDATA_OUT			(GT2_RXDATA_OUT[31:0]),	 // Templated
 	  .RXOUTCLK_OUT			(GT2_RXOUTCLK_OUT),	 // Templated
 	  .RXCDRLOCK_OUT		(GT2_RXCDRLOCK_OUT),	 // Templated
 	  .RXELECIDLE_OUT		(GT2_RXELECIDLE_OUT),	 // Templated
-	  .RXBUFSTATUS_OUT		(GT2_RXBUFSTATUS_OUT),	 // Templated
+	  .RXBUFSTATUS_OUT		(GT2_RXBUFSTATUS_OUT[2:0]), // Templated
 	  .RXRESETDONE_OUT		(GT2_RXRESETDONE_OUT),	 // Templated
 	  .TXOUTCLK_OUT			(GT2_TXOUTCLK_OUT),	 // Templated
 	  .TXOUTCLKFABRIC_OUT		(GT2_TXOUTCLKFABRIC_OUT), // Templated
@@ -542,16 +542,16 @@ module xphy_gt_quad (/*AUTOARG*/
 	  // Inputs
 	  .QPLLCLK_IN			(gt_qplloutclk_i),	 // Templated
 	  .QPLLREFCLK_IN		(gt_qpllrefclk_i),	 // Templated
-	  .DRPADDR_IN			(GT2_DRPADDR_IN),	 // Templated
+	  .DRPADDR_IN			(GT2_DRPADDR_IN[8:0]),	 // Templated
 	  .DRPCLK_IN			(GT2_DRPCLK_IN),	 // Templated
-	  .DRPDI_IN			(GT2_DRPDI_IN),		 // Templated
+	  .DRPDI_IN			(GT2_DRPDI_IN[15:0]),	 // Templated
 	  .DRPEN_IN			(GT2_DRPEN_IN),		 // Templated
 	  .DRPWE_IN			(GT2_DRPWE_IN),		 // Templated
-	  .LOOPBACK_IN			(GT2_LOOPBACK_IN),	 // Templated
+	  .LOOPBACK_IN			(GT2_LOOPBACK_IN[2:0]),	 // Templated
 	  .RXUSERRDY_IN			(GT2_RXUSERRDY_IN),	 // Templated
 	  .RXGEARBOXSLIP_IN		(GT2_RXGEARBOXSLIP_IN),	 // Templated
 	  .RXPRBSCNTRESET_IN		(GT2_RXPRBSCNTRESET_IN), // Templated
-	  .RXPRBSSEL_IN			(GT2_RXPRBSSEL_IN),	 // Templated
+	  .RXPRBSSEL_IN			(GT2_RXPRBSSEL_IN[2:0]), // Templated
 	  .GTRXRESET_IN			(GT2_GTRXRESET_IN),	 // Templated
 	  .RXPCSRESET_IN		(GT2_RXPCSRESET_IN),	 // Templated
 	  .RXUSRCLK_IN			(GT2_RXUSRCLK_IN),	 // Templated
@@ -561,18 +561,18 @@ module xphy_gt_quad (/*AUTOARG*/
 	  .RXBUFRESET_IN		(GT2_RXBUFRESET_IN),	 // Templated
 	  .RXLPMEN_IN			(GT2_RXLPMEN_IN),	 // Templated
 	  .TXUSERRDY_IN			(GT2_TXUSERRDY_IN),	 // Templated
-	  .TXHEADER_IN			(GT2_TXHEADER_IN),	 // Templated
-	  .TXSEQUENCE_IN		(GT2_TXSEQUENCE_IN),	 // Templated
+	  .TXHEADER_IN			(GT2_TXHEADER_IN[1:0]),	 // Templated
+	  .TXSEQUENCE_IN		(GT2_TXSEQUENCE_IN[6:0]), // Templated
 	  .GTTXRESET_IN			(GT2_GTTXRESET_IN),	 // Templated
-	  .TXDATA_IN			(GT2_TXDATA_IN),	 // Templated
+	  .TXDATA_IN			(GT2_TXDATA_IN[31:0]),	 // Templated
 	  .TXPCSRESET_IN		(GT2_TXPCSRESET_IN),	 // Templated
 	  .TXUSRCLK_IN			(GT2_TXUSRCLK_IN),	 // Templated
 	  .TXUSRCLK2_IN			(GT2_TXUSRCLK2_IN),	 // Templated
 	  .TXINHIBIT_IN			(GT2_TXINHIBIT_IN),	 // Templated
-	  .TXPRECURSOR_IN		(GT2_TXPRECURSOR_IN),	 // Templated
-	  .TXPOSTCURSOR_IN		(GT2_TXPOSTCURSOR_IN),	 // Templated
-	  .TXMAINCURSOR_IN		(GT2_TXMAINCURSOR_IN),	 // Templated
-	  .TXPRBSSEL_IN			(GT2_TXPRBSSEL_IN));	 // Templated
+	  .TXPRECURSOR_IN		(GT2_TXPRECURSOR_IN[4:0]), // Templated
+	  .TXPOSTCURSOR_IN		(GT2_TXPOSTCURSOR_IN[4:0]), // Templated
+	  .TXMAINCURSOR_IN		(GT2_TXMAINCURSOR_IN[6:0]), // Templated
+	  .TXPRBSSEL_IN			(GT2_TXPRBSSEL_IN[2:0])); // Templated
    xphy_gtwizard_10gbaser_gt #(/*AUTOINSTPARAM*/
 			       // Parameters
 			       .GT_SIM_GTRESET_SPEEDUP(WRAPPER_SIM_GTRESET_SPEEDUP), // Templated
@@ -582,18 +582,18 @@ module xphy_gt_quad (/*AUTOARG*/
 			       .SIM_VERSION	(SIM_VERSION))	 // Templated
    gt_3  (/*AUTOINST*/
 	  // Outputs
-	  .DRPDO_OUT			(GT3_DRPDO_OUT),	 // Templated
+	  .DRPDO_OUT			(GT3_DRPDO_OUT[15:0]),	 // Templated
 	  .DRPRDY_OUT			(GT3_DRPRDY_OUT),	 // Templated
 	  .EYESCANDATAERROR_OUT		(GT3_EYESCANDATAERROR_OUT), // Templated
 	  .RXDATAVALID_OUT		(GT3_RXDATAVALID_OUT),	 // Templated
-	  .RXHEADER_OUT			(GT3_RXHEADER_OUT),	 // Templated
+	  .RXHEADER_OUT			(GT3_RXHEADER_OUT[1:0]), // Templated
 	  .RXHEADERVALID_OUT		(GT3_RXHEADERVALID_OUT), // Templated
 	  .RXPRBSERR_OUT		(GT3_RXPRBSERR_OUT),	 // Templated
-	  .RXDATA_OUT			(GT3_RXDATA_OUT),	 // Templated
+	  .RXDATA_OUT			(GT3_RXDATA_OUT[31:0]),	 // Templated
 	  .RXOUTCLK_OUT			(GT3_RXOUTCLK_OUT),	 // Templated
 	  .RXCDRLOCK_OUT		(GT3_RXCDRLOCK_OUT),	 // Templated
 	  .RXELECIDLE_OUT		(GT3_RXELECIDLE_OUT),	 // Templated
-	  .RXBUFSTATUS_OUT		(GT3_RXBUFSTATUS_OUT),	 // Templated
+	  .RXBUFSTATUS_OUT		(GT3_RXBUFSTATUS_OUT[2:0]), // Templated
 	  .RXRESETDONE_OUT		(GT3_RXRESETDONE_OUT),	 // Templated
 	  .TXOUTCLK_OUT			(GT3_TXOUTCLK_OUT),	 // Templated
 	  .TXOUTCLKFABRIC_OUT		(GT3_TXOUTCLKFABRIC_OUT), // Templated
@@ -604,16 +604,16 @@ module xphy_gt_quad (/*AUTOARG*/
 	  // Inputs
 	  .QPLLCLK_IN			(gt_qplloutclk_i),	 // Templated
 	  .QPLLREFCLK_IN		(gt_qpllrefclk_i),	 // Templated
-	  .DRPADDR_IN			(GT3_DRPADDR_IN),	 // Templated
+	  .DRPADDR_IN			(GT3_DRPADDR_IN[8:0]),	 // Templated
 	  .DRPCLK_IN			(GT3_DRPCLK_IN),	 // Templated
-	  .DRPDI_IN			(GT3_DRPDI_IN),		 // Templated
+	  .DRPDI_IN			(GT3_DRPDI_IN[15:0]),	 // Templated
 	  .DRPEN_IN			(GT3_DRPEN_IN),		 // Templated
 	  .DRPWE_IN			(GT3_DRPWE_IN),		 // Templated
-	  .LOOPBACK_IN			(GT3_LOOPBACK_IN),	 // Templated
+	  .LOOPBACK_IN			(GT3_LOOPBACK_IN[2:0]),	 // Templated
 	  .RXUSERRDY_IN			(GT3_RXUSERRDY_IN),	 // Templated
 	  .RXGEARBOXSLIP_IN		(GT3_RXGEARBOXSLIP_IN),	 // Templated
 	  .RXPRBSCNTRESET_IN		(GT3_RXPRBSCNTRESET_IN), // Templated
-	  .RXPRBSSEL_IN			(GT3_RXPRBSSEL_IN),	 // Templated
+	  .RXPRBSSEL_IN			(GT3_RXPRBSSEL_IN[2:0]), // Templated
 	  .GTRXRESET_IN			(GT3_GTRXRESET_IN),	 // Templated
 	  .RXPCSRESET_IN		(GT3_RXPCSRESET_IN),	 // Templated
 	  .RXUSRCLK_IN			(GT3_RXUSRCLK_IN),	 // Templated
@@ -623,18 +623,18 @@ module xphy_gt_quad (/*AUTOARG*/
 	  .RXBUFRESET_IN		(GT3_RXBUFRESET_IN),	 // Templated
 	  .RXLPMEN_IN			(GT3_RXLPMEN_IN),	 // Templated
 	  .TXUSERRDY_IN			(GT3_TXUSERRDY_IN),	 // Templated
-	  .TXHEADER_IN			(GT3_TXHEADER_IN),	 // Templated
-	  .TXSEQUENCE_IN		(GT3_TXSEQUENCE_IN),	 // Templated
+	  .TXHEADER_IN			(GT3_TXHEADER_IN[1:0]),	 // Templated
+	  .TXSEQUENCE_IN		(GT3_TXSEQUENCE_IN[6:0]), // Templated
 	  .GTTXRESET_IN			(GT3_GTTXRESET_IN),	 // Templated
-	  .TXDATA_IN			(GT3_TXDATA_IN),	 // Templated
+	  .TXDATA_IN			(GT3_TXDATA_IN[31:0]),	 // Templated
 	  .TXPCSRESET_IN		(GT3_TXPCSRESET_IN),	 // Templated
 	  .TXUSRCLK_IN			(GT3_TXUSRCLK_IN),	 // Templated
 	  .TXUSRCLK2_IN			(GT3_TXUSRCLK2_IN),	 // Templated
 	  .TXINHIBIT_IN			(GT3_TXINHIBIT_IN),	 // Templated
-	  .TXPRECURSOR_IN		(GT3_TXPRECURSOR_IN),	 // Templated
-	  .TXPOSTCURSOR_IN		(GT3_TXPOSTCURSOR_IN),	 // Templated
-	  .TXMAINCURSOR_IN		(GT3_TXMAINCURSOR_IN),	 // Templated
-	  .TXPRBSSEL_IN			(GT3_TXPRBSSEL_IN));	 // Templated
+	  .TXPRECURSOR_IN		(GT3_TXPRECURSOR_IN[4:0]), // Templated
+	  .TXPOSTCURSOR_IN		(GT3_TXPOSTCURSOR_IN[4:0]), // Templated
+	  .TXMAINCURSOR_IN		(GT3_TXMAINCURSOR_IN[6:0]), // Templated
+	  .TXPRBSSEL_IN			(GT3_TXPRBSSEL_IN[2:0])); // Templated
 
    input  q1_clk0_refclk_i;
    input [3:0] GT_QPLLRESET_IN;

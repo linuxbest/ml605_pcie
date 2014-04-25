@@ -48,11 +48,12 @@ module xphy_block_clk (/*AUTOARG*/
    // Outputs
    mmcm_locked, dclk, clk156, q1_clk0_refclk_i, q1_clk0_refclk_i_bufh,
    // Inputs
-   refclk_p, refclk_n
+   refclk_p, refclk_n, gt0_qplllock_i
    );
    input refclk_p;
    input refclk_n;
 
+   input  gt0_qplllock_i;
    output mmcm_locked;
    output dclk;
    output clk156;
@@ -94,7 +95,7 @@ module xphy_block_clk (/*AUTOARG*/
    clkgen_i
      (
       .CLKFBIN(clkfbout),
-      .CLKIN1(refclk_int_bufh),
+      .CLKIN1(q1_clk0_refclk_i_bufh),
       .PWRDWN(1'b0),
       .RST(!gt0_qplllock_i),
       .CLKFBOUT(clkfbout),
