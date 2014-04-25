@@ -9,6 +9,11 @@ eval add wave -noupdate $binopt /refclk_p
 eval add wave -noupdate $binopt /refclk_n
 eval add wave -noupdate $binopt /reset
 
+eval add wave -noupdate $binopt /core_status0
+eval add wave -noupdate $binopt /core_status1
+eval add wave -noupdate $binopt /core_status2
+eval add wave -noupdate $binopt /core_status3
+
 eval add wave -noupdate $binopt /txp
 eval add wave -noupdate $binopt /rxp
 
@@ -24,96 +29,106 @@ eval add wave -noupdate $binopt DUT/core_status0
 eval add wave -noupdate $binopt DUT/tx_resetdone0
 eval add wave -noupdate $binopt DUT/rx_resetdone0
 
-eval add wave -noupdate -divider {"xphy phy 0"}
-eval add wave -noupdate $hexopt DUT/phy_0/xgmii_txd
-eval add wave -noupdate $hexopt DUT/phy_0/xgmii_txc
-eval add wave -noupdate $hexopt DUT/phy_0/xgmii_rxd
-eval add wave -noupdate $hexopt DUT/phy_0/xgmii_rxc
+proc wave_phy_add {id} {
+set binopt {-logic}
+set hexopt {-literal -hex}
+set ascopt {-literal -asc}
+eval add wave -noupdate -divider {"xphy phy ${id}"}
+eval add wave -noupdate $hexopt DUT/phy_${id}/xgmii_txd
+eval add wave -noupdate $hexopt DUT/phy_${id}/xgmii_txc
+eval add wave -noupdate $hexopt DUT/phy_${id}/xgmii_rxd
+eval add wave -noupdate $hexopt DUT/phy_${id}/xgmii_rxc
 
-eval add wave -noupdate $binopt DUT/phy_0/mdc
-eval add wave -noupdate $binopt DUT/phy_0/mdio_in
-eval add wave -noupdate $binopt DUT/phy_0/mdio_out
-eval add wave -noupdate $binopt DUT/phy_0/mdio_tri
-eval add wave -noupdate $binopt DUT/phy_0/core_status
+eval add wave -noupdate $binopt DUT/phy_${id}/mdc
+eval add wave -noupdate $binopt DUT/phy_${id}/mdio_in
+eval add wave -noupdate $binopt DUT/phy_${id}/mdio_out
+eval add wave -noupdate $binopt DUT/phy_${id}/mdio_tri
+eval add wave -noupdate $binopt DUT/phy_${id}/core_status
 
-eval add wave -noupdate $binopt DUT/phy_0/tx_resetdone
-eval add wave -noupdate $binopt DUT/phy_0/rx_resetdone
-eval add wave -noupdate $binopt DUT/phy_0/signal_detect
-eval add wave -noupdate $binopt DUT/phy_0/tx_fault
-eval add wave -noupdate $binopt DUT/phy_0/tx_disable
+eval add wave -noupdate $binopt DUT/phy_${id}/tx_resetdone
+eval add wave -noupdate $binopt DUT/phy_${id}/rx_resetdone
+eval add wave -noupdate $binopt DUT/phy_${id}/signal_detect
+eval add wave -noupdate $binopt DUT/phy_${id}/tx_fault
+eval add wave -noupdate $binopt DUT/phy_${id}/tx_disable
 
-eval add wave -noupdate $binopt DUT/phy_0/hw_reset
-eval add wave -noupdate $binopt DUT/phy_0/dclk
-eval add wave -noupdate $binopt DUT/phy_0/clk156
-eval add wave -noupdate $binopt DUT/phy_0/mmcm_locked
-eval add wave -noupdate $binopt DUT/phy_0/gt0_qplllock_i
+eval add wave -noupdate $binopt DUT/phy_${id}/hw_reset
+eval add wave -noupdate $binopt DUT/phy_${id}/dclk
+eval add wave -noupdate $binopt DUT/phy_${id}/clk156
+eval add wave -noupdate $binopt DUT/phy_${id}/mmcm_locked
+eval add wave -noupdate $binopt DUT/phy_${id}/gt0_qplllock_i
 
-eval add wave -noupdate -divider {"xphy phy drp"}
-eval add wave -noupdate $binopt DUT/phy_0/DRPCLK_IN
-eval add wave -noupdate $hexopt DUT/phy_0/DRPADDR_IN
-eval add wave -noupdate $hexopt DUT/phy_0/DRPDI_IN
-eval add wave -noupdate $hexopt DUT/phy_0/DRPDO_OUT
-eval add wave -noupdate $binopt DUT/phy_0/DRPEN_IN
-eval add wave -noupdate $binopt DUT/phy_0/DRPRDY_OUT
-eval add wave -noupdate $binopt DUT/phy_0/DRPWE_IN
+eval add wave -noupdate -divider {"xphy phy ${id} drp"}
+eval add wave -noupdate $binopt DUT/phy_${id}/DRPCLK_IN
+eval add wave -noupdate $hexopt DUT/phy_${id}/DRPADDR_IN
+eval add wave -noupdate $hexopt DUT/phy_${id}/DRPDI_IN
+eval add wave -noupdate $hexopt DUT/phy_${id}/DRPDO_OUT
+eval add wave -noupdate $binopt DUT/phy_${id}/DRPEN_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/DRPRDY_OUT
+eval add wave -noupdate $binopt DUT/phy_${id}/DRPWE_IN
 
-eval add wave -noupdate $binopt DUT/phy_0/EYESCANDATAERROR_OUT
-eval add wave -noupdate $binopt DUT/phy_0/LOOPBACK_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/EYESCANDATAERROR_OUT
+eval add wave -noupdate $binopt DUT/phy_${id}/LOOPBACK_IN
 
-eval add wave -noupdate -divider {"xphy phy recv"}
-eval add wave -noupdate $binopt DUT/phy_0/RXUSERRDY_IN
-eval add wave -noupdate $binopt DUT/phy_0/RXDATAVALID_OUT
-eval add wave -noupdate $binopt DUT/phy_0/RXHEADER_OUT
-eval add wave -noupdate $binopt DUT/phy_0/RXHEADERVALID_OUT
-eval add wave -noupdate $binopt DUT/phy_0/RXGEARBOXSLIP_IN
+eval add wave -noupdate -divider {"xphy phy ${id} rx"}
+eval add wave -noupdate $binopt DUT/phy_${id}/RXUSERRDY_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/RXDATAVALID_OUT
+eval add wave -noupdate $binopt DUT/phy_${id}/RXHEADER_OUT
+eval add wave -noupdate $binopt DUT/phy_${id}/RXHEADERVALID_OUT
+eval add wave -noupdate $binopt DUT/phy_${id}/RXGEARBOXSLIP_IN
 
-eval add wave -noupdate $binopt DUT/phy_0/RXPRBSCNTRESET_IN
-eval add wave -noupdate $binopt DUT/phy_0/RXPRBSSEL_IN
-eval add wave -noupdate $binopt DUT/phy_0/RXPRBSERR_OUT
+eval add wave -noupdate $binopt DUT/phy_${id}/RXPRBSCNTRESET_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/RXPRBSSEL_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/RXPRBSERR_OUT
 
-eval add wave -noupdate $binopt DUT/phy_0/GTRXRESET_IN
-eval add wave -noupdate $hexopt DUT/phy_0/RXDATA_OUT
-eval add wave -noupdate $binopt DUT/phy_0/RXOUTCLK_OUT
-eval add wave -noupdate $binopt DUT/phy_0/RXPCSRESET_IN
-eval add wave -noupdate $binopt DUT/phy_0/RXUSRCLK_IN
-eval add wave -noupdate $binopt DUT/phy_0/RXUSRCLK2_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/GTRXRESET_IN
+eval add wave -noupdate $hexopt DUT/phy_${id}/RXDATA_OUT
+eval add wave -noupdate $binopt DUT/phy_${id}/RXOUTCLK_OUT
+eval add wave -noupdate $binopt DUT/phy_${id}/RXPCSRESET_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/RXUSRCLK_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/RXUSRCLK2_IN
 
-eval add wave -noupdate $binopt DUT/phy_0/RXCDRLOCK_OUT
-eval add wave -noupdate $binopt DUT/phy_0/RXELECIDLE_OUT
-eval add wave -noupdate $binopt DUT/phy_0/RXLPMEN_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/RXCDRLOCK_OUT
+eval add wave -noupdate $binopt DUT/phy_${id}/RXELECIDLE_OUT
+eval add wave -noupdate $binopt DUT/phy_${id}/RXLPMEN_IN
 
-eval add wave -noupdate $binopt DUT/phy_0/RXBUFRESET_IN
-eval add wave -noupdate $binopt DUT/phy_0/RXBUFSTATUS_OUT
+eval add wave -noupdate $binopt DUT/phy_${id}/RXBUFRESET_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/RXBUFSTATUS_OUT
 
-eval add wave -noupdate $binopt DUT/phy_0/RXRESETDONE_OUT
+eval add wave -noupdate $binopt DUT/phy_${id}/RXRESETDONE_OUT
 
-eval add wave -noupdate -divider {"xphy phy tx "}
-eval add wave -noupdate $binopt DUT/phy_0/TXUSERRDY_IN
+eval add wave -noupdate -divider {"xphy phy ${id} tx"}
+eval add wave -noupdate $binopt DUT/phy_${id}/TXUSERRDY_IN
 
-eval add wave -noupdate $binopt DUT/phy_0/TXHEADER_IN
-eval add wave -noupdate $binopt DUT/phy_0/TXSEQUENCE_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/TXHEADER_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/TXSEQUENCE_IN
 
-eval add wave -noupdate $binopt DUT/phy_0/GTTXRESET_IN
-eval add wave -noupdate $binopt DUT/phy_0/GTTXRESET_i
+eval add wave -noupdate $binopt DUT/phy_${id}/GTTXRESET_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/GTTXRESET_i
 
-eval add wave -noupdate $hexopt DUT/phy_0/TXDATA_IN
-eval add wave -noupdate $binopt DUT/phy_0/TXOUTCLK_OUT
-eval add wave -noupdate $binopt DUT/phy_0/TXOUTCLKFABRIC_OUT
-eval add wave -noupdate $binopt DUT/phy_0/TXOUTCLKPCS_OUT
-eval add wave -noupdate $binopt DUT/phy_0/TXPCSRESET_IN
-eval add wave -noupdate $binopt DUT/phy_0/TXUSRCLK_IN
-eval add wave -noupdate $binopt DUT/phy_0/TXUSRCLK2_IN
+eval add wave -noupdate $hexopt DUT/phy_${id}/TXDATA_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/TXOUTCLK_OUT
+eval add wave -noupdate $binopt DUT/phy_${id}/TXOUTCLKFABRIC_OUT
+eval add wave -noupdate $binopt DUT/phy_${id}/TXOUTCLKPCS_OUT
+eval add wave -noupdate $binopt DUT/phy_${id}/TXPCSRESET_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/TXUSRCLK_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/TXUSRCLK2_IN
 
-eval add wave -noupdate $binopt DUT/phy_0/TXINHIBIT_IN
-eval add wave -noupdate $binopt DUT/phy_0/TXPRECURSOR_IN
-eval add wave -noupdate $binopt DUT/phy_0/TXPOSTCURSOR_IN
-eval add wave -noupdate $binopt DUT/phy_0/TXMAINCURSOR_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/TXINHIBIT_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/TXPRECURSOR_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/TXPOSTCURSOR_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/TXMAINCURSOR_IN
 
-eval add wave -noupdate $binopt DUT/phy_0/TXRESETDONE_OUT
+eval add wave -noupdate $binopt DUT/phy_${id}/TXRESETDONE_OUT
 
-eval add wave -noupdate $binopt DUT/phy_0/TXPRBSSEL_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/TXPRBSSEL_IN
 
-eval add wave -noupdate $binopt DUT/phy_0/QPLLRESET_IN
+eval add wave -noupdate $binopt DUT/phy_${id}/QPLLRESET_IN
+}
+
+wave_phy_add 0
+wave_phy_add 1
+wave_phy_add 2
+wave_phy_add 3
 
 eval add wave -noupdate -divider {"xphy block clk"}
 eval add wave -noupdate $binopt DUT/xphy_block_clk/refclk_p
