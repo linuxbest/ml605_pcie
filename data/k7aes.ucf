@@ -127,16 +127,20 @@ NET refclk_p LOC = C8;
 NET refclk_n LOC = C7;
 
 # signal detect
-#NET sfp_sgd LOC = L28 | IOSTANDARD = LVCMOS25;
+#NET sfp_sgd[0] LOC = L28 | IOSTANDARD = LVCMOS25;
 # tx fault
-NET sfp_txf LOC = N27 | IOSTANDARD = LVCMOS25;
+NET sfp_txf[0]  LOC = N27 | IOSTANDARD = LVCMOS25;
 # tx disable
-NET sfp_txd LOC = M27 | IOSTANDARD = LVCMOS25;
+NET sfp_txd[0]  LOC = M27 | IOSTANDARD = LVCMOS25;
 # rate select
-NET sfp_rs  LOC = K28 | IOSTANDARD = LVCMOS25;
+NET sfp_rs[0]   LOC = K28 | IOSTANDARD = LVCMOS25;
+
 #NET linkup  LOC = T28 | IOSTANDARD = LVCMOS25;
 
 # Edit these constraints to select the correct transceiver for your design
 ## Sample constraint for GT location
-INST "ten_eth_macphy_0/*gtxe2_i"          LOC="GTXE2_CHANNEL_X0Y12";
+INST "ten_eth_phy_0/*gt_0/*gtxe2_i"  LOC="GTXE2_CHANNEL_X0Y12";
+INST "ten_eth_phy_0/*gt_1/*gtxe2_i"  LOC="GTXE2_CHANNEL_X0Y13";
+INST "ten_eth_phy_0/*gt_2/*gtxe2_i"  LOC="GTXE2_CHANNEL_X0Y14";
+INST "ten_eth_phy_0/*gt_3/*gtxe2_i"  LOC="GTXE2_CHANNEL_X0Y15";
 INST "ten_eth_macphy_0/*gtxe2_common_0_i" LOC="GTXE2_COMMON_X0Y3";

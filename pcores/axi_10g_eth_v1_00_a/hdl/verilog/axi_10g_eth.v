@@ -1,6 +1,6 @@
-// axi_10geth.v --- 
+// axi_10g_eth.v --- 
 // 
-// Filename: axi_10geth.v
+// Filename: axi_10g_eth.v
 // Description: 
 // Author: Hu Gang
 // Maintainer: 
@@ -44,7 +44,7 @@
 // 	ports                              : - Names begin with Uppercase
 // Code:
 `timescale 1ps/1ps
-module axi_10geth (/*AUTOARG*/
+module axi_10g_eth (/*AUTOARG*/
    // Outputs
    txd_tready, txc_tready, tx_axis_mac_tvalid, tx_axis_mac_tuser,
    tx_axis_mac_tlast, tx_axis_mac_tkeep, tx_axis_mac_tdata,
@@ -318,4 +318,4 @@ generate if (C_DBG_PORT == 1) begin
 end endgenerate
 endmodule
 // 
-// axi_10geth.v ends here
+// axi_10g_eth.v ends here

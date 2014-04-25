@@ -1,7 +1,7 @@
 
 if { [info exists PathSeparator] } { set ps $PathSeparator } else { set ps "/" }
 set ethpath "/system_tb/dut/ten_eth_axis/ten_eth_axis"
-set macpath "/system_tb/dut/ten_mac_phy/ten_mac_phy"
+set macpath "/system_tb/dut/ten_eth_mac/ten_eth_mac"
 
 set binopt {-logic}
 set hexopt {-literal -hex}
@@ -38,7 +38,6 @@ eval add wave -noupdate $binopt $ethpath${ps}tx_axis_mac_tlast
 eval add wave -noupdate $binopt $ethpath${ps}tx_axis_mac_tuser
 eval add wave -noupdate $hexopt $ethpath${ps}tx_axis_mac_tdata
 eval add wave -noupdate $hexopt $ethpath${ps}tx_axis_mac_tkeep
-
 
 eval add wave -noupdate -divider {"eth rx"}
 eval add wave -noupdate $binopt $ethpath${ps}s2mm_clk

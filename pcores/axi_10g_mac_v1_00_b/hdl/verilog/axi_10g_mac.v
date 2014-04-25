@@ -59,7 +59,8 @@ module axi_10g_mac (/*AUTOARG*/
    s_axi_wvalid, s_axi_wdata, s_axi_rready, s_axi_bready,
    s_axi_awvalid, s_axi_awaddr, s_axi_arvalid, s_axi_aresetn,
    s_axi_araddr, s_axi_aclk, rx_resetdone, pause_val, pause_req,
-   mdio_in, clk156, hw_reset, s_axi_wstrb
+   mdio_in, clk156, hw_reset, s_axi_wstrb, core_status,
+   rx_axis_tready
    );
    parameter C_FAMILY = "";   
    parameter C_DBG_PORT = 0;
@@ -78,6 +79,9 @@ module axi_10g_mac (/*AUTOARG*/
    output      rx_reset;
    output      tx_mac_aclk;
    output      tx_reset;
+   input [7:0] core_status;
+   input       rx_axis_tready;
+   
    /*AUTOINPUT*/
    // Beginning of automatic inputs (from unused autoinst inputs)
    input		clk156;			// To xgmac of xgmac.v, ...
