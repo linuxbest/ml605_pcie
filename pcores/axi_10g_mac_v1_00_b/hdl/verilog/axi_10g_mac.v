@@ -43,6 +43,7 @@
 // 	device pins                        : "*_pin"
 // 	ports                              : - Names begin with Uppercase
 // Code:
+`timescale 1ns/1ps
 module axi_10g_mac (/*AUTOARG*/
    // Outputs
    xgmii_txd, xgmii_txc, xgmacint, tx_statistics_vector,
@@ -50,7 +51,8 @@ module axi_10g_mac (/*AUTOARG*/
    s_axi_rresp, s_axi_rdata, s_axi_bvalid, s_axi_bresp, s_axi_awready,
    s_axi_arready, rx_statistics_vector, rx_statistics_valid,
    rx_axis_tvalid, rx_axis_tuser, rx_axis_tlast, rx_axis_tkeep,
-   rx_axis_tdata, mdio_tri, mdio_out, mdc,
+   rx_axis_tdata, mdio_tri, mdio_out, mdc, rx_mac_aclk, rx_reset,
+   tx_mac_aclk, tx_reset,
    // Inputs
    xgmii_rxd, xgmii_rxc, tx_resetdone, tx_ifg_delay, tx_axis_tvalid,
    tx_axis_tuser, tx_axis_tlast, tx_axis_tkeep, tx_axis_tdata,
@@ -72,6 +74,10 @@ module axi_10g_mac (/*AUTOARG*/
    wire [31:0] bus2ip_addr;
    input [3:0] s_axi_wstrb;
 
+   output      rx_mac_aclk;
+   output      rx_reset;
+   output      tx_mac_aclk;
+   output      tx_reset;
    /*AUTOINPUT*/
    // Beginning of automatic inputs (from unused autoinst inputs)
    input		clk156;			// To xgmac of xgmac.v, ...
@@ -140,6 +146,11 @@ module axi_10g_mac (/*AUTOARG*/
    wire			ip2bus_wrack;		// From xgmac of xgmac.v
    // End of automatics
 
+   assign rx_mac_aclk = clk156;
+   assign tx_mac_aclk = clk156;
+   assign rx_reset    = ~rx_resetdone;
+   assign tx_reset    = ~tx_resetdone;
+   
    /* xgmac AUTO_TEMPLATE (
     .tx_clk0         (clk156),
     .rx_clk0         (clk156),

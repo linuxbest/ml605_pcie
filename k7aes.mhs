@@ -20,16 +20,15 @@
  PORT PCIe_Diff_Clk_P = PCIe_Diff_Clk_P, DIR = I, SIGIS = CLK, CLK_FREQ = 100000000
  PORT PCIe_Diff_Clk_N = PCIe_Diff_Clk_N, DIR = I, SIGIS = CLK, CLK_FREQ = 100000000
  PORT PCIe_perstn = PCIe_perstn, DIR = I, SIGIS = RST, RST_POLARITY = 0
- PORT sfp_txf = sfp_txf, DIR = I
- PORT sfp_rs = sfp_rs, DIR = O
- PORT sfp_txd = sfp_txd, DIR = O
- PORT txp = txp, DIR = O
- PORT txn = txn, DIR = O
- PORT rxp = rxp, DIR = I
- PORT rxn = rxn, DIR = I
+ PORT sfp_txf = sfp_txf, DIR = I, VEC = [3:0]
+ PORT sfp_rs = sfp_rs, DIR = O, VEC = [3:0]
+ PORT sfp_txd = sfp_txd, DIR = O, VEC = [3:0]
+ PORT txp = txp, DIR = O, VEC = [3:0] 
+ PORT txn = txn, DIR = O, VEC = [3:0]
+ PORT rxp = rxp, DIR = I, VEC = [3:0]
+ PORT rxn = rxn, DIR = I, VEC = [3:0]
  PORT refclk_p = refclk_p, DIR = I, SIGIS = CLK, CLK_FREQ = 156250000
  PORT refclk_n = refclk_n, DIR = I
- PORT linkup = linkup, DIR = O
 
 BEGIN util_vector_logic
  PARAMETER INSTANCE = util_and_logic_0
@@ -265,7 +264,7 @@ BEGIN axi_gpio
  PARAMETER HW_VER = 1.01.b
  PARAMETER C_BASEADDR = 0xC4021000
  PARAMETER C_HIGHADDR = 0xC4021fff
- PARAMETER C_GPIO_WIDTH = 1
+ PARAMETER C_GPIO_WIDTH = 4
  PARAMETER C_DOUT_DEFAULT = 0xffffffff
  BUS_INTERFACE S_AXI = axi4lite_0
  PORT S_AXI_ACLK = clk_100_0000MHzMMCM0
@@ -273,13 +272,14 @@ BEGIN axi_gpio
  PORT GPIO_IO_I = sfp_txd
 END
 
-BEGIN axi_10geth
+BEGIN axi_10g_eth
  PARAMETER INSTANCE = ten_eth_axis_0
  PARAMETER HW_VER = 1.00.a
 #PARAMETER C_INTERCONNECT_S_AXI_IS_ACLK_ASYNC = 0
 #PARAMETER C_BASEADDR = 0xC4022000
 #PARAMETER C_HIGHADDR = 0xC4022fff
 #BUS_INTERFACE S_AXI = axi4lite_0
+#PORT S_AXI_ACLK = clk_100_0000MHzMMCM0
  PARAMETER C_DBG_PORT = 1
  BUS_INTERFACE AXI_STR_TXD = ETHERNET_dma_txd_0
  BUS_INTERFACE AXI_STR_TXC = ETHERNET_dma_txc_0
@@ -291,14 +291,13 @@ BEGIN axi_10geth
  PORT s2mm_clk = clk_200_0000MHzMMCM0
  PORT mm2s_resetn = mm2s_resetn_0
  PORT s2mm_resetn = s2mm_resetn_0
-#PORT S_AXI_ACLK = clk_100_0000MHzMMCM0
  PORT pause_val = pause_val_0
  PORT pause_req = pause_req_0
 END
 
-BEGIN axi_10gmacphy
- PARAMETER INSTANCE = ten_eth_macphy_0
- PARAMETER HW_VER = 1.00.a
+BEGIN axi_10g_mac
+ PARAMETER INSTANCE = ten_eth_mac_0
+ PARAMETER HW_VER = 1.00.b
  PARAMETER C_DBG_PORT = 0
  PARAMETER C_INTERCONNECT_S_AXI_IS_ACLK_ASYNC = 0
  PARAMETER C_BASEADDR = 0xC4028000
@@ -306,18 +305,31 @@ BEGIN axi_10gmacphy
  BUS_INTERFACE S_AXI = axi4lite_0
  BUS_INTERFACE AXI_MAC_TX = mac_axis_tx_0
  BUS_INTERFACE AXI_MAC_RX = mac_axis_rx_0
+ BUS_INTERFACE XGMII = xgmii0
+ PORT S_AXI_ACLK = clk_100_0000MHzMMCM0
+ PORT clk156 = clk156
+ PORT pause_val = pause_val_0
+ PORT pause_req = pause_req_0
+ PORT hw_reset = proc_sys_reset_0_BUS_STRUCT_RESET
+END
+
+BEGIN axi_10g_phy
+ PARAMETER INSTANCE = ten_eth_phy_0
+ PARAMETER HW_VER = 1.00.a
+ PARAMETER C_DBG_PORT = 0
+ BUS_INTERFACE XGMII0 = xgmii0
+#BUS_INTERFACE XGMII1 = xgmii1
+#BUS_INTERFACE XGMII2 = xgmii2
+#BUS_INTERFACE XGMII3 = xgmii3
  PORT refclk_p = refclk_p
  PORT refclk_n = refclk_n
  PORT sfp_rs = sfp_rs
-#PORT tx_fault = sfp_txf
-#PORT tx_disable = sfp_txd
- PORT linkup = linkup
+#PORT sfp_txf = sfp_txf
+#PORT sfp_txd = sfp_txd
  PORT txp = txp
  PORT txn = txn
  PORT rxp = rxp
  PORT rxn = rxn
-#PORT hw_reset = eth_hw_reset_0
- PORT S_AXI_ACLK = clk_100_0000MHzMMCM0
- PORT pause_val = pause_val_0
- PORT pause_req = pause_req_0
+ PORT hw_reset = proc_sys_reset_0_BUS_STRUCT_RESET
+ PORT clk156 = clk156
 END

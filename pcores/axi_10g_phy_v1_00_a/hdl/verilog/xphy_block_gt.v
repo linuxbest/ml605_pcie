@@ -43,7 +43,7 @@
 // 	device pins                        : "*_pin"
 // 	ports                              : - Names begin with Uppercase
 // Code:
-
+`timescale 1 ns/1 ps
 module xphy_block_gt (/*AUTOARG*/
    // Outputs
    xgmii_rxd, xgmii_rxc, mdio_out, mdio_tri, core_status,

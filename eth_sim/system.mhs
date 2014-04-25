@@ -144,7 +144,7 @@ BEGIN axi_dma
  PORT s2mm_introut = ETHERNET_dma_s2mm_introut
 END
 
-BEGIN axi_10geth
+BEGIN axi_10g_eth
  PARAMETER INSTANCE = ten_eth_axis
  PARAMETER HW_VER = 1.00.a
 # PARAMETER C_INTERCONNECT_S_AXI_IS_ACLK_ASYNC = 0
