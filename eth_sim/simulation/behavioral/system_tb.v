@@ -108,8 +108,8 @@ module system_tb
   always @(*) 
   begin
 	  refclk_n = ~refclk_p;
-	  sfp_sgd  = 1;
-	  sfp_txf  = 0;
+	  sfp_sgd  = 4'b1111;
+	  sfp_txf  = 4'b0000;
 	  rxp = txp;
 	  rxn = txn;
   end
