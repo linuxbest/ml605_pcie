@@ -184,7 +184,7 @@ BEGIN axi_10g_phy
  PARAMETER INSTANCE = ten_eth_phy
  PARAMETER HW_VER = 1.00.a
  PARAMETER EXAMPLE_SIM_GTRESET_SPEEDUP = TRUE
- BUS_INTERFACE XGMII0 = xgmii0
+ BUS_INTERFACE XGMII1 = xgmii0
  PORT refclk_p = refclk_p
  PORT refclk_n = refclk_n
  PORT sfp_sgd = sfp_sgd

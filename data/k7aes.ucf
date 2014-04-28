@@ -139,8 +139,8 @@ NET sfp_rs[0]   LOC = K28 | IOSTANDARD = LVCMOS25;
 
 # Edit these constraints to select the correct transceiver for your design
 ## Sample constraint for GT location
-INST "ten_eth_phy_0/*gt_0/*gtxe2_i"  LOC="GTXE2_CHANNEL_X0Y12";
-INST "ten_eth_phy_0/*gt_1/*gtxe2_i"  LOC="GTXE2_CHANNEL_X0Y13";
-INST "ten_eth_phy_0/*gt_2/*gtxe2_i"  LOC="GTXE2_CHANNEL_X0Y14";
-INST "ten_eth_phy_0/*gt_3/*gtxe2_i"  LOC="GTXE2_CHANNEL_X0Y15";
-INST "ten_eth_macphy_0/*gtxe2_common_0_i" LOC="GTXE2_COMMON_X0Y3";
+INST "ten_eth_phy_0/*gt_0/*gtxe2_i"    LOC="GTXE2_CHANNEL_X0Y12";
+INST "ten_eth_phy_0/*gt_1/*gtxe2_i"    LOC="GTXE2_CHANNEL_X0Y13";
+INST "ten_eth_phy_0/*gt_2/*gtxe2_i"    LOC="GTXE2_CHANNEL_X0Y14";
+INST "ten_eth_phy_0/*gt_3/*gtxe2_i"    LOC="GTXE2_CHANNEL_X0Y15";
+INST "ten_eth_phy_0/*gtxe2_common_0_i" LOC="GTXE2_COMMON_X0Y3";
