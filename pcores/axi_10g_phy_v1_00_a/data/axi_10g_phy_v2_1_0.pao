@@ -1,0 +1,6 @@
+lib axi_10g_phy_v1_00_a gtx/xphy_gtwizard_10gbaser_gt.v verilog
+lib axi_10g_phy_v1_00_a gtx/xphy_gt_quad.v verilog
+lib axi_10g_phy_v1_00_a xphy_block_gt.v verilog
+lib axi_10g_phy_v1_00_a xphy_block_clk.v verilog
+lib axi_10g_phy_v1_00_a xphy.v verilog
+lib axi_10g_phy_v1_00_a axi_10g_phy.v verilog

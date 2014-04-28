@@ -1,0 +1,90 @@
+BEGIN axi_10g_phy
+
+## Peripheral Options
+OPTION STYLE = HDL
+OPTION RUN_NGCBUILD = TRUE
+OPTION IPTYPE = PERIPHERAL
+OPTION IMP_NETLIST = TRUE
+OPTION HDL = VERILOG
+OPTION USAGE_LEVEL = BASE_USER
+OPTION DESC = AXI Ethernet Embedded IP
+OPTION PLATGEN_SYSLEVEL_UPDATE_PROC = generate_corelevel_ucf
+OPTION ARCH_SUPPORT_MAP = (spartan6t=PRODUCTION, spartan6=PRODUCTION, spartan6l=PRODUCTION, qspartan6t=PRODUCTION, qspartan6=PRODUCTION, aspartan6t=PRODUCTION, aspartan6=PRODUCTION, virtex6lx=PRODUCTION, virtex6sx=PRODUCTION, virtex6cx=PRODUCTION, virtex6llx=PRODUCTION, virtex6lsx=PRODUCTION, qspartan6l=PRODUCTION, qvirtex6lx=PRODUCTION, qvirtex6sx=PRODUCTION, qvirtex6fx=PRODUCTION, qvirtex6tx=PRODUCTION, virtex7=PRODUCTION, kintex7=PRODUCTION, artix7=PRE_PRODUCTION, zynq=PRE_PRODUCTION, virtex7l=PRE_PRODUCTION, kintex7l=PRE_PRODUCTION, aartix7=PRE_PRODUCTION, artix7l=PRE_PRODUCTION, virtex7ht=PRE_PRODUCTION, qvirtex7=PRE_PRODUCTION, qkintex7=PRE_PRODUCTION, qkintex7l=PRE_PRODUCTION, qartix7=PRE_PRODUCTION, qartix7l=PRE_PRODUCTION, azynq=PRE_PRODUCTION, qzynq=PRE_PRODUCTION, qvirtex7l=PRE_PRODUCTION)
+
+## Generics for VHDL or Parameters for Verilog
+PARAMETER C_FAMILY = virtex6, DT = STRING
+PARAMETER EXAMPLE_SIM_GTRESET_SPEEDUP = "FALSE", DT = STRING
+PARAMETER C_DBG_PORT = 0, DT = integer
+
+# GTX
+PORT refclk_p = "", DIR = I, SIGIS = CLK
+PORT refclk_n = "", DIR = I, SIGIS = CLK
+PORT hw_reset = "", DIR = I, SIGIS = RST, INITIALVAL = GND
+
+PORT rxp      = "", DIR = I, VEC = [3:0]
+PORT rxn      = "", DIR = I, VEC = [3:0]
+PORT txp      = "", DIR = O, VEC = [3:0]
+PORT txn      = "", DIR = O, VEC = [3:0]
+
+PORT sfp_sgd  = "", DIR = I, VEC = [3:0], INITIALVAL = VCC
+PORT sfp_txf  = "", DIR = I, VEC = [3:0], INITIALVAL = GND
+PORT sfp_rs   = "", DIR = O, VEC = [3:0]
+PORT sfp_txd  = "", DIR = O, VEC = [3:0]
+
+## Ports
+PORT clk156 = "",   DIR = O
+
+BUS_INTERFACE  BUS = XGMII0, BUS_STD = XGMII, BUS_TYPE = TARGET
+BUS_INTERFACE  BUS = XGMII1, BUS_STD = XGMII, BUS_TYPE = TARGET
+BUS_INTERFACE  BUS = XGMII2, BUS_STD = XGMII, BUS_TYPE = TARGET
+BUS_INTERFACE  BUS = XGMII3, BUS_STD = XGMII, BUS_TYPE = TARGET
+
+PORT xgmii_txc0    = TXC,    DIR = I, BUS = XGMII0, VEC = [7:0]
+PORT xgmii_txd0    = TXD,    DIR = I, BUS = XGMII0, VEC = [63:0]
+PORT xgmii_rxc0    = RXC,    DIR = O, BUS = XGMII0, VEC = [7:0]
+PORT xgmii_rxd0    = RXD,    DIR = O, BUS = XGMII0, VEC = [63:0]
+PORT core_status0  = STS,    DIR = O, BUS = XGMII0, VEC = [7:0]
+PORT tx_resetdone0 = TX_RSD, DIR = O, BUS = XGMII0
+PORT rx_resetdone0 = RX_RST, DIR = O, BUS = XGMII0
+PORT mdc0          = MDC,    DIR = I, BUS = XGMII0
+PORT mdio_in0      = MDIO_IN,DIR = I, BUS = XGMII0
+PORT mdio_out0     = MDIO_OUT,DIR= O, BUS = XGMII0
+PORT mdio_tri0     = MDIO_TRI,DIR= O, BUS = XGMII0
+
+PORT xgmii_txc1    = TXC,    DIR = I, BUS = XGMII1, VEC = [7:0]
+PORT xgmii_txd1    = TXD,    DIR = I, BUS = XGMII1, VEC = [63:0]
+PORT xgmii_rxc1    = RXC,    DIR = O, BUS = XGMII1, VEC = [7:0]
+PORT xgmii_rxd1    = RXD,    DIR = O, BUS = XGMII1, VEC = [63:0]
+PORT core_status1  = STS,    DIR = O, BUS = XGMII1, VEC = [7:0]
+PORT tx_resetdone1 = TX_RSD, DIR = O, BUS = XGMII1
+PORT rx_resetdone1 = RX_RST, DIR = O, BUS = XGMII1
+PORT mdc1          = MDC,    DIR = I, BUS = XGMII1
+PORT mdio_in1      = MDIO_IN,DIR = I, BUS = XGMII1
+PORT mdio_out1     = MDIO_OUT,DIR= O, BUS = XGMII1
+PORT mdio_tri1     = MDIO_TRI,DIR= O, BUS = XGMII1
+
+PORT xgmii_txc2    = TXC,    DIR = I, BUS = XGMII2, VEC = [7:0]
+PORT xgmii_txd2    = TXD,    DIR = I, BUS = XGMII2, VEC = [63:0]
+PORT xgmii_rxc2    = RXC,    DIR = O, BUS = XGMII2, VEC = [7:0]
+PORT xgmii_rxd2    = RXD,    DIR = O, BUS = XGMII2, VEC = [63:0]
+PORT core_status2  = STS,    DIR = O, BUS = XGMII2, VEC = [7:0]
+PORT tx_resetdone2 = TX_RSD, DIR = O, BUS = XGMII2
+PORT rx_resetdone2 = RX_RST, DIR = O, BUS = XGMII2
+PORT mdc2          = MDC,    DIR = I, BUS = XGMII2
+PORT mdio_in2      = MDIO_IN,DIR = I, BUS = XGMII2
+PORT mdio_out2     = MDIO_OUT,DIR= O, BUS = XGMII2
+PORT mdio_tri2     = MDIO_TRI,DIR= O, BUS = XGMII2
+
+PORT xgmii_txc3    = TXC,    DIR = I, BUS = XGMII3, VEC = [7:0]
+PORT xgmii_txd3    = TXD,    DIR = I, BUS = XGMII3, VEC = [63:0]
+PORT xgmii_rxc3    = RXC,    DIR = O, BUS = XGMII3, VEC = [7:0]
+PORT xgmii_rxd3    = RXD,    DIR = O, BUS = XGMII3, VEC = [63:0]
+PORT core_status3  = STS,    DIR = O, BUS = XGMII3, VEC = [7:0]
+PORT tx_resetdone3 = TX_RSD, DIR = O, BUS = XGMII3
+PORT rx_resetdone3 = RX_RST, DIR = O, BUS = XGMII3
+PORT mdc3          = MDC,    DIR = I, BUS = XGMII3
+PORT mdio_in3      = MDIO_IN,DIR = I, BUS = XGMII3
+PORT mdio_out3     = MDIO_OUT,DIR= O, BUS = XGMII3
+PORT mdio_tri3     = MDIO_TRI,DIR= O, BUS = XGMII3
+
+END
