@@ -127,13 +127,28 @@ NET refclk_p LOC = C8;
 NET refclk_n LOC = C7;
 
 # signal detect
-#NET sfp_sgd[0] LOC = L28 | IOSTANDARD = LVCMOS25;
 # tx fault
-NET sfp_txf[0]  LOC = N27 | IOSTANDARD = LVCMOS25;
 # tx disable
-NET sfp_txd[0]  LOC = M27 | IOSTANDARD = LVCMOS25;
 # rate select
+#NET sfp_sgd[0] LOC = L28 | IOSTANDARD = LVCMOS25;
+NET sfp_txf[0]  LOC = N27 | IOSTANDARD = LVCMOS25;
+NET sfp_txd[0]  LOC = M27 | IOSTANDARD = LVCMOS25;
 NET sfp_rs[0]   LOC = K28 | IOSTANDARD = LVCMOS25;
+
+#NET sfp_sgd[1] LOC = H29 | IOSTANDARD = LVCMOS25;
+NET sfp_txf[1]  LOC = K30 | IOSTANDARD = LVCMOS25;
+NET sfp_txd[1]  LOC = L27 | IOSTANDARD = LVCMOS25;
+NET sfp_rs[1]   LOC = J27 | IOSTANDARD = LVCMOS25;
+
+#NET sfp_sgd[2] LOC = K24 | IOSTANDARD = LVCMOS25;
+NET sfp_txf[2]  LOC = K26 | IOSTANDARD = LVCMOS25;
+NET sfp_txd[2]  LOC = K25 | IOSTANDARD = LVCMOS25;
+NET sfp_rs[2]   LOC = J23 | IOSTANDARD = LVCMOS25;
+
+#NET sfp_sgd[3] LOC = L22 | IOSTANDARD = LVCMOS25;
+NET sfp_txf[3]  LOC = J22 | IOSTANDARD = LVCMOS25;
+NET sfp_txd[3]  LOC = K21 | IOSTANDARD = LVCMOS25;
+NET sfp_rs[3]   LOC = L20 | IOSTANDARD = LVCMOS25;
 
 #NET linkup  LOC = T28 | IOSTANDARD = LVCMOS25;
 
