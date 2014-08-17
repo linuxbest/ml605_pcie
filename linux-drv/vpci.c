@@ -270,6 +270,18 @@ static struct vpci_struct {
 		.subsystem_vendor = VPCI_FPGA_VENDOR,
 		.subsystem_device = VPCI_10G_DEVICE,
 	},
+	[2] = {
+		.subsystem_vendor = VPCI_FPGA_VENDOR,
+		.subsystem_device = VPCI_10G_DEVICE,
+	},
+	[3] = {
+		.subsystem_vendor = VPCI_FPGA_VENDOR,
+		.subsystem_device = VPCI_10G_DEVICE,
+	},
+	[4] = {
+		.subsystem_vendor = VPCI_FPGA_VENDOR,
+		.subsystem_device = VPCI_10G_DEVICE,
+	},
 };
 
 static int  __init vpci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
