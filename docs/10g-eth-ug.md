@@ -52,3 +52,23 @@ $ make
  # insmod /tmp/aes10g.ko
  # insmod /tmp/eth10g.ko
  </code></pre>
+
+##Hardware memory mmap
+ PCIe base address mask bit is 20, 1M memory space.
+
+ * 0x0_0000 - 0x0_0fff xps_intc
+ * 0x1_0000 - 0x1_ffff axi aes c0
+	* 0x0000 - 0x0fff axi dma
+	* 0x8000 - 0xffff axi aes
+ * 0x2_0000 - 0x2_ffff axi eth p0
+	* 0x0000 - 0x0fff axi dma
+	* 0x8000 - 0xffff axi eth
+ * 0x3_0000 - 0x3_ffff axi eth p1
+	* 0x0000 - 0x0fff axi dma
+	* 0x8000 - 0xffff axi eth
+ * 0x4_0000 - 0x4_ffff axi eth p2
+	* 0x0000 - 0x0fff axi dma
+	* 0x8000 - 0xffff axi eth
+ * 0x5_0000 - 0x5_ffff axi eth p3
+	* 0x0000 - 0x0fff axi dma
+	* 0x8000 - 0xffff axi eth
