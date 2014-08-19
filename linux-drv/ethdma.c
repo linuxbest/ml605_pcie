@@ -562,10 +562,11 @@ static void DmaSendHandlerBH(unsigned long p)
 		list_del_init(&(lp->xmit));
 		spin_unlock_irqrestore(&sentQueueSpin, flags);
 		
-		spin_lock_irqsave(&XTE_tx_spinlock, flags);
+		spin_lock_bh(&XTE_tx_spinlock);
 		DmaSendHandlerBH_netdev(lp);
+		spin_unlock_bh(&XTE_tx_spinlock);
+
 		XAxiDma_mBdRingIntEnable(RingPtr, XAXIDMA_IRQ_ALL_MASK);
-		spin_unlock_irqrestore(&XTE_tx_spinlock, flags);
 	}
 }
 
@@ -958,9 +959,9 @@ static int axi_send(struct sk_buff *skb, struct net_device *ndev)
 {
 	unsigned long flags;
 	
-	spin_lock_irqsave(&XTE_tx_spinlock, flags);
+	spin_lock_bh(&XTE_tx_spinlock);
 	axi_DmaSend_internal(skb, ndev);
-	spin_unlock_irqrestore(&XTE_tx_spinlock, flags);
+	spin_unlock_bh(&XTE_tx_spinlock);
 
 	return 0;
 }
