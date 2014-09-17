@@ -545,6 +545,100 @@ static int aes_self_test(struct aes_dev *dma)
 	return 0;
 }
 
+static struct sg_table *aes_alloc_sg_mem(int sgcnt, int order)
+{
+	struct sg_table *sgt = kzalloc(sizeof(*sgt), GFP_KERNEL);
+	struct scatterlist *sg;
+	int i, err;
+
+	if (sgt == NULL)
+		return NULL;
+
+	err = sg_alloc_table(sgt, sgcnt, GFP_KERNEL);
+	if (err != 0)
+		return err;
+
+	for_each_sg(sgt->sgl, sg, sgt->nents, i) {
+		struct page *page = alloc_pages(GFP_KERNEL, order);
+		if (page == NULL)
+			return NULL;
+		sg_set_page(sg, page, PAGE_SIZE << order, 0);
+	}
+
+	return sgt;
+}
+
+static void aes_free_sg_mem(struct sg_table *sgt, int sgcnt, int order)
+{
+	struct scatterlist *sg = sgt->sgl;
+	int i;
+
+	for (i = 0; i < sgcnt; i ++, sg = sg_next(sg)) {
+		struct page *pg = sg_page(sg);
+		__free_pages(pg, order);
+	}
+	sg_free_table(sgt);
+	kfree(sgt);
+}
+
+/* 64k * 2048 = 128Mbyte */
+static uint64_t aes_perf_speed(uint64_t cycle, uint64_t size)
+{
+	uint64_t speed = div64_u64(cpu_khz, cycle>>20);
+	return speed * size;
+}
+
+static int aes_perf_test(struct aes_dev *dma)
+{
+	int order = 4;
+	int sg_cnt = 2048;
+	int mem_size = sg_cnt * (PAGE_SIZE << order);
+	struct sg_table *src_sgt = aes_alloc_sg_mem(sg_cnt, order);
+	struct sg_table *dst_sgt = aes_alloc_sg_mem(sg_cnt, order);
+	struct aes_desc *sw;
+	int i;
+	struct completion done;
+	cycles_t start, end;
+
+	if (src_sgt == NULL || dst_sgt == NULL)
+		return -ENOMEM;
+
+	i = dma_map_sg(dma->dev, src_sgt->sgl, sg_cnt, DMA_TO_DEVICE);
+	if (i == 0) {
+		dev_err(dma->dev, "dma_map_sg src failed, %d,%d\n", sg_cnt, i);
+		return -ENOMEM;
+	}
+	i = dma_map_sg(dma->dev, dst_sgt->sgl, sg_cnt, DMA_FROM_DEVICE);
+	if (i == 0) {
+		dev_err(dma->dev, "dma_map_sg dst failed, %d,%d\n", sg_cnt, i);
+		return -ENOMEM;
+	}
+	sw = aes_alloc_desc(dma);
+	dev_trace(dma->dev, "dev %p, src %p, dst %p, cnt %d, order %d, size %d, sw %p\n",
+			dma, src_sgt, dst_sgt, sg_cnt, order, mem_size, sw);
+
+	init_completion(&done);
+	sw->cb = aes_self_cb;
+	sw->priv = (void *)&done;
+
+	dma_buf_sg_init(&sw->src_buf, src_sgt->sgl, sg_cnt, mem_size);
+	dma_buf_sg_init(&sw->dst_buf, dst_sgt->sgl, sg_cnt, mem_size);
+
+	start = get_cycles();
+	aes_desc_to_hw(dma, sw);
+	wait_for_completion(&done);
+	end = get_cycles();
+
+	printk("aes speed: 128Mbyte, start/end %lld %lld, cycle %lld, cpu %dkhz, %dkB/s\n",
+			start, end, end - start, cpu_khz,
+			aes_perf_speed(end - start, 128));
+
+	aes_free_sg_mem(src_sgt, sg_cnt, order);
+	aes_free_sg_mem(dst_sgt, sg_cnt, order);
+
+	return 0;
+}
+
 static int aes_init_channel(struct aes_dev *dma, XAxiDma_BdRing *ring,
 		u32 phy, u32 virt, int cnt)
 {
@@ -1077,6 +1171,7 @@ static int aes_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	mod_timer(&dma->poll_timer, jiffies + (1 * HZ));
 
 	aes_self_test(dma);
+	aes_perf_test(dma);
 
 	return 0;
 
@@ -1195,6 +1290,7 @@ static int __init aes_platform_probe(struct platform_device *pdev)
 	mod_timer(&dma->poll_timer, jiffies + (1 * HZ));
 
 	aes_self_test(dma);
+	aes_perf_test(dma);
 
 	return 0;
 
