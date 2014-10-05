@@ -391,24 +391,67 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
    parameter                    MEM32_SIZE = 16;
    parameter                    MEM64_SIZE = 16;
 
-   wire [7:0] pipe_rx_polarity;
-   wire [7:0] pipe_rx_elec_idle;
-   wire [7:0] pipe_rx_valid;
+   wire [7:0] pipe_tx_elec_idle;
    wire [7:0] pipe_tx_compl;
+   wire [7:0] pipe_rx_polarity;
    assign pipe_tx_elec_idle = 8'h0;
    assign pipe_tx_compl     = 8'h0;
    assign pipe_rx_polarity  = 8'h0;
+   
+   reg clk125;
+   reg clk250;
+   wire tx_rate;
+   assign tx_rate = 1'b0;
+   // tx_rate 
+   //  0: 2.5Gps, clk125 125Mhz, clk250 250Mhz
+   //  1: 5.0Gps, clk125 250Mhz, clk250 500Mhz
+   initial
+     begin
+	clk125   <= 1'b0;
+	clk250   <= 1'b0;
+     end
+   always
+     begin
+	if (tx_rate)
+	  begin
+	     #1;
+	  end
+	else
+	  begin
+	     #2;
+	  end
+	clk250 <= ~clk250;
+     end // always begin
+   always
+     begin
+	if (tx_rate)
+	  begin
+	     #2;
+	  end
+	else
+	  begin
+	     #4;
+	  end
+	clk125 <= ~clk125;
+     end
 
+   wire                       chk_txval;
+   wire [63:0]                chk_txdata;
+   wire [7:0]                 chk_txdatak;
+   wire                       chk_rxval;
+   wire [63:0]                chk_rxdata;
+   wire [7:0]                 chk_rxdatak;
+   wire [4:0]                 chk_ltssm;
    /* pldawrap_pipe AUTO_TEMPLATE (
-    .rate               (1'b0), // I
-    .tx_detectrx        (1'b0), // I
-    .power_down         (2'b0), // I
+    .rate               (tx_rate), // I
+    .tx_detectrx        (1'b0),    // I
+    .power_down         (2'b0),    // I
     
-    .tx_elecidle        (pipe_rx_elec_idle[]), // I
+    .tx_elecidle        (pipe_tx_elec_idle[]), // I
     .tx_compl           (pipe_tx_compl[]),     // I
-    .rx_polarity        (pipe_rx_polarity[]),  // O
-    .rx_elecidle        (pipe_rx_elec_idle[]), // O
-    .rx_valid           (pipe_rx_valid[]),     // O
+    .rx_polarity        (pipe_rx_polarity[]),  // I
+    .rx_elecidle        (), // O
+    .rx_valid           (), // O
     
     .tx_data\([0-7]\)   ({pipe_tx\1_data[7:0],    pipe_tx\1_data[15:8]}),
     .tx_datak\([0-7]\)  ({pipe_tx\1_char_is_k[0], pipe_tx\1_char_is_k[1]}),
@@ -416,7 +459,6 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
     .rx_datak\([0-7]\)  ({pipe_rx\1_char_is_k[0], pipe_rx\1_char_is_k[1]}),
 
     .rx_status\([0-7]\) (),
-    .chk_\([a-z]+\)     (),
     .rstn               (sys_rst_n),
     .clk62              (),
     .clk125             (user_clk2),
@@ -435,8 +477,8 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
    pldawrap_pipe  (/*AUTOINST*/
 		   // Outputs
 		   .phy_status		(phy_status),
-		   .rx_elecidle		(pipe_rx_elec_idle[7:0]), // Templated
-		   .rx_valid		(pipe_rx_valid[7:0]),	 // Templated
+		   .rx_elecidle		(),			 // Templated
+		   .rx_valid		(),			 // Templated
 		   .rx_data0		({pipe_rx0_data[7:0],    pipe_rx0_data[15:8]}), // Templated
 		   .rx_datak0		({pipe_rx0_char_is_k[0], pipe_rx0_char_is_k[1]}), // Templated
 		   .rx_status0		(),			 // Templated
@@ -461,22 +503,22 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
 		   .rx_data7		({pipe_rx7_data[7:0],    pipe_rx7_data[15:8]}), // Templated
 		   .rx_datak7		({pipe_rx7_char_is_k[0], pipe_rx7_char_is_k[1]}), // Templated
 		   .rx_status7		(),			 // Templated
-		   .chk_txval		(),			 // Templated
-		   .chk_txdata		(),			 // Templated
-		   .chk_txdatak		(),			 // Templated
-		   .chk_rxval		(),			 // Templated
-		   .chk_rxdata		(),			 // Templated
-		   .chk_rxdatak		(),			 // Templated
-		   .chk_ltssm		(),			 // Templated
+		   .chk_txval		(chk_txval),
+		   .chk_txdata		(chk_txdata[63:0]),
+		   .chk_txdatak		(chk_txdatak[7:0]),
+		   .chk_rxval		(chk_rxval),
+		   .chk_rxdata		(chk_rxdata[63:0]),
+		   .chk_rxdatak		(chk_rxdatak[7:0]),
+		   .chk_ltssm		(chk_ltssm[4:0]),
 		   // Inputs
 		   .clk62		(),			 // Templated
 		   .clk125		(user_clk2),		 // Templated
 		   .clk250		(user_clk),		 // Templated
 		   .rstn		(sys_rst_n),		 // Templated
-		   .rate		(1'b0),			 // Templated
+		   .rate		(tx_rate),		 // Templated
 		   .tx_detectrx		(1'b0),			 // Templated
 		   .power_down		(2'b0),			 // Templated
-		   .tx_elecidle		(pipe_rx_elec_idle[7:0]), // Templated
+		   .tx_elecidle		(pipe_tx_elec_idle[7:0]), // Templated
 		   .tx_compl		(pipe_tx_compl[7:0]),	 // Templated
 		   .rx_polarity		(pipe_rx_polarity[7:0]), // Templated
 		   .tx_data0		({pipe_tx0_data[7:0],    pipe_tx0_data[15:8]}), // Templated
@@ -509,7 +551,7 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
    initial
      begin
 	// Initialise BFM
-	#1500000
+	#150000
 	  
 	`BFM.xbfm_print_comment ("### Initialise BFM");
 
@@ -520,6 +562,5 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
 	 // Wait for link to get initialised then disable PIPE logging
 	`BFM.xbfm_wait_linkup;
 	`BFM.xbfm_configure_log(`XBFM_LOG_NOPIPE);
-	
      end
 endmodule

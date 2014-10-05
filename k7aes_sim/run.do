@@ -12,4 +12,4 @@ s
 w
 add wave sim:/k7sim_tb/dut/PCI_Express/PCI_Express/comp_axi_enhanced_pcie/comp_enhanced_core_top_wrap/axi_pcie_enhanced_core_top_i/genblk1/pcie_7x_v1_9_inst/gt_ges/gt_top_i/*
 
-run 50us
+run 200us
