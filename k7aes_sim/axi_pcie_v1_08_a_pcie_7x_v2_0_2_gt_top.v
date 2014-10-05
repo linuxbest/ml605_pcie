@@ -365,24 +365,6 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
    phy_rdy_ni =  1'b0;
    end
    //--------------------------------------------------------------------// 
-
-   //assign pipe_rx0_char_is_k = pipe_tx0_char_is_k;
-   //assign pipe_rx0_data      = pipe_tx0_data;
-   //assign pipe_rx1_char_is_k = pipe_tx1_char_is_k;
-   //assign pipe_rx1_data      = pipe_tx1_data;
-   //assign pipe_rx2_char_is_k = pipe_tx2_char_is_k;
-   //assign pipe_rx2_data      = pipe_tx2_data;
-   //assign pipe_rx3_char_is_k = pipe_tx3_char_is_k;
-   //assign pipe_rx3_data      = pipe_tx3_data;
-   //assign pipe_rx4_char_is_k = pipe_tx4_char_is_k;
-   //assign pipe_rx4_data      = pipe_tx4_data;
-   //assign pipe_rx5_char_is_k = pipe_tx5_char_is_k;
-   //assign pipe_rx5_data      = pipe_tx5_data;
-   //assign pipe_rx6_char_is_k = pipe_tx6_char_is_k;
-   //assign pipe_rx6_data      = pipe_tx6_data;
-   //assign pipe_rx7_char_is_k = pipe_tx7_char_is_k;
-   //assign pipe_rx7_data      = pipe_tx7_data;
-
    parameter                    BFM_ID     = 0;		// 0..3
    parameter                    BFM_TYPE   = 1'b0;	// 0=>rootport, 1=endpoint
    parameter                    BFM_LANES  = 8;		// 1=>x1, 4=x4 , 8=x8
@@ -558,20 +540,239 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
 	// Initialise BFM
 	#30000
 
-	`BFM.xbfm_print_comment ("### Initialise BFM");
+		//-----------------------------------------------------
+		// Initialise BFM
+		//-----------------------------------------------------
 
-	`BFM.xbfm_print_comment ("### BFM: 0");
-	`BFM.xbfm_init (32'h00000000,32'hAAAA0000,64'hBBBBBBBBCCCC0000);
-	`BFM.xbfm_print_comment ("### BFM: 1");
-	`BFM.xbfm_set_requesterid (16'h0008);
-	`BFM.xbfm_print_comment ("### BFM: 2");
-	`BFM.xbfm_set_maxpayload  (MAX_PAYLOAD);
-	
-	 // Wait for link to get initialised then disable PIPE logging
-	`BFM.xbfm_print_comment ("### BFM: 3");
-	`BFM.xbfm_wait_linkup;
-	`BFM.xbfm_print_comment ("### BFM: 4");
-	`BFM.xbfm_configure_log(`XBFM_LOG_NOPIPE);
-	`BFM.xbfm_print_comment ("### BFM: 5");
+		#100;
+	 	`BFM.xbfm_print_comment ("### Initialise BFM");
+		`BFM.xbfm_init (32'h00000000,32'hAAAA0000,64'hBBBBBBBBCCCC0000);
+		`BFM.xbfm_set_requesterid (16'h0008);
+		`BFM.xbfm_set_maxpayload  (MAX_PAYLOAD);
+
+		// Wait for link to get initialised then disable PIPE logging
+	  	`BFM.xbfm_wait_linkup;
+	  	`BFM.xbfm_configure_log(`XBFM_LOG_NOPIPE);
+
+	 	//-----------------------------------------------------
+	 	// Initialise reference design configuration
+	 	//-----------------------------------------------------
+                #500;
+		
+		`BFM.xbfm_print_comment ("### Initialise Reference Design configuration");
+		`BFM.xbfm_dword (`XBFM_CFGRD0,32'h00000000,4'hF,32'h11001556);	// Device & vendor ID
+		`BFM.xbfm_dword (`XBFM_CFGWR0,32'h00000010,4'hF,32'h11110000);	// BAR0 --64bits
+		`BFM.xbfm_dword (`XBFM_CFGWR0,32'h00000014,4'hF,32'h11111111);	// BAR1
+		`BFM.xbfm_dword (`XBFM_CFGWR0,32'h00000018,4'hF,32'h22220000);	// BAR2 --64bits
+		`BFM.xbfm_dword (`XBFM_CFGWR0,32'h0000001C,4'hF,32'h22222222);	// BAR3
+		`BFM.xbfm_dword (`XBFM_CFGWR0,32'h00000004,4'hF,32'h000001FF);	// Control/Status
+		`BFM.xbfm_wait;
+
+		// PCIe Device CSR
+		`BFM.xbfm_print_comment ("### Set max payload & max read request registers");
+		if (MAX_PAYLOAD==128)
+			csr=32'h00FF2810;  // Max read request=512, max payload=128
+		else
+			csr=32'h00FF2830;  // Max read request=512, max payload=256
+
+		`BFM.xbfm_dword (`XBFM_CFGWR0,{24'h000000,PCIE_DEVCTRL_REG_ADDR},4'hF,{16'h00FF,csr});
+		`BFM.xbfm_dword (`XBFM_CFGRD0,{24'h000000,PCIE_DEVCTRL_REG_ADDR},4'hF,{16'h0000,csr});
+	 	`BFM.xbfm_wait;
+
+		//-----------------------------------------------------
+		// BAR0: Test Registers
+		//-----------------------------------------------------
+
+		#200;
+
+		`BFM.xbfm_print_comment ("### BAR0/1 : write mailbox register");
+		databuf[31:0]=32'h76543210; // write mailbox register at address 24h
+		`BFM.xbfm_burst (`XBFM_MWR,64'h1111111111110024,4,databuf,3'b000,2'b00);
+		`BFM.xbfm_wait;
+
+		`BFM.xbfm_print_comment ("### BAR0/1 : read main status & mailbox registers");
+		databuf[31:0] =32'h00000020; 	// expect to read "version 2.0"
+		databuf[63:32]=32'h76543210; 	// expect to read what was written
+		`BFM.xbfm_burst (`XBFM_MRD,64'h1111111111110020,8,databuf,3'b000,2'b00);
+		`BFM.xbfm_wait;
+
+		//-----------------------------------------------------
+		// BAR2: Test Internal SRAM
+		//-----------------------------------------------------
+
+		#200;
+
+		// Perform single data read/write to SRAM
+		`BFM.xbfm_print_comment ("### BAR2/3 : Single data read/write to SRAM");
+		databuf[31:0]=32'h01234567;
+		`BFM.xbfm_burst (`XBFM_MWR,64'h2222222222220000,4,databuf,3'b000,2'b00);
+		`BFM.xbfm_burst (`XBFM_MRD,64'h2222222222220000,4,databuf,3'b000,2'b00);
+
+		databuf[31:0]=32'h89ABCDEF;
+		`BFM.xbfm_burst (`XBFM_MWR,64'h2222222222220004,4,databuf,3'b000,2'b00);
+		`BFM.xbfm_burst (`XBFM_MRD,64'h2222222222220004,4,databuf,3'b000,2'b00);
+		`BFM.xbfm_wait;
+
+		// prepare a ramp in data buffer
+		`BFM.xbfm_buffer_fill (256,databuf);
+
+		// Maximum payload size is 256 bytes so transfer must be split into 4 blocks
+		`BFM.xbfm_print_comment ("### BAR2/3 : Write 1KB to SRAM");
+		`BFM.xbfm_burst (`XBFM_MWR,64'h2222222222220000,256,databuf,3'b000,2'b00);
+		`BFM.xbfm_burst (`XBFM_MWR,64'h2222222222220100,256,databuf,3'b000,2'b00);
+		`BFM.xbfm_burst (`XBFM_MWR,64'h2222222222220200,256,databuf,3'b000,2'b00);
+		`BFM.xbfm_burst (`XBFM_MWR,64'h2222222222220300,256,databuf,3'b000,2'b00);
+		`BFM.xbfm_wait;
+
+		// read data from SRAM and check all data with corresponding data_buf value
+		`BFM.xbfm_print_comment ("### BAR2/3 : Read 1KB from SRAM");
+		`BFM.xbfm_burst (`XBFM_MRD,64'h2222222222220000,1024,databuf,3'b000,2'b00);
+		`BFM.xbfm_wait;
+
+		//-----------------------------------------------------
+		// DMA0/1 : program direct DMA transfers
+		//-----------------------------------------------------
+
+		#200;
+
+		// Fill BFM 64-bit memory space with a ramp
+		`BFM.xbfm_buffer_fill (256,databuf);
+		`BFM.xbfm_memory_write (`XBFM_MEM64,32'h00000000,256,databuf);
+
+		`BFM.xbfm_print_comment ("### DMA0 : program read transfer (write to FIFO)");
+		databuf[31:0]  =32'hCCCC0000; // pci address [31:0]
+		databuf[63:32] =32'hBBBBBBBB; // pci address [63:32]
+		databuf[95:64] =32'h00000400; // transfer size (1KB)
+		databuf[127:96]=32'h00000004; // write '1' to bit 2 to start transfer
+		`BFM.xbfm_burst (`XBFM_MWR,64'h1111111111110000,16,databuf,3'b000,2'b00);
+
+		`BFM.xbfm_print_comment ("### DMA1 : program write transfer (read from FIFO)");
+		databuf[31:0]  =32'hAAAA0000; // pci address [31:0]
+		databuf[63:32] =32'h00000000; // pci address [63:32]
+		databuf[95:64] =32'h00000400; // transfer size (1KB)
+		databuf[127:96]=32'h00000004; // write '1' to bit 2 to start transfer
+		`BFM.xbfm_burst (`XBFM_MWR,64'h1111111111110010,16,databuf,3'b000,2'b00);
+
+
+		//-----------------------------------------------------------------
+		// Interrupt : wait for interrupt that indicates the end of a DMA
+		//-----------------------------------------------------------------
+
+		// Wait for "INTA pin asserted" message
+		`BFM.xbfm_wait_event(`XBFM_INTAA_RCVD);
+
+ 		// Read interrupt register content
+		`BFM.xbfm_print_comment ("### Interrupt : read & clear interrupt register");
+		databuf[31:0]=32'h00000001;
+		`BFM.xbfm_burst (`XBFM_MRD,64'h1111111111110034,4,databuf,3'b000,2'b00);
+
+		// Clear interrupt register content
+		`BFM.xbfm_burst (`XBFM_MWR,64'h1111111111110034,4,databuf,3'b000,2'b00);
+
+		// wait for "INTA pin de-asserted" message
+		`BFM.xbfm_wait_event(`XBFM_INTAD_RCVD);
+
+
+ 		//-----------------------------------------------------
+		// DMA1 : check received data
+		//-----------------------------------------------------
+
+		// Check content of 32-bit memory space (should contain a ramp)
+		`BFM.xbfm_buffer_fill (256,databuf);
+		`BFM.xbfm_memory_compare (`XBFM_MEM32,32'h00000000,256,databuf,4'hF,4'hF);
+
+
+		//-----------------------------------------------------
+		// DMA0 : program scatter-gather read DMA transfer
+		//-----------------------------------------------------
+
+		// Prepare read descriptors
+	 	// read descriptor #1
+	 	databuf[32*0+:32]=32'hCCCC0400; // pci address [31:0]
+		databuf[32*1+:32]=32'hBBBBBBBB; // pci address [63:32]
+		databuf[32*2+:32]=32'h00000100; // page size
+		databuf[32*3+:32]=32'hCCCC0014; // next page pointer [31:0] & End chain bit
+		databuf[32*4+:32]=32'hBBBBBBBB; // next page pointer [63:32]
+
+		// read descriptor #2
+		databuf[32*5+:32]=32'hCCCC0500;
+		databuf[32*6+:32]=32'hBBBBBBBB;
+		databuf[32*7+:32]=32'h00000100;
+		databuf[32*8+:32]=32'hCCCC0028;
+		databuf[32*9+:32]=32'hBBBBBBBB;
+
+	    // read descriptor #3
+	    databuf[32*10+:32]=32'hCCCC0600;
+		databuf[32*11+:32]=32'hBBBBBBBB;
+		databuf[32*12+:32]=32'h00000100;
+		databuf[32*13+:32]=32'hCCCC003C;
+		databuf[32*14+:32]=32'hBBBBBBBB;
+
+	    // read descriptor #4
+	    databuf[32*15+:32]=32'hCCCC0700;
+		databuf[32*16+:32]=32'hBBBBBBBB;
+		databuf[32*17+:32]=32'h00000100;
+		databuf[32*18+:32]=32'h00000001;  // bit 0 is '1' => end of chain
+		databuf[32*19+:32]=32'h00000000;
+
+       	// Write read descriptor to BFM 64-bit memory space
+		`BFM.xbfm_memory_write (`XBFM_MEM64,32'h00000000,20,databuf);
+
+		// Write data to BFM 64-bit memory space
+		`BFM.xbfm_buffer_fill (256,databuf);
+		`BFM.xbfm_memory_write (`XBFM_MEM64,32'h00000400,256,databuf);
+
+   		// Program DMA transfer
+		`BFM.xbfm_print_comment ("### DMA0 : program SG read transfer (write to FIFO)");
+		databuf[31:0]  =32'hCCCC0000; // pci address [31:0]
+		databuf[63:32] =32'hBBBBBBBB; // pci address [63:32]
+		databuf[95:64] =32'h00000400; // transfer size (1KB)
+		databuf[127:96]=32'h00000014; // write '1' to bit 2 to start transfer
+		`BFM.xbfm_burst (`XBFM_MWR,64'h1111111111110000,16,databuf,3'b000,2'b00);
+
+
+	    //-----------------------------------------------------
+		// DMA1 : program scatter-gather write DMA transfer
+		//-----------------------------------------------------
+
+  		// write descriptor #1
+		databuf[32*0+:32]=32'hAAAA0400; // pci address [31:0]
+		databuf[32*1+:32]=32'h00000000; // pci address [63:32]
+		databuf[32*2+:32]=32'h00000200; // page size
+		databuf[32*3+:32]=32'hAAAA0014; // next page pointer [31:1] & End chain bit
+		databuf[32*4+:32]=32'h00000000; // next page pointer [63:32]
+
+		// write descriptor #2
+		databuf[32*5+:32]=32'hAAAA0600;
+		databuf[32*6+:32]=32'h00000000;
+		databuf[32*7+:32]=32'h00000200;
+		databuf[32*8+:32]=32'h00000001; // bit 0 is '1' => end of chain
+		databuf[32*9+:32]=32'h00000000;
+
+       	// Write read descriptor to BFM 32-bit memory space
+       	`BFM.xbfm_memory_write (`XBFM_MEM32,32'h00000000,10,databuf);
+
+   		// Program DMA transfer
+		`BFM.xbfm_print_comment ("### DMA1 : program SG write transfer (read from FIFO)");
+		databuf[31:0]  =32'hAAAA0000; // pci address [31:0]
+		databuf[63:32] =32'h00000000; // pci address [63:32]
+		databuf[95:64] =32'h00000400; // transfer size (1KB)
+		databuf[127:96]=32'h00000014; // write '1' to bit 2 to start transfer
+		`BFM.xbfm_burst (`XBFM_MWR,64'h1111111111110010,16,databuf,3'b000,2'b00);
+
+		//-----------------------------------------------------------------
+		// Wait for interrupt at end of DMA & check received data
+		//-----------------------------------------------------------------
+
+		// Wait for "INTA pin asserted" message
+		`BFM.xbfm_wait_event(`XBFM_INTAA_RCVD);
+
+		// Check content of 32-bit memory space (should contain a ramp)
+		`BFM.xbfm_buffer_fill (256,databuf);
+		
+		#1000;
+		`BFM.xbfm_memory_compare (`XBFM_MEM32,32'h00000400,256,databuf,4'hF,4'hF);
+
+		#200;
      end
 endmodule
