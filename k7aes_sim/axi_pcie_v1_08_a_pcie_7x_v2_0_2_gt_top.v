@@ -366,21 +366,160 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
    end
    //--------------------------------------------------------------------// 
 
-   assign pipe_rx0_char_is_k = pipe_tx0_char_is_k;
-   assign pipe_rx0_data      = pipe_tx0_data;
-   assign pipe_rx1_char_is_k = pipe_tx1_char_is_k;
-   assign pipe_rx1_data      = pipe_tx1_data;
-   assign pipe_rx2_char_is_k = pipe_tx2_char_is_k;
-   assign pipe_rx2_data      = pipe_tx2_data;
-   assign pipe_rx3_char_is_k = pipe_tx3_char_is_k;
-   assign pipe_rx3_data      = pipe_tx3_data;
-   assign pipe_rx4_char_is_k = pipe_tx4_char_is_k;
-   assign pipe_rx4_data      = pipe_tx4_data;
-   assign pipe_rx5_char_is_k = pipe_tx5_char_is_k;
-   assign pipe_rx5_data      = pipe_tx5_data;
-   assign pipe_rx6_char_is_k = pipe_tx6_char_is_k;
-   assign pipe_rx6_data      = pipe_tx6_data;
-   assign pipe_rx7_char_is_k = pipe_tx7_char_is_k;
-   assign pipe_rx7_data      = pipe_tx7_data;
+   //assign pipe_rx0_char_is_k = pipe_tx0_char_is_k;
+   //assign pipe_rx0_data      = pipe_tx0_data;
+   //assign pipe_rx1_char_is_k = pipe_tx1_char_is_k;
+   //assign pipe_rx1_data      = pipe_tx1_data;
+   //assign pipe_rx2_char_is_k = pipe_tx2_char_is_k;
+   //assign pipe_rx2_data      = pipe_tx2_data;
+   //assign pipe_rx3_char_is_k = pipe_tx3_char_is_k;
+   //assign pipe_rx3_data      = pipe_tx3_data;
+   //assign pipe_rx4_char_is_k = pipe_tx4_char_is_k;
+   //assign pipe_rx4_data      = pipe_tx4_data;
+   //assign pipe_rx5_char_is_k = pipe_tx5_char_is_k;
+   //assign pipe_rx5_data      = pipe_tx5_data;
+   //assign pipe_rx6_char_is_k = pipe_tx6_char_is_k;
+   //assign pipe_rx6_data      = pipe_tx6_data;
+   //assign pipe_rx7_char_is_k = pipe_tx7_char_is_k;
+   //assign pipe_rx7_data      = pipe_tx7_data;
 
+   parameter                    BFM_ID     = 0;		// 0..3
+   parameter                    BFM_TYPE   = 1'b0;	// 0=>rootport, 1=endpoint
+   parameter                    BFM_LANES  = 8;		// 1=>x1, 4=x4 , 8=x8
+   parameter                    BFM_WIDTH  = 16;	// 8=>8-bit 16=>16-bit 32=>32bit
+   parameter                    IO_SIZE    = 16;
+   parameter                    MEM32_SIZE = 16;
+   parameter                    MEM64_SIZE = 16;
+
+   wire [7:0] pipe_rx_polarity;
+   wire [7:0] pipe_rx_elec_idle;
+   wire [7:0] pipe_rx_valid;
+   wire [7:0] pipe_tx_compl;
+   assign pipe_tx_elec_idle = 8'h0;
+   assign pipe_tx_compl     = 8'h0;
+   assign pipe_rx_polarity  = 8'h0;
+
+   /* pldawrap_pipe AUTO_TEMPLATE (
+    .rate               (1'b0), // I
+    .tx_detectrx        (1'b0), // I
+    .power_down         (2'b0), // I
+    
+    .tx_elecidle        (pipe_rx_elec_idle[]), // I
+    .tx_compl           (pipe_tx_compl[]),     // I
+    .rx_polarity        (pipe_rx_polarity[]),  // O
+    .rx_elecidle        (pipe_rx_elec_idle[]), // O
+    .rx_valid           (pipe_rx_valid[]),     // O
+    
+    .tx_data\([0-7]\)   ({pipe_tx\1_data[7:0],    pipe_tx\1_data[15:8]}),
+    .tx_datak\([0-7]\)  ({pipe_tx\1_char_is_k[0], pipe_tx\1_char_is_k[1]}),
+    .rx_data\([0-7]\)   ({pipe_rx\1_data[7:0],    pipe_rx\1_data[15:8]}),
+    .rx_datak\([0-7]\)  ({pipe_rx\1_char_is_k[0], pipe_rx\1_char_is_k[1]}),
+
+    .rx_status\([0-7]\) (),
+    .chk_\([a-z]+\)     (),
+    .rstn               (sys_rst_n),
+    .clk62              (),
+    .clk125             (user_clk2),
+    .clk250             (user_clk),
+    );
+    */
+   pldawrap_pipe #(/*AUTOINSTPARAM*/
+		   // Parameters
+		   .BFM_ID		(BFM_ID),
+		   .BFM_TYPE		(BFM_TYPE),
+		   .BFM_LANES		(BFM_LANES),
+		   .BFM_WIDTH		(BFM_WIDTH),
+		   .IO_SIZE		(IO_SIZE),
+		   .MEM32_SIZE		(MEM32_SIZE),
+		   .MEM64_SIZE		(MEM64_SIZE))
+   pldawrap_pipe  (/*AUTOINST*/
+		   // Outputs
+		   .phy_status		(phy_status),
+		   .rx_elecidle		(pipe_rx_elec_idle[7:0]), // Templated
+		   .rx_valid		(pipe_rx_valid[7:0]),	 // Templated
+		   .rx_data0		({pipe_rx0_data[7:0],    pipe_rx0_data[15:8]}), // Templated
+		   .rx_datak0		({pipe_rx0_char_is_k[0], pipe_rx0_char_is_k[1]}), // Templated
+		   .rx_status0		(),			 // Templated
+		   .rx_data1		({pipe_rx1_data[7:0],    pipe_rx1_data[15:8]}), // Templated
+		   .rx_datak1		({pipe_rx1_char_is_k[0], pipe_rx1_char_is_k[1]}), // Templated
+		   .rx_status1		(),			 // Templated
+		   .rx_data2		({pipe_rx2_data[7:0],    pipe_rx2_data[15:8]}), // Templated
+		   .rx_datak2		({pipe_rx2_char_is_k[0], pipe_rx2_char_is_k[1]}), // Templated
+		   .rx_status2		(),			 // Templated
+		   .rx_data3		({pipe_rx3_data[7:0],    pipe_rx3_data[15:8]}), // Templated
+		   .rx_datak3		({pipe_rx3_char_is_k[0], pipe_rx3_char_is_k[1]}), // Templated
+		   .rx_status3		(),			 // Templated
+		   .rx_data4		({pipe_rx4_data[7:0],    pipe_rx4_data[15:8]}), // Templated
+		   .rx_datak4		({pipe_rx4_char_is_k[0], pipe_rx4_char_is_k[1]}), // Templated
+		   .rx_status4		(),			 // Templated
+		   .rx_data5		({pipe_rx5_data[7:0],    pipe_rx5_data[15:8]}), // Templated
+		   .rx_datak5		({pipe_rx5_char_is_k[0], pipe_rx5_char_is_k[1]}), // Templated
+		   .rx_status5		(),			 // Templated
+		   .rx_data6		({pipe_rx6_data[7:0],    pipe_rx6_data[15:8]}), // Templated
+		   .rx_datak6		({pipe_rx6_char_is_k[0], pipe_rx6_char_is_k[1]}), // Templated
+		   .rx_status6		(),			 // Templated
+		   .rx_data7		({pipe_rx7_data[7:0],    pipe_rx7_data[15:8]}), // Templated
+		   .rx_datak7		({pipe_rx7_char_is_k[0], pipe_rx7_char_is_k[1]}), // Templated
+		   .rx_status7		(),			 // Templated
+		   .chk_txval		(),			 // Templated
+		   .chk_txdata		(),			 // Templated
+		   .chk_txdatak		(),			 // Templated
+		   .chk_rxval		(),			 // Templated
+		   .chk_rxdata		(),			 // Templated
+		   .chk_rxdatak		(),			 // Templated
+		   .chk_ltssm		(),			 // Templated
+		   // Inputs
+		   .clk62		(),			 // Templated
+		   .clk125		(user_clk2),		 // Templated
+		   .clk250		(user_clk),		 // Templated
+		   .rstn		(sys_rst_n),		 // Templated
+		   .rate		(1'b0),			 // Templated
+		   .tx_detectrx		(1'b0),			 // Templated
+		   .power_down		(2'b0),			 // Templated
+		   .tx_elecidle		(pipe_rx_elec_idle[7:0]), // Templated
+		   .tx_compl		(pipe_tx_compl[7:0]),	 // Templated
+		   .rx_polarity		(pipe_rx_polarity[7:0]), // Templated
+		   .tx_data0		({pipe_tx0_data[7:0],    pipe_tx0_data[15:8]}), // Templated
+		   .tx_datak0		({pipe_tx0_char_is_k[0], pipe_tx0_char_is_k[1]}), // Templated
+		   .tx_data1		({pipe_tx1_data[7:0],    pipe_tx1_data[15:8]}), // Templated
+		   .tx_datak1		({pipe_tx1_char_is_k[0], pipe_tx1_char_is_k[1]}), // Templated
+		   .tx_data2		({pipe_tx2_data[7:0],    pipe_tx2_data[15:8]}), // Templated
+		   .tx_datak2		({pipe_tx2_char_is_k[0], pipe_tx2_char_is_k[1]}), // Templated
+		   .tx_data3		({pipe_tx3_data[7:0],    pipe_tx3_data[15:8]}), // Templated
+		   .tx_datak3		({pipe_tx3_char_is_k[0], pipe_tx3_char_is_k[1]}), // Templated
+		   .tx_data4		({pipe_tx4_data[7:0],    pipe_tx4_data[15:8]}), // Templated
+		   .tx_datak4		({pipe_tx4_char_is_k[0], pipe_tx4_char_is_k[1]}), // Templated
+		   .tx_data5		({pipe_tx5_data[7:0],    pipe_tx5_data[15:8]}), // Templated
+		   .tx_datak5		({pipe_tx5_char_is_k[0], pipe_tx5_char_is_k[1]}), // Templated
+		   .tx_data6		({pipe_tx6_data[7:0],    pipe_tx6_data[15:8]}), // Templated
+		   .tx_datak6		({pipe_tx6_char_is_k[0], pipe_tx6_char_is_k[1]}), // Templated
+		   .tx_data7		({pipe_tx7_data[7:0],    pipe_tx7_data[15:8]}), // Templated
+		   .tx_datak7		({pipe_tx7_char_is_k[0], pipe_tx7_char_is_k[1]})); // Templated
+
+   parameter PCIE_DEVCTRL_REG_ADDR = 8'h88;
+   parameter MAX_PAYLOAD = 256;
+   
+`include "pkg_xbfm_defines.h"
+
+`define BFM pldawrap_pipe
+
+   reg [15:0] csr;
+   reg [32767:0] databuf;
+
+   initial
+     begin
+	// Initialise BFM
+	#1500000
+	  
+	`BFM.xbfm_print_comment ("### Initialise BFM");
+
+	`BFM.xbfm_init (32'h00000000,32'hAAAA0000,64'hBBBBBBBBCCCC0000);
+	`BFM.xbfm_set_requesterid (16'h0008);
+	`BFM.xbfm_set_maxpayload  (MAX_PAYLOAD);
+	
+	 // Wait for link to get initialised then disable PIPE logging
+	`BFM.xbfm_wait_linkup;
+	`BFM.xbfm_configure_log(`XBFM_LOG_NOPIPE);
+	
+     end
 endmodule

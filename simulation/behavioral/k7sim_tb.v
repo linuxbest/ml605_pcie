@@ -260,6 +260,12 @@ module k7sim_tb
 	`BFM.xbfm_configure_log(`XBFM_LOG_NOPIPE);
 	
      end
+`else
+   always @(*)
+    begin
+      PCI_Express_pci_exp_rxn = PCI_Express_pci_exp_txn;
+      PCI_Express_pci_exp_rxp = PCI_Express_pci_exp_txp;
+    end
 `endif
   // END USER CODE (Do not remove this line)
 
