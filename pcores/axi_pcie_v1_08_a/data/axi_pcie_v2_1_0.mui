@@ -1,0 +1,761 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<!--
+###############################################################################
+##
+## (c) Copyright 2011 Xilinx, Inc. All rights reserved.
+##
+## This file contains confidential and proprietary information
+## of Xilinx, Inc. and is protected under U.S. and
+## international copyright and other intellectual property
+## laws.
+##
+## DISCLAIMER
+## This disclaimer is not a license and does not grant any
+## rights to the materials distributed herewith. Except as
+## otherwise provided in a valid license issued to you by
+## Xilinx, and to the maximum extent permitted by applicable
+## law: (1) THESE MATERIALS ARE MADE AVAILABLE "AS IS" AND
+## WITH ALL FAULTS, AND XILINX HEREBY DISCLAIMS ALL WARRANTIES
+## AND CONDITIONS, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING
+## BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, NON-
+## INFRINGEMENT, OR FITNESS FOR ANY PARTICULAR PURPOSE; and
+## (2) Xilinx shall not be liable (whether in contract or tort,
+## including negligence, or under any other theory of
+## liability) for any loss or damage of any kind or nature
+## related to, arising under or in connection with these
+## materials, including for any direct, or any indirect,
+## special, incidental, or consequential loss or damage
+## (including loss of data, profits, goodwill, or any type of
+## loss or damage suffered as a result of any action brought
+## by a third party) even if such damage or loss was
+## reasonably foreseeable or Xilinx had been advised of the
+## possibility of the same.
+##
+## CRITICAL APPLICATIONS
+## Xilinx products are not designed or intended to be fail-
+## safe, or for use in any application requiring fail-safe
+## performance, such as life-support or safety devices or
+## systems, Class III medical devices, nuclear facilities,
+## applications related to the deployment of airbags, or any
+## other applications that could lead to death, personal
+## injury, or severe property or environmental damage
+## (individually and collectively, "Critical
+## Applications"). Customer assumes the sole risk and
+## liability of any use of Xilinx products in Critical
+## Applications, subject only to applicable laws and
+## regulations governing limitations on product liability.
+##
+## THIS COPYRIGHT NOTICE AND DISCLAIMER MUST BE RETAINED AS
+## PART OF THIS FILE AT ALL TIMES. 
+##
+###############################################################################
+-->
+
+<!DOCTYPE doc SYSTEM "../../ipdialog.dtd" [
+	<!-- -->
+	
+	<!ENTITY C_FAMILY '
+	<widget id="C_FAMILY">
+		<key>C_FAMILY</key>
+		<label>Target FPGA Architecture</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_INSTANCE '
+	<widget id="C_INSTANCE">
+		<key>C_INSTANCE</key>
+		<label>IP Instance Name</label>
+		<tip></tip>
+	</widget>
+	'>
+   <!ENTITY C_EP_LINK_PARTNER_RCB '
+   <widget id="C_EP_LINK_PARTNER_RCB">
+     <key>C_EP_LINK_PARTNER_RCB</key>
+     <label> EP Link Partner RCB setting </label>
+     <tip> Set to "1" for high performance when EP link partner RCB value is 128</tip>
+   </widget>
+   '>
+   <!ENTITY C_S_AXI_ID_WIDTH '
+	<widget id="C_S_AXI_ID_WIDTH">
+		<key>C_S_AXI_ID_WIDTH</key>
+		<label>AXI Slave Port ID Width</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_S_AXI_DATA_WIDTH '
+	<widget id="C_S_AXI_DATA_WIDTH">
+		<key>C_S_AXI_DATA_WIDTH</key>
+		<label>AXI Slave Port Data Width</label>
+		<tip>May only be set to 32-bit for Spartan-6 implementations.  
+		     May only be set to 64-bit for Virtex-6 implementations. 
+		     7-Series may be set to 64-bit or 128-bit implementations.</tip>
+	</widget>
+	'>
+	<!ENTITY C_S_AXI_ADDR_WIDTH '
+	<widget id="C_S_AXI_ADDR_WIDTH">
+		<key>C_S_AXI_ADDR_WIDTH</key>
+		<label>AXI Slave Port Address Width</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_M_AXI_DATA_WIDTH '
+	<widget id="C_M_AXI_DATA_WIDTH">
+		<key>C_M_AXI_DATA_WIDTH</key>
+		<label>AXI Master Port Data Width</label>
+		<tip>May only be set to 32-bit for Spartan-6 implementations.  
+		     May only be set to 64-bit for Virtex-6 implementations. 
+		     7-Series may be set to 64-bit or 128-bit implementations.</tip>
+	</widget>
+	'>
+	<!ENTITY C_M_AXI_ADDR_WIDTH '
+	<widget id="C_M_AXI_ADDR_WIDTH">
+		<key>C_M_AXI_ADDR_WIDTH</key>
+		<label>AXI Master Port Address Width</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_NO_OF_LANES '
+	<widget id="C_NO_OF_LANES">
+		<key>C_NO_OF_LANES</key>
+		<label>Select the Lane Width for the PCIe</label>
+		<tip>Spartan-6 allows x1 lane width. 
+		     Virtex-6 allows x1/x2/x4 lane width.
+		     7-Series allows x1/x2/x4/x8 lane width.</tip>
+	</widget>
+	'>
+	<!ENTITY C_MAX_LINK_SPEED '
+	<widget id="C_MAX_LINK_SPEED">
+		<key>C_MAX_LINK_SPEED</key>
+		<label>Select for 5.0 GT/s PCIe Link Speed</label>
+		<tip>Deselect for 2.5 GT/s (Spartan-6, Virtex-6, or 7-Series). 
+		     Enable for 5.0 GT/s (Virtex-6 or 7-Series ONLY)</tip>
+	</widget>
+	'>
+	<!ENTITY C_REF_CLK_FREQ '
+	<widget id="C_REF_CLK_FREQ">
+		<key>C_REF_CLK_FREQ</key>
+		<label>Clock Frequency of REFCLK Input</label>
+		<tip>Select 0 for 100 MHz, 1 for 125 MHz, or 2 for 250 MHz (Virtex-6 and 7-Series ONLY)</tip>
+		<unit>Hz</unit>
+	</widget>
+	'>
+	<!ENTITY C_PCIE_USE_MODE '
+	<widget id="C_PCIE_USE_MODE">
+		<key>C_PCIE_USE_MODE</key>
+		<label>Used to specify the 7-Series silicon version for accurate GT settings</label>
+		<tip>Set to "1.0" for K325T Initial ES parts.  
+		     Set to "1.1" for V485T Initial ES parts.  
+		     Set to "3.0" for 7-Series General ES parts.</tip>
+	</widget>
+	'>
+	<!ENTITY C_DEVICE_ID '
+	<widget id="C_DEVICE_ID">
+		<key>C_DEVICE_ID</key>
+		<label>PCIe Device ID</label>
+		<tip>Range 0000...FFFF</tip>
+	</widget>
+	'>
+	<!ENTITY C_VENDOR_ID '
+	<widget id="C_VENDOR_ID">
+		<key>C_VENDOR_ID</key>
+		<label>PCIe Vendor ID</label>
+		<tip>Range 0000...FFFF</tip>
+	</widget>
+	'>
+	<!ENTITY C_CLASS_CODE '
+	<widget id="C_CLASS_CODE">
+		<key>C_CLASS_CODE</key>
+		<label>PCIe Class Code</label>
+		<tip>Range 000000...FFFFFF</tip>
+	</widget>
+	'>
+	<!ENTITY C_REV_ID '
+	<widget id="C_REV_ID">
+		<key>C_REV_ID</key>
+		<label>PCIe Revision ID</label>
+		<tip>Range 00...FF</tip>
+	</widget>
+	'>
+	<!ENTITY C_SUBSYSTEM_ID '
+	<widget id="C_SUBSYSTEM_ID">
+		<key>C_SUBSYSTEM_ID</key>
+		<label>PCIe Subsystem ID</label>
+		<tip>Range 0000...FFFF</tip>
+	</widget>
+	'>
+	<!ENTITY C_SUBSYSTEM_VENDOR_ID '
+	<widget id="C_SUBSYSTEM_VENDOR_ID">
+		<key>C_SUBSYSTEM_VENDOR_ID</key>
+		<label>PCIe Subsystem Vendor ID</label>
+		<tip>Range 0000...FFFF</tip>
+	</widget>
+	'>
+	<!ENTITY C_PCIE_CAP_SLOT_IMPLEMENTED '
+	<widget id="C_PCIE_CAP_SLOT_IMPLEMENTED">
+		<key>C_PCIE_CAP_SLOT_IMPLEMENTED</key>
+		<label>Select to enable the PCIe Capabilities Register Slot Implemented </label>
+		<tip>May only be selected when the IP is configured for Root Complex</tip>
+	</widget>
+	'>
+	<!ENTITY C_INTERRUPT_PIN '
+	<widget id="C_INTERRUPT_PIN">
+		<key>C_INTERRUPT_PIN</key>
+		<label>Enable for Legacy Interrupt Pin Usage</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_COMP_TIMEOUT '
+	<widget id="C_COMP_TIMEOUT">
+		<key>C_COMP_TIMEOUT</key>
+		<label>Select a 50ms Slave Bridge Completion Timeout Value</label>
+		<tip>Timeout counter set to 50us (deselect this parameter) or as 50ms (select this parameter)</tip>
+	</widget>
+	'>
+	<!ENTITY C_INCLUDE_RC '
+	<widget id="C_INCLUDE_RC">
+		<key>C_INCLUDE_RC</key>
+		<label>Select to Configure the Bridge as Root Complex</label>
+		<tip>The PCIe integrated block can be configured as an Endpoint device 
+		     (deselect this parameter) or as a 
+		     Root Port of a PCIe Root Complex (select this parameter)</tip>
+	</widget>
+	'>
+	<!ENTITY C_S_AXI_SUPPORTS_NARROW_BURST '
+	<widget id="C_S_AXI_SUPPORTS_NARROW_BURST">
+		<key>C_S_AXI_SUPPORTS_NARROW_BURST</key>
+		<label>Enable the PCIe Bridge to Support AXI Narrow Burst Transactions</label>
+		<tip>Select to support narrow burst transactions. 
+		     Deselect to optimize the IP when no AXI masters drive narrow burst transfers</tip>
+	</widget>
+	'>
+	<!ENTITY C_INCLUDE_BAROFFSET_REG '
+	<widget id="C_INCLUDE_BAROFFSET_REG">
+		<key>C_INCLUDE_BAROFFSET_REG</key>
+		<label>Enable the Registers for High-Order Address Translation on the Slave Bridge</label>
+		<tip>Select to include the registers in the AXI PCIe IP.
+		     Deselect to configure the high order address translation via parameter settings</tip>
+	</widget>
+	'>
+	<!ENTITY C_NUM_MSI_REQ '
+	<widget id="C_NUM_MSI_REQ">
+		<key>C_NUM_MSI_REQ</key>
+		<label>Number of MSI vectors requested</label>
+		<tip>Set for the number of MSI vectors to be requested in the system</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_NUM '
+	<widget id="C_AXIBAR_NUM">
+		<key>C_AXIBAR_NUM</key>
+		<label>Number of AXI Address Apertures (AXI BARs)</label>
+		<tip>Allowable setting from 1 to 6</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_0 '
+	<widget id="C_AXIBAR_0">
+		<key>C_AXIBAR_0</key>
+		<label>AXI BAR 0 Aperture Base Address</label>
+		<tip>Only valid when C_AXIBAR_NUM >= 1.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_1 '
+	<widget id="C_AXIBAR_1">
+		<key>C_AXIBAR_1</key>
+		<label>AXI BAR 1 Aperture Base Address</label>
+		<tip>Only valid when C_AXIBAR_NUM >= 2.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_2 '
+	<widget id="C_AXIBAR_2">
+		<key>C_AXIBAR_2</key>
+		<label>AXI BAR 2 Aperture Base Address</label>
+		<tip>Only valid when C_AXIBAR_NUM >= 3.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_3 '
+	<widget id="C_AXIBAR_3">
+		<key>C_AXIBAR_3</key>
+		<label>AXI BAR 3 Aperture Base Address</label>
+		<tip>Only valid when C_AXIBAR_NUM >= 4.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_4 '
+	<widget id="C_AXIBAR_4">
+		<key>C_AXIBAR_4</key>
+		<label>AXI BAR 4 Aperture Base Address</label>
+		<tip>Only valid when C_AXIBAR_NUM >= 5.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_5 '
+	<widget id="C_AXIBAR_5">
+		<key>C_AXIBAR_5</key>
+		<label>AXI BAR 5 Aperture Base Address</label>
+		<tip>Only valid when C_AXIBAR_NUM = 6.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_HIGHADDR_0 '
+	<widget id="C_AXIBAR_HIGHADDR_0">
+		<key>C_AXIBAR_HIGHADDR_0</key>
+		<label>AXI BAR 0 Aperture High Address</label>
+		<tip>Only valid when C_AXIBAR_NUM >= 1.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_HIGHADDR_1 '
+	<widget id="C_AXIBAR_HIGHADDR_1">
+		<key>C_AXIBAR_HIGHADDR_1</key>
+		<label>AXI BAR 1 Aperture High Address</label>
+		<tip>Only valid when C_AXIBAR_NUM >= 2.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_HIGHADDR_2 '
+	<widget id="C_AXIBAR_HIGHADDR_2">
+		<key>C_AXIBAR_HIGHADDR_2</key>
+		<label>AXI BAR 2 Aperture High Address</label>
+		<tip>Only valid when C_AXIBAR_NUM >= 3.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_HIGHADDR_3 '
+	<widget id="C_AXIBAR_HIGHADDR_3">
+		<key>C_AXIBAR_HIGHADDR_3</key>
+		<label>AXI BAR 3 Aperture High Address</label>
+		<tip>Only valid when C_AXIBAR_NUM >= 4.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_HIGHADDR_4 '
+	<widget id="C_AXIBAR_HIGHADDR_4">
+		<key>C_AXIBAR_HIGHADDR_4</key>
+		<label>AXI BAR 4 Aperture High Address</label>
+		<tip>Only valid when C_AXIBAR_NUM >= 5.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_HIGHADDR_5 '
+	<widget id="C_AXIBAR_HIGHADDR_5">
+		<key>C_AXIBAR_HIGHADDR_5</key>
+		<label>AXI BAR 5 Aperture High Address</label>
+		<tip>Only valid when C_AXIBAR_NUM = 6.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_AS_0 '
+	<widget id="C_AXIBAR_AS_0">
+		<key>C_AXIBAR_AS_0</key>
+		<label>Select for 64-bit AXI BAR 0 Address Size</label>
+		<tip>Deselect for 32-bit AXI BAR address size.
+		     Select for 64-bit AXI BAR address size. Only valid when C_AXIBAR_NUM >= 1.</tip>
+    		<isvalid></isvalid>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_AS_1 '
+	<widget id="C_AXIBAR_AS_1">
+		<key>C_AXIBAR_AS_1</key>
+		<label>Select for 64-bit AXI BAR 1 Address Size</label>
+		<tip>Deselect for 32-bit AXI BAR address size.
+		     Select for 64-bit AXI BAR address size. Only valid when C_AXIBAR_NUM >= 2.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_AS_2 '
+	<widget id="C_AXIBAR_AS_2">
+		<key>C_AXIBAR_AS_2</key>
+		<label>Select for 64-bit AXI BAR 2 Address Size</label>
+		<tip>Deselect for 32-bit AXI BAR address size.
+		     Select for 64-bit AXI BAR address size. Only valid when C_AXIBAR_NUM >= 3.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_AS_3 '
+	<widget id="C_AXIBAR_AS_3">
+		<key>C_AXIBAR_AS_3</key>
+		<label>Select for 64-bit AXI BAR 3 Address Size</label>
+		<tip>Deselect for 32-bit AXI BAR address size.
+		     Select for 64-bit AXI BAR address size. Only valid when C_AXIBAR_NUM >= 4.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_AS_4 '
+	<widget id="C_AXIBAR_AS_4">
+		<key>C_AXIBAR_AS_4</key>
+		<label>Select for 64-bit AXI BAR 4 Address Size</label>
+		<tip>Deselect for 32-bit AXI BAR address size.
+		     Select for 64-bit AXI BAR address size. Only valid when C_AXIBAR_NUM >= 5.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR_AS_5 '
+	<widget id="C_AXIBAR_AS_5">
+		<key>C_AXIBAR_AS_5</key>
+		<label>Select for 64-bit AXI BAR 5 Address Size</label>
+		<tip>Deselect for 32-bit AXI BAR address size.
+		     Select for 64-bit AXI BAR address size. Only valid when C_AXIBAR_NUM >= 6.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR2PCIEBAR_0 '
+	<widget id="C_AXIBAR2PCIEBAR_0">
+		<key>C_AXIBAR2PCIEBAR_0</key>
+		<label>PCIe BAR 0 Mapped from AXI BAR 0</label>
+		<tip>Only valid when C_AXIBAR_NUM >= 1.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR2PCIEBAR_1 '
+	<widget id="C_AXIBAR2PCIEBAR_1">
+		<key>C_AXIBAR2PCIEBAR_1</key>
+		<label>PCIe BAR 1 Mapped from AXI BAR 1</label>
+		<tip>Only valid when C_AXIBAR_NUM >= 2.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR2PCIEBAR_2 '
+	<widget id="C_AXIBAR2PCIEBAR_2">
+		<key>C_AXIBAR2PCIEBAR_2</key>
+		<label>PCIe BAR 2 Mapped from AXI BAR 2</label>
+		<tip>Only valid when C_AXIBAR_NUM >= 3.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR2PCIEBAR_3 '
+	<widget id="C_AXIBAR2PCIEBAR_3">
+		<key>C_AXIBAR2PCIEBAR_3</key>
+		<label>PCIe BAR 3 Mapped from AXI BAR 3</label>
+		<tip>Only valid when C_AXIBAR_NUM >= 4.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR2PCIEBAR_4 '
+	<widget id="C_AXIBAR2PCIEBAR_4">
+		<key>C_AXIBAR2PCIEBAR_4</key>
+		<label>PCIe BAR 4 Mapped from AXI BAR 4</label>
+		<tip>Only valid when C_AXIBAR_NUM >= 5.</tip>
+	</widget>
+	'>
+	<!ENTITY C_AXIBAR2PCIEBAR_5 '
+	<widget id="C_AXIBAR2PCIEBAR_5">
+		<key>C_AXIBAR2PCIEBAR_5</key>
+		<label>PCIe BAR 5 Mapped from AXI BAR 5</label>
+		<tip>Only valid when C_AXIBAR_NUM = 6.</tip>
+	</widget>
+	'>
+	<!ENTITY C_PCIEBAR_NUM '
+	<widget id="C_PCIEBAR_NUM">
+		<key>C_PCIEBAR_NUM</key>
+		<label>Number of Accessible PCIe Apertures</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_PCIEBAR_AS '
+	<widget id="C_PCIEBAR_AS">
+		<key>C_PCIEBAR_AS</key>
+		<label>Select to configure PCIe BAR Aperture Width to 64-bit.
+		       Deselect for 32-bit address width</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_PCIEBAR_LEN_0 '
+	<widget id="C_PCIEBAR_LEN_0">
+		<key>C_PCIEBAR_LEN_0</key>
+		<label>Size of PCIe BAR 0 space (Power of 2)</label>
+		<tip>Only valid when number of PCIe BARs >= 1</tip>
+	</widget>
+	'>
+	<!ENTITY C_PCIEBAR_LEN_1 '
+	<widget id="C_PCIEBAR_LEN_1">
+		<key>C_PCIEBAR_LEN_1</key>
+		<label>Size of PCIe BAR 1 space (Power of 2)</label>
+		<tip>Only valid when number of PCIe BARs >= 2</tip>
+	</widget>
+	'>
+	<!ENTITY C_PCIEBAR_LEN_2 '
+	<widget id="C_PCIEBAR_LEN_2">
+		<key>C_PCIEBAR_LEN_2</key>
+		<label>Size of PCIe BAR 2 space (Power of 2)</label>
+		<tip>Only valid when number of PCIe BARs >= 3</tip>
+	</widget>
+	'>	
+	<!ENTITY C_PCIEBAR2AXIBAR_0 '
+	<widget id="C_PCIEBAR2AXIBAR_0">
+		<key>C_PCIEBAR2AXIBAR_0</key>
+		<label>AXI BAR 0 Mapped from PCIe BAR 0</label>
+		<tip>Only valid when number of PCIe BARs >= 1</tip>
+	</widget>
+	'>
+	<!ENTITY C_PCIEBAR2AXIBAR_1 '
+	<widget id="C_PCIEBAR2AXIBAR_1">
+		<key>C_PCIEBAR2AXIBAR_1</key>
+		<label>AXI BAR 1 Mapped from PCIe BAR 1</label>
+		<tip>Only valid when number of PCIe BARs >= 2</tip>
+	</widget>
+	'>
+	<!ENTITY C_PCIEBAR2AXIBAR_2 '
+	<widget id="C_PCIEBAR2AXIBAR_2">
+		<key>C_PCIEBAR2AXIBAR_2</key>
+		<label>AXI BAR 2 Mapped from PCIe BAR 2</label>
+		<tip>Only valid when number of PCIe BARs >= 3</tip>
+	</widget>
+	'>
+	<!ENTITY C_PCIEBAR2AXIBAR_0_SEC '
+	<widget id="C_PCIEBAR2AXIBAR_0_SEC">
+		<key>C_PCIEBAR2AXIBAR_0_SEC</key>
+		<label>AXI BAR 0 Secure Setting</label>
+		<tip>Set to "1" for secure AXI BAR setting</tip>
+	</widget>
+	'>
+	<!ENTITY C_PCIEBAR2AXIBAR_1_SEC '
+	<widget id="C_PCIEBAR2AXIBAR_1_SEC">
+		<key>C_PCIEBAR2AXIBAR_1_SEC</key>
+		<label>AXI BAR 1 Secure Setting</label>
+		<tip>Set to "1" for secure AXI BAR setting</tip>
+	</widget>
+	'>
+	<!ENTITY C_PCIEBAR2AXIBAR_2_SEC '
+	<widget id="C_PCIEBAR2AXIBAR_2_SEC">
+		<key>C_PCIEBAR2AXIBAR_2_SEC</key>
+		<label>AXI BAR 2 Secure Setting</label>
+		<tip>Set to "1" for secure AXI BAR setting</tip>
+	</widget>
+	'>
+	<!ENTITY C_BASEADDR '
+	<widget id="C_BASEADDR">
+		<key>C_BASEADDR</key>
+		<label>Device AXI Base Address</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_HIGHADDR '
+	<widget id="C_HIGHADDR">
+		<key>C_HIGHADDR</key>
+		<label>Device AXI High Address</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_S_AXI_CTL_ACLK_FREQ_HZ '
+	<widget id="C_S_AXI_CTL_ACLK_FREQ_HZ">
+		<key>C_S_AXI_CTL_ACLK_FREQ_HZ</key>
+		<label>AXI-Lite Clock Frequency (Hz)</label>
+		<tip></tip>
+		<unit>Hz</unit>
+	</widget>
+	'>
+	<!ENTITY C_S_AXI_CTL_PROTOCOL '
+	<widget id="C_S_AXI_CTL_PROTOCOL">
+		<key>C_S_AXI_CTL_PROTOCOL</key>
+		<label>AXI-Lite Protocol (AXI4LITE is the only allowable value)</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_AXI_ACLK_FREQ_HZ '
+	<widget id="C_AXI_ACLK_FREQ_HZ">
+		<key>C_AXI_ACLK_FREQ_HZ</key>
+		<label>AXI Clock Frequency (Hz)</label>
+		<tip></tip>
+		<unit>Hz</unit>
+	</widget>
+	'>
+	<!ENTITY C_M_AXI_PROTOCOL '
+	<widget id="C_M_AXI_PROTOCOL">
+		<key>C_M_AXI_PROTOCOL</key>
+		<label>AXI Master Bridge Protocol (AXI4 is the only allowable value)</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_M_AXI_SUPPORT_THREADS '
+	<widget id="C_M_AXI_SUPPORT_THREADS">
+		<key>C_M_AXI_SUPPORT_THREADS</key>
+		<label>AXI Master Bridge Supports Threads (Constant)</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_M_AXI_SUPPORTS_READ '
+	<widget id="C_M_AXI_SUPPORTS_READ">
+		<key>C_M_AXI_SUPPORTS_READ</key>
+		<label>AXI Master Bridge Supports Reads (Constant)</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_M_AXI_SUPPORTS_WRITE '
+	<widget id="C_M_AXI_SUPPORTS_WRITE">
+		<key>C_M_AXI_SUPPORTS_WRITE</key>
+		<label>AXI Master Bridge Supports Writes (Constant)</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_S_AXI_PROTOCOL '
+	<widget id="C_S_AXI_PROTOCOL">
+		<key>C_S_AXI_PROTOCOL</key>
+		<label>AXI Slave Bridge Protocol (AXI4 is the only allowable value)</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_S_AXI_SUPPORT_THREADS '
+	<widget id="C_S_AXI_SUPPORT_THREADS">
+		<key>C_S_AXI_SUPPORT_THREADS</key>
+		<label>AXI Slave Bridge Supports Threads (Constant)</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_S_AXI_SUPPORTS_READ '
+	<widget id="C_S_AXI_SUPPORTS_READ">
+		<key>C_S_AXI_SUPPORTS_READ</key>
+		<label>AXI Slave Bridge Supports Reads (Constant)</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_S_AXI_SUPPORTS_WRITE '
+	<widget id="C_S_AXI_SUPPORTS_WRITE">
+		<key>C_S_AXI_SUPPORTS_WRITE</key>
+		<label>AXI Slave Bridge Supports Writes (Constant)</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_INTERCONNECT_S_AXI_WRITE_ACCEPTANCE '
+	<widget id="C_INTERCONNECT_S_AXI_WRITE_ACCEPTANCE">
+		<key>C_INTERCONNECT_S_AXI_WRITE_ACCEPTANCE</key>
+		<label>AXI Slave Bridge (Interconnect) Write Acceptance</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_INTERCONNECT_S_AXI_READ_ACCEPTANCE '
+	<widget id="C_INTERCONNECT_S_AXI_READ_ACCEPTANCE">
+		<key>C_INTERCONNECT_S_AXI_READ_ACCEPTANCE</key>
+		<label>AXI Slave Bridge (Interconnect) Read Acceptance</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_INTERCONNECT_M_AXI_WRITE_ISSUING '
+	<widget id="C_INTERCONNECT_M_AXI_WRITE_ISSUING">
+		<key>C_INTERCONNECT_M_AXI_WRITE_ISSUING</key>
+		<label>AXI Master Bridge (Interconnect) Write Issuing</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_INTERCONNECT_M_AXI_READ_ISSUING '
+	<widget id="C_INTERCONNECT_M_AXI_READ_ISSUING">
+		<key>C_INTERCONNECT_M_AXI_READ_ISSUING</key>
+		<label>AXI Master Bridge (Interconnect) Read Issuing</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_INTERCONNECT_S_AXI_IS_ACLK_ASYNC '
+	<widget id="C_INTERCONNECT_S_AXI_IS_ACLK_ASYNC">
+		<key>C_INTERCONNECT_S_AXI_IS_ACLK_ASYNC</key>
+		<label>AXI Slave Bridge (Interconnect) Asynchronous Clock</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_INTERCONNECT_M_AXI_IS_ACLK_ASYNC '
+	<widget id="C_INTERCONNECT_M_AXI_IS_ACLK_ASYNC">
+		<key>C_INTERCONNECT_M_AXI_IS_ACLK_ASYNC</key>
+		<label>AXI Master Bridge (Interconnect) Asynchronous Clock</label>
+		<tip></tip>
+	</widget>
+	'>
+	<!ENTITY C_INTERCONNECT_S_AXI_CTL_IS_ACLK_ASYNC '
+	<widget id="C_INTERCONNECT_S_AXI_CTL_IS_ACLK_ASYNC">
+		<key>C_INTERCONNECT_S_AXI_CTL_IS_ACLK_ASYNC</key>
+		<label>AXI-Lite Slave Bridge (Interconnect) Asynchronous Clock</label>
+		<tip></tip>
+	</widget>
+	'>
+]>
+
+<doc>
+	<view id="User">
+		<display>User</display>
+		<group id="Common">
+			<display>Common Parameter Settings</display>	
+			<item>&C_NO_OF_LANES;</item>
+			<item>&C_MAX_LINK_SPEED;</item>			
+			<item>&C_INCLUDE_RC;</item>			
+			<item>&C_COMP_TIMEOUT;</item>
+			<item>&C_REF_CLK_FREQ;</item>			
+			<item>&C_PCIE_CAP_SLOT_IMPLEMENTED;</item>
+			<item>&C_INTERRUPT_PIN;</item>
+			<item>&C_INCLUDE_BAROFFSET_REG;</item>
+			<item>&C_NUM_MSI_REQ;</item>
+		</group>
+		<group id="Block">
+			<display>PCIe Block Settings</display>	
+			<item>&C_CLASS_CODE;</item>
+			<item>&C_VENDOR_ID;</item>	
+			<item>&C_DEVICE_ID;</item>
+			<item>&C_REV_ID;</item>
+			<item>&C_SUBSYSTEM_ID;</item>
+			<item>&C_SUBSYSTEM_VENDOR_ID;</item>
+			<item>&C_PCIE_USE_MODE;</item>			
+		</group>
+		<group id="AXI-BAR">
+			<display>AXI BAR</display>	
+			<item>&C_AXIBAR_NUM;</item>
+			<item>&C_AXIBAR_AS_0;</item>
+			<item>&C_AXIBAR_AS_1;</item>
+			<item>&C_AXIBAR_AS_2;</item>
+			<item>&C_AXIBAR_AS_3;</item>
+			<item>&C_AXIBAR_AS_4;</item>
+			<item>&C_AXIBAR_AS_5;</item>
+			<item>&C_AXIBAR_0;</item>
+			<item>&C_AXIBAR_HIGHADDR_0;</item>
+			<item>&C_AXIBAR_1;</item>
+			<item>&C_AXIBAR_HIGHADDR_1;</item>
+			<item>&C_AXIBAR_2;</item>
+			<item>&C_AXIBAR_HIGHADDR_2;</item>
+			<item>&C_AXIBAR_3;</item>
+			<item>&C_AXIBAR_HIGHADDR_3;</item>
+			<item>&C_AXIBAR_4;</item>
+			<item>&C_AXIBAR_HIGHADDR_4;</item>
+			<item>&C_AXIBAR_5;</item>
+			<item>&C_AXIBAR_HIGHADDR_5;</item>
+			<item>&C_AXIBAR2PCIEBAR_0;</item>
+			<item>&C_AXIBAR2PCIEBAR_1;</item>
+			<item>&C_AXIBAR2PCIEBAR_2;</item>
+			<item>&C_AXIBAR2PCIEBAR_3;</item>
+			<item>&C_AXIBAR2PCIEBAR_4;</item>
+			<item>&C_AXIBAR2PCIEBAR_5;</item>
+		</group>
+		<group id="PCIe-BAR">
+			<display>PCIEBAR</display>	
+			<item>&C_PCIEBAR_NUM;</item>
+			<item>&C_PCIEBAR_AS;</item>
+			<item>&C_PCIEBAR_LEN_0;</item>
+			<item>&C_PCIEBAR_LEN_1;</item>
+			<item>&C_PCIEBAR_LEN_2;</item>
+			<item>&C_PCIEBAR2AXIBAR_0;</item>
+			<item>&C_PCIEBAR2AXIBAR_1;</item>
+			<item>&C_PCIEBAR2AXIBAR_2;</item>			
+		</group>	
+	</view>
+        <view id="System">
+                <display>System</display>
+                <group id="Addresses">
+                        <display>Addresses</display>
+                        <item>&C_BASEADDR;</item>
+                        <item>&C_HIGHADDR;</item>
+                </group>
+		<group id="AXI-Lite">
+			<display>AXI-Lite</display>			
+			<item>&C_S_AXI_CTL_PROTOCOL;</item>
+			<item>&C_S_AXI_CTL_ACLK_FREQ_HZ;</item>
+                </group>
+		<group id="AXI">
+			<display>AXI</display>			
+			<item>&C_AXI_ACLK_FREQ_HZ;</item>
+			<item>&C_S_AXI_PROTOCOL;</item>
+			<item>&C_S_AXI_ID_WIDTH;</item>
+			<item>&C_S_AXI_DATA_WIDTH;</item>
+			<item>&C_S_AXI_ADDR_WIDTH;</item>
+			<item>&C_S_AXI_SUPPORT_THREADS;</item>
+			<item>&C_S_AXI_SUPPORTS_READ;</item>
+			<item>&C_S_AXI_SUPPORTS_WRITE;</item>
+			<item>&C_S_AXI_SUPPORTS_NARROW_BURST;</item>
+			<item>&C_M_AXI_PROTOCOL;</item>
+			<item>&C_M_AXI_DATA_WIDTH;</item>
+			<item>&C_M_AXI_ADDR_WIDTH;</item>
+			<item>&C_M_AXI_SUPPORT_THREADS;</item>
+			<item>&C_M_AXI_SUPPORTS_READ;</item>
+			<item>&C_M_AXI_SUPPORTS_WRITE;</item>
+                </group>
+		<group id="AXI-Interconnect">
+			<display>AXI Interconnect</display>			
+			<item>&C_INTERCONNECT_S_AXI_WRITE_ACCEPTANCE;</item>
+			<item>&C_INTERCONNECT_S_AXI_READ_ACCEPTANCE;</item>
+			<item>&C_INTERCONNECT_M_AXI_WRITE_ISSUING;</item>
+			<item>&C_INTERCONNECT_M_AXI_READ_ISSUING;</item>
+			<item>&C_INTERCONNECT_S_AXI_IS_ACLK_ASYNC;</item>
+			<item>&C_INTERCONNECT_M_AXI_IS_ACLK_ASYNC;</item>
+			<item>&C_INTERCONNECT_S_AXI_CTL_IS_ACLK_ASYNC;</item>
+		</group>
+		<group id="Hidden">
+			<display>Hidden</display>
+			<item>&C_FAMILY;</item>
+		</group>
+	</view>
+</doc>

@@ -1,0 +1,138 @@
+# Peripheral Analyze Order (.pao) file for the
+# AXI PCIE Version 1.5
+#
+#
+#----- Helper Library Files ---------------------
+#
+lib proc_common_v3_00_a   all
+#
+
+#----- PCIE Library Files ---------------------
+#
+# axi_enhanced_pcie_v1_08_a Library files
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_gtx_rx_valid_filter_v6.v             verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_tgt_link_spd_fix_3429_v6.v      verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_upconfig_fix_3451_v6.v          verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_gtx_drp_chanalign_fix_3752_v6.v      verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_reset_delay_v6.v                verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_pipe_misc_v6.v                  verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_pcie_pipe_misc.v        verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_rx_valid_filter_7x.v verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_pipe_lane_v6.v                  verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_pcie_pipe_lane.v        verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_pipe_v6.v                       verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_pcie_pipe_pipeline.v    verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_pcie_bram_top_7x.v      verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_pipe_clock.v            verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v1_6_pipe_clock_ies.v        verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_pipe_reset.v            verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_gtp_pipe_reset.v        verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_qpll_reset.v            verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_pipe_user.v             verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v1_6_pipe_user_ies.v         verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_pipe_rate.v             verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_gtp_pipe_drp.v         verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_gtp_pipe_rate.v         verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v1_6_pipe_rate_ies.v         verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_pipe_sync.v             verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v1_6_pipe_sync_ies.v         verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_pipe_drp.v              verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_pipe_eq.v               verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v1_6_pipe_eq_ies.v           verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_qpll_drp.v              verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v1_6_qpll_drp_ies.v          verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_qpll_wrapper.v          verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v1_6_qpll_wrapper_ies.v      verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_wrapper.v            verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v1_6_gt_wrapper_ies.v        verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_pipe_wrapper.v          verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v1_6_pipe_wrapper_ies.v      verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_clocking_v6.v                   verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_bram_v6.v                       verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_brams_v6.v                      verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_pcie_bram_7x.v          verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_pcie_brams_7x.v         verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_bram_top_v6.v                   verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_gtx_tx_sync_rate_v6.v                verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_gtx_wrapper_v6.v                     verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_gtx_v6.v                        verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_rxeq_scan.v             verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top.v                verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v1_6_gt_top_ies.v            verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_2_0_v6.v                        verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_bram_s6.v                       verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_brams_s6.v                      verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_bram_top_s6.v                   verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_gtpa1_dual_wrapper.v                 verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_gtpa1_dual_wrapper_tile.v            verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_enhanced_rx_pipeline.v           verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_enhanced_rx_destraddler.v        verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_enhanced_rx_null_gen.v           verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_enhanced_rx_demux.v              verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_enhanced_rx.v                    verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_enhanced_cfg_block_bridge.v      verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_enhanced_cfg_event_handler.v     verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_enhanced_cfg_gen_sink.v          verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_enhanced_cfg_slave.v             verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pselect_f.v                          verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_address_decoder.v                    verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_slave_attachment.v                   verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_lite_ipif.v                      verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_enhanced_cfg.v                   verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_enhanced_tx_pipeline.v           verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_enhanced_tx_port_mux.v           verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_enhanced_tx_arbiter.v            verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_enhanced_tx.v                    verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_enhanced_top.v                   verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_enhanced_top_s6.v                verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_v6_pcie_v2_2.v                       verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_v6_pcie_v2_2_ep.v                    verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_s6_pcie_v2_2.v                       verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_pcie_7x.v               verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2_pcie_top.v              verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_pcie_7x_v2_0_2.v                       verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_pcie_enhanced_core_top.v         verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_enhanced_core_top_wrap.v             verilog
+
+lib axi_pcie_v1_08_a axi_enhanced_pcie.vhd                                 vhdl
+
+#axi_pcie_mm_s_v1_08_a Library files
+#
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_carry_and.v                          verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_carry_latch_and.v                    verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_carry_latch_or.v                     verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_carry_or.v                           verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_comparator.v                         verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_comparator_sel.v                     verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_comparator_sel_static.v              verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_command_fifo.v                       verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axic_register_slice.v                verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_register_slice.v                 verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_a_upsizer.v                          verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_w_upsizer.v                          verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_r_upsizer.v                          verilog
+lib axi_pcie_v1_08_a axi_pcie_v1_08_a_axi_upsizer.v                        verilog
+
+lib axi_pcie_v1_08_a axi_pcie_mm_s_pkg.vhd                                 vhdl
+lib axi_pcie_v1_08_a axi_slave_read.vhd                                    vhdl
+lib axi_pcie_v1_08_a axi_slave_write.vhd                                   vhdl
+lib axi_pcie_v1_08_a slave_read_req_tlp.vhd                                vhdl
+lib axi_pcie_v1_08_a slave_read_cpl_tlp.vhd                                vhdl
+lib axi_pcie_v1_08_a slave_write_req_tlp.vhd                               vhdl
+lib axi_pcie_v1_08_a slave_bridge.vhd                                      vhdl
+lib axi_pcie_v1_08_a axi_s_masterbridge_wr.vhd                             vhdl
+lib axi_pcie_v1_08_a axi_mm_masterbridge_wr.vhd                            vhdl
+lib axi_pcie_v1_08_a axi_mm_s_masterbridge_wr.vhd                          vhdl
+lib axi_pcie_v1_08_a axi_s_masterbridge_rd.vhd                             vhdl
+lib axi_pcie_v1_08_a axi_mm_masterbridge_rd.vhd                            vhdl
+lib axi_pcie_v1_08_a axi_mm_s_masterbridge_rd.vhd                          vhdl
+lib axi_pcie_v1_08_a axi_mm_s_masterbridge.vhd                             vhdl
+lib axi_pcie_v1_08_a register_block.vhd                                    vhdl
+lib axi_pcie_v1_08_a axi_pcie_mm_s.vhd                                     vhdl
+#
+#axi_pcie_v1_08_a Library files
+#
+lib axi_pcie_v1_08_a axi_pcie.vhd                                          vhdl
+    
+#								    
+# --- End of list ---------------------------------
