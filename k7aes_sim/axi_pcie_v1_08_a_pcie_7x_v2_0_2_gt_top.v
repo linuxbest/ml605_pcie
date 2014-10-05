@@ -68,7 +68,7 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
    parameter               PL_FAST_TRAIN = "FALSE",     // Simulation Speedup
    parameter               PCIE_EXT_CLK = "FALSE",      // Use External Clocking
    parameter               PCIE_USE_MODE = "1.0",       // 1.0 = K325T IES, 1.1 = VX485T IES, 3.0 = K325T GES
-   parameter               PCIE_GT_DEVICE = "GTX",      // Select the GT to use (GTP for Artix-7, GTX for K7/V7)
+   parameter                PCIE_GT_DEVICE = "GTX",      // Select the GT to use (GTP for Artix-7, GTX for K7/V7)
    parameter               PCIE_PLL_SEL   = "CPLL",     // Select the PLL (CPLL or QPLL)
    parameter               PCIE_ASYNC_EN  = "FALSE",    // Asynchronous Clocking Enable
    parameter               PCIE_TXBUF_EN  = "FALSE",    // Use the Tansmit Buffer
@@ -77,14 +77,14 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
 (
    //-----------------------------------------------------------------------------------------------------------------//
    // pl ltssm
-   input   [5:0]                pl_ltssm_state         ,
+   input   wire [5:0]                pl_ltssm_state         ,
    // Pipe Per-Link Signals
-   input                        pipe_tx_rcvr_det       ,
-   input                        pipe_tx_reset          ,
-   input                        pipe_tx_rate           ,
-   input                        pipe_tx_deemph         ,
-   input   [2:0]                pipe_tx_margin         ,
-   input                        pipe_tx_swing          ,
+   input   wire                      pipe_tx_rcvr_det       ,
+   input   wire                      pipe_tx_reset          ,
+   input   wire                      pipe_tx_rate           ,
+   input   wire                      pipe_tx_deemph         ,
+   input   wire [2:0]                pipe_tx_margin         ,
+   input   wire                      pipe_tx_swing          ,
 
    //-----------------------------------------------------------------------------------------------------------------//
    // Clock Inputs                                                                                                    //
@@ -104,372 +104,283 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
    output                                     PIPE_GEN3_OUT,
 
    // Pipe Per-Lane Signals - Lane 0
-   output  [ 1:0]               pipe_rx0_char_is_k     ,
-   output  [15:0]               pipe_rx0_data          ,
-   output                       pipe_rx0_valid         ,
-   output                       pipe_rx0_chanisaligned ,
-   output  [ 2:0]               pipe_rx0_status        ,
-   output                       pipe_rx0_phy_status    ,
-   output                       pipe_rx0_elec_idle     ,
-   input                        pipe_rx0_polarity      ,
-   input                        pipe_tx0_compliance    ,
-   input   [ 1:0]               pipe_tx0_char_is_k     ,
-   input   [15:0]               pipe_tx0_data          ,
-   input                        pipe_tx0_elec_idle     ,
-   input   [ 1:0]               pipe_tx0_powerdown     ,
+   output  wire [ 1:0]               pipe_rx0_char_is_k     ,
+   output  wire [15:0]               pipe_rx0_data          ,
+   output  wire                      pipe_rx0_valid         ,
+   output  wire                      pipe_rx0_chanisaligned ,
+   output  wire [ 2:0]               pipe_rx0_status        ,
+   output  wire                      pipe_rx0_phy_status    ,
+   output  wire                      pipe_rx0_elec_idle     ,
+   input   wire                      pipe_rx0_polarity      ,
+   input   wire                      pipe_tx0_compliance    ,
+   input   wire [ 1:0]               pipe_tx0_char_is_k     ,
+   input   wire [15:0]               pipe_tx0_data          ,
+   input   wire                      pipe_tx0_elec_idle     ,
+   input   wire [ 1:0]               pipe_tx0_powerdown     ,
 
    // Pipe Per-Lane Signals - Lane 1
-   output  [ 1:0]               pipe_rx1_char_is_k     ,
-   output  [15:0]               pipe_rx1_data          ,
-   output                       pipe_rx1_valid         ,
-   output                       pipe_rx1_chanisaligned ,
-   output  [ 2:0]               pipe_rx1_status        ,
-   output                       pipe_rx1_phy_status    ,
-   output                       pipe_rx1_elec_idle     ,
-   input                        pipe_rx1_polarity      ,
-   input                        pipe_tx1_compliance    ,
-   input   [ 1:0]               pipe_tx1_char_is_k     ,
-   input   [15:0]               pipe_tx1_data          ,
-   input                        pipe_tx1_elec_idle     ,
-   input   [ 1:0]               pipe_tx1_powerdown     ,
+   output  wire [ 1:0]               pipe_rx1_char_is_k     ,
+   output  wire [15:0]               pipe_rx1_data          ,
+   output  wire                      pipe_rx1_valid         ,
+   output  wire                      pipe_rx1_chanisaligned ,
+   output  wire [ 2:0]               pipe_rx1_status        ,
+   output  wire                      pipe_rx1_phy_status    ,
+   output  wire                      pipe_rx1_elec_idle     ,
+   input   wire                      pipe_rx1_polarity      ,
+   input   wire                      pipe_tx1_compliance    ,
+   input   wire [ 1:0]               pipe_tx1_char_is_k     ,
+   input   wire [15:0]               pipe_tx1_data          ,
+   input   wire                      pipe_tx1_elec_idle     ,
+   input   wire [ 1:0]               pipe_tx1_powerdown     ,
 
    // Pipe Per-Lane Signals - Lane 2
-   output  [ 1:0]               pipe_rx2_char_is_k     ,
-   output  [15:0]               pipe_rx2_data          ,
-   output                       pipe_rx2_valid         ,
-   output                       pipe_rx2_chanisaligned ,
-   output  [ 2:0]               pipe_rx2_status        ,
-   output                       pipe_rx2_phy_status    ,
-   output                       pipe_rx2_elec_idle     ,
-   input                        pipe_rx2_polarity      ,
-   input                        pipe_tx2_compliance    ,
-   input   [ 1:0]               pipe_tx2_char_is_k     ,
-   input   [15:0]               pipe_tx2_data          ,
-   input                        pipe_tx2_elec_idle     ,
-   input   [ 1:0]               pipe_tx2_powerdown     ,
+   output  wire [ 1:0]               pipe_rx2_char_is_k     ,
+   output  wire [15:0]               pipe_rx2_data          ,
+   output  wire                      pipe_rx2_valid         ,
+   output  wire                      pipe_rx2_chanisaligned ,
+   output  wire [ 2:0]               pipe_rx2_status        ,
+   output  wire                      pipe_rx2_phy_status    ,
+   output  wire                      pipe_rx2_elec_idle     ,
+   input   wire                      pipe_rx2_polarity      ,
+   input   wire                      pipe_tx2_compliance    ,
+   input   wire [ 1:0]               pipe_tx2_char_is_k     ,
+   input   wire [15:0]               pipe_tx2_data          ,
+   input   wire                      pipe_tx2_elec_idle     ,
+   input   wire [ 1:0]               pipe_tx2_powerdown     ,
 
    // Pipe Per-Lane Signals - Lane 3
-   output  [ 1:0]               pipe_rx3_char_is_k     ,
-   output  [15:0]               pipe_rx3_data          ,
-   output                       pipe_rx3_valid         ,
-   output                       pipe_rx3_chanisaligned ,
-   output  [ 2:0]               pipe_rx3_status        ,
-   output                       pipe_rx3_phy_status    ,
-   output                       pipe_rx3_elec_idle     ,
-   input                        pipe_rx3_polarity      ,
-   input                        pipe_tx3_compliance    ,
-   input   [ 1:0]               pipe_tx3_char_is_k     ,
-   input   [15:0]               pipe_tx3_data          ,
-   input                        pipe_tx3_elec_idle     ,
-   input   [ 1:0]               pipe_tx3_powerdown     ,
+   output  wire [ 1:0]               pipe_rx3_char_is_k     ,
+   output  wire [15:0]               pipe_rx3_data          ,
+   output  wire                      pipe_rx3_valid         ,
+   output  wire                      pipe_rx3_chanisaligned ,
+   output  wire [ 2:0]               pipe_rx3_status        ,
+   output  wire                      pipe_rx3_phy_status    ,
+   output  wire                      pipe_rx3_elec_idle     ,
+   input   wire                      pipe_rx3_polarity      ,
+   input   wire                      pipe_tx3_compliance    ,
+   input   wire [ 1:0]               pipe_tx3_char_is_k     ,
+   input   wire [15:0]               pipe_tx3_data          ,
+   input   wire                      pipe_tx3_elec_idle     ,
+   input   wire [ 1:0]               pipe_tx3_powerdown     ,
 
    // Pipe Per-Lane Signals - Lane 4
-   output  [ 1:0]               pipe_rx4_char_is_k     ,
-   output  [15:0]               pipe_rx4_data          ,
-   output                       pipe_rx4_valid         ,
-   output                       pipe_rx4_chanisaligned ,
-   output  [ 2:0]               pipe_rx4_status        ,
-   output                       pipe_rx4_phy_status    ,
-   output                       pipe_rx4_elec_idle     ,
-   input                        pipe_rx4_polarity      ,
-   input                        pipe_tx4_compliance    ,
-   input   [ 1:0]               pipe_tx4_char_is_k     ,
-   input   [15:0]               pipe_tx4_data          ,
-   input                        pipe_tx4_elec_idle     ,
-   input   [ 1:0]               pipe_tx4_powerdown     ,
+   output  wire [ 1:0]               pipe_rx4_char_is_k     ,
+   output  wire [15:0]               pipe_rx4_data          ,
+   output  wire                      pipe_rx4_valid         ,
+   output  wire                      pipe_rx4_chanisaligned ,
+   output  wire [ 2:0]               pipe_rx4_status        ,
+   output  wire                      pipe_rx4_phy_status    ,
+   output  wire                      pipe_rx4_elec_idle     ,
+   input   wire                      pipe_rx4_polarity      ,
+   input   wire                      pipe_tx4_compliance    ,
+   input   wire [ 1:0]               pipe_tx4_char_is_k     ,
+   input   wire [15:0]               pipe_tx4_data          ,
+   input   wire                      pipe_tx4_elec_idle     ,
+   input   wire [ 1:0]               pipe_tx4_powerdown     ,
 
    // Pipe Per-Lane Signals - Lane 5
-   output  [ 1:0]               pipe_rx5_char_is_k     ,
-   output  [15:0]               pipe_rx5_data          ,
-   output                       pipe_rx5_valid         ,
-   output                       pipe_rx5_chanisaligned ,
-   output  [ 2:0]               pipe_rx5_status        ,
-   output                       pipe_rx5_phy_status    ,
-   output                       pipe_rx5_elec_idle     ,
-   input                        pipe_rx5_polarity      ,
-   input                        pipe_tx5_compliance    ,
-   input   [ 1:0]               pipe_tx5_char_is_k     ,
-   input   [15:0]               pipe_tx5_data          ,
-   input                        pipe_tx5_elec_idle     ,
-   input   [ 1:0]               pipe_tx5_powerdown     ,
+   output  wire [ 1:0]               pipe_rx5_char_is_k     ,
+   output  wire [15:0]               pipe_rx5_data          ,
+   output  wire                      pipe_rx5_valid         ,
+   output  wire                      pipe_rx5_chanisaligned ,
+   output  wire [ 2:0]               pipe_rx5_status        ,
+   output  wire                      pipe_rx5_phy_status    ,
+   output  wire                      pipe_rx5_elec_idle     ,
+   input   wire                      pipe_rx5_polarity      ,
+   input   wire                      pipe_tx5_compliance    ,
+   input   wire [ 1:0]               pipe_tx5_char_is_k     ,
+   input   wire [15:0]               pipe_tx5_data          ,
+   input   wire                      pipe_tx5_elec_idle     ,
+   input   wire [ 1:0]               pipe_tx5_powerdown     ,
 
    // Pipe Per-Lane Signals - Lane 6
-   output  [ 1:0]               pipe_rx6_char_is_k     ,
-   output  [15:0]               pipe_rx6_data          ,
-   output                       pipe_rx6_valid         ,
-   output                       pipe_rx6_chanisaligned ,
-   output  [ 2:0]               pipe_rx6_status        ,
-   output                       pipe_rx6_phy_status    ,
-   output                       pipe_rx6_elec_idle     ,
-   input                        pipe_rx6_polarity      ,
-   input                        pipe_tx6_compliance    ,
-   input   [ 1:0]               pipe_tx6_char_is_k     ,
-   input   [15:0]               pipe_tx6_data          ,
-   input                        pipe_tx6_elec_idle     ,
-   input   [ 1:0]               pipe_tx6_powerdown     ,
+   output  wire [ 1:0]               pipe_rx6_char_is_k     ,
+   output  wire [15:0]               pipe_rx6_data          ,
+   output  wire                      pipe_rx6_valid         ,
+   output  wire                      pipe_rx6_chanisaligned ,
+   output  wire [ 2:0]               pipe_rx6_status        ,
+   output  wire                      pipe_rx6_phy_status    ,
+   output  wire                      pipe_rx6_elec_idle     ,
+   input   wire                      pipe_rx6_polarity      ,
+   input   wire                      pipe_tx6_compliance    ,
+   input   wire [ 1:0]               pipe_tx6_char_is_k     ,
+   input   wire [15:0]               pipe_tx6_data          ,
+   input   wire                      pipe_tx6_elec_idle     ,
+   input   wire [ 1:0]               pipe_tx6_powerdown     ,
 
    // Pipe Per-Lane Signals - Lane 7
-   output  [ 1:0]               pipe_rx7_char_is_k     ,
-   output  [15:0]               pipe_rx7_data          ,
-   output                       pipe_rx7_valid         ,
-   output                       pipe_rx7_chanisaligned ,
-   output  [ 2:0]               pipe_rx7_status        ,
-   output                       pipe_rx7_phy_status    ,
-   output                       pipe_rx7_elec_idle     ,
-   input                        pipe_rx7_polarity      ,
-   input                        pipe_tx7_compliance    ,
-   input   [ 1:0]               pipe_tx7_char_is_k     ,
-   input   [15:0]               pipe_tx7_data          ,
-   input                        pipe_tx7_elec_idle     ,
-   input   [ 1:0]               pipe_tx7_powerdown     ,
+   output  wire [ 1:0]               pipe_rx7_char_is_k     ,
+   output  wire [15:0]               pipe_rx7_data          ,
+   output  wire                      pipe_rx7_valid         ,
+   output  wire                      pipe_rx7_chanisaligned ,
+   output  wire [ 2:0]               pipe_rx7_status        ,
+   output  wire                      pipe_rx7_phy_status    ,
+   output  wire                      pipe_rx7_elec_idle     ,
+   input   wire                      pipe_rx7_polarity      ,
+   input   wire                      pipe_tx7_compliance    ,
+   input   wire [ 1:0]               pipe_tx7_char_is_k     ,
+   input   wire [15:0]               pipe_tx7_data          ,
+   input   wire                      pipe_tx7_elec_idle     ,
+   input   wire [ 1:0]               pipe_tx7_powerdown     ,
 
    // PCI Express signals
-   output  [ (LINK_CAP_MAX_LINK_WIDTH-1):0] pci_exp_txn            ,
-   output  [ (LINK_CAP_MAX_LINK_WIDTH-1):0] pci_exp_txp            ,
-   input   [ (LINK_CAP_MAX_LINK_WIDTH-1):0] pci_exp_rxn            ,
-   input   [ (LINK_CAP_MAX_LINK_WIDTH-1):0] pci_exp_rxp            ,
+   output  wire [ (LINK_CAP_MAX_LINK_WIDTH-1):0] pci_exp_txn            ,
+   output  wire [ (LINK_CAP_MAX_LINK_WIDTH-1):0] pci_exp_txp            ,
+   input   wire [ (LINK_CAP_MAX_LINK_WIDTH-1):0] pci_exp_rxn            ,
+   input   wire [ (LINK_CAP_MAX_LINK_WIDTH-1):0] pci_exp_rxp            ,
 
    // Non PIPE signals
-   input                        sys_clk                ,
-   input                        sys_rst_n              ,
-   input                        PIPE_MMCM_RST_N        ,
-   output                       pipe_clk               ,
-   output                       user_clk               ,
-   output                       user_clk2              ,
-   output                       clock_locked           ,
+   input   wire                      sys_clk                ,
+   input   wire                      sys_rst_n              ,
+   input   wire                      PIPE_MMCM_RST_N        ,
+   output  wire                      pipe_clk               ,
+   output  wire                      user_clk               ,
+   output  wire                      user_clk2              ,
+   output  wire                      clock_locked           ,
 
-   output                       phy_rdy_n
+   output  wire                      phy_rdy_n
 );
-   parameter                    BFM_ID     = 0;		// 0..3
-   parameter                    BFM_TYPE   = 1'b0;	// 0=>rootport, 1=endpoint
-   parameter                    BFM_LANES  = 8;		// 1=>x1, 4=x4 , 8=x8
-   parameter                    BFM_WIDTH  = 16;	// 8=>8-bit 16=>16-bit 32=>32bit
-   parameter                    IO_SIZE    = 16;
-   parameter                    MEM32_SIZE = 16;
-   parameter                    MEM64_SIZE = 16;
+  localparam                          TCQ  = 100;      // clock to out delay model
 
-   assign pipe_rx7_chanisaligned = 1'b1;
-   assign pipe_rx6_chanisaligned = 1'b1;
-   assign pipe_rx5_chanisaligned = 1'b1;
-   assign pipe_rx4_chanisaligned = 1'b1;
-   assign pipe_rx3_chanisaligned = 1'b1;
-   assign pipe_rx2_chanisaligned = 1'b1;
-   assign pipe_rx1_chanisaligned = 1'b1;
-   assign pipe_rx0_chanisaligned = 1'b1;      
-   
-   reg 				     clk62;
-   reg 				     clk125;
-   reg 				     clk250;
-   wire 			     tx_rate;
+  //---------------------------------------------------- PIPE SIMULATION --------------------------------------------------------------------//
+  localparam      LINK_CAP_MAX_LINK_SPEED = (PL_FAST_TRAIN == "TRUE") ? 2 : 3;
+  localparam      USERCLK2_FREQ   =  (USER_CLK2_DIV2 == "FALSE") ? USER_CLK_FREQ :
+                                                        (USER_CLK_FREQ == 4) ? 3 :
+                                                        (USER_CLK_FREQ == 3) ? 2 :
+                                                       USER_CLK_FREQ;
+   wire pcl_sel_sim;
+   reg [15:0] pipe_cnt1 = 0;
+   reg phy_rdy_ni = 0;
+   //--------------------------------------------------------------------//  
+        pcie_7x_v1_10_pipe_clock #
+        (
+            .PCIE_ASYNC_EN                  (PCIE_ASYNC_EN),        // PCIe async enable
+            .PCIE_TXBUF_EN                  (PCIE_TXBUF_EN),        // PCIe TX buffer enable for Gen1/Gen2 only
+            .PCIE_LANE                      (LINK_CAP_MAX_LINK_WIDTH),            // PCIe number of lanes
+            .PCIE_LINK_SPEED                (LINK_CAP_MAX_LINK_SPEED),      // PCIe link speed
+            .PCIE_REFCLK_FREQ               (REF_CLK_FREQ),     // PCIe reference clock frequency
+            .PCIE_USERCLK1_FREQ             (USER_CLK_FREQ + 1),   // PCIe user clock 1 frequency
+            .PCIE_USERCLK2_FREQ             (USERCLK2_FREQ + 1),   // PCIe user clock 2 frequency
+            .PCIE_DEBUG_MODE                (1'b0)       // PCIe debug mode
+        )
+        pipe_clock_i
+        (
+            //---------- Input -------------------------------------
+            .CLK_CLK                        (sys_clk),
+            .CLK_TXOUTCLK                   (sys_clk),       // Reference clock from lane 0
+            .CLK_RXOUTCLK_IN                ({LINK_CAP_MAX_LINK_WIDTH {1'b0}}),
+            .CLK_RST_N                      (1'b1),
+            .CLK_PCLK_SEL                   ({LINK_CAP_MAX_LINK_WIDTH {pcl_sel_sim}}),
+            .CLK_GEN3                       (1'b0),
 
-   assign pipe_clk     = clk125;
-   assign user_clk     = clk125;
-   assign user_clk2    = clk250;
-   assign clock_locked = 1'b1;
-   assign tx_rate      = 1'b1;
-   
-   // tx_rate 
-   //  0: 2.5Gps, clk125 125Mhz, clk250 250Mhz
-   //  1: 5.0Gps, clk125 250Mhz, clk250 500Mhz
-   initial
-     begin
-	clk125   <= 1'b0;
-	clk250   <= 1'b0;
-	clk62    <= 1'b0;
-     end
-   always
-     begin
-	if (tx_rate)
-	  begin
-	     #1;
-	  end
-	else
-	  begin
-	     #2;
-	  end
-	clk250 <= ~clk250;
-     end // always begin
-   always
-     begin
-	if (tx_rate)
-	  begin
-	     #2;
-	  end
-	else
-	  begin
-	     #4;
-	  end
-	clk125 <= ~clk125;
-     end
-   always
-     begin
-	if (tx_rate)
-	  begin
-	     #2;
-	  end
-	else
-	  begin
-	     #4;
-	  end
-	clk62 <= ~clk62;
-     end
+            //---------- Output ------------------------------------
+            .CLK_PCLK                       (pipe_clk),
+            .CLK_RXUSRCLK                   ( ),
+            .CLK_RXOUTCLK_OUT               (PIPE_RXOUTCLK_OUT),
+            .CLK_DCLK                       ( ),
+            .CLK_USERCLK1                   (user_clk),
+            .CLK_USERCLK2                   (user_clk2),
+            .CLK_MMCM_LOCK                  ( )
+        );
+   //--------------------------------------------------------------------//  
+   always @(posedge pipe_clk)
+   begin
+       if (sys_rst_n == 0) begin
+           pipe_cnt1 <= #TCQ 0;
+       end else begin
+     //--------------------------------------------------------------------//  
+          if (pipe_cnt1 == 8190)
+              pipe_cnt1 <= #TCQ 0;
+          else begin
+             if (pipe_tx_rcvr_det || pipe_cnt1 >= 100) 
+                 pipe_cnt1 <= #TCQ pipe_cnt1 + 1;
+             else
+                 pipe_cnt1 <= #TCQ 0;
+          end
+     //--------------------------------------------------------------------//  
+       end
+   end 
+   //--------------------------------------------------------------------//  
+   assign pipe_rx0_phy_status    =  (((pipe_tx_rate == 1) && (pipe_cnt1 == 4000) && (pl_ltssm_state == 6'b011111)) ? 1 : 
+                                    ((pipe_cnt1 == 1100) ? 1 : ((pipe_cnt1 == 1500) ? 1 : 0))); 
+   assign pipe_rx1_phy_status    =  pipe_rx0_phy_status; 
+   assign pipe_rx2_phy_status    =  pipe_rx0_phy_status; 
+   assign pipe_rx3_phy_status    =  pipe_rx0_phy_status; 
+   assign pipe_rx4_phy_status    =  pipe_rx0_phy_status; 
+   assign pipe_rx5_phy_status    =  pipe_rx0_phy_status; 
+   assign pipe_rx6_phy_status    =  pipe_rx0_phy_status; 
+   assign pipe_rx7_phy_status    =  pipe_rx0_phy_status; 
+   //--------------------------------------------------------------------//  
+   assign pipe_rx0_chanisaligned =  (((sys_rst_n == 1 && pipe_tx_rate == 0 ) ? 1 : (sys_rst_n == 0 && pipe_tx_rate == 0) ? 0 : 
+                                    ((pipe_tx_rate == 1) && (pipe_cnt1 == 3350) && (pl_ltssm_state == 6'b011111)) ? 0 : 
+                                    ((pipe_tx_rate == 1) && (pipe_cnt1 == 4100)  ? 1 : pipe_rx0_chanisaligned ))) ;
+   assign pipe_rx1_chanisaligned = pipe_rx0_chanisaligned; 
+   assign pipe_rx2_chanisaligned = pipe_rx0_chanisaligned; 
+   assign pipe_rx3_chanisaligned = pipe_rx0_chanisaligned; 
+   assign pipe_rx4_chanisaligned = pipe_rx0_chanisaligned; 
+   assign pipe_rx5_chanisaligned = pipe_rx0_chanisaligned; 
+   assign pipe_rx6_chanisaligned = pipe_rx0_chanisaligned; 
+   assign pipe_rx7_chanisaligned = pipe_rx0_chanisaligned;
  
-   wire phy_status;
-   assign phy_status = 1'b0;
-   assign phy_rdy_n  = 1'b0;
+   //--------------------------------------------------------------------------------------------------------------------------------------------------------//  
+   assign pipe_rx0_status        =  ((sys_rst_n == 0) ? 0 :  
+                                    ((pipe_tx_rate == 1) && (pipe_cnt1 == 3400) && (pl_ltssm_state == 6'b011111)) ? 4 : 
+                                    ((pipe_tx_rate == 1) && (pipe_cnt1 == 3450) && (pl_ltssm_state == 6'b011111)) ? 0 : 
+                                    ((pipe_cnt1 == 1100) ? 3 : (pipe_cnt1 == 1101) ? 0 : pipe_rx0_status));  
+   assign pipe_rx1_status        =  pipe_rx0_status;  
+   assign pipe_rx2_status        =  pipe_rx0_status;  
+   assign pipe_rx3_status        =  pipe_rx0_status;  
+   assign pipe_rx4_status        =  pipe_rx0_status;  
+   assign pipe_rx5_status        =  pipe_rx0_status;  
+   assign pipe_rx6_status        =  pipe_rx0_status;  
+   assign pipe_rx7_status        =  pipe_rx0_status;  
+   //--------------------------------------------------------------------//  
+   assign pipe_rx0_valid         =  (((pipe_tx_rate == 1) && (pipe_cnt1 == 3300) && (pl_ltssm_state == 6'b011111)) ? 0 : 
+                                    ((pipe_tx_rate == 1) && (pipe_cnt1 == 4120)  ? 1 :
+                                    ((sys_rst_n == 0 && pipe_tx_rate == 0) ? 0 : ((pipe_rx0_data != 0 && pipe_tx_rate == 0) ? 1 : pipe_rx0_valid))));  
+   assign pipe_rx1_valid         =  pipe_rx0_valid;
+   assign pipe_rx2_valid         =  pipe_rx0_valid;
+   assign pipe_rx3_valid         =  pipe_rx0_valid;
+   assign pipe_rx4_valid         =  pipe_rx0_valid;
+   assign pipe_rx5_valid         =  pipe_rx0_valid;
+   assign pipe_rx6_valid         =  pipe_rx0_valid;
+   assign pipe_rx7_valid         =  pipe_rx0_valid;
+   //--------------------------------------------------------------------//  
+   assign pipe_rx0_elec_idle     =  0;
+   assign pipe_rx1_elec_idle     =  0;
+   assign pipe_rx2_elec_idle     =  0;
+   assign pipe_rx3_elec_idle     =  0;
+   assign pipe_rx4_elec_idle     =  0;
+   assign pipe_rx5_elec_idle     =  0;
+   assign pipe_rx6_elec_idle     =  0;
+   assign pipe_rx7_elec_idle     =  0;
+   //--------------------------------------------------------------------//  
+   assign phy_rdy_n = phy_rdy_ni;
+   //--------------------------------------------------------------------//  
+   assign pcl_sel_sim            =  ((sys_rst_n == 0 && pipe_tx_rate == 0) ? 0 : ((pipe_tx_rate == 1) && (pipe_cnt1 == 3500)) ? 1 : pcl_sel_sim);
+   //--------------------------------------------------------------------// 
+   initial begin
+   phy_rdy_ni =  1'b1;
+   #20000; 
+   phy_rdy_ni =  1'b0;
+   end
+   //--------------------------------------------------------------------// 
 
-   wire [7:0] pipe_tx_elec_idle;
-   wire [7:0] pipe_tx_compl;
-   wire [7:0] pipe_rx_polarity;
-   wire [7:0] pipe_rx_elec_idle;
-   wire [7:0] pipe_rx_valid;
-   
-   assign pipe_tx_elec_idle = {pipe_tx7_elec_idle,
-			       pipe_tx6_elec_idle,
-			       pipe_tx5_elec_idle,
-			       pipe_tx4_elec_idle,
-			       pipe_tx3_elec_idle,
-			       pipe_tx2_elec_idle,
-			       pipe_tx1_elec_idle,
-			       pipe_tx0_elec_idle};
-   assign pipe_tx_compl     = {pipe_tx7_compliance,
-			       pipe_tx6_compliance,
-			       pipe_tx5_compliance,
-			       pipe_tx4_compliance,
-			       pipe_tx3_compliance,
-			       pipe_tx2_compliance,
-			       pipe_tx1_compliance,
-			       pipe_tx0_compliance};
-   assign pipe_rx_polarity  = {pipe_rx7_polarity,
-			       pipe_rx6_polarity,
-			       pipe_rx5_polarity,
-			       pipe_rx4_polarity,
-			       pipe_rx3_polarity,
-			       pipe_rx2_polarity,
-			       pipe_rx1_polarity,
-			       pipe_rx0_polarity};
-   assign pipe_rx7_elec_idle = pipe_rx_elec_idle[7];
-   assign pipe_rx6_elec_idle = pipe_rx_elec_idle[6];
-   assign pipe_rx5_elec_idle = pipe_rx_elec_idle[5];
-   assign pipe_rx4_elec_idle = pipe_rx_elec_idle[4];
-   assign pipe_rx3_elec_idle = pipe_rx_elec_idle[3];
-   assign pipe_rx2_elec_idle = pipe_rx_elec_idle[2];
-   assign pipe_rx1_elec_idle = pipe_rx_elec_idle[1];
-   assign pipe_rx0_elec_idle = pipe_rx_elec_idle[0];
-   
-   assign pipe_rx7_valid = pipe_rx_valid[7];
-   assign pipe_rx6_valid = pipe_rx_valid[6];
-   assign pipe_rx5_valid = pipe_rx_valid[5];
-   assign pipe_rx4_valid = pipe_rx_valid[4];
-   assign pipe_rx3_valid = pipe_rx_valid[3];
-   assign pipe_rx2_valid = pipe_rx_valid[2];
-   assign pipe_rx1_valid = pipe_rx_valid[1];
-   assign pipe_rx0_valid = pipe_rx_valid[0];
+   assign pipe_rx0_char_is_k = pipe_tx0_char_is_k;
+   assign pipe_rx0_data      = pipe_tx0_data;
+   assign pipe_rx1_char_is_k = pipe_tx1_char_is_k;
+   assign pipe_rx1_data      = pipe_tx1_data;
+   assign pipe_rx2_char_is_k = pipe_tx2_char_is_k;
+   assign pipe_rx2_data      = pipe_tx2_data;
+   assign pipe_rx3_char_is_k = pipe_tx3_char_is_k;
+   assign pipe_rx3_data      = pipe_tx3_data;
+   assign pipe_rx4_char_is_k = pipe_tx4_char_is_k;
+   assign pipe_rx4_data      = pipe_tx4_data;
+   assign pipe_rx5_char_is_k = pipe_tx5_char_is_k;
+   assign pipe_rx5_data      = pipe_tx5_data;
+   assign pipe_rx6_char_is_k = pipe_tx6_char_is_k;
+   assign pipe_rx6_data      = pipe_tx6_data;
+   assign pipe_rx7_char_is_k = pipe_tx7_char_is_k;
+   assign pipe_rx7_data      = pipe_tx7_data;
 
-   assign pipe_rx7_phy_status = phy_status;
-   assign pipe_rx6_phy_status = phy_status;
-   assign pipe_rx5_phy_status = phy_status;
-   assign pipe_rx4_phy_status = phy_status;
-   assign pipe_rx3_phy_status = phy_status;
-   assign pipe_rx2_phy_status = phy_status;
-   assign pipe_rx1_phy_status = phy_status;
-   assign pipe_rx0_phy_status = phy_status;
-
-   assign pipe_tx_rcvr_det = 1'b0;
-   
-   /* pldawrap_pipe AUTO_TEMPLATE (
-    .rate               (tx_rate),
-    .tx_detectrx        (1'b0),
-    .power_down         (2'b0),
-    
-    .tx_elecidle        (pipe_rx_elec_idle[]),
-    .tx_compl           (pipe_tx_compl[]),
-    .rx_polarity        (pipe_rx_polarity[]),
-    .rx_elecidle        (pipe_rx_elec_idle[]),
-    .rx_valid           (pipe_rx_valid[]),
-    
-    .tx_data\([0-7]\)   (pipe_tx\1_data[]),
-    .tx_datak\([0-7]\)  (pipe_tx\1_char_is_k[]),
-    .rx_data\([0-7]\)   (pipe_rx\1_data[]),
-    .rx_datak\([0-7]\)  (pipe_rx\1_char_is_k[]),
-    .rx_status\([0-7]\) (pipe_rx\1_status[]),
-    
-    .chk_\([a-z]+\)     (),
-    .rstn               (sys_rst_n),
-    );
-    */
-   pldawrap_pipe #(/*AUTOINSTPARAM*/
-		   // Parameters
-		   .BFM_ID		(BFM_ID),
-		   .BFM_TYPE		(BFM_TYPE),
-		   .BFM_LANES		(BFM_LANES),
-		   .BFM_WIDTH		(BFM_WIDTH),
-		   .IO_SIZE		(IO_SIZE),
-		   .MEM32_SIZE		(MEM32_SIZE),
-		   .MEM64_SIZE		(MEM64_SIZE))
-   pldawrap_pipe  (/*AUTOINST*/
-		   // Outputs
-		   .phy_status		(phy_status),
-		   .rx_elecidle		(pipe_rx_elec_idle[7:0]), // Templated
-		   .rx_valid		(pipe_rx_valid[7:0]),	 // Templated
-		   .rx_data0		(pipe_rx0_data[BFM_WIDTH-1:0]), // Templated
-		   .rx_datak0		(pipe_rx0_char_is_k[BFM_WIDTH/8-1:0]), // Templated
-		   .rx_status0		(pipe_rx0_status[2:0]),	 // Templated
-		   .rx_data1		(pipe_rx1_data[BFM_WIDTH-1:0]), // Templated
-		   .rx_datak1		(pipe_rx1_char_is_k[BFM_WIDTH/8-1:0]), // Templated
-		   .rx_status1		(pipe_rx1_status[2:0]),	 // Templated
-		   .rx_data2		(pipe_rx2_data[BFM_WIDTH-1:0]), // Templated
-		   .rx_datak2		(pipe_rx2_char_is_k[BFM_WIDTH/8-1:0]), // Templated
-		   .rx_status2		(pipe_rx2_status[2:0]),	 // Templated
-		   .rx_data3		(pipe_rx3_data[BFM_WIDTH-1:0]), // Templated
-		   .rx_datak3		(pipe_rx3_char_is_k[BFM_WIDTH/8-1:0]), // Templated
-		   .rx_status3		(pipe_rx3_status[2:0]),	 // Templated
-		   .rx_data4		(pipe_rx4_data[BFM_WIDTH-1:0]), // Templated
-		   .rx_datak4		(pipe_rx4_char_is_k[BFM_WIDTH/8-1:0]), // Templated
-		   .rx_status4		(pipe_rx4_status[2:0]),	 // Templated
-		   .rx_data5		(pipe_rx5_data[BFM_WIDTH-1:0]), // Templated
-		   .rx_datak5		(pipe_rx5_char_is_k[BFM_WIDTH/8-1:0]), // Templated
-		   .rx_status5		(pipe_rx5_status[2:0]),	 // Templated
-		   .rx_data6		(pipe_rx6_data[BFM_WIDTH-1:0]), // Templated
-		   .rx_datak6		(pipe_rx6_char_is_k[BFM_WIDTH/8-1:0]), // Templated
-		   .rx_status6		(pipe_rx6_status[2:0]),	 // Templated
-		   .rx_data7		(pipe_rx7_data[BFM_WIDTH-1:0]), // Templated
-		   .rx_datak7		(pipe_rx7_char_is_k[BFM_WIDTH/8-1:0]), // Templated
-		   .rx_status7		(pipe_rx7_status[2:0]),	 // Templated
-		   .chk_txval		(),			 // Templated
-		   .chk_txdata		(),			 // Templated
-		   .chk_txdatak		(),			 // Templated
-		   .chk_rxval		(),			 // Templated
-		   .chk_rxdata		(),			 // Templated
-		   .chk_rxdatak		(),			 // Templated
-		   .chk_ltssm		(),			 // Templated
-		   // Inputs
-		   .clk62		(clk62),
-		   .clk125		(clk125),
-		   .clk250		(clk250),
-		   .rstn		(sys_rst_n),		 // Templated
-		   .rate		(tx_rate),		 // Templated
-		   .tx_detectrx		(1'b0),			 // Templated
-		   .power_down		(2'b0),			 // Templated
-		   .tx_elecidle		(pipe_rx_elec_idle[7:0]), // Templated
-		   .tx_compl		(pipe_tx_compl[7:0]),	 // Templated
-		   .rx_polarity		(pipe_rx_polarity[7:0]), // Templated
-		   .tx_data0		(pipe_tx0_data[BFM_WIDTH-1:0]), // Templated
-		   .tx_datak0		(pipe_tx0_char_is_k[BFM_WIDTH/8-1:0]), // Templated
-		   .tx_data1		(pipe_tx1_data[BFM_WIDTH-1:0]), // Templated
-		   .tx_datak1		(pipe_tx1_char_is_k[BFM_WIDTH/8-1:0]), // Templated
-		   .tx_data2		(pipe_tx2_data[BFM_WIDTH-1:0]), // Templated
-		   .tx_datak2		(pipe_tx2_char_is_k[BFM_WIDTH/8-1:0]), // Templated
-		   .tx_data3		(pipe_tx3_data[BFM_WIDTH-1:0]), // Templated
-		   .tx_datak3		(pipe_tx3_char_is_k[BFM_WIDTH/8-1:0]), // Templated
-		   .tx_data4		(pipe_tx4_data[BFM_WIDTH-1:0]), // Templated
-		   .tx_datak4		(pipe_tx4_char_is_k[BFM_WIDTH/8-1:0]), // Templated
-		   .tx_data5		(pipe_tx5_data[BFM_WIDTH-1:0]), // Templated
-		   .tx_datak5		(pipe_tx5_char_is_k[BFM_WIDTH/8-1:0]), // Templated
-		   .tx_data6		(pipe_tx6_data[BFM_WIDTH-1:0]), // Templated
-		   .tx_datak6		(pipe_tx6_char_is_k[BFM_WIDTH/8-1:0]), // Templated
-		   .tx_data7		(pipe_tx7_data[BFM_WIDTH-1:0]), // Templated
-		   .tx_datak7		(pipe_tx7_char_is_k[BFM_WIDTH/8-1:0])); // Templated
-   
 endmodule
-
