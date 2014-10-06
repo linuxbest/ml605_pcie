@@ -526,7 +526,7 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
 		   .tx_datak7		(pipe_tx7_char_is_k[BFM_WIDTH/8-1:0])); // Templated
 
    parameter PCIE_DEVCTRL_REG_ADDR = 8'h88;
-   parameter MAX_PAYLOAD = 256;
+   parameter MAX_PAYLOAD = 128;
    
 `include "pkg_xbfm_defines.h"
 
@@ -566,6 +566,8 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
 		// Wait for link to get initialised then disable PIPE logging
 	  	`BFM.xbfm_wait_linkup;
 	  	`BFM.xbfm_configure_log(`XBFM_LOG_NOPIPE);
+
+		`BFM.xbfm_dword (`XBFM_CFGRD0,{24'h000000,PCIE_DEVCTRL_REG_ADDR},4'hF,{16'h0000,csr});
 
 	 	//-----------------------------------------------------
 	 	// Initialise reference design configuration
