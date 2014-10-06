@@ -371,7 +371,7 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
    parameter                    BFM_WIDTH  = 16;	// 8=>8-bit 16=>16-bit 32=>32bit
    parameter                    IO_SIZE    = 16;
    parameter                    MEM32_SIZE = 24;
-   parameter                    MEM64_SIZE = 16;
+   parameter                    MEM64_SIZE = 24;
 
    wire [7:0] pipe_tx_elec_idle;
    wire [7:0] pipe_tx_compl;
@@ -559,7 +559,7 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
 		//-----------------------------------------------------
 		#100;
 	 	`BFM.xbfm_print_comment ("### Initialise BFM");
-		`BFM.xbfm_init (32'h00000000,32'hAAAA0000,64'hBBBBBBBBCCCC0000);
+		`BFM.xbfm_init (32'h00000000,32'hA000_0000,64'hBBBB_BBBB_B000_0000);
 		`BFM.xbfm_set_requesterid (16'h0008);
 		`BFM.xbfm_set_maxpayload  (MAX_PAYLOAD);
 
@@ -583,23 +583,23 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
 		 //-----------------------------------------------------
 		 // DMA0/1 : program direct DMA transfers
 		 //-----------------------------------------------------
-		 // src 32'h0100_0000
-		 // dst 32'h0400_0000
-		 // src desc 32'h0200_000
-		 // dst desc 32'h0300_000
+		 // src 32'hA100_0000
+		 // dst 32'hA400_0000
+		 // src desc 32'hA200_000
+		 // dst desc 32'hA300_000
 		 #200;
 		 // Fill BFM 64-bit memory space with a ramp
 		`BFM.xbfm_buffer_fill (4096,databuf);
-		`BFM.xbfm_memory_write (`XBFM_MEM64,32'h0100_0000,4096,databuf);
-		`BFM.xbfm_memory_write (`XBFM_MEM64,32'h0101_0000,4096,databuf);
-		`BFM.xbfm_memory_write (`XBFM_MEM64,32'h0102_0000,4096,databuf);
-		`BFM.xbfm_memory_write (`XBFM_MEM64,32'h0103_0000,4096,databuf);
-		`BFM.xbfm_memory_write (`XBFM_MEM64,32'h0104_0000,4096,databuf);
+		`BFM.xbfm_memory_write (`XBFM_MEM32,32'hA100_0000,4096,databuf);
+		`BFM.xbfm_memory_write (`XBFM_MEM32,32'hA101_0000,4096,databuf);
+		`BFM.xbfm_memory_write (`XBFM_MEM32,32'hA102_0000,4096,databuf);
+		`BFM.xbfm_memory_write (`XBFM_MEM32,32'hA103_0000,4096,databuf);
+		`BFM.xbfm_memory_write (`XBFM_MEM32,32'hA104_0000,4096,databuf);
 
 		// TX descriptor #1
-		databuf[32*0+:32] = 32'h0200_1000; // Next Desc
+		databuf[32*0+:32] = 32'hA200_1000; // Next Desc
 		databuf[32*2+:32] = 32'h0000_0000; // Reserved 
-		databuf[32*3+:32] = 32'h0100_0000; // Buf address
+		databuf[32*3+:32] = 32'hA100_0000; // Buf address
 		databuf[32*4+:32] = 32'h0000_0000; // Reserved 
 		databuf[32*5+:32] = 32'h0000_0000; // Reserved 
 		databuf[32*6+:32] = {1'b1, 1'b0, 3'b000, 23'h1000};
@@ -609,45 +609,49 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
 		databuf[32*10+:32]= 32'h0000_0000; // App2
 		databuf[32*11+:32]= 32'h0000_0000; // App3
 		databuf[32*12+:32]= 32'h0000_0000; // App4
-		`BFM.xbfm_memory_write (`XBFM_MEM64,32'h0200_0000,64,databuf);
-		
+		`BFM.xbfm_memory_write (`XBFM_MEM32,32'hA200_0000,64,databuf);
+	
 		// TX descriptor #2
-		databuf[32*0+:32] = 32'h0200_2000; // Next Desc
-		databuf[32*3+:32] = 32'h0101_0000; // Buf address
+		databuf[32*0+:32] = 32'hA200_2000; // Next Desc
+		databuf[32*3+:32] = 32'hA101_0000; // Buf address
 		databuf[32*6+:32] = {1'b0, 1'b0, 3'b000, 23'h1000};
-		`BFM.xbfm_memory_write (`XBFM_MEM64,32'h0200_1000,64,databuf);
-		
+		`BFM.xbfm_memory_write (`XBFM_MEM32,32'hA200_1000,64,databuf);
+	
 		// TX descriptor #3
-		databuf[32*0+:32] = 32'h0000_0000; // Next Desc
-		databuf[32*3+:32] = 32'h0202_0000; // Buf address
+		databuf[32*0+:32] = 32'hA000_0000; // Next Desc
+		databuf[32*3+:32] = 32'hA202_0000; // Buf address
 		databuf[32*6+:32] = {1'b0, 1'b1, 3'b000, 23'h1000};
-		`BFM.xbfm_memory_write (`XBFM_MEM64,32'h0200_2000,64,databuf);
-		
+		`BFM.xbfm_memory_write (`XBFM_MEM32,32'hA200_2000,64,databuf);
+	
 		// RX descriptor #1
-		databuf[32*0+:32] = 32'h0300_1000; // Next Desc
-		databuf[32*3+:32] = 32'h0400_0000; // Buf address
+		databuf[32*0+:32] = 32'hA300_1000; // Next Desc
+		databuf[32*3+:32] = 32'hA400_0000; // Buf address
 		databuf[32*6+:32] = {1'b0, 1'b0, 3'b000, 23'h1000};
-		`BFM.xbfm_memory_write (`XBFM_MEM64,32'h0300_0000,64,databuf);
-		
-		// RX descriptor #1
-		databuf[32*0+:32] = 32'h0300_2000; // Next Desc
-		databuf[32*3+:32] = 32'h0401_0000; // Buf address
+		`BFM.xbfm_memory_write (`XBFM_MEM32,32'hA300_0000,64,databuf);
+	
+		// RX descriptor #2
+		databuf[32*0+:32] = 32'hA300_2000; // Next Desc
+		databuf[32*3+:32] = 32'hA401_0000; // Buf address
 		databuf[32*6+:32] = {1'b0, 1'b0, 3'b000, 23'h1000};
-		`BFM.xbfm_memory_write (`XBFM_MEM64,32'h0300_1000,64,databuf);
-		
-		// RX descriptor #1
-		databuf[32*0+:32] = 32'h0000_0000; // Next Desc
-		databuf[32*3+:32] = 32'h0402_0000; // Buf address
+		`BFM.xbfm_memory_write (`XBFM_MEM32,32'hA300_1000,64,databuf);
+	
+		// RX descriptor #3
+		databuf[32*0+:32] = 32'hA000_0000; // Next Desc
+		databuf[32*3+:32] = 32'hA402_0000; // Buf address
 		databuf[32*6+:32] = {1'b0, 1'b0, 3'b000, 23'h1000};
-		`BFM.xbfm_memory_write (`XBFM_MEM64,32'h0300_2000,64,databuf);
+		`BFM.xbfm_memory_write (`XBFM_MEM32,32'hA300_2000,64,databuf);
 
-		`BFM.xbfm_dword (`XBFM_MWR,C_MM2S_CURDESC ,4'hF,32'h0200_000);
-		`BFM.xbfm_dword (`XBFM_MWR,C_MM2S_TAILDESC,4'hF,32'h0200_200);
-		`BFM.xbfm_dword (`XBFM_MWR,C_MM2S_DMACR,   4'hF,32'h0000_001);
+		// RX 
+		`BFM.xbfm_dword (`XBFM_MWR,C_S2MM_CURDESC ,4'hF,32'hA300_0000);
+		`BFM.xbfm_dword (`XBFM_MWR,C_S2MM_DMACR,   4'hF,32'h0000_0001);
+		`BFM.xbfm_dword (`XBFM_MWR,C_S2MM_TAILDESC,4'hF,32'hA300_2000);
+		`BFM.xbfm_wait;
 
-		`BFM.xbfm_dword (`XBFM_MWR,C_S2MM_CURDESC ,4'hF,32'h0300_000);
-		`BFM.xbfm_dword (`XBFM_MWR,C_S2MM_TAILDESC,4'hF,32'h0300_200);
-		`BFM.xbfm_dword (`XBFM_MWR,C_S2MM_DMACR,   4'hF,32'h0000_001);
+		// TX 
+		`BFM.xbfm_dword (`XBFM_MWR,C_MM2S_CURDESC ,4'hF,32'hA200_0000);
+		`BFM.xbfm_dword (`XBFM_MWR,C_MM2S_DMACR,   4'hF,32'h0000_0001);
+		`BFM.xbfm_dword (`XBFM_MWR,C_MM2S_TAILDESC,4'hF,32'hA200_2000);
+		`BFM.xbfm_wait;
 
 		//-----------------------------------------------------------------
 		// Interrupt : wait for interrupt that indicates the end of a DMA
