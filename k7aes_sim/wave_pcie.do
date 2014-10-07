@@ -9,88 +9,48 @@ eval add wave -noupdate -divider {"S AXI"}
 eval add wave -noupdate $binopt $pcie${ps}axi_aclk
 eval add wave -noupdate $binopt $pcie${ps}axi_aresetn
 
-# AW
-eval add wave -noupdate $hexopt $pcie${ps}s_axi_awid
-eval add wave -noupdate $hexopt $pcie${ps}s_axi_awaddr
-eval add wave -noupdate $hexopt $pcie${ps}s_axi_awregion
-eval add wave -noupdate $hexopt $pcie${ps}s_axi_awlen
-eval add wave -noupdate $hexopt $pcie${ps}s_axi_awsize
-eval add wave -noupdate $hexopt $pcie${ps}s_axi_awburst
-eval add wave -noupdate $binopt $pcie${ps}s_axi_awvalid
-eval add wave -noupdate $binopt $pcie${ps}s_axi_awready
+set axi_bus $pcie
+set name    s_axi
+do ../../k7aes_sim/wave_axi.do
 
-# W
-eval add wave -noupdate $hexopt $pcie${ps}s_axi_wdata
-eval add wave -noupdate $hexopt $pcie${ps}s_axi_wstrb
-eval add wave -noupdate $binopt $pcie${ps}s_axi_wlast
-eval add wave -noupdate $binopt $pcie${ps}s_axi_wvalid
-eval add wave -noupdate $binopt $pcie${ps}s_axi_wready
+eval add wave -noupdate -divider {"AXIS Write Request"}
+eval add wave -noupdate $hexopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}m_axis_rw_tdata
+eval add wave -noupdate $hexopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}m_axis_rw_tstrb
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}m_axis_rw_tlast
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}m_axis_rw_tvalid
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}m_axis_rw_tready
 
-# BID
-eval add wave -noupdate $hexopt $pcie${ps}s_axi_bid
-eval add wave -noupdate $binopt $pcie${ps}s_axi_bresp
-eval add wave -noupdate $binopt $pcie${ps}s_axi_bvalid
-eval add wave -noupdate $binopt $pcie${ps}s_axi_bready
+eval add wave -noupdate -divider {"AXIS Read Request"}
+eval add wave -noupdate $hexopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}m_axis_rr_tdata
+eval add wave -noupdate $hexopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}m_axis_rr_tstrb
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}m_axis_rr_tlast
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}m_axis_rr_tvalid
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}m_axis_rr_tready
 
-# AR
-eval add wave -noupdate $hexopt $pcie${ps}s_axi_arid
-eval add wave -noupdate $hexopt $pcie${ps}s_axi_araddr
-eval add wave -noupdate $hexopt $pcie${ps}s_axi_arregion
-eval add wave -noupdate $hexopt $pcie${ps}s_axi_arlen
-eval add wave -noupdate $hexopt $pcie${ps}s_axi_arsize
-eval add wave -noupdate $hexopt $pcie${ps}s_axi_arburst
-eval add wave -noupdate $binopt $pcie${ps}s_axi_arvalid
-eval add wave -noupdate $binopt $pcie${ps}s_axi_arready
+eval add wave -noupdate -divider {"AXIS Complete Request"}
+eval add wave -noupdate $hexopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}s_axis_rc_tdata
+eval add wave -noupdate $hexopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}s_axis_rc_tstrb
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}s_axis_rc_tlast
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}s_axis_rc_tvalid
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}s_axis_rc_tready
 
-# R
-eval add wave -noupdate $hexopt $pcie${ps}s_axi_rid
-eval add wave -noupdate $hexopt $pcie${ps}s_axi_rdata
-eval add wave -noupdate $binopt $pcie${ps}s_axi_rlast
-eval add wave -noupdate $binopt $pcie${ps}s_axi_rresp
-eval add wave -noupdate $binopt $pcie${ps}s_axi_rvalid
-eval add wave -noupdate $binopt $pcie${ps}s_axi_rready
+eval add wave -noupdate -divider {"AXIS Write Complete"}
+eval add wave -noupdate $hexopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}s_axis_cw_tdata
+eval add wave -noupdate $hexopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}s_axis_cw_tstrb
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}s_axis_cw_tlast
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}s_axis_cw_tvalid
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}s_axis_cw_tready
 
-eval add wave -noupdate -divider {"M AXI"}
-eval add wave -noupdate $binopt $pcie${ps}axi_aclk
-eval add wave -noupdate $binopt $pcie${ps}axi_aresetn
+eval add wave -noupdate -divider {"AXIS Read Complete"}
+eval add wave -noupdate $hexopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}s_axis_cr_tdata
+eval add wave -noupdate $hexopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}s_axis_cr_tstrb
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}s_axis_cr_tlast
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}s_axis_cr_tvalid
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}s_axis_cr_tready
 
-# AW
-#eval add wave -noupdate $hexopt $pcie${ps}m_axi_awid
-eval add wave -noupdate $hexopt $pcie${ps}m_axi_awaddr
-#eval add wave -noupdate $hexopt $pcie${ps}m_axi_awregion
-eval add wave -noupdate $hexopt $pcie${ps}m_axi_awlen
-eval add wave -noupdate $hexopt $pcie${ps}m_axi_awsize
-eval add wave -noupdate $hexopt $pcie${ps}m_axi_awburst
-eval add wave -noupdate $binopt $pcie${ps}m_axi_awvalid
-eval add wave -noupdate $binopt $pcie${ps}m_axi_awready
-
-# W
-eval add wave -noupdate $hexopt $pcie${ps}m_axi_wdata
-eval add wave -noupdate $hexopt $pcie${ps}m_axi_wstrb
-eval add wave -noupdate $binopt $pcie${ps}m_axi_wlast
-eval add wave -noupdate $binopt $pcie${ps}m_axi_wvalid
-eval add wave -noupdate $binopt $pcie${ps}m_axi_wready
-
-# BID
-#eval add wave -noupdate $hexopt $pcie${ps}m_axi_bid
-eval add wave -noupdate $binopt $pcie${ps}m_axi_bresp
-eval add wave -noupdate $binopt $pcie${ps}m_axi_bvalid
-eval add wave -noupdate $binopt $pcie${ps}m_axi_bready
-
-# AR
-#eval add wave -noupdate $hexopt $pcie${ps}m_axi_arid
-eval add wave -noupdate $hexopt $pcie${ps}m_axi_araddr
-#eval add wave -noupdate $hexopt $pcie${ps}m_axi_arregion
-eval add wave -noupdate $hexopt $pcie${ps}m_axi_arlen
-eval add wave -noupdate $hexopt $pcie${ps}m_axi_arsize
-eval add wave -noupdate $hexopt $pcie${ps}m_axi_arburst
-eval add wave -noupdate $binopt $pcie${ps}m_axi_arvalid
-eval add wave -noupdate $binopt $pcie${ps}m_axi_arready
-
-# R
-#eval add wave -noupdate $hexopt $pcie${ps}m_axi_rid
-eval add wave -noupdate $hexopt $pcie${ps}m_axi_rdata
-eval add wave -noupdate $binopt $pcie${ps}m_axi_rlast
-eval add wave -noupdate $binopt $pcie${ps}m_axi_rresp
-eval add wave -noupdate $binopt $pcie${ps}m_axi_rvalid
-eval add wave -noupdate $binopt $pcie${ps}m_axi_rready
+eval add wave -noupdate -divider {"AXIS Complete Complete"}
+eval add wave -noupdate $hexopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}m_axis_cc_tdata
+eval add wave -noupdate $hexopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}m_axis_cc_tstrb
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}m_axis_cc_tlast
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}m_axis_cc_tvalid
+eval add wave -noupdate $binopt $pcie${ps}PCI_Express${ps}comp_axi_pcie_mm_s${ps}m_axis_cc_tready
