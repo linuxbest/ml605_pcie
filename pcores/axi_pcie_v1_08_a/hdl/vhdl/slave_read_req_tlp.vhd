@@ -257,7 +257,7 @@ end slave_read_req_tlp;
    signal tag_count              : integer range 0 to 255;
    signal tag_count_nxt          : integer range 0 to 255;
    signal tag                    : std_logic_vector(7 downto 0) := x"00";
-   constant MAX_TAG              : integer range 0 to 255 := 255;
+   constant MAX_TAG              : integer range 0 to 255 := 31;
    signal odd_bytes              : integer range 0 to 2;
    signal tlast_d                : std_logic;
    signal fclimit                : integer;

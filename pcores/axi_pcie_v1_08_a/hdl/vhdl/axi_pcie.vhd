@@ -720,7 +720,7 @@ architecture structure of axi_pcie is
       if(C_FAMILY = "spartan6") then
         return(conv_integer(x"7ff"));
       elsif(C_FAMILY = "virtex6" or C_FAMILY = "7series") then
-        return(conv_integer(x"3ff"));
+        return(conv_integer(x"7ff"));
       else
         return(0);
       end if;
@@ -843,7 +843,7 @@ architecture structure of axi_pcie is
   function calc_axiread_num (C_S_AXI_DATA_WIDTH : integer) return integer is
   begin
      if C_S_AXI_DATA_WIDTH = 128 then
-        return(4);
+        return(8);
      else
         return(8);
      end if;
@@ -1465,7 +1465,7 @@ begin
       CPL_TIMEOUT_DISABLE_SUPPORTED            => "FALSE",
       CPL_TIMEOUT_RANGES_SUPPORTED             => conv_integer(x"0"),-- 2
       DEV_CAP_EXT_TAG_SUPPORTED                => "TRUE",
-      DEV_CAP_MAX_PAYLOAD_SUPPORTED            => 1,-- 256 bytes
+      DEV_CAP_MAX_PAYLOAD_SUPPORTED            => 2,-- 256 bytes
       DEV_CAP_PHANTOM_FUNCTIONS_SUPPORT        => 1,
       DEVICE_ID                                => conv_integer(C_DEVICE_ID),
       DISABLE_LANE_REVERSAL                    => "TRUE",    -- CR # 618714 "FALSE",
@@ -1576,12 +1576,12 @@ begin
 
       VC0_CPL_INFINITE                         => "TRUE",
       VC0_RX_RAM_LIMIT                         => VC0_RX_RAM_LIMIT,
-      VC0_TOTAL_CREDITS_CD                     => VC0_TOTAL_CREDITS_CD,
-      VC0_TOTAL_CREDITS_CH                     => VC0_TOTAL_CREDITS_CH,
-      VC0_TOTAL_CREDITS_NPH                    => VC0_TOTAL_CREDITS_NPH,
-      VC0_TOTAL_CREDITS_PD                     => VC0_TOTAL_CREDITS_PD,
+      VC0_TOTAL_CREDITS_CD                     => 461,
+      VC0_TOTAL_CREDITS_CH                     => 36,
+      VC0_TOTAL_CREDITS_NPH                    => 12,
+      VC0_TOTAL_CREDITS_PD                     => 437,
       VC0_TOTAL_CREDITS_PH                     => 32,
-      VC0_TX_LASTPACKET                        => 28,
+      VC0_TX_LASTPACKET                        => 29,
       VENDOR_ID                                => conv_integer(C_VENDOR_ID),
       VSEC_BASE_PTR                            => conv_integer(x"000"),
       VSEC_CAP_NEXTPTR                         => conv_integer(x"000"),

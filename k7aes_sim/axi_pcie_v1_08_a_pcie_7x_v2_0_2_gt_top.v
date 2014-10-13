@@ -525,6 +525,19 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
 		   .tx_data7		(pipe_tx7_data[BFM_WIDTH-1:0]), // Templated
 		   .tx_datak7		(pipe_tx7_char_is_k[BFM_WIDTH/8-1:0])); // Templated
 
+   reg [31:0] 		      cycle_now;
+   reg [31:0] 		      cycle_start;
+   always @(posedge sys_clk)
+     begin
+	if (sys_rst_n == 0)
+	  begin
+	     cycle_now <= #1 32'h0;
+	  end
+	else
+	  begin
+	     cycle_now <= #1 cycle_now + 1'b1;
+	  end
+     end // always @ (posedge sys_clk)
    parameter PCIE_DEVCTRL_REG_ADDR = 8'h88;
    parameter MAX_PAYLOAD = 128;
    
@@ -537,7 +550,9 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
 
    parameter C_BAR0 = 64'h1110_0000;
    parameter C_INTC = C_BAR0 + 32'h0000_0000;
-
+   parameter C_IER  = C_INTC + 32'h08;
+   parameter C_MER  = C_INTC + 32'h1C;
+   
    parameter C_DMA0 = C_BAR0 + 32'h0001_0000;
 
    parameter C_MM2S_DMACR    = 32'h00 + C_DMA0;
@@ -581,6 +596,10 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
 
 		`BFM.xbfm_dword (`XBFM_CFGRD0,32'h00000010,4'hF,32'h1110_0000);
 		`BFM.xbfm_wait;
+	
+		// enable IRQ
+		`BFM.xbfm_dword (`XBFM_MWR,C_IER,4'hF,32'hFFFF_FFFF);
+		`BFM.xbfm_dword (`XBFM_MWR,C_MER,4'hF,32'h0000_0003);
 
 		 //-----------------------------------------------------
 		 // DMA0/1 : program direct DMA transfers
@@ -650,7 +669,7 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
 
 		// RX 
 		`BFM.xbfm_dword (`XBFM_MWR,C_S2MM_CURDESC ,4'hF,32'h8030_0000);
-		`BFM.xbfm_dword (`XBFM_MWR,C_S2MM_DMACR,   4'hF,32'h0000_0001);
+		`BFM.xbfm_dword (`XBFM_MWR,C_S2MM_DMACR,   4'hF,32'h0000_1001);
 		`BFM.xbfm_dword (`XBFM_MWR,C_S2MM_TAILDESC,4'hF,32'h8030_2000);
 		`BFM.xbfm_wait;
 
@@ -658,6 +677,9 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
 		`BFM.xbfm_dword (`XBFM_MWR,C_MM2S_CURDESC ,4'hF,32'h8020_0000);
 		`BFM.xbfm_dword (`XBFM_MWR,C_MM2S_DMACR,   4'hF,32'h0000_0001);
 		`BFM.xbfm_dword (`XBFM_MWR,C_MM2S_TAILDESC,4'hF,32'h8020_2000);
+
+	         cycle_start = cycle_now;
+	
 		`BFM.xbfm_wait;
 
 		//-----------------------------------------------------------------
@@ -667,10 +689,14 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
 		`BFM.xbfm_wait_event(`XBFM_INTAA_RCVD);
 
  		// Read interrupt register content
-		`BFM.xbfm_print_comment ("### Interrupt : read & clear interrupt register");
-		 databuf[31:0]=32'h00000001;
-		`BFM.xbfm_burst (`XBFM_MRD,64'h1111111111110034,4,databuf,3'b000,2'b00);
+		//`BFM.xbfm_print_comment ("### Interrupt : read & clear interrupt register");
+		// databuf[31:0]=32'h00000001;
+	        //`BFM.xbfm_burst (`XBFM_MRD,64'h1111111111110034,4,databuf,3'b000,2'b00);
+	        $display("DMA cycle ", cycle_now - cycle_start);
+	
 
 		#200;
+
+		$stop;
      end
 endmodule
