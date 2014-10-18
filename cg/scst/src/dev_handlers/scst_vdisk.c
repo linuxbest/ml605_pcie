@@ -3802,7 +3802,15 @@ static void blockio_aes_submit(struct scst_blockio_work *blockio_work)
 	void (*cb)(void *priv);
 
 	TRACE_ENTRY();
-	cb = blockio_work->write ? blockio_write_aes_cb : blockio_read_aes_cb;
+	if (blockio_work->write) {
+		cb = blockio_write_aes_cb;
+		scst_cmd_get(blockio_work->cmd);
+		blockio_work->cmd->completed = 1;
+		blockio_work->cmd->scst_cmd_done(blockio_work->cmd,
+				SCST_CMD_STATE_DEFAULT, scst_estimate_context());
+	} else {
+		cb = blockio_read_aes_cb;
+	}
 
 	aes_submit(aes->src_tbl.sgl, aes->sg_cnt, aes->sg_size,
 			aes->dst_tbl.sgl, aes->sg_cnt, aes->sg_size,
@@ -3821,10 +3829,12 @@ static void blockio_check_finish(struct scst_blockio_work *blockio_work)
 		if (virt_dev->aes) {
 			if (blockio_work->write == 0) {
 				blockio_aes_submit(blockio_work);
-				return;
 			} else {
 				aes_cleanup(blockio_work->aes_work);
+				scst_cmd_put(cmd);
 			}
+			kmem_cache_free(blockio_work_cachep, blockio_work);
+			return;
 		}
 		blockio_work->cmd->completed = 1;
 		blockio_work->cmd->scst_cmd_done(blockio_work->cmd,
