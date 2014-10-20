@@ -1,0 +1,44 @@
+# Peripheral Analyze Order (.pao) file for the
+# AXI PCIE Version 1.4
+#
+#
+#----- Helper Library Files ---------------------
+#
+lib proc_common_v3_00_a   all
+#
+
+#----- PCIE Library Files ---------------------
+#
+lib axi_pcie_mm_s_v1_04_a axi_pcie_mm_s_v1_04_a_carry_and.v verilog
+lib axi_pcie_mm_s_v1_04_a axi_pcie_mm_s_v1_04_a_carry_latch_and.v verilog
+lib axi_pcie_mm_s_v1_04_a axi_pcie_mm_s_v1_04_a_carry_latch_or.v verilog
+lib axi_pcie_mm_s_v1_04_a axi_pcie_mm_s_v1_04_a_carry_or.v verilog
+lib axi_pcie_mm_s_v1_04_a axi_pcie_mm_s_v1_04_a_comparator.v verilog
+lib axi_pcie_mm_s_v1_04_a axi_pcie_mm_s_v1_04_a_comparator_sel.v verilog
+lib axi_pcie_mm_s_v1_04_a axi_pcie_mm_s_v1_04_a_comparator_sel_static.v verilog
+lib axi_pcie_mm_s_v1_04_a axi_pcie_mm_s_v1_04_a_command_fifo.v verilog
+lib axi_pcie_mm_s_v1_04_a axi_pcie_mm_s_v1_04_a_axic_register_slice.v verilog
+lib axi_pcie_mm_s_v1_04_a axi_pcie_mm_s_v1_04_a_axi_register_slice.v verilog
+lib axi_pcie_mm_s_v1_04_a axi_pcie_mm_s_v1_04_a_a_upsizer.v verilog
+lib axi_pcie_mm_s_v1_04_a axi_pcie_mm_s_v1_04_a_w_upsizer.v verilog
+lib axi_pcie_mm_s_v1_04_a axi_pcie_mm_s_v1_04_a_r_upsizer.v verilog
+lib axi_pcie_mm_s_v1_04_a axi_pcie_mm_s_v1_04_a_axi_upsizer.v verilog
+lib axi_pcie_mm_s_v1_04_a axi_pcie_mm_s_pkg.vhd vhdl
+lib axi_pcie_mm_s_v1_04_a axi_slave_read.vhd vhdl
+lib axi_pcie_mm_s_v1_04_a axi_slave_write.vhd vhdl
+lib axi_pcie_mm_s_v1_04_a slave_read_req_tlp.vhd vhdl
+lib axi_pcie_mm_s_v1_04_a slave_read_cpl_tlp.vhd vhdl
+lib axi_pcie_mm_s_v1_04_a slave_write_req_tlp.vhd vhdl
+lib axi_pcie_mm_s_v1_04_a slave_bridge.vhd vhdl
+lib axi_pcie_mm_s_v1_04_a axi_s_masterbridge_wr.vhd vhdl
+lib axi_pcie_mm_s_v1_04_a axi_mm_masterbridge_wr.vhd vhdl
+lib axi_pcie_mm_s_v1_04_a axi_mm_s_masterbridge_wr.vhd vhdl
+lib axi_pcie_mm_s_v1_04_a axi_s_masterbridge_rd.vhd vhdl
+lib axi_pcie_mm_s_v1_04_a axi_mm_masterbridge_rd.vhd vhdl
+lib axi_pcie_mm_s_v1_04_a axi_mm_s_masterbridge_rd.vhd vhdl
+lib axi_pcie_mm_s_v1_04_a axi_mm_s_masterbridge.vhd vhdl
+lib axi_pcie_mm_s_v1_04_a register_block.vhd vhdl
+lib axi_pcie_mm_s_v1_04_a axi_pcie_mm_s.vhd vhdl
+    
+#								    
+# --- End of list ---------------------------------

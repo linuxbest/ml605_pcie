@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 //
-// (c) Copyright 2010-2011 Xilinx, Inc. All rights reserved.
+// (c) Copyright 2009-2011 Xilinx, Inc. All rights reserved.
 //
 // This file contains confidential and proprietary information
 // of Xilinx, Inc. and is protected under U.S. and
@@ -47,122 +47,65 @@
 // PART OF THIS FILE AT ALL TIMES.
 //
 //-----------------------------------------------------------------------------
-// Project    : Series-7 Integrated Block for PCI Express
-// File       : board.v
-// Version    : 1.10
-// Description:  Top level testbench
-//
-//------------------------------------------------------------------------------
+// Project    : Virtex-6 Integrated Block for PCI Express
+// File       : axi_enhanced_pcie_v1_04_a_pcie_reset_delay_v6.v
+// Version    : 2.3
+//--
+//-- Description: sys_reset_n delay (20ms) for Virtex6 PCIe Block
+//--
+//--
+//--
+//--------------------------------------------------------------------------------
 
 `timescale 1ns/1ns
 
-module board;
+module axi_enhanced_pcie_v1_04_a_pcie_reset_delay_v6 # (
 
-parameter          REF_CLK_FREQ       = 0;      // 0 - 100 MHz, 1 - 125 MHz,  2 - 250 MHz
-
-localparam         REF_CLK_HALF_CYCLE = (REF_CLK_FREQ == 0) ? 5000 :
-                                        (REF_CLK_FREQ == 1) ? 4000 :
-                                        (REF_CLK_FREQ == 2) ? 2000 : 0;
-integer            i;
-
-// System-level clock and reset
-reg                sys_rst_n;
-
-wire               ep_sys_clk;
-wire               rp_sys_clk;
-
-//
-// PCI-Express Serial Interconnect
-//
-
-wire  [7:0]  ep_pci_exp_txn;
-wire  [7:0]  ep_pci_exp_txp;
-wire  [7:0]  rp_pci_exp_txn;
-wire  [7:0]  rp_pci_exp_txp;
-
-//
-// PCI-Express Endpoint Instance
-//
-`ifdef ENABLE_GT
-parameter PIPE_SIM = "FALSE";
-defparam board.EP.pcie_7x_v1_10_i.PIPE_SIM_MODE = "FALSE";
-`else
-parameter PIPE_SIM = "TRUE";
-defparam board.EP.pcie_7x_v1_10_i.PIPE_SIM_MODE = "TRUE";
-`endif
-
-xilinx_pcie_2_1_ep_7x # (
-
-  .PL_FAST_TRAIN("FALSE")
+  parameter PL_FAST_TRAIN = "FALSE",
+  parameter REF_CLK_FREQ = 0,   // 0 - 100 MHz, 1 - 125 MHz, 2 - 250 MHz
+  parameter TCQ = 1
 
 )
-EP (
+(
 
-
-  // SYS Inteface
-  .sys_clk_n(ep_sys_clk_n),
-  .sys_clk_p(ep_sys_clk_p),
-  .sys_rst_n(sys_rst_n),
-
-`ifdef ENABLE_LEDS
-  // Misc signals
-  .led_0(),
-  .led_1(),
-  .led_2(),
-`endif
-
-
-  // PCI-Express Interface
-  .pci_exp_txn(ep_pci_exp_txn),
-  .pci_exp_txp(ep_pci_exp_txp),
-  .pci_exp_rxn(rp_pci_exp_txn),
-  .pci_exp_rxp(rp_pci_exp_txp)
-
-);
-
-sys_clk_gen  # (
-
-  .halfcycle(REF_CLK_HALF_CYCLE),
-  .offset(0)
-
-)
-CLK_GEN_RP (
-
-  .sys_clk(rp_sys_clk)
-
+  input  wire        ref_clk,
+  input  wire        sys_reset_n,
+  output             delayed_sys_reset_n
+   
 );
 
 
-sys_clk_gen_ds # (
+  localparam         TBIT =  (PL_FAST_TRAIN == "FALSE") ?  ((REF_CLK_FREQ == 1) ? 20: (REF_CLK_FREQ == 0) ? 20 : 21) : 2;
 
-  .halfcycle(REF_CLK_HALF_CYCLE),
-  .offset(0)
+  reg [7:0]          reg_count_7_0;
+  reg [7:0]          reg_count_15_8;
+  reg [7:0]          reg_count_23_16;
+  wire [23:0]        concat_count;
 
-)
-CLK_GEN_EP (
+  assign concat_count = {reg_count_23_16, reg_count_15_8, reg_count_7_0};
 
-  .sys_clk_p(ep_sys_clk_p),
-  .sys_clk_n(ep_sys_clk_n)
+  always @(posedge ref_clk or negedge sys_reset_n) begin
 
-);
+    if (!sys_reset_n) begin
 
+      reg_count_7_0 <= #TCQ 8'h0;
+      reg_count_15_8 <= #TCQ 8'h0;
+      reg_count_23_16 <= #TCQ 8'h0;
 
+    end else begin
 
-initial begin
+      if (delayed_sys_reset_n != 1'b1) begin
 
-  $display("[%t] : System Reset Asserted...", $realtime);
+        reg_count_7_0   <= #TCQ reg_count_7_0 + 1'b1;
+        reg_count_15_8  <= #TCQ (reg_count_7_0 == 8'hff)? reg_count_15_8  + 1'b1 : reg_count_15_8 ;
+        reg_count_23_16 <= #TCQ ((reg_count_15_8 == 8'hff) & (reg_count_7_0 == 8'hff)) ? reg_count_23_16 + 1'b1 : reg_count_23_16;
 
-  sys_rst_n = 1'b0;
+      end 
 
-  for (i = 0; i < 50; i = i + 1) begin
-    @(posedge ep_sys_clk_p);
+    end
+
   end
 
-  $display("[%t] : System Reset De-asserted...", $realtime);
+  assign delayed_sys_reset_n = concat_count[TBIT]; 
 
-  sys_rst_n = 1'b1;
-
-end
-
-
-endmodule // BOARD
+endmodule

@@ -1,0 +1,17 @@
+# Peripheral Analyze Order (.pao) file for the
+# AXI PCIE Version 1.4
+#
+#
+#----- Helper Library Files ---------------------
+#
+lib proc_common_v3_00_a all
+lib axi_pcie_mm_s_v1_04_a  all
+lib axi_enhanced_pcie_v1_04_a  all
+#
+
+#----- PCIE Library Files ---------------------
+#
+lib axi_pcie_v1_04_a axi_pcie.vhd vhdl
+    
+#								    
+# --- End of list ---------------------------------

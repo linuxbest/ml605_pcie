@@ -23,6 +23,7 @@
  PORT refclk_p = refclk_p, DIR = I, SIGIS = CLK, CLK_FREQ = 156250000
  PORT refclk_n = refclk_n, DIR = I
 
+
 BEGIN util_vector_logic
  PARAMETER INSTANCE = util_and_logic_0
  PARAMETER HW_VER = 1.00.a
@@ -96,7 +97,7 @@ END
 
 BEGIN axi_pcie
  PARAMETER INSTANCE = PCI_Express
- PARAMETER HW_VER = 1.08.a
+ PARAMETER HW_VER = 1.04.a
  PARAMETER C_S_AXI_ID_WIDTH = 4
  PARAMETER C_S_AXI_DATA_WIDTH = 128
  PARAMETER C_M_AXI_DATA_WIDTH = 128
@@ -153,8 +154,8 @@ BEGIN axi_intc
  PARAMETER C_HIGHADDR = 0xC4000fff
  BUS_INTERFACE S_AXI = axi4lite_0
  PORT S_AXI_ACLK = clk_100_0000MHzMMCM0
- PORT intr = s2mm_intr_0 & mm2s_intr_0 
- PORT MSI_Irq = MSI_Irq 
+ PORT intr = s2mm_intr_0 & mm2s_intr_0
+ PORT MSI_Irq = MSI_Irq
  PORT MSI_Vector = MSI_Vector
 END
 
@@ -216,3 +217,4 @@ BEGIN axi_aes
  PORT s2mm_prmry_reset_out_n = s2mm_prmry_reset_out_n_0
  PORT s2mm_sts_reset_out_n = s2mm_sts_reset_out_n_0
 END
+

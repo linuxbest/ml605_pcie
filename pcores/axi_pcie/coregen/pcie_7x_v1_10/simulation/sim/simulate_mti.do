@@ -18,5 +18,5 @@ vsim -voptargs="+acc" +notimingchecks +TESTNAME=pio_writeReadBack_test0 -L work 
      work.board glbl +dump_all
 
 
-add log -r /*
+#add log -r /*
 run -all

@@ -362,7 +362,7 @@ module pcie_7x_v1_10_gt_top_pipe_mode #
    //--------------------------------------------------------------------// 
    initial begin
    phy_rdy_ni =  1'b1;
-   #2000000; 
+   #30_000_000;
    phy_rdy_ni =  1'b0;
    end
    //--------------------------------------------------------------------// 
@@ -383,8 +383,9 @@ module pcie_7x_v1_10_gt_top_pipe_mode #
    
    reg clk125;
    reg clk250;
+   reg rstn;
    wire tx_rate;
-   assign tx_rate = 1'b1;
+   assign tx_rate = pipe_tx_rate;
    // tx_rate 
    //  0: 2.5Gps, clk125 125Mhz, clk250 250Mhz
    //  1: 5.0Gps, clk125 250Mhz, clk250 500Mhz
@@ -392,30 +393,33 @@ module pcie_7x_v1_10_gt_top_pipe_mode #
      begin
 	clk125   <= 1'b0;
 	clk250   <= 1'b0;
+	rstn     <= 1'b0;
+	#500_000;
+	rstn     <= 1'b1;
      end
    always
      begin
 	if (tx_rate)
 	  begin
-	     #1;
+	     #1000;
 	  end
 	else
 	  begin
-	     #2;
+	     #2000;
 	  end
-	clk250 <= ~clk250;
+	clk250 <= rstn ? ~clk250 : 0;
      end // always begin
    always
      begin
 	if (tx_rate)
 	  begin
-	     #2;
+	     #2000;
 	  end
 	else
 	  begin
-	     #4;
+	     #4000;
 	  end
-	clk125 <= ~clk125;
+	clk125 <= rstn ? ~clk125 : 0;
      end
 
    wire                       chk_txval;
@@ -447,7 +451,7 @@ module pcie_7x_v1_10_gt_top_pipe_mode #
     //.rx_datak\([0-7]\)  ({pipe_rx\1_char_is_k[0], pipe_rx\1_char_is_k[1]}),
 
     .rx_status\([0-7]\) (),
-    .rstn               (sys_rst_n),
+    .rstn               (rstn),
     .clk62              (),
     .clk125             (clk125),
     .clk250             (clk250),
@@ -502,7 +506,7 @@ module pcie_7x_v1_10_gt_top_pipe_mode #
 		   .clk62		(),			 // Templated
 		   .clk125		(clk125),		 // Templated
 		   .clk250		(clk250),		 // Templated
-		   .rstn		(sys_rst_n),		 // Templated
+		   .rstn		(rstn),		     	 // Templated
 		   .rate		(tx_rate),		 // Templated
 		   .tx_detectrx		(1'b0),			 // Templated
 		   .power_down		(2'b0),			 // Templated
@@ -568,12 +572,11 @@ module pcie_7x_v1_10_gt_top_pipe_mode #
    initial
      begin
 	// Initialise BFM
-	#30000
 
 		//-----------------------------------------------------
 		// Initialise BFM
 		//-----------------------------------------------------
-		#100;
+	        #100_000_000;
 	 	`BFM.xbfm_print_comment ("### Initialise BFM");
 		`BFM.xbfm_init (32'h00000000,32'h8000_0000,64'h0000_0000_0000_0000);
 		`BFM.xbfm_set_requesterid (16'h0008);
