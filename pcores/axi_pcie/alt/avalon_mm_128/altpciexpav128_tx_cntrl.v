@@ -140,8 +140,6 @@ wire        sm_wait_bpfifo;
 wire        sm_idle;
 wire        up_cpl_cnt;
 reg         rxcplbuff_free_reg;
-wire [63:0]  cmd_header1;     
-wire  [63:0]  cmd_header2;    
                                  
 reg [18:0]                         tx_state;
 reg [18:0]                         tx_nxt_state;  
@@ -193,22 +191,10 @@ wire pb_rd64;
 wire [31:0] bp_adr_hi;
 wire [31:0] bp_adr_low;
 wire [127:0] pb_rd_header;
-wire [31:0]  tlp_dw3;           
-wire [31:0]  tlp_dw2;
-wire         tlp_dw2_sel;
-wire         tlp_dw3_sel;
-wire  [127:0]             tlp_data;
 reg  [127:0]        tlp_holding_reg;
 wire  [127:0]       tlp_buff_data;
 reg  [127:0]        tx_data;
-wire              tlp_data_sel;
-wire  [3:0]       tlp_emp_sel;
-wire              tlp_sop;
-wire              tlp_eop;   
-wire              tlp_empty;
 reg               tx_empty_int;
-wire              output_fifo_wrreq;  
-wire  [130:0]      output_fifo_data_in;
 reg               output_fifo_ok_reg;
 reg               tag_available_reg;
 reg               irq_ack_reg;
@@ -245,10 +231,6 @@ reg  [7:0]       nph_cred_cons_reg;
 wire             np_tlp_sent;
 reg  [7:0]       nph_cred_limit_reg;
 wire [7:0]       nph_cred_sub;
-wire [63:0]      cpl_header1;
-wire [63:0]      cpl_header2;
-wire [63:0]      req_header1;
-wire [63:0]      req_header2;
 reg  [7:0]       cpl_clken_cntr;
 reg              sm_cpldata_reg;
 reg              sm_cpl_hdr_reg;
@@ -703,6 +685,7 @@ always @(posedge Clk_i or negedge Rstn_i)
       sm_cpl_hdr_reg <= sm_cpl_hdr;
      end
   end
+wire              tlp_eop;   
 
 assign sm_cpldata_fall = (sm_idle & sm_cpldata_reg) | (sm_idle & sm_cpl_hdr_reg);
 
@@ -824,19 +807,32 @@ else
   end
 endgenerate
 
+wire [31:0]  tlp_dw3;           
+wire [31:0]  tlp_dw2;
+wire         tlp_dw2_sel;
+wire         tlp_dw3_sel;
 
 assign wrdat_fifo_eop = TxWrDat_i[128];
 assign tlp_dw2_sel = (is_wr_32 | is_rd_32);           
-assign tlp_dw2     = tlp_dw2_sel? adr_low : adr_hi;
 assign tlp_dw3_sel = (is_wr_32 | is_rd_32);           
+assign tlp_dw2     = tlp_dw2_sel? adr_low : adr_hi;
 assign tlp_dw3     = (tlp_dw3_sel & tx_address_lsb[2])? tx_data[127:96] : adr_low[31:0];
 
+wire [63:0]  cpl_header1;
+wire [63:0]  cpl_header2;
+wire [63:0]  req_header1;
+wire [63:0]  req_header2;
+wire [63:0]  cmd_header1;     
+wire [63:0]  cmd_header2;    
+assign req_header1 = {requestor_id[15:0], req_tag_reg[7:0],
+                      lbe_reg, fbe_reg, cmd_reg[7:0], 8'h0, 6'h0, dw_len_reg[9:0]};
+assign req_header2 = {tlp_dw3,
+                     tlp_dw2 };
 
-assign req_header1 = {requestor_id[15:0], req_tag_reg[7:0], lbe_reg, fbe_reg, cmd_reg[7:0], 8'h0, 6'h0, dw_len_reg[9:0]};
-assign req_header2 = { tlp_dw3, tlp_dw2 };
-
-assign cpl_header1 = {cpl_cplter_id, is_abort_cpl ,3'b000, cpl_remain_bytes_reg , 1'b0, ~is_abort_cpl, 6'b001010, 1'b0, cpl_tc_reg, 4'h0, 2'h0, cpl_attr_reg, 2'b00, dw_len_reg};
-assign cpl_header2 = { tx_data[127:96], cpl_req_id_reg, cpl_tag_reg, 1'b0,lower_adr_reg};
+assign cpl_header1 = {cpl_cplter_id, is_abort_cpl ,3'b000, cpl_remain_bytes_reg ,
+                     1'b0, ~is_abort_cpl, 6'b001010, 1'b0, cpl_tc_reg, 4'h0, 2'h0, cpl_attr_reg, 2'b00, dw_len_reg};
+assign cpl_header2 = {tx_data[127:96],
+                      cpl_req_id_reg, cpl_tag_reg, 1'b0,lower_adr_reg};
 
 assign cmd_header1 = is_cpl? cpl_header1 : req_header1; 
 assign cmd_header2 = is_cpl? cpl_header2 : req_header2; 
@@ -946,10 +942,14 @@ always @*
 
 // mux header and data 
 
+wire              tlp_data_sel;
+wire  [127:0]     tlp_data;
 assign tlp_data_sel = (sm_wr_hdr | sm_rd_hdr | sm_rbp_hdr | sm_cpl_hdr);
 assign tlp_data     = tlp_data_sel? {cmd_header2, cmd_header1} : tx_data;
 
 // sop - eop - empty
+wire              tlp_sop;
+wire  [3:0]       tlp_emp_sel;
 
 assign tlp_sop =   (sm_wr_hdr | sm_rd_hdr | sm_rbp_hdr | sm_cpl_hdr);
 
@@ -989,14 +989,17 @@ assign tlp_emp_sel = {tlp_3dw_header, tx_address_lsb[2], dw_len_reg[1:0]};
         endcase
       end                                                                                        
 
+wire              tlp_empty;
 assign tlp_empty = tlp_eop & tx_empty_int & ~is_rd;
 
 
+wire              output_fifo_wrreq;  
 assign output_fifo_wrreq = (sm_wr_data | sm_cpl_data) | 
                            (sm_rd_hdr | sm_rbp_hdr | sm_wr_hdr | sm_cpl_hdr ) | 
                            (sm_wait & output_fifo_ok_reg & is_cpl) |
                            (txrp_sm_stream);
                                              
+wire  [130:0]      output_fifo_data_in;
 assign output_fifo_data_in[130:0]  = txrp_sm_idle? {tlp_empty, tlp_eop, tlp_sop, tlp_data} : {txrp_empty,txrp_eop,txrp_sop,TxRpFifoData_i[127:0]}; 
 
 /// register fifo input and write request
