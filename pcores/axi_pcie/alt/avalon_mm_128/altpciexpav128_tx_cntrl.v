@@ -191,7 +191,6 @@ wire pb_rd64;
 wire [31:0] bp_adr_hi;
 wire [31:0] bp_adr_low;
 wire [127:0] pb_rd_header;
-reg  [127:0]        tlp_holding_reg;
 wire  [127:0]       tlp_buff_data;
 reg  [127:0]        tx_data;
 reg               tx_empty_int;
@@ -223,7 +222,6 @@ wire  [3:0]      tx_address_lsb;
 wire             wrdat_fifo_eop;    
 wire              wr_dat_eop_mux;
 reg              wr_dat_eop_holding_reg;
-reg              wrdat_fifo_rd_reg;
 wire  [4:0]      wr_dat_eop_sel;
 reg   [4:0]      cpl_sent_reg;
 
@@ -734,6 +732,7 @@ assign to_pop_bpfifo  = (np_header_avail_reg & ~RdBypassFifoEmpty_i & (outstandi
 assign CmdFifoRdReq_o = (sm_idle & ~CmdFifoEmpty_i & ~to_pop_bpfifo & txrp_sm_idle & ~RpTLPReady_i) | (sm_wr_data & RdBypassFifoEmpty_i &  ~RpTLPReady_i & (wr_dat_eop_mux  & ~CmdFifoEmpty_i));      
 
 // Write Data FIFO Interface
+reg              wrdat_fifo_rd_reg;
 always @(posedge Clk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -849,6 +848,7 @@ assign tlp_3dw_header = is_cpl | is_wr_32 | is_rd_32 | is_abort_cpl | is_flush_c
 assign tlp_buff_data = (sm_wr_data | sm_wr_hdr)? TxWrDat_i : tx_completion_data;
 
 
+reg  [127:0]        tlp_holding_reg;
 always @(posedge Clk_i or negedge Rstn_i)  // state machine registers  
   begin                                                                
     if(~Rstn_i)             
