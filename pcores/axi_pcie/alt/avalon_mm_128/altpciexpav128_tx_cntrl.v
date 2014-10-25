@@ -197,8 +197,6 @@ wire [31:0]  tlp_dw3;
 wire [31:0]  tlp_dw2;
 wire         tlp_dw2_sel;
 wire         tlp_dw3_sel;
-wire [3:0]        output_fifo_wrusedw;
-wire              output_fifo_rdempty;
 wire  [127:0]             tlp_data;
 reg  [127:0]        tlp_holding_reg;
 wire  [127:0]       tlp_buff_data;
@@ -210,19 +208,7 @@ wire              tlp_eop;
 wire              tlp_empty;
 reg               tx_empty_int;
 wire              output_fifo_wrreq;  
-reg                output_fifo_wrreq_reg; 
-wire              output_fifo_rdreq;
 wire  [130:0]      output_fifo_data_in;
-reg   [130:0]      output_fifo_data_in_reg;
-wire  [130:0]      output_fifo_data_out;
-reg   [130:0]      tx_tlp_out_reg;
-reg               tx_sop_out_reg;
-reg               tx_eop_out_reg;
-reg               tx_empty_out_reg;
-reg               output_valid_reg;
-reg               fifo_valid_reg;
-wire              output_transmit;
-wire              fifo_transmit;
 reg               output_fifo_ok_reg;
 reg               tag_available_reg;
 reg               irq_ack_reg;
@@ -242,7 +228,6 @@ wire 		 sm_wr_data;
 wire 		 sm_cpl_hdr;
 wire 		 sm_msi_req;
 wire 		 sm_wait;
-reg              tx_st_ready_reg;
 reg  [7:0]       cmd;
                                      
 reg  [4:0]       adapter_fifo_write_cntr; 
@@ -377,6 +362,7 @@ else
   assign rx_only = 1'b0;
 endgenerate
 
+wire [3:0]        output_fifo_wrusedw;
 always @(posedge Clk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -395,6 +381,7 @@ always @(posedge Clk_i or negedge Rstn_i)
      end
   end
 
+wire              fifo_transmit;
 always @(posedge Clk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -1013,6 +1000,8 @@ assign output_fifo_wrreq = (sm_wr_data | sm_cpl_data) |
 assign output_fifo_data_in[130:0]  = txrp_sm_idle? {tlp_empty, tlp_eop, tlp_sop, tlp_data} : {txrp_empty,txrp_eop,txrp_sop,TxRpFifoData_i[127:0]}; 
 
 /// register fifo input and write request
+reg                output_fifo_wrreq_reg; 
+reg   [130:0]      output_fifo_data_in_reg;
 always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
   begin
     if(~Rstn_i)
@@ -1028,6 +1017,9 @@ always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
   end
                                              
 /// Output FIFO
+wire              output_fifo_rdreq;
+wire              output_fifo_rdempty;
+wire  [130:0]      output_fifo_data_out;
 
 	scfifo	tx_output_fifo (
 				.rdreq (output_fifo_rdreq),
@@ -1059,6 +1051,7 @@ always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
 /// Streaming interface to the HIP
 
 // output registers
+reg   [130:0]      tx_tlp_out_reg;
 always @ (posedge Clk_i or negedge Rstn_i)
   begin
      if (~Rstn_i)
@@ -1067,6 +1060,10 @@ always @ (posedge Clk_i or negedge Rstn_i)
        tx_tlp_out_reg <= output_fifo_data_out[127:0];
   end
 
+reg               tx_sop_out_reg;
+reg               tx_eop_out_reg;
+reg               tx_empty_out_reg;
+wire              output_transmit;
 always @ (posedge Clk_i or negedge Rstn_i)
   begin
      if (~Rstn_i)
@@ -1089,6 +1086,7 @@ always @ (posedge Clk_i or negedge Rstn_i)
       end
   end
   
+reg               output_valid_reg;
 always @ (posedge Clk_i or negedge Rstn_i)
   begin
      if (~Rstn_i)
@@ -1099,6 +1097,7 @@ always @ (posedge Clk_i or negedge Rstn_i)
        output_valid_reg <= 1'b0;
   end
   
+reg               fifo_valid_reg;
 always @ (posedge Clk_i or negedge Rstn_i)
   begin
      if (~Rstn_i)
@@ -1109,6 +1108,7 @@ always @ (posedge Clk_i or negedge Rstn_i)
        fifo_valid_reg <= 1'b0;
   end
   
+reg              tx_st_ready_reg;
 always @ (posedge Clk_i or negedge Rstn_i)
   begin
      if (~Rstn_i)

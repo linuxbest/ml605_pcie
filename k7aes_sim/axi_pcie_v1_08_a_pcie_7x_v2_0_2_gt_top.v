@@ -667,6 +667,8 @@ module axi_pcie_v1_08_a_pcie_7x_v2_0_2_gt_top #
 		databuf[32*6+:32] = {1'b0, 1'b0, 3'b000, 23'h1000};
 		`BFM.xbfm_memory_write (`XBFM_MEM32,32'h0030_2000,64,databuf);
 
+		`BFM.xbfm_dword (`XBFM_MRD,C_S2MM_CURDESC ,4'h0,32'h8030_0000);
+
 		// RX 
 		`BFM.xbfm_dword (`XBFM_MWR,C_S2MM_CURDESC ,4'hF,32'h8030_0000);
 		`BFM.xbfm_dword (`XBFM_MWR,C_S2MM_DMACR,   4'hF,32'h0000_1001);
