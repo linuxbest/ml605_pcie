@@ -158,63 +158,19 @@ module altpciexpav128_rx_cntrl
   localparam RX_MSG_DUMP_1                = 11'h401;
 
 
-wire              input_fifo_wrreq;
-wire   [154:0]    input_fifo_datain;
-reg               input_fifo_wrreq_reg;
 reg    [154:0]    nput_fifo_datain_reg;
 wire   [5:0]      input_fifo_wrusedw;
-wire              input_fifo_rdreq;
 wire              input_fifo_rdempty;
-wire   [154:0]    input_fifo_dataout;
-wire   [154:0]    fifo_mux_out;
-reg    [154:0]    rx_tlp_reg;
-reg               input_fifo_rdreq_reg;
-wire               rx_eop_reg2;
-wire    [15:0]     rx_tlp_be_reg;
-wire   [15:0]     input_fifo_be_out;
-reg               rx_valid_reg;
 reg               rxsm_rd_header_0_reg;
-reg    [127:0]    rx_header0_reg;
-reg    [6:0]      bar_dec0_reg; 
 wire              rxsm_wrena_0;     
 wire              rxsm_cplena_0;
 wire              header1_sel;
-wire    [127:0]   rx_header_reg;
-wire    [6:0]     bar_hit_reg;
 wire    [6:0]     fabric_bar_hit_reg;
-wire              tlp_3dw_header;
-wire              tlp_4dw_header;
-wire   [3:0]      rx_address_lsb;
-wire   [63:0]     rx_addr;
-wire   [7:0]      rdreq_tag;
-wire              is_rd; 
-wire   [15:0]     requestor_id; 
-wire   [3:0]      rx_fbe; 
-wire   [3:0]      rx_lbe; 
-wire              is_flush;
-wire              is_uns_rd_size;
-wire   [2:0]      rx_tc;
-wire   [1:0]      rx_attr;
-wire   [10:0]     rx_dwlen;
-wire   [10:0]     rx_dwlen_fifo;
-wire   [4:0]      cpl_tag;
-wire   [11:0]     cpl_bytecount;
-wire              is_cpl_wd; 
 wire              rx_only = 1'b0;
-wire              last_cpl;
-reg   [10:0]      rx_dwlen_reg;
-reg   [127:0]     rx_data_reg;
-reg   [(CB_RXM_DATA_WIDTH/8)-1:0]      rx_wr_be_reg;   
-reg   [(CB_RXM_DATA_WIDTH/8)-1:0]      rx_rd_be_reg;
 wire  [(CB_RXM_DATA_WIDTH/8)-1:0]      rx_be;
-wire              first_data_phase;
-wire              rx_sop_fifo;
-wire  [3:0]       rx_address_lsb_fifo;
 reg   [9:0]       rx_dw_count_0;
 wire  [9:0]       rx_dw_count;
 reg   [15:0]      tail_mask;
-reg   [11:0]       rx_state_0; 
-reg   [11:0]       rx_nxt_state_0;
 reg  [7:0]       rx_modlen_qdword;    
 reg  [7:0]       rx_modlen_qdword_reg_0;   
 wire  [7:0]       rx_modlen_qdword_reg;          
@@ -223,25 +179,11 @@ wire              cpl_buff_ok;
 reg   [63:0]      avl_addr_reg;
 wire  [31:0]      avl_translated_addr;
 wire  [63:0]      avl_addr;
-wire              pipe1_transmit;
 wire[3:0]         zeros_4;   assign zeros_4  = 4'h0; 
 wire[7:0]         zeros_8;   assign zeros_8  = 8'h0; 
 wire[11:0]        zeros_12;  assign zeros_12 = 12'h0;
 reg               pndgrd_fifo_ok_reg;
-wire              rx_eop_fifo;
-wire              is_wr_fifo; 
-wire              is_cpl_wd_fifo;    
-wire              is_cpl_fifo;
-wire              is_rd_fifo;
-wire              is_flush_fifo;
-wire              is_uns_rd_size_fifo;
-wire              is_uns_wr_size_fifo;
-wire              is_msg_fifo;
-wire              is_msg_wd_fifo;            
-wire              is_wr_hdrreg_0;
-wire              is_cpl_wd_reg_0;
 wire              rxsm_idle_0;
-wire              is_rd_hdrreg_0;
 wire              rxsm_rdena_0;      
 wire              store_rd;
 wire              rxsm_store_rd_0;
@@ -255,36 +197,17 @@ wire             rxsm_msg_dump_0;
 wire             rxsm_pipe_0;  
 reg              rxsm_pipe_0_reg;
 wire             first_write_state;  
-wire             last_write_state; 
-wire  [3:0]      rx_fbe_fifo;
-wire  [3:0]      rx_lbe_fifo;
-reg   [154:0]    input_fifo_datain_reg;
+
 wire  [5:0]      bar_hit;
 reg   [5:0]      bar_dec_reg;
 wire             is_read_bar_changed;
 reg   [5:0]      previous_bar_read;
 wire             rxm_wait_req;
-reg              rxm_wait_req_reg;
-wire             rxm_wait_req_fall;
-wire             rxm_wait_rise;
-wire             rxm_data_reg_clk_ena;
 wire   [5:0]     rx_modlen_sel;
-wire             fifo_over_rd;
-reg              fifo_over_rd_reg;
-reg    [154:0]   fifo_over_rd_data_reg;
 reg              rxsm_wrwait_0_reg;
-reg              temp_data_reg_sel_sreg;
-wire             over_rd_sreg;
 wire             fabric_transmit;
-wire             over_rd_recover;
-wire             wr_1dw_fbe_eq_0_fifo;
-wire             is_msg_wod_fifo;
 wire             tx_accumulator_dump;
 reg   [7:0]      txcpl_buffer_accumulator;
-reg  [15:0]      rx_st_be;             
-wire  [3:0]      rx_st_fbe;
-wire             is_rx_lite_core;
-reg   [31:0]     rx_wr_data_reg;      
 wire             rxsm_rp_stream;
 wire             fabric_write;              
 wire             fabric_read;               
@@ -292,10 +215,9 @@ wire  [AVALON_ADDR_WIDTH-1:0]     fabric_address;
 wire  [127:0]    fabric_write_data;     
 wire  [15:0]     fabric_write_be;      
 wire  [6:0]      fabric_burst_count;   
-wire             fabric_wait_req;      
-wire             tlp_4dw_header_fifo;
 
 
+wire             is_rx_lite_core;
 generate if(CB_PCIE_RX_LITE == 1)
  assign is_rx_lite_core = 1'b1;
 else
@@ -305,8 +227,10 @@ endgenerate
 
 // derive the Avalon Byte Enable
 
+wire  [3:0]      rx_st_fbe;
 assign  rx_st_fbe = RxStData_i[35:32];       
 
+reg  [15:0]      rx_st_be;             
 always @ *
   begin
   	case ({RxStEmpty_i[0], RxStSop_i})
@@ -320,12 +244,20 @@ always @ *
   /// Rx Input FIFO to hold Rx Streaming data
   /// This is needed since there is a 3 data phases latency when throtleing the Rx St interface
   //  This is also used for clock domain crossing purpuse (PCI-Avalon Clock)        
+wire              input_fifo_wrreq;
+wire              input_fifo_rdreq;
+wire   [154:0]    input_fifo_datain;
+wire   [154:0]    input_fifo_dataout;
   
- 
   assign fabric_transmit =  rxsm_wrena_0 & ~rxm_wait_req;
   assign input_fifo_wrreq  = RxStValid_i;
   assign input_fifo_datain = {RxStEmpty_i,RxStBarDec1_i[7:0],RxStEop_i,RxStSop_i,rx_st_be[15:0],RxStData_i[127:0]};    
   
+wire             fifo_over_rd;
+reg              fifo_over_rd_reg;
+reg               input_fifo_rdreq_reg;
+reg               input_fifo_wrreq_reg;
+reg   [154:0]    input_fifo_datain_reg;
 always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
   begin
     if(~Rstn_i)
@@ -382,8 +314,8 @@ always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
                      .sclr ()
 );
                                    
-                                   
-
+wire   [154:0]    fifo_mux_out;
+reg    [154:0]    rx_tlp_reg;
 /// Pipe-line stage 1
 always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
   begin
@@ -401,7 +333,9 @@ always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
 // register to hold the data from the input fifo when the fifo is read while
 // in wr_ena and wait is asserted due the the fact that rxm_wait is registered
 // before feeding rdreq signal
-
+reg    [154:0]   fifo_over_rd_data_reg;
+wire             rx_eop_fifo;
+reg              rxm_wait_req_reg;
 always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
   begin
     if(~Rstn_i)
@@ -414,9 +348,11 @@ always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
         end
   end
 
+wire             over_rd_recover;
 assign over_rd_recover = (rxsm_wrwait_0);
 
 
+reg              temp_data_reg_sel_sreg;
 always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
   begin
     if(~Rstn_i)
@@ -427,6 +363,10 @@ always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
         temp_data_reg_sel_sreg <= 1'b0;
   end
 
+wire             over_rd_sreg;
+wire             last_write_state; 
+wire             rxm_wait_rise;
+wire             rxm_wait_req_fall;
 assign over_rd_sreg = temp_data_reg_sel_sreg;
 
 assign first_write_state = rxsm_pipe_0_reg & rxsm_wrena_0;      
@@ -437,12 +377,17 @@ assign rxm_wait_req_fall = ~rxm_wait_req & rxm_wait_req_reg;
 assign fifo_over_rd = (rxsm_wrena_0 & rxm_wait_rise & ~rx_eop_fifo) | (first_write_state & rxm_wait_req);
   
 
+wire    [15:0]     rx_tlp_be_reg;
+wire               rx_eop_reg2;
+wire   [15:0]     input_fifo_be_out;
   
   assign rx_eop_reg2 = rx_tlp_reg[145];         
   assign rx_tlp_be_reg[15:0] = rx_tlp_reg[143:128]; 
   assign input_fifo_be_out[15:0] = fifo_mux_out[143:128];
 
                      
+wire              pipe1_transmit;
+reg               rx_valid_reg;
 assign pipe1_transmit = 1'b0;
 // pipe-line1 reg valid indicator
 always @(posedge Clk_i or negedge Rstn_i)  
@@ -455,9 +400,8 @@ always @(posedge Clk_i or negedge Rstn_i)
       rx_valid_reg <= 1'b1;  // force to 1 for now
   end
   
-  
-  
 /// Storing the separate headers register for each state machine
+reg    [127:0]    rx_header0_reg;
 always @(posedge Clk_i or negedge Rstn_i)  
   begin
     if(~Rstn_i)
@@ -471,6 +415,7 @@ always @(posedge Clk_i or negedge Rstn_i)
   end
 
 
+reg    [6:0]      bar_dec0_reg; 
 generate if (port_type_hwtcl != "Native endpoint") // Root Port
 
 always @(posedge Clk_i or negedge Rstn_i)  
@@ -500,6 +445,8 @@ endgenerate
 
 
 // The mux to select header0 or header1 for the data re-alignment
+wire    [127:0]   rx_header_reg;
+wire    [6:0]     bar_hit_reg;
 
 assign rx_header_reg = rx_header0_reg;
 
@@ -514,35 +461,70 @@ else
 endgenerate
 
 /// Decode TLP header
+wire              tlp_3dw_header;
+wire              first_data_phase;
+wire              tlp_4dw_header;
+wire   [3:0]      rx_address_lsb;
+
 assign tlp_3dw_header = ~rx_header_reg[29];  
 assign first_data_phase = rx_tlp_reg[144];
 assign tlp_4dw_header = rx_header_reg[29];              
 assign rx_address_lsb[3:2] =  tlp_4dw_header? rx_header_reg[99:98] : rx_header_reg[67:66];
 assign rx_address_lsb[1:0] = 2'b00;
 
+wire   [63:0]     rx_addr;
+wire   [7:0]      rdreq_tag;
+wire              is_rd; 
+wire   [15:0]     requestor_id; 
+wire   [3:0]      rx_fbe; 
+wire   [3:0]      rx_lbe; 
+wire              is_flush;
+wire   [2:0]      rx_tc;
+wire   [1:0]      rx_attr;
+wire   [10:0]     rx_dwlen;
+wire   [4:0]      cpl_tag;
+
+wire   [11:0]     cpl_bytecount;
+wire              is_cpl_wd; 
+wire              last_cpl;
+wire              is_wr_fifo; 
+wire              is_rd_fifo;
+wire  [3:0]       rx_fbe_fifo;
+wire  [3:0]       rx_lbe_fifo;
+
+wire              wr_1dw_fbe_eq_0_fifo;
+wire              is_flush_fifo;
+wire   [10:0]     rx_dwlen_fifo;
+
 assign rx_addr[63:0] = tlp_4dw_header? {rx_header_reg[95:64], rx_header_reg[127:96]} : {32'h0, rx_header_reg[95:64]};
 assign rdreq_tag     = rx_header_reg[47:40];
-assign is_rd =  ~rx_header_reg[30] & (rx_header_reg[28:26]== 3'b000) & ~rx_header_reg[24];
+assign is_rd         =  ~rx_header_reg[30] & (rx_header_reg[28:26]== 3'b000) & ~rx_header_reg[24];
 assign requestor_id  = rx_header_reg[63:48];
-assign rx_fbe = rx_header_reg[35:32];
-assign rx_lbe = rx_header_reg[39:36];
-assign is_flush = (is_rd & rx_lbe == 4'h0 & rx_fbe == 4'h0);   /// read with no byte enable to flush
-assign rx_tc        = rx_header_reg[22:20];
-assign rx_attr        = rx_header_reg[13:12];
-assign rx_dwlen = rx_header_reg[9:0];
-assign cpl_tag  = rx_header_reg[76:72];
+assign rx_fbe        = rx_header_reg[35:32];
+assign rx_lbe        = rx_header_reg[39:36];
+assign is_flush      = (is_rd & rx_lbe == 4'h0 & rx_fbe == 4'h0);   /// read with no byte enable to flush
+assign rx_tc         = rx_header_reg[22:20];
+assign rx_attr       = rx_header_reg[13:12];
+assign rx_dwlen      = rx_header_reg[9:0];
+assign cpl_tag       = rx_header_reg[76:72];
+
 assign cpl_bytecount = rx_header_reg[43:32];
-assign is_cpl_wd        = rx_header_reg[30] & (rx_header_reg[28:24]==5'b01010) & ~rx_only;
-assign last_cpl = ((cpl_bytecount[11:2] == rx_dwlen ) | (cpl_bytecount <= 8)) & is_cpl_wd;     
-assign rx_eop_fifo = fifo_mux_out[145];
-assign is_wr_fifo = fifo_mux_out[30] & (fifo_mux_out[28:24]==5'b00000);  
-assign is_rd_fifo =  ~fifo_mux_out[30] & (fifo_mux_out[28:26]== 3'b000) & ~fifo_mux_out[24];   
-assign rx_fbe_fifo = fifo_mux_out[35:32];
-assign rx_lbe_fifo = fifo_mux_out[39:36];
+assign is_cpl_wd     = rx_header_reg[30] & (rx_header_reg[28:24]==5'b01010) & ~rx_only;
+assign last_cpl      = ((cpl_bytecount[11:2] == rx_dwlen ) | (cpl_bytecount <= 8)) & is_cpl_wd;     
+assign rx_eop_fifo   = fifo_mux_out[145];
+assign is_wr_fifo    = fifo_mux_out[30] & (fifo_mux_out[28:24]==5'b00000);  
+assign is_rd_fifo    =  ~fifo_mux_out[30] & (fifo_mux_out[28:26]== 3'b000) & ~fifo_mux_out[24];   
+assign rx_fbe_fifo   = fifo_mux_out[35:32];
+assign rx_lbe_fifo   = fifo_mux_out[39:36];
+
 assign wr_1dw_fbe_eq_0_fifo = is_wr_fifo & rx_dwlen_fifo == 1 & rx_fbe_fifo == 4'h0;
 assign is_flush_fifo = (is_rd_fifo & rx_lbe_fifo == 4'h0 & rx_fbe_fifo == 4'h0);       
- assign rx_dwlen_fifo = fifo_mux_out[9:0];
+assign rx_dwlen_fifo = fifo_mux_out[9:0];
 
+wire              is_uns_rd_size_fifo;
+wire              is_uns_wr_size_fifo;
+wire              is_uns_rd_size;
+wire              fabric_wait_req;      
 generate if(CB_PCIE_RX_LITE == 0)
  begin
      assign is_uns_rd_size_fifo =  (rx_dwlen_fifo == 0 | rx_dwlen_fifo > 128) & is_rd_fifo;
@@ -560,26 +542,39 @@ else
                           RxmWaitRequest_5_i &  bar_hit_reg[5];
   end
 endgenerate
+wire             is_msg_fifo;
+wire             is_msg_wod_fifo;
+wire             is_msg_wd_fifo;            
+wire             rx_sop_fifo;
+wire             is_cpl_wd_fifo;    
+wire             is_cpl_fifo;
 
 assign is_msg_fifo        = fifo_mux_out[29:27] == 3'b110;
 assign is_msg_wod_fifo    = ~fifo_mux_out[30] & is_msg_fifo;
 assign is_msg_wd_fifo     = fifo_mux_out[30] & is_msg_fifo;    
 assign rx_sop_fifo        = fifo_mux_out[144];
 assign is_cpl_wd_fifo     = fifo_mux_out[30] & (fifo_mux_out[28:24]==5'b01010) & ~rx_only;    
-assign is_cpl_fifo         = (fifo_mux_out[28:24]==5'b01010);
+assign is_cpl_fifo        = (fifo_mux_out[28:24]==5'b01010);
+
 wire [4:0] cpl_tag_fifo;
+wire       tlp_4dw_header_fifo;
+wire  [3:0]rx_address_lsb_fifo;
+wire       is_wr_hdrreg_0;
+wire       is_cpl_wd_reg_0;
+wire       is_rd_hdrreg_0;
+
 assign cpl_tag_fifo        = fifo_mux_out[76:72];  
 assign tlp_4dw_header_fifo = fifo_mux_out[29];    
 assign rx_address_lsb_fifo[3:2] =  tlp_4dw_header_fifo? fifo_mux_out[99:98] : fifo_mux_out[67:66];  
 assign rx_address_lsb_fifo[1:0] =  2'b00;      
-assign is_wr_hdrreg_0 = rx_header0_reg[30] & (rx_header0_reg[28:24]==5'b00000);       
-assign is_cpl_wd_reg_0        = rx_header0_reg[30] & (rx_header0_reg[28:24]==5'b01010) & ~rx_only;
-assign is_rd_hdrreg_0 =  ~rx_header0_reg[30] & (rx_header0_reg[28:26]== 3'b000) & ~rx_header0_reg[24];   
+assign is_wr_hdrreg_0       = rx_header0_reg[30] & (rx_header0_reg[28:24]==5'b00000);       
+assign is_cpl_wd_reg_0      = rx_header0_reg[30] & (rx_header0_reg[28:24]==5'b01010) & ~rx_only;
+assign is_rd_hdrreg_0       = ~rx_header0_reg[30] & (rx_header0_reg[28:26]== 3'b000) & ~rx_header0_reg[24];   
 
-         
-
+wire             rxm_data_reg_clk_ena;
 assign rxm_data_reg_clk_ena = (~rxm_wait_req & (rxsm_wrena_0 )) | rxsm_pipe_0  | rxsm_cplena_0;
 
+reg   [10:0]     rx_dwlen_reg;
 always @(posedge Clk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -597,7 +592,7 @@ always @(posedge Clk_i or negedge Rstn_i)
   end
 
 // re-aligned rx data register going out to the fabric
-
+reg   [127:0]     rx_data_reg;
 
  always @(posedge Clk_i) 
    begin
@@ -622,6 +617,7 @@ always @(posedge Clk_i or negedge Rstn_i)
      end
   end
 
+reg   [31:0]     rx_wr_data_reg;      
 generate if(CB_PCIE_RX_LITE == 1)
   begin
   	   always @(posedge Clk_i)                                                                                                                                                                                                                                                                           
@@ -651,6 +647,7 @@ generate if(CB_PCIE_RX_LITE == 1)
 
 
 // Re-aligned byte enable
+reg   [(CB_RXM_DATA_WIDTH/8)-1:0]      rx_wr_be_reg;   
 
 generate if(CB_PCIE_RX_LITE == 0)
            begin
@@ -725,6 +722,7 @@ else //generate
 endgenerate
    
    /// read bytenable created based on address, LBE, FBE of the TLP
+reg   [(CB_RXM_DATA_WIDTH/8)-1:0]      rx_rd_be_reg;
 generate if(CB_PCIE_RX_LITE == 0) 
        begin 
            always @(posedge Clk_i) 
@@ -792,10 +790,6 @@ endgenerate
      else if ((rx_dw_count_0 > 3) & (rxsm_wrena_0 & !rxm_wait_req))      // update when data is transmit the fabric
        rx_dw_count_0 <= rx_dw_count_0 - 4;
    end
-               
-
-
-        
 
 assign rx_dw_count =  rx_dw_count_0;
    
@@ -818,6 +812,8 @@ assign rx_dw_count =  rx_dw_count_0;
 // Using two state machines to get max throughput
 // This is needed due to the deep pipe-line in the Rx path to make FMAX 
 // Rx Control SM1
+reg   [11:0]       rx_state_0; 
+reg   [11:0]       rx_nxt_state_0;
 
 always @(posedge Clk_i, negedge Rstn_i)  // state machine registers
   begin
