@@ -32,7 +32,7 @@ module tlp_m_axi_cntrl (/*AUTOARG*/
    input [3:0] 				CmdFifoUsedW;
    
    // Tx Resp interface
-   output                               CmdFifoBusy_o;
+   output                               CmdFifoBusy;
    
    input [5:0] 				WrDatFifoUsedW_i;
    output                               WrDatFifoWrReq_o;
@@ -766,7 +766,7 @@ reg [CB_A2P_ADDR_MAP_PASS_THRU_BITS-1:0] translated_address_cntr;
   
 assign pcie_address[63:0] = {translated_address_upper_reg[63:CB_A2P_ADDR_MAP_PASS_THRU_BITS], translated_address_cntr[CB_A2P_ADDR_MAP_PASS_THRU_BITS-1:0]};
 
-assign CmdFifoBusy_o = sm_burst_data | sm_wait_rdaddr | sm_wr_pipe | sm_wr_hold | sm_wait_wraddr | sm_wrheader | rxm_irq_sreg; //  indicate busy one clock before accessing it
+assign CmdFifoBusy = sm_burst_data | sm_wait_rdaddr | sm_wr_pipe | sm_wr_hold | sm_wait_wraddr | sm_wrheader | rxm_irq_sreg; //  indicate busy one clock before accessing it
 
 // Logic to keep track of the numbers of outstanding reads
 reg [2:0]  pendingrd_state;

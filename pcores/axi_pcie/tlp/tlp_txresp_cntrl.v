@@ -6,7 +6,7 @@ module tlp_txresp_cntrl (/*AUTOARG*/
    TxRespIdle_o,
    // Inputs
    AvlClk_i, Rstn_i, RxPndgRdFifoEmpty_i, RxPndgRdFifoDato_i,
-   TxReadDataValid_i, CmdFifoUsedw_i, CmdFifoBusy_i, DevCsr_i,
+   TxReadDataValid_i, CmdFifoUsedw_i, CmdFifoBusy, DevCsr_i,
    BusDev_i
    );
    
@@ -32,7 +32,7 @@ module tlp_txresp_cntrl (/*AUTOARG*/
    output [TXCPL_BUFF_ADDR_WIDTH-1:0] 	CplRamWrAddr_o;
    
    // Interface to the Avalon Tx Control Module
-   input                                CmdFifoBusy_i;
+   input                                CmdFifoBusy;
    
    // cfg signals
    input [31:0] 			DevCsr_i;             
@@ -149,17 +149,17 @@ always @*
       
       TXRESP_WAIT_DATA:
       
-        if(first_cpl_sreg & ~CmdFifoBusy_i & cmd_fifo_ok & (  is_flush | is_uns_rd_size ))
+        if(first_cpl_sreg & ~CmdFifoBusy & cmd_fifo_ok & (  is_flush | is_uns_rd_size ))
           txresp_nxt_state <= TXRESP_SEND_LAST;
-        else  if(first_cpl_sreg & ~CmdFifoBusy_i & cmd_fifo_ok &((curr_bcnt_reg > bytes_to_RCB_reg)))
+        else  if(first_cpl_sreg & ~CmdFifoBusy & cmd_fifo_ok &((curr_bcnt_reg > bytes_to_RCB_reg)))
           txresp_nxt_state <= TXRESP_WAIT_FIRST;
         
-        else if((first_cpl_sreg & ~CmdFifoBusy_i & cmd_fifo_ok &(((curr_bcnt_reg <= bytes_to_RCB_reg)) ) ) |
-                (~first_cpl_sreg & ~CmdFifoBusy_i & cmd_fifo_ok &(curr_bcnt_reg <= max_payload) )
+        else if((first_cpl_sreg & ~CmdFifoBusy & cmd_fifo_ok &(((curr_bcnt_reg <= bytes_to_RCB_reg)) ) ) |
+                (~first_cpl_sreg & ~CmdFifoBusy & cmd_fifo_ok &(curr_bcnt_reg <= max_payload) )
                  )
           txresp_nxt_state <= TXRESP_WAIT_LAST;
        
-        else if(~first_cpl_sreg & ~CmdFifoBusy_i & cmd_fifo_ok & (curr_bcnt_reg >  max_payload))
+        else if(~first_cpl_sreg & ~CmdFifoBusy & cmd_fifo_ok & (curr_bcnt_reg >  max_payload))
           txresp_nxt_state <= TXRESP_WAIT_MAX;
         else
           txresp_nxt_state <= TXRESP_WAIT_DATA;
@@ -168,7 +168,7 @@ always @*
            txresp_nxt_state <= TXRESP_PIPE_FIRST;
            
       TXRESP_PIPE_FIRST:
-           if(payload_ok_reg & ~CmdFifoBusy_i & cmd_fifo_ok)
+           if(payload_ok_reg & ~CmdFifoBusy & cmd_fifo_ok)
              txresp_nxt_state <= TXRESP_SEND_FIRST;  
            else
              txresp_nxt_state <= TXRESP_PIPE_FIRST;   
@@ -177,7 +177,7 @@ always @*
                  txresp_nxt_state <= TXRESP_PIPE_MAX;    
          
        TXRESP_PIPE_MAX:                               
-         if(payload_ok_reg & ~CmdFifoBusy_i & cmd_fifo_ok)                                
+         if(payload_ok_reg & ~CmdFifoBusy & cmd_fifo_ok)                                
             txresp_nxt_state <= TXRESP_SEND_MAX;      
           else                                          
             txresp_nxt_state <= TXRESP_PIPE_MAX;   
@@ -186,7 +186,7 @@ always @*
                    txresp_nxt_state <= TXRESP_PIPE_LAST;
                        
         TXRESP_PIPE_LAST:                               
-         if(payload_ok_reg & ~CmdFifoBusy_i & cmd_fifo_ok)                                
+         if(payload_ok_reg & ~CmdFifoBusy & cmd_fifo_ok)                                
             txresp_nxt_state <= TXRESP_SEND_LAST;      
           else                                          
             txresp_nxt_state <= TXRESP_PIPE_LAST;   

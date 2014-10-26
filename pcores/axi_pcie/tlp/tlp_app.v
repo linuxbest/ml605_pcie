@@ -64,7 +64,7 @@ module tlp_app (/*AUTOARG*/
    RdBypassFifoWrReq_o, RdBypassFifoRdReq_o, PndgRdHeader_o,
    PndgRdFifoWrReq_o, MsiReq_o, IntxReq_o, CplReq_o, CplRdAddr_o,
    CplRamWrEna_o, CplRamWrDat_o, CplRamWrAddr_o, CplPending_o,
-   CplDesc_o, CplBuffRdAddr_o, CmdFifoEmpty, CmdFifoBusy_o,
+   CplDesc_o, CplBuffRdAddr_o, CmdFifoEmpty,
    // Inputs
    pld_clk_inuse, ko_cpl_spc_header, ko_cpl_spc_data, k_bar_i,
    cb_p2a_avalon_addr_b6_i, cb_p2a_avalon_addr_b5_i,
@@ -85,8 +85,8 @@ module tlp_app (/*AUTOARG*/
    RdBypassFifoEmpty_i, RdBypassFifoDat_i, PndngRdFifoUsedW_i,
    PndngRdFifoEmpty_i, PCIeIrqEna_i, MsiData_i, MsiCsr_i, MsiAddr_i,
    MsiAck_i, MasterEnable_i, IntxAck_i, DevCsr_i, CplReq_i, CplDesc_i,
-   CplBufData_i, CmdFifoUsedw_i, CmdFifoBusy_i, Clk_i, BusDev_i,
-   AvlClk_i, A2PMbWrReq_i, A2PMbWrAddr_i, clk, rst
+   CplBufData_i, CmdFifoUsedw_i, Clk_i, BusDev_i, AvlClk_i,
+   A2PMbWrReq_i, A2PMbWrAddr_i, clk, rst
    );
    input clk;
    input rst;
@@ -98,7 +98,6 @@ module tlp_app (/*AUTOARG*/
    input		AvlClk_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v, ...
    input [12:0]		BusDev_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v, ...
    input		Clk_i;			// To tlp_tx_cntrl of tlp_tx_cntrl.v, ...
-   input		CmdFifoBusy_i;		// To tlp_txresp_cntrl of tlp_txresp_cntrl.v
    input [3:0]		CmdFifoUsedw_i;		// To tlp_txresp_cntrl of tlp_txresp_cntrl.v
    input [129:0]	CplBufData_i;		// To tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
    input [5:0]		CplDesc_i;		// To tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
@@ -175,7 +174,6 @@ module tlp_app (/*AUTOARG*/
    // End of automatics
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
-   output		CmdFifoBusy_o;		// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    output		CmdFifoEmpty;		// From tlp_txcmd_fifo of tlp_txcmd_fifo.v
    output [6:0]		CplBuffRdAddr_o;	// From tlp_tx_cntrl of tlp_tx_cntrl.v
    output [5:0]		CplDesc_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
@@ -253,6 +251,7 @@ module tlp_app (/*AUTOARG*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   wire			CmdFifoBusy;		// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    wire [98:0]		CmdFifoDat;		// From tlp_txcmd_fifo of tlp_txcmd_fifo.v
    wire			CmdFifoEmpty_r;		// From tlp_txcmd_fifo of tlp_txcmd_fifo.v
    wire			CmdFifoRdReq;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
@@ -273,7 +272,7 @@ module tlp_app (/*AUTOARG*/
 		     .TxWaitRequest_o	(TxWaitRequest_o),
 		     .TxReqWr		(TxReqWr),
 		     .TxReqHeader	(TxReqHeader[98:0]),
-		     .CmdFifoBusy_o	(CmdFifoBusy_o),
+		     .CmdFifoBusy	(CmdFifoBusy),
 		     .WrDatFifoWrReq_o	(WrDatFifoWrReq_o),
 		     .WrDatFifoEop_o	(WrDatFifoEop_o),
 		     // Inputs
@@ -350,7 +349,7 @@ module tlp_app (/*AUTOARG*/
 		      .RxPndgRdFifoDato_i(RxPndgRdFifoDato_i[56:0]),
 		      .TxReadDataValid_i(TxReadDataValid_i),
 		      .CmdFifoUsedw_i	(CmdFifoUsedw_i[3:0]),
-		      .CmdFifoBusy_i	(CmdFifoBusy_i),
+		      .CmdFifoBusy	(CmdFifoBusy),
 		      .DevCsr_i		(DevCsr_i[31:0]),
 		      .BusDev_i		(BusDev_i[12:0]));
    
