@@ -49,9 +49,9 @@ module tlp_tx_cntrl
   input [128:0]  WrDatFifoDo,
   
   // RP interface
-  output           TxRpFifoRdReq_o,  
-  input   [130:0]  TxRpFifoData_i,   
-  input            RpTLPReady_i,      
+  output           TxRpFifoRdReq,  
+  input   [130:0]  TxRpFifoData,   
+  input            RpTLPReady,      
   
   
    // Rx/Tx Completion interface for buffer credit keeping
@@ -247,17 +247,17 @@ reg              reload_nph_cons_from_hip_reg;
 wire             holding_eop_sel;
 
  
-assign txrp_eop = TxRpFifoData_i[129];   
-assign txrp_empty = TxRpFifoData_i[130];    
+assign txrp_eop   = TxRpFifoData[129];   
+assign txrp_empty = TxRpFifoData[130];    
 
-assign is_rp_rd       =  ~TxRpFifoData_i[30] & (TxRpFifoData_i[28:26]== 3'b000) & ~TxRpFifoData_i[24];
-assign is_rp_wr       = TxRpFifoData_i[30] ; //& (TxRpFifoData_i[28:24]==5'b00000);  
-assign is_rp_cfg       = ~TxRpFifoData_i[29] & (TxRpFifoData_i[28:24]==5'b00101); //  type  1    
-assign is_rp_io        = ~TxRpFifoData_i[29] & (TxRpFifoData_i[28:24]==5'b00010); // read/write 
-assign txrp_np         =  is_rp_rd | is_rp_cfg | is_rp_io;
+assign is_rp_rd       =  ~TxRpFifoData[30] & (TxRpFifoData[28:26]== 3'b000) & ~TxRpFifoData[24];
+assign is_rp_wr       = TxRpFifoData[30] ; //& (TxRpFifoData_i[28:24]==5'b00000);  
+assign is_rp_cfg      = ~TxRpFifoData[29] & (TxRpFifoData[28:24]==5'b00101); //  type  1    
+assign is_rp_io       = ~TxRpFifoData[29] & (TxRpFifoData[28:24]==5'b00010); // read/write 
+assign txrp_np        =  is_rp_rd | is_rp_cfg | is_rp_io;
 
-assign rp_4dw_header  = TxRpFifoData_i[29];
-assign rp_odd_address = TxRpFifoData_i[29]? TxRpFifoData_i[98] : TxRpFifoData_i[66]; // 
+assign rp_4dw_header  = TxRpFifoData[29];
+assign rp_odd_address = TxRpFifoData[29]? TxRpFifoData[98] : TxRpFifoData[66]; // 
 assign rp_span_2cydle = (is_rp_wr & (rp_4dw_header | ~rp_4dw_header & ~rp_odd_address));
  
 
@@ -435,9 +435,9 @@ always @*
    begin
       case(tx_state)
          TX_IDLE :
-            if(np_header_avail_reg & ~RdBypassFifoEmpty & (outstanding_tag_cntr != 0) & output_fifo_ok_reg & ~rx_only & txrp_sm_idle & ~RpTLPReady_i) // use tag_available instead of *_reg because it is not updated in time by read_header state
+            if(np_header_avail_reg & ~RdBypassFifoEmpty & (outstanding_tag_cntr != 0) & output_fifo_ok_reg & ~rx_only & txrp_sm_idle & ~RpTLPReady) // use tag_available instead of *_reg because it is not updated in time by read_header state
                tx_nxt_state <= TX_POP_BPFIFO;
-            else if(~CmdFifoEmpty_r & txrp_sm_idle & ~RpTLPReady_i)
+            else if(~CmdFifoEmpty_r & txrp_sm_idle & ~RpTLPReady)
                tx_nxt_state <= TX_CHECK_CMDFIFO; // read the command fifo
             else
                tx_nxt_state <= TX_IDLE; // read the command fifo
@@ -481,7 +481,7 @@ always @*
                tx_nxt_state <= TX_WR_DATA;
         
          TX_WR_DATA:
-            if(wr_dat_eop_mux & (CmdFifoEmpty_r | ~RdBypassFifoEmpty | RpTLPReady_i))
+            if(wr_dat_eop_mux & (CmdFifoEmpty_r | ~RdBypassFifoEmpty | RpTLPReady))
                tx_nxt_state <= TX_IDLE;
             else if(wr_dat_eop_mux & ~CmdFifoEmpty_r )
                tx_nxt_state <= TX_CHECK_CMDFIFO;
@@ -707,7 +707,7 @@ assign CplPending_o = (outstanding_tag_cntr != max_outstanding_read);
 
 /// Command FIFo Interface
 assign to_pop_bpfifo  = (np_header_avail_reg & ~RdBypassFifoEmpty & (outstanding_tag_cntr != 0) & output_fifo_ok_reg & ~rx_only );  // will read bypass fifo on the next clock
-assign CmdFifoRdReq = (sm_idle & ~CmdFifoEmpty_r & ~to_pop_bpfifo & txrp_sm_idle & ~RpTLPReady_i) | (sm_wr_data & RdBypassFifoEmpty &  ~RpTLPReady_i & (wr_dat_eop_mux  & ~CmdFifoEmpty_r));      
+assign CmdFifoRdReq = (sm_idle & ~CmdFifoEmpty_r & ~to_pop_bpfifo & txrp_sm_idle & ~RpTLPReady) | (sm_wr_data & RdBypassFifoEmpty &  ~RpTLPReady & (wr_dat_eop_mux  & ~CmdFifoEmpty_r));      
 
 // Write Data FIFO Interface
 reg              wrdat_fifo_rd_reg;
@@ -978,7 +978,7 @@ assign output_fifo_wrreq = (sm_wr_data | sm_cpl_data) |
                            (txrp_sm_stream);
                                              
 wire  [130:0]      output_fifo_data_in;
-assign output_fifo_data_in[130:0]  = txrp_sm_idle? {tlp_empty, tlp_eop, tlp_sop, tlp_data} : {txrp_empty,txrp_eop,txrp_sop,TxRpFifoData_i[127:0]}; 
+assign output_fifo_data_in[130:0]  = txrp_sm_idle? {tlp_empty, tlp_eop, tlp_sop, tlp_data} : {txrp_empty,txrp_eop,txrp_sop,TxRpFifoData[127:0]}; 
 
 /// register fifo input and write request
 reg                output_fifo_wrreq_reg; 
@@ -1138,7 +1138,7 @@ always @*
    begin
       case(txrp_state)
          TXRP_IDLE :
-            if(sm_idle & output_fifo_ok_reg & RpTLPReady_i) 
+            if(sm_idle & output_fifo_ok_reg & RpTLPReady) 
                txrp_nxt_state <= TXRP_RD_FIFO;  // read fifo and start to stream
             else
                txrp_nxt_state <= TXRP_IDLE; 
@@ -1176,10 +1176,7 @@ always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
   end
 
      
-assign txrp_sop       =  ~txrp_sm_stream_reg & txrp_sm_stream; 
-
-  
-
-assign TxRpFifoRdReq_o = txrp_sm_rdfifo | (txrp_sop & rp_span_2cydle & ~txrp_eop);
+assign txrp_sop      =  ~txrp_sm_stream_reg & txrp_sm_stream; 
+assign TxRpFifoRdReq = txrp_sm_rdfifo | (txrp_sop & rp_span_2cydle & ~txrp_eop);
    
 endmodule

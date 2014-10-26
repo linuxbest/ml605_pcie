@@ -44,13 +44,21 @@
 // 	ports                              : - Names begin with Uppercase
 // Code:
 module tlp_rxpd_fifo (/*AUTOARG*/
+   // Outputs
+   TxRpFifoData, RpTLPReady,
    // Inputs
-   clk, rst
+   clk, rst, TxRpFifoRdReq
    );
    input clk;
    input rst;
 
+   output [130:0] TxRpFifoData;   
+   input 	  TxRpFifoRdReq;
+   output 	  RpTLPReady;
 
+   // not root port.
+   assign RpTLPReady   = 1'b0;
+   assign TxRpFifoData = 131'h0;
 endmodule
 // 
 // tlp_rxpd_fifo.v ends here
