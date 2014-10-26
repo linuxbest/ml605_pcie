@@ -1,81 +1,86 @@
 `timescale 1ns / 1ps
-module tlp_tx_cntrl
-
-# ( 
-   parameter  ADDRESS_32BIT = 1,
-   parameter  CB_PCIE_MODE = 0,
-   parameter  CB_PCIE_RX_LITE = 0,
-   parameter  deviceFamily = "Arria V"
-  )  
-  
-( input                                Clk_i,     // Avalon clock
-  input                                Rstn_i,    // Avalon reset    
-  
-  // PCIe HIP Tx interface
-   input                    TxStReady_i,
-   output   [127:0]         TxStData_o,
-   output                   TxStSop_o,
-   output                   TxStEop_o,
-   output   [1:0]           TxStEmpty_o,
-   output                   TxStValid_o,
-   input                    TxAdapterFifoEmpty_i,
- // Tx Credit Interface
-      /// Tx Credit interface                     
-   input   [5 : 0]          TxCredHipCons_i,      
-   input   [5 : 0]          TxCredInfinit_i,      
-   input   [7 : 0]          TxCredNpHdrLimit_i,   
-   input   [7:0]            ko_cpl_spc_header,
-   input   [11:0]           ko_cpl_spc_data,
+module tlp_tx_cntrl (/*AUTOARG*/
+   // Outputs
+   TxStData_o, TxStSop_o, TxStEop_o, TxStEmpty_o, TxStValid_o,
+   CmdFifoRdReq, RdBypassFifoWrReq, RdBypassFifoRdReq, CplBuffRdAddr,
+   WrDatFifoRdReq, TxRpFifoRdReq, TxCplSent_o, TxCplLineSent_o,
+   MsiReq_o, IntxReq_o, CplPending_o, tx_cons_cred_sel,
+   // Inputs
+   Clk_i, Rstn_i, TxStReady_i, TxAdapterFifoEmpty_i, TxCredHipCons_i,
+   TxCredInfinit_i, TxCredNpHdrLimit_i, ko_cpl_spc_header,
+   ko_cpl_spc_data, CmdFifoDat, CmdFifoEmpty_r, RdBypassFifoEmpty,
+   RdBypassFifoFull, RdBypassFifoUsedw, RdBypassFifoDat, TxCplDat,
+   WrDatFifoDo, TxRpFifoData, RpTLPReady, RxCplBuffFree_i, BusDev_i,
+   MsiCsr_i, MsiAck_i, IntxAck_i, pld_clk_inuse
+   );
    
-  // Command Fifo interface
-  input [98:0]   CmdFifoDat,
-  input          CmdFifoEmpty_r,
-  output         CmdFifoRdReq,
-  
-  // Read bypass buffer interface
-  input          RdBypassFifoEmpty,
-  input          RdBypassFifoFull,
-  input [6:0]    RdBypassFifoUsedw,
-  input [97:0]   RdBypassFifoDat,
-  output         RdBypassFifoWrReq,
-  output         RdBypassFifoRdReq,
-  
-  // Completion buffer interface
-  output  [6:0]   CplBuffRdAddr,
-  input   [127:0] TxCplDat,
-  
-  // write data fifo interface
-  output         WrDatFifoRdReq,
-  input [128:0]  WrDatFifoDo,
-  
-  // RP interface
-  output           TxRpFifoRdReq,  
-  input   [130:0]  TxRpFifoData,   
-  input            RpTLPReady,      
-  
-  
+   parameter  ADDRESS_32BIT = 1;
+   parameter  CB_PCIE_MODE = 0;
+   parameter  CB_PCIE_RX_LITE = 0;
+   
+   input Clk_i;     // Avalon clock
+   input Rstn_i;    // Avalon reset    
+   
+   // PCIe HIP Tx interface
+   input TxStReady_i;
+   output [127:0] TxStData_o;
+   output 	  TxStSop_o;
+   output 	  TxStEop_o;
+   output [1:0]   TxStEmpty_o;
+   output 	  TxStValid_o;
+   input 	  TxAdapterFifoEmpty_i;
+   // Tx Credit Interface
+   /// Tx Credit interface                     
+   input [5 : 0]  TxCredHipCons_i;      
+   input [5 : 0]  TxCredInfinit_i;      
+   input [7 : 0]  TxCredNpHdrLimit_i;   
+   input [7:0] 	  ko_cpl_spc_header;
+   input [11:0]   ko_cpl_spc_data;
+   
+   // Command Fifo interface
+   input [98:0]   CmdFifoDat;
+   input          CmdFifoEmpty_r;
+   output         CmdFifoRdReq;
+   
+   // Read bypass buffer interface
+   input          RdBypassFifoEmpty;
+   input          RdBypassFifoFull;
+   input [6:0] 	  RdBypassFifoUsedw;
+   input [97:0]   RdBypassFifoDat;
+   output         RdBypassFifoWrReq;
+   output         RdBypassFifoRdReq;
+   
+   // Completion buffer interface
+   output [6:0]   CplBuffRdAddr;
+   input [127:0]  TxCplDat;
+   
+   // write data fifo interface
+   output         WrDatFifoRdReq;
+   input [128:0]  WrDatFifoDo;
+   
+   // RP interface
+   output 	  TxRpFifoRdReq;  
+   input [130:0]  TxRpFifoData;   
+   input 	  RpTLPReady;      
+   
    // Rx/Tx Completion interface for buffer credit keeping
-  input          RxCplBuffFree_i,
-  output         TxCplSent_o,
-  output  [4:0]  TxCplLineSent_o, // in 128-bit line unit
-  
-  
-  // Rx Completion interface for buffer credit keeping
-  
-  // cfg register
-  input  [12:0]  BusDev_i,
-  input  [15:0]  MsiCsr_i,
-  output         MsiReq_o, 
-  input          MsiAck_i,
-  output         IntxReq_o,
-  input          IntxAck_i,
-  
-  output         CplPending_o,
-  input          pld_clk_inuse,
-  output         tx_cons_cred_sel
-);
-
-
+   input          RxCplBuffFree_i;
+   output         TxCplSent_o;
+   output [4:0]   TxCplLineSent_o; // in 128-bit line unit
+   
+   // Rx Completion interface for buffer credit keeping
+   // cfg register
+   input [12:0]   BusDev_i;
+   input [15:0]   MsiCsr_i;
+   output         MsiReq_o; 
+   input          MsiAck_i;
+   output         IntxReq_o;
+   input          IntxAck_i;
+   
+   output         CplPending_o;
+   input          pld_clk_inuse;
+   output         tx_cons_cred_sel;
+   
 localparam      TX_IDLE            = 14'h0000; 
 localparam      TX_CHECK_CMDFIFO   = 14'h0003;
 localparam      TX_RD_HDR          = 14'h0005;

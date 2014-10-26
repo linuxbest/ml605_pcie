@@ -382,8 +382,7 @@ module tlp_app (/*AUTOARG*/
 		  // Parameters
 		  .ADDRESS_32BIT	(ADDRESS_32BIT),
 		  .CB_PCIE_MODE		(CB_PCIE_MODE),
-		  .CB_PCIE_RX_LITE	(CB_PCIE_RX_LITE),
-		  .deviceFamily		(deviceFamily))
+		  .CB_PCIE_RX_LITE	(CB_PCIE_RX_LITE))
    tlp_tx_cntrl  (/*AUTOINST*/
 		  // Outputs
 		  .TxStData_o		(TxStData_o[127:0]),
