@@ -80,10 +80,10 @@ module tlp_rx_cntrl
    output                                 RxRpFifoWrReq_o,     
     
     // Pending Read FIFO interface
-    input  [3:0]              PndngRdFifoUsedW_i,
-    input                     PndngRdFifoEmpty_i,
-    output                    PndgRdFifoWrReq_o,
-    output [56:0]             PndgRdHeader_o,
+    input  [3:0]              PndngRdFifoUsedW,
+    input                     PndngRdFifoEmpty,
+    output                    PndgRdFifoWrReq,
+    output [56:0]             PndgRdHeader,
     
     input                     RxRdInProgress_i,
     
@@ -1266,14 +1266,14 @@ always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
      end
     else
      begin
-      pndgrd_fifo_ok_reg <= is_rx_lite_core? 1'b1 : (PndngRdFifoUsedW_i <= 8);
+      pndgrd_fifo_ok_reg <= is_rx_lite_core? 1'b1 : (PndngRdFifoUsedW <= 8);
      end
   end  
 wire   [6:0]     rd_addr;       
   
-assign rd_addr[6:0]        = rx_header_reg[29]? rx_header_reg[101:96] : rx_header_reg[70:64];
-assign PndgRdHeader_o      = {is_uns_rd_size, rx_lbe, rx_tc, rx_attr, rx_fbe, rx_dwlen_reg, requestor_id, is_flush, rx_addr[6:0], rdreq_tag};
-assign PndgRdFifoWrReq_o   = rxsm_store_rd_0 ;
+assign rd_addr[6:0]    = rx_header_reg[29]? rx_header_reg[101:96] : rx_header_reg[70:64];
+assign PndgRdHeader    = {is_uns_rd_size, rx_lbe, rx_tc, rx_attr, rx_fbe, rx_dwlen_reg, requestor_id, is_flush, rx_addr[6:0], rdreq_tag};
+assign PndgRdFifoWrReq = rxsm_store_rd_0 ;
                                                       
 
 /// Fifo Interface

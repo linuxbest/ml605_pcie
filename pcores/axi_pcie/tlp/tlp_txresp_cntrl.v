@@ -15,9 +15,9 @@ module tlp_txresp_cntrl (/*AUTOARG*/
    input                                Rstn_i;    // Avalon reset
    
    // interface to the Rx pending read FIFO
-   input                                RxPndgRdFifoEmpty_i;
-   input [56:0] 			RxPndgRdFifoDato_i;
-   output                               RxPndgRdFifoRdReq_o;
+   input                                RxPndgRdFifoEmpty;
+   input [56:0] 			RxPndgRdFifoDato;
+   output                               RxPndgRdFifoRdReq;
    
    // interface to the Avalon bus
    input                                TxReadDataValid_i;
