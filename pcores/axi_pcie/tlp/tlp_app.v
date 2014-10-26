@@ -63,7 +63,7 @@ module tlp_app (/*AUTOARG*/
    RdBypassFifoWrReq_o, RdBypassFifoRdReq_o, PndgRdHeader_o,
    PndgRdFifoWrReq_o, MsiReq_o, IntxReq_o, CplReq_o, CplRdAddr_o,
    CplRamWrEna_o, CplRamWrDat_o, CplRamWrAddr_o, CplPending_o,
-   CplDesc_o, CplBuffRdAddr_o, CmdFifoEmpty,
+   CplDesc_o, CmdFifoEmpty,
    // Inputs
    pld_clk_inuse, ko_cpl_spc_header, ko_cpl_spc_data, k_bar_i,
    cb_p2a_avalon_addr_b6_i, cb_p2a_avalon_addr_b5_i,
@@ -71,22 +71,24 @@ module tlp_app (/*AUTOARG*/
    cb_p2a_avalon_addr_b2_i, cb_p2a_avalon_addr_b1_i,
    cb_p2a_avalon_addr_b0_i, WrDatFifoDi, TxsReadDataValid_i,
    TxWrite_i, TxStReady_i, TxRpFifoData_i, TxRespIdle_i, TxRead_i,
-   TxReadDataValid_i, TxCredNpHdrLimit_i, TxCredInfinit_i,
-   TxCredHipCons_i, TxCpl_i, TxCplLen_i, TxCplDat_i, TxChipSelect_i,
-   TxByteEnable_i, TxBurstCount_i, TxAddress_i, TxAdapterFifoEmpty_i,
-   RxmWaitRequest_5_i, RxmWaitRequest_4_i, RxmWaitRequest_3_i,
-   RxmWaitRequest_2_i, RxmWaitRequest_1_i, RxmWaitRequest_0_i,
-   RxmRstn_i, RxmIrq_i, RxStValid_i, RxStSop_i, RxStParity_i,
-   RxStErr_i, RxStEop_i, RxStEmpty_i, RxStData_i, RxStBe_i,
-   RxStBarDec2_i, RxStBarDec1_i, RxRdInProgress_i,
+   TxReadData_i, TxReadDataValid_i, TxCredNpHdrLimit_i,
+   TxCredInfinit_i, TxCredHipCons_i, TxCpl_i, TxCplLen_i,
+   TxChipSelect_i, TxByteEnable_i, TxBurstCount_i, TxAddress_i,
+   TxAdapterFifoEmpty_i, RxmWaitRequest_5_i, RxmWaitRequest_4_i,
+   RxmWaitRequest_3_i, RxmWaitRequest_2_i, RxmWaitRequest_1_i,
+   RxmWaitRequest_0_i, RxmRstn_i, RxmIrq_i, RxStValid_i, RxStSop_i,
+   RxStParity_i, RxStErr_i, RxStEop_i, RxStEmpty_i, RxStData_i,
+   RxStBe_i, RxStBarDec2_i, RxStBarDec1_i, RxRdInProgress_i,
    RxPndgRdFifoEmpty_i, RxPndgRdFifoDato_i, RxCplBuffFree_i, Rstn_i,
    RpTLPReady_i, RdBypassFifoUsedw_i, RdBypassFifoFull_i,
    RdBypassFifoEmpty_i, RdBypassFifoDat_i, PndngRdFifoUsedW_i,
    PndngRdFifoEmpty_i, PCIeIrqEna_i, MsiData_i, MsiCsr_i, MsiAddr_i,
    MsiAck_i, MasterEnable_i, IntxAck_i, DevCsr_i, CplReq_i, CplDesc_i,
-   CplBufData_i, CmdFifoUsedw_i, Clk_i, BusDev_i, AvlClk_i,
+   CplBufData_i, CmdFifoUsedw, Clk_i, BusDev_i, AvlClk_i,
    A2PMbWrReq_i, A2PMbWrAddr_i, clk, rst
    );
+   parameter TXCPL_BUFF_ADDR_WIDTH = 8; // TODO
+   
    input clk;
    input rst;
 
@@ -97,7 +99,7 @@ module tlp_app (/*AUTOARG*/
    input		AvlClk_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v, ...
    input [12:0]		BusDev_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v, ...
    input		Clk_i;			// To tlp_tx_cntrl of tlp_tx_cntrl.v, ...
-   input [3:0]		CmdFifoUsedw_i;		// To tlp_txresp_cntrl of tlp_txresp_cntrl.v
+   input [3:0]		CmdFifoUsedw;		// To tlp_txresp_cntrl of tlp_txresp_cntrl.v
    input [129:0]	CplBufData_i;		// To tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
    input [5:0]		CplDesc_i;		// To tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
    input		CplReq_i;		// To tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
@@ -144,13 +146,13 @@ module tlp_app (/*AUTOARG*/
    input [5:0]		TxBurstCount_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input [15:0]		TxByteEnable_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input		TxChipSelect_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
-   input [127:0]	TxCplDat_i;		// To tlp_tx_cntrl of tlp_tx_cntrl.v
    input [4:0]		TxCplLen_i;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
    input		TxCpl_i;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
    input [5:0]		TxCredHipCons_i;	// To tlp_tx_cntrl of tlp_tx_cntrl.v
    input [5:0]		TxCredInfinit_i;	// To tlp_tx_cntrl of tlp_tx_cntrl.v
    input [7:0]		TxCredNpHdrLimit_i;	// To tlp_tx_cntrl of tlp_tx_cntrl.v
-   input		TxReadDataValid_i;	// To tlp_txresp_cntrl of tlp_txresp_cntrl.v
+   input		TxReadDataValid_i;	// To tlp_txcpl_buffer of tlp_txcpl_buffer.v, ...
+   input [31:0]		TxReadData_i;		// To tlp_txcpl_buffer of tlp_txcpl_buffer.v
    input		TxRead_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input		TxRespIdle_i;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
    input [130:0]	TxRpFifoData_i;		// To tlp_tx_cntrl of tlp_tx_cntrl.v
@@ -173,10 +175,9 @@ module tlp_app (/*AUTOARG*/
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
    output		CmdFifoEmpty;		// From tlp_txcmd_fifo of tlp_txcmd_fifo.v
-   output [6:0]		CplBuffRdAddr_o;	// From tlp_tx_cntrl of tlp_tx_cntrl.v
    output [5:0]		CplDesc_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
    output		CplPending_o;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
-   output [TXCPL_BUFF_ADDR_WIDTH-1:0] CplRamWrAddr_o;// From tlp_txresp_cntrl of tlp_txresp_cntrl.v, ..., Couldn't Merge
+   output [8:0]		CplRamWrAddr_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
    output [129:0]	CplRamWrDat_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
    output		CplRamWrEna_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
    output [8:0]		CplRdAddr_o;		// From tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
@@ -252,8 +253,11 @@ module tlp_app (/*AUTOARG*/
    wire			CmdFifoEmpty_r;		// From tlp_txcmd_fifo of tlp_txcmd_fifo.v
    wire			CmdFifoRdReq;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
    wire [3:0]		CmdFifoUsedW;		// From tlp_txcmd_fifo of tlp_txcmd_fifo.v
+   wire [6:0]		CplBuffRdAddr;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
+   wire [TXCPL_BUFF_ADDR_WIDTH-1:0] CplRamWrAddr;// From tlp_txresp_cntrl of tlp_txresp_cntrl.v
    wire [98:0]		CplReqHeader;		// From tlp_txresp_cntrl of tlp_txresp_cntrl.v
    wire			CplReqWr;		// From tlp_txresp_cntrl of tlp_txresp_cntrl.v
+   wire [127:0]		TxCplDat;		// From tlp_txcpl_buffer of tlp_txcpl_buffer.v
    wire [98:0]		TxReqHeader;		// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    wire			TxReqWr;		// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    wire [128:0]		WrDatFifoDo;		// From tlp_txdat_fifo of tlp_txdat_fifo.v
@@ -335,11 +339,19 @@ module tlp_app (/*AUTOARG*/
 			.clk		(clk),
 			.rst		(rst));
 
-   tlp_txcpl_buffer #(/*AUTOINSTPARAM*/)
+   tlp_txcpl_buffer #(/*AUTOINSTPARAM*/
+		      // Parameters
+		      .TXCPL_BUFF_ADDR_WIDTH(TXCPL_BUFF_ADDR_WIDTH))
    tlp_txcpl_buffer  (/*AUTOINST*/
+		      // Outputs
+		      .TxCplDat		(TxCplDat[127:0]),
 		      // Inputs
 		      .clk		(clk),
-		      .rst		(rst));
+		      .rst		(rst),
+		      .CplRamWrAddr	(CplRamWrAddr[TXCPL_BUFF_ADDR_WIDTH-1:0]),
+		      .TxReadDataValid_i(TxReadDataValid_i),
+		      .TxReadData_i	(TxReadData_i[31:0]),
+		      .CplBuffRdAddr	(CplBuffRdAddr[TXCPL_BUFF_ADDR_WIDTH-1:0]));
 
    tlp_txresp_cntrl #(/*AUTOINSTPARAM*/
 		      // Parameters
@@ -349,7 +361,7 @@ module tlp_app (/*AUTOARG*/
 		      .RxPndgRdFifoRdReq_o(RxPndgRdFifoRdReq_o),
 		      .CplReqHeader	(CplReqHeader[98:0]),
 		      .CplReqWr		(CplReqWr),
-		      .CplRamWrAddr_o	(CplRamWrAddr_o[TXCPL_BUFF_ADDR_WIDTH-1:0]),
+		      .CplRamWrAddr	(CplRamWrAddr[TXCPL_BUFF_ADDR_WIDTH-1:0]),
 		      .TxRespIdle_o	(TxRespIdle_o),
 		      // Inputs
 		      .AvlClk_i		(AvlClk_i),
@@ -357,7 +369,7 @@ module tlp_app (/*AUTOARG*/
 		      .RxPndgRdFifoEmpty_i(RxPndgRdFifoEmpty_i),
 		      .RxPndgRdFifoDato_i(RxPndgRdFifoDato_i[56:0]),
 		      .TxReadDataValid_i(TxReadDataValid_i),
-		      .CmdFifoUsedw_i	(CmdFifoUsedw_i[3:0]),
+		      .CmdFifoUsedw	(CmdFifoUsedw[3:0]),
 		      .CmdFifoBusy	(CmdFifoBusy),
 		      .DevCsr_i		(DevCsr_i[31:0]),
 		      .BusDev_i		(BusDev_i[12:0]));
@@ -378,7 +390,7 @@ module tlp_app (/*AUTOARG*/
 		  .CmdFifoRdReq		(CmdFifoRdReq),
 		  .RdBypassFifoWrReq_o	(RdBypassFifoWrReq_o),
 		  .RdBypassFifoRdReq_o	(RdBypassFifoRdReq_o),
-		  .CplBuffRdAddr_o	(CplBuffRdAddr_o[6:0]),
+		  .CplBuffRdAddr	(CplBuffRdAddr[6:0]),
 		  .WrDatFifoRdReq	(WrDatFifoRdReq),
 		  .TxRpFifoRdReq_o	(TxRpFifoRdReq_o),
 		  .TxCplSent_o		(TxCplSent_o),
@@ -403,7 +415,7 @@ module tlp_app (/*AUTOARG*/
 		  .RdBypassFifoFull_i	(RdBypassFifoFull_i),
 		  .RdBypassFifoUsedw_i	(RdBypassFifoUsedw_i[6:0]),
 		  .RdBypassFifoDat_i	(RdBypassFifoDat_i[97:0]),
-		  .TxCplDat_i		(TxCplDat_i[127:0]),
+		  .TxCplDat		(TxCplDat[127:0]),
 		  .WrDatFifoDo		(WrDatFifoDo[128:0]),
 		  .TxRpFifoData_i	(TxRpFifoData_i[130:0]),
 		  .RpTLPReady_i		(RpTLPReady_i),

@@ -2,12 +2,11 @@
 
 module tlp_txresp_cntrl (/*AUTOARG*/
    // Outputs
-   RxPndgRdFifoRdReq_o, CplReqHeader, CplReqWr, CplRamWrAddr_o,
+   RxPndgRdFifoRdReq_o, CplReqHeader, CplReqWr, CplRamWrAddr,
    TxRespIdle_o,
    // Inputs
    AvlClk_i, Rstn_i, RxPndgRdFifoEmpty_i, RxPndgRdFifoDato_i,
-   TxReadDataValid_i, CmdFifoUsedw_i, CmdFifoBusy, DevCsr_i,
-   BusDev_i
+   TxReadDataValid_i, CmdFifoUsedw, CmdFifoBusy, DevCsr_i, BusDev_i
    );
    
    parameter TXCPL_BUFF_ADDR_WIDTH = 9;
@@ -26,10 +25,10 @@ module tlp_txresp_cntrl (/*AUTOARG*/
    // Interface to the Command Fifo
    output [98:0] 			CplReqHeader;
    output                               CplReqWr;
-   input [3:0] 				CmdFifoUsedw_i;
+   input [3:0] 				CmdFifoUsedw;
    
    // Interface to Completion data buffer
-   output [TXCPL_BUFF_ADDR_WIDTH-1:0] 	CplRamWrAddr_o;
+   output [TXCPL_BUFF_ADDR_WIDTH-1:0] 	CplRamWrAddr;
    
    // Interface to the Avalon Tx Control Module
    input                                CmdFifoBusy;
@@ -118,7 +117,7 @@ wire        sm_idle;
 wire  [6:0] over_read_sel;
 wire        rd_dwlen_gte_4;
   
-assign cmd_fifo_ok = (CmdFifoUsedw_i < 8);
+assign cmd_fifo_ok = (CmdFifoUsedw < 8);
      
 always @(posedge AvlClk_i or negedge Rstn_i)  // state machine registers
   begin
@@ -603,7 +602,7 @@ always @(posedge AvlClk_i or negedge Rstn_i)
     end
 
 
-assign CplRamWrAddr_o = cplbuff_addr_cntr;
+assign CplRamWrAddr = cplbuff_addr_cntr;
 
 endmodule
 

@@ -44,13 +44,24 @@
 // 	ports                              : - Names begin with Uppercase
 // Code:
 module tlp_txcpl_buffer (/*AUTOARG*/
+   // Outputs
+   TxCplDat,
    // Inputs
-   clk, rst
+   clk, rst, CplRamWrAddr, TxReadDataValid_i, TxReadData_i,
+   CplBuffRdAddr
    );
+   parameter TXCPL_BUFF_ADDR_WIDTH = 8;
+   
    input clk;
    input rst;
 
-
+   input [TXCPL_BUFF_ADDR_WIDTH-1:0] CplRamWrAddr;
+   input 			     TxReadDataValid_i; // TODO
+   input [31:0] 		     TxReadData_i;
+   
+   input [TXCPL_BUFF_ADDR_WIDTH-1:0] CplBuffRdAddr;
+   output [127:0] 		     TxCplDat;
+   
 endmodule
 // 
 // tlp_txcpl_buffer.v ends here

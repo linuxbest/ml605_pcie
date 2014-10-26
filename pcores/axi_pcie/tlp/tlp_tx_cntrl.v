@@ -41,8 +41,8 @@ module tlp_tx_cntrl
   output         RdBypassFifoRdReq_o,
   
   // Completion buffer interface
-  output  [6:0]   CplBuffRdAddr_o,
-  input   [127:0] TxCplDat_i,
+  output  [6:0]   CplBuffRdAddr,
+  input   [127:0] TxCplDat,
   
   // write data fifo interface
   output         WrDatFifoRdReq,
@@ -592,19 +592,15 @@ always @(posedge Clk_i or negedge Rstn_i)
 assign tx_address_lsb = rdbp_fifo_sel?  {RdBypassFifoDat_i[3:2], 2'b00}: {CmdFifoDat[3:2], 2'b00}; 
 assign addr_bit2    = rdbp_fifo_sel? RdBypassFifoDat[2]: CmdFifoDat[2];       
 assign cpl_dat_clken = ((sm_cpl_data ) |  (sm_wait & output_fifo_ok_reg & is_cpl) | (sm_cpl_hdr & (tx_address_lsb !=0))) & cpl_clken_cntr != 0 & ~is_abort_cpl;   
-assign CplBuffRdAddr_o[6:0] = cpl_dat_clken & ~is_flush_cpl? (cpl_addr_reg + 1) : cpl_addr_reg;
+assign CplBuffRdAddr[6:0] = cpl_dat_clken & ~is_flush_cpl? (cpl_addr_reg + 1) : cpl_addr_reg;
 
 always @(posedge Clk_i or negedge Rstn_i)
   begin
      if(~Rstn_i)
        cpl_addr_reg <= 9'h0;
      else
-       cpl_addr_reg <= CplBuffRdAddr_o;
+       cpl_addr_reg <= CplBuffRdAddr;
   end
-
-
-
-
 
 // adjusted Dw Length for CPL 3-DW header only
 /// this is the number adjusted for the PCIe TLP
@@ -821,9 +817,9 @@ assign cmd_header2 = is_cpl? cpl_header2 : req_header2;
 
 /// Tx data TLP   
 generate if (CB_PCIE_RX_LITE == 0)
-   assign tx_completion_data = is_flush_cpl? 128'h0 : TxCplDat_i;
+   assign tx_completion_data = is_flush_cpl? 128'h0 : TxCplDat;
 else
-   assign tx_completion_data = is_flush_cpl? 128'h0 : {TxCplDat_i[31:0], TxCplDat_i[31:0],TxCplDat_i[31:0], TxCplDat_i[31:0]};  // duplicate 32-bit low and high
+   assign tx_completion_data = is_flush_cpl? 128'h0 : {TxCplDat[31:0], TxCplDat[31:0],TxCplDat[31:0], TxCplDat[31:0]};  // duplicate 32-bit low and high
 endgenerate
 
 assign tlp_3dw_header = is_cpl | is_wr_32 | is_rd_32 | is_abort_cpl | is_flush_cpl;
