@@ -84,8 +84,8 @@ module tlp_app (/*AUTOARG*/
    RdBypassFifoEmpty_i, RdBypassFifoDat_i, PndngRdFifoUsedW_i,
    PndngRdFifoEmpty_i, PCIeIrqEna_i, MsiData_i, MsiCsr_i, MsiAddr_i,
    MsiAck_i, MasterEnable_i, IntxAck_i, DevCsr_i, CplReq_i, CplDesc_i,
-   CplBufData_i, CmdFifoUsedw, Clk_i, BusDev_i, AvlClk_i,
-   A2PMbWrReq_i, A2PMbWrAddr_i, clk, rst
+   CplBufData_i, Clk_i, BusDev_i, AvlClk_i, A2PMbWrReq_i,
+   A2PMbWrAddr_i, clk, rst
    );
    parameter TXCPL_BUFF_ADDR_WIDTH = 8; // TODO
    
@@ -99,7 +99,6 @@ module tlp_app (/*AUTOARG*/
    input		AvlClk_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v, ...
    input [12:0]		BusDev_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v, ...
    input		Clk_i;			// To tlp_tx_cntrl of tlp_tx_cntrl.v, ...
-   input [3:0]		CmdFifoUsedw;		// To tlp_txresp_cntrl of tlp_txresp_cntrl.v
    input [129:0]	CplBufData_i;		// To tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
    input [5:0]		CplDesc_i;		// To tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
    input		CplReq_i;		// To tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
@@ -369,7 +368,7 @@ module tlp_app (/*AUTOARG*/
 		      .RxPndgRdFifoEmpty_i(RxPndgRdFifoEmpty_i),
 		      .RxPndgRdFifoDato_i(RxPndgRdFifoDato_i[56:0]),
 		      .TxReadDataValid_i(TxReadDataValid_i),
-		      .CmdFifoUsedw	(CmdFifoUsedw[3:0]),
+		      .CmdFifoUsedW	(CmdFifoUsedW[3:0]),
 		      .CmdFifoBusy	(CmdFifoBusy),
 		      .DevCsr_i		(DevCsr_i[31:0]),
 		      .BusDev_i		(BusDev_i[12:0]));
