@@ -4,7 +4,7 @@ module tlp_rxresp_cntrl (/*AUTOARG*/
    // Outputs
    RxCplRdAddr, RxCplBuffFree, TxsReadData_o, TxsReadDataValid_o,
    // Inputs
-   Clk_i, AvlClk_i, Rstn_i, RxmRstn_i, CplReq_i, CplDesc_i,
+   Clk_i, AvlClk_i, Rstn_i, RxmRstn_i, RxCplReq, RxCplDesc,
    RxCplBufData
    );
   parameter CG_COMMON_CLOCK_MODE = 1;
@@ -15,8 +15,8 @@ module tlp_rxresp_cntrl (/*AUTOARG*/
     input          RxmRstn_i;
     
     // Interface to Transaction layer
-    input          CplReq_i;
-    input  [5:0]   CplDesc_i; 
+    input          RxCplReq;
+    input  [5:0]   RxCplDesc; 
     
     /// interface to completion buffer
     output [8:0]    RxCplRdAddr;
@@ -70,15 +70,15 @@ always @(posedge AvlClk_i or negedge Rstn_i)
     if(~Rstn_i)
        cpl_req_reg <= 1'b0;
     else
-       cpl_req_reg <= CplReq_i;
+       cpl_req_reg <= CplReq;
   end
   
-  assign cpl_req_rise = ~cpl_req_reg & CplReq_i;
+  assign cpl_req_rise = ~cpl_req_reg & CplReq;
 
 
-  assign    tag = CplDesc_i[3:0];
-  assign    valid_cpl = CplDesc_i[4];
-  assign    last_cpl = CplDesc_i[5];
+  assign    tag = RxCplDesc[3:0];
+  assign    valid_cpl = RxCplDesc[4];
+  assign    last_cpl = RxCplDesc[5];
   assign    cpl_eop  = RxCplBufData[129];
 generate
   genvar i;

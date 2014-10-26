@@ -13,7 +13,7 @@ module tlp_rx_cntrl (/*AUTOARG*/
    RxmAddress_5_o, RxmWriteData_5_o, RxmByteEnable_5_o,
    RxmBurstCount_5_o, RxmRead_5_o, RxRpFifoWrData_o, RxRpFifoWrReq_o,
    PndgRdFifoWrReq, PndgRdHeader, RxCplRamWrAddr, RxCplRamWrDat,
-   RxCplRamWrEna, CplReq_o, CplDesc_o,
+   RxCplRamWrEna, RxCplReq, RxCplDesc,
    // Inputs
    Clk_i, Rstn_i, RxStData_i, RxStParity_i, RxStBe_i, RxStEmpty_i,
    RxStErr_i, RxStSop_i, RxStEop_i, RxStValid_i, RxStBarDec1_i,
@@ -115,8 +115,8 @@ module tlp_rx_cntrl (/*AUTOARG*/
     output  [129:0]            RxCplRamWrDat;
     output                     RxCplRamWrEna;
 
-    output  reg               CplReq_o;
-    output  reg [5:0]         CplDesc_o;
+    output  reg               RxCplReq;
+    output  reg [5:0]         RxCplDesc;
     
     // Read respose module interface
     
@@ -1267,13 +1267,13 @@ always @(posedge Clk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
      begin
-      CplReq_o <= 1'b0;
-      CplDesc_o <= 0;
+      RxCplReq <= 1'b0;
+      RxCplDesc <= 0;
      end
     else
      begin
-      CplReq_o <= (rxsm_cplena_0 ) & is_cpl_wd;
-      CplDesc_o <= {last_cpl, 1'b1, cpl_tag[3:0]};
+      RxCplReq <= (rxsm_cplena_0 ) & is_cpl_wd;
+      RxCplDesc <= {last_cpl, 1'b1, cpl_tag[3:0]};
      end
   end
   
