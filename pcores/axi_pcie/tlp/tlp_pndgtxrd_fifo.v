@@ -47,9 +47,9 @@
 module tlp_pndgtxrd_fifo (/*AUTOARG*/
    // Outputs
    PndngRdFifoUsedW, PndngRdFifoEmpty, RxPndgRdFifoEmpty,
-   RxPndgRdFifoDato, RxPndgRdFifoRdReq,
+   RxPndgRdFifoDato,
    // Inputs
-   clk, rst, PndgRdFifoWrReq, PndgRdHeader
+   clk, rst, PndgRdFifoWrReq, PndgRdHeader, RxPndgRdFifoRdReq
    );
    input clk;
    input rst;
@@ -61,7 +61,7 @@ module tlp_pndgtxrd_fifo (/*AUTOARG*/
 
    output 	RxPndgRdFifoEmpty;
    output [56:0] RxPndgRdFifoDato;
-   output 	 RxPndgRdFifoRdReq;
+   input 	 RxPndgRdFifoRdReq;
    
 endmodule
 // 

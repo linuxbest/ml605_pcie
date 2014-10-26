@@ -2,10 +2,10 @@
 
 module tlp_txresp_cntrl (/*AUTOARG*/
    // Outputs
-   RxPndgRdFifoRdReq_o, CplReqHeader, CplReqWr, CplRamWrAddr,
-   TxRespIdle_o,
+   RxPndgRdFifoRdReq, CplReqHeader, CplReqWr, CplRamWrAddr,
+   TxRespIdle,
    // Inputs
-   AvlClk_i, Rstn_i, RxPndgRdFifoEmpty_i, RxPndgRdFifoDato_i,
+   AvlClk_i, Rstn_i, RxPndgRdFifoEmpty, RxPndgRdFifoDato,
    TxReadDataValid_i, CmdFifoUsedW, CmdFifoBusy, DevCsr_i, BusDev_i
    );
    
@@ -36,7 +36,7 @@ module tlp_txresp_cntrl (/*AUTOARG*/
    // cfg signals
    input [31:0] 			DevCsr_i;             
    input [12:0] 			BusDev_i;
-   output                               TxRespIdle_o;
+   output                               TxRespIdle;
    
 localparam      TXRESP_IDLE          = 14'h0000;
 localparam      TXRESP_RD_FIFO       = 14'h0003;
@@ -135,7 +135,7 @@ always @*
   begin
     case(txresp_state)
       TXRESP_IDLE :
-        if(~RxPndgRdFifoEmpty_i)      
+        if(~RxPndgRdFifoEmpty)      
           txresp_nxt_state <= TXRESP_RD_FIFO;            
         else
           txresp_nxt_state <= TXRESP_IDLE;            
@@ -224,7 +224,7 @@ always @*
  assign   sm_wait_first = txresp_state[8]; 
   assign   sm_wait_max = txresp_state[9]; 
   assign   sm_wait_last = txresp_state[10];          
-  assign TxRespIdle_o = sm_idle & RxPndgRdFifoEmpty_i;
+  assign TxRespIdle     = sm_idle & RxPndgRdFifoEmpty;
 // SR reg to indicate the first completion of a read
 
 always @(posedge AvlClk_i or negedge Rstn_i)

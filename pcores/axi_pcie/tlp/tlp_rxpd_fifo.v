@@ -47,7 +47,7 @@ module tlp_rxpd_fifo (/*AUTOARG*/
    // Outputs
    TxRpFifoData, RpTLPReady, RxRdInProgress,
    // Inputs
-   clk, rst, TxRpFifoRdReq
+   clk, rst, TxRpFifoRdReq, RxRpFifoWrData, RxRpFifoWrReq
    );
    input clk;
    input rst;
@@ -58,6 +58,9 @@ module tlp_rxpd_fifo (/*AUTOARG*/
 
    output         RxRdInProgress;
 
+   input [130:0]  RxRpFifoWrData;
+   input 	  RxRpFifoWrReq;
+		  
    // not root port.
    assign RpTLPReady   = 1'b0;
    assign TxRpFifoData = 131'h0;

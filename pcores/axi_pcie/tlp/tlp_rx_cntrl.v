@@ -11,7 +11,7 @@ module tlp_rx_cntrl (/*AUTOARG*/
    RxmRead_3_o, RxmWrite_4_o, RxmAddress_4_o, RxmWriteData_4_o,
    RxmByteEnable_4_o, RxmBurstCount_4_o, RxmRead_4_o, RxmWrite_5_o,
    RxmAddress_5_o, RxmWriteData_5_o, RxmByteEnable_5_o,
-   RxmBurstCount_5_o, RxmRead_5_o, RxRpFifoWrData_o, RxRpFifoWrReq_o,
+   RxmBurstCount_5_o, RxmRead_5_o, RxRpFifoWrData, RxRpFifoWrReq,
    PndgRdFifoWrReq, PndgRdHeader, RxCplRamWrAddr, RxCplRamWrDat,
    RxCplRamWrEna, RxCplReq, RxCplDesc,
    // Inputs
@@ -98,8 +98,8 @@ module tlp_rx_cntrl (/*AUTOARG*/
    input                                  RxmWaitRequest_5_i;
    output                                 RxmRead_5_o;
    
-   output  [130:0]                        RxRpFifoWrData_o;      
-   output                                 RxRpFifoWrReq_o;     
+   output  [130:0]                        RxRpFifoWrData;      
+   output                                 RxRpFifoWrReq;     
     
     // Pending Read FIFO interface
     input  [3:0]              PndngRdFifoUsedW;
@@ -845,7 +845,7 @@ always @*
           rx_nxt_state_0 <= RX_PIPE_0;
           
       RX_CHECK_TXCPLSIZE_0:
-        if((cpl_buff_ok & ~is_rx_lite_core & (~is_read_bar_changed | is_read_bar_changed & TxRespIdle_i)) |  ( is_rx_lite_core & ~RxRdInProgress))
+        if((cpl_buff_ok & ~is_rx_lite_core & (~is_read_bar_changed | is_read_bar_changed & TxRespIdle)) |  ( is_rx_lite_core & ~RxRdInProgress))
            rx_nxt_state_0 <= RX_STORE_RD_0;
         else
            rx_nxt_state_0 <= RX_CHECK_TXCPLSIZE_0;
@@ -912,10 +912,10 @@ assign rxsm_cplena_0        = rx_state_0[8];
 assign rxsm_pipe_0          =  rx_state_0[9];
 assign rxsm_msg_dump_0      = rx_state_0[10];
 assign rxsm_rp_stream       = rx_state_0[11];       
-assign RxRpFifoWrReq_o      = (rxsm_chk_hdr_0 & (is_cpl_fifo & cpl_tag_fifo >= 16)) |
+
+assign RxRpFifoWrReq  = (rxsm_chk_hdr_0 & (is_cpl_fifo & cpl_tag_fifo >= 16)) |
                                rxsm_rp_stream & ~rx_header0_reg[66]; // ~odd address
-                               
-assign RxRpFifoWrData_o     = {input_fifo_dataout[154] ,input_fifo_dataout[145] ,input_fifo_dataout[144],  input_fifo_dataout[127:0]};
+assign RxRpFifoWrData = {input_fifo_dataout[154] ,input_fifo_dataout[145] ,input_fifo_dataout[144],  input_fifo_dataout[127:0]};
 
 
 
