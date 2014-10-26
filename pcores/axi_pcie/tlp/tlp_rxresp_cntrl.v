@@ -1,32 +1,33 @@
 `timescale 1ns / 1ps
 
-module tlp_rxresp_cntrl
+module tlp_rxresp_cntrl (/*AUTOARG*/
+   // Outputs
+   RxCplRdAddr, RxCplBuffFree, TxsReadData_o, TxsReadDataValid_o,
+   // Inputs
+   Clk_i, AvlClk_i, Rstn_i, RxmRstn_i, CplReq_i, CplDesc_i,
+   RxCplBufData
+   );
+  parameter CG_COMMON_CLOCK_MODE = 1;
 
-#(
-
-  parameter CG_COMMON_CLOCK_MODE = 1
-)
-
-  ( input          Clk_i,
-    input          AvlClk_i,
-    input          Rstn_i,
-    input          RxmRstn_i,
+  input          Clk_i;
+    input          AvlClk_i;
+    input          Rstn_i;
+    input          RxmRstn_i;
     
     // Interface to Transaction layer
-    input          CplReq_i,
-    input  [5:0]   CplDesc_i, 
+    input          CplReq_i;
+    input  [5:0]   CplDesc_i; 
     
     /// interface to completion buffer
-    output [8:0]    CplRdAddr_o,
-    input [129:0]   CplBufData_i,
+    output [8:0]    RxCplRdAddr;
+    input [129:0]   RxCplBufData;
     
     // interface to tx control
-    output         RxCplBuffFree,
+    output         RxCplBuffFree;
     
     // interface to Avalon slave
-    output  [127:0]  TxsReadData_o,
-    output          TxsReadDataValid_o
-  );
+    output  [127:0]  TxsReadData_o;
+    output          TxsReadDataValid_o;
   
   //state machine encoding
   localparam RXCPL_IDLE         = 3'h0;
@@ -78,7 +79,7 @@ always @(posedge AvlClk_i or negedge Rstn_i)
   assign    tag = CplDesc_i[3:0];
   assign    valid_cpl = CplDesc_i[4];
   assign    last_cpl = CplDesc_i[5];
-  assign    cpl_eop  = CplBufData_i[129];
+  assign    cpl_eop  = RxCplBufData[129];
 generate
   genvar i;
   for(i=0; i< 16; i=i+1)
@@ -157,7 +158,7 @@ assign rxcpl_idle_state = ~rxcpl_state[0];
 assign rdpipe_st = rxcpl_state[1];
 assign rdvalid_st = rxcpl_state[2];
 assign TxsReadDataValid_o = rdpipe_st | rdvalid_st;
-assign TxsReadData_o[127:0] = CplBufData_i[127:0];
+assign TxsReadData_o[127:0] = RxCplBufData[127:0];
 assign cpl_done = (rdvalid_st | rdpipe_st) & cpl_eop ;
 //assign TagRelease_o =  rxcpl_idle_state & (last_cpl_reg[hol_cntr]);
 assign RxCplBuffFree = cpl_done;
@@ -184,6 +185,6 @@ always @(posedge AvlClk_i or negedge Rstn_i)
   end          
           
           
- assign CplRdAddr_o = {  hol_cntr,      rd_addr_cntr};                                                          
+ assign RxCplRdAddr = {  hol_cntr,      rd_addr_cntr};                                                          
 endmodule
 

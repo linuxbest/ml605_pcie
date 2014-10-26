@@ -44,12 +44,22 @@
 // 	ports                              : - Names begin with Uppercase
 // Code:
 module tlp_rxcpl_buffer (/*AUTOARG*/
+   // Outputs
+   RxCplBufData,
    // Inputs
-   clk, rst
+   clk, rst, RxCplRamWrAddr, RxCplRamWrDat, RxCplRamWrEna,
+   RxCplRdAddr
    );
    input clk;
    input rst;
 
+   input [8:0] RxCplRamWrAddr;
+   input [129:0] RxCplRamWrDat;
+   input 	 RxCplRamWrEna;
+
+   input [8:0] 	 RxCplRdAddr;
+   output [129:0] RxCplBufData;
+	 
 endmodule
 // 
 // tlp_rxcpl_buffer.v ends here

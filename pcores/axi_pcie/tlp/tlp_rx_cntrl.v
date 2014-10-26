@@ -12,8 +12,8 @@ module tlp_rx_cntrl (/*AUTOARG*/
    RxmByteEnable_4_o, RxmBurstCount_4_o, RxmRead_4_o, RxmWrite_5_o,
    RxmAddress_5_o, RxmWriteData_5_o, RxmByteEnable_5_o,
    RxmBurstCount_5_o, RxmRead_5_o, RxRpFifoWrData_o, RxRpFifoWrReq_o,
-   PndgRdFifoWrReq, PndgRdHeader, CplRamWrAddr_o, CplRamWrDat_o,
-   CplRamWrEna_o, CplReq_o, CplDesc_o,
+   PndgRdFifoWrReq, PndgRdHeader, RxCplRamWrAddr, RxCplRamWrDat,
+   RxCplRamWrEna, CplReq_o, CplDesc_o,
    // Inputs
    Clk_i, Rstn_i, RxStData_i, RxStParity_i, RxStBe_i, RxStEmpty_i,
    RxStErr_i, RxStSop_i, RxStEop_i, RxStValid_i, RxStBarDec1_i,
@@ -111,9 +111,10 @@ module tlp_rx_cntrl (/*AUTOARG*/
     
 
    // Completion data dual port ram interface
-    output  [8:0]              CplRamWrAddr_o;
-    output  [129:0]            CplRamWrDat_o;
-    output                    CplRamWrEna_o;
+    output  [8:0]              RxCplRamWrAddr;
+    output  [129:0]            RxCplRamWrDat;
+    output                     RxCplRamWrEna;
+
     output  reg               CplReq_o;
     output  reg [5:0]         CplDesc_o;
     
@@ -1258,9 +1259,9 @@ generate
     end 
     
 
-assign CplRamWrAddr_o[8:0] = {cpl_tag[3:0], cpl_add_cntr[4:0]};
-assign CplRamWrEna_o = rxsm_cplena_0 ;
-assign CplRamWrDat_o = {(last_cpl & rx_eop_reg2), 1'b0, rx_data_reg[127:0]};
+assign RxCplRamWrAddr[8:0] = {cpl_tag[3:0], cpl_add_cntr[4:0]};
+assign RxCplRamWrEna       = rxsm_cplena_0 ;
+assign RxCplRamWrDat       = {(last_cpl & rx_eop_reg2), 1'b0, rx_data_reg[127:0]};
 
 always @(posedge Clk_i or negedge Rstn_i) 
   begin
