@@ -1,80 +1,74 @@
-
 `timescale 1ns / 1ps
-module tlp_m_axi_cntrl
+module tlp_m_axi_cntrl (/*AUTOARG*/
+   // Outputs
+   TxWaitRequest_o, TxReqWr, TxReqHeader, CmdFifoBusy_o,
+   WrDatFifoWrReq_o, WrDatFifoEop_o,
+   // Inputs
+   AvlClk_i, Rstn_i, TxChipSelect_i, TxRead_i, TxWrite_i,
+   TxBurstCount_i, TxAddress_i, TxByteEnable_i, CmdFifoUsedW,
+   WrDatFifoUsedW_i, DevCsr_i, BusDev_i, MasterEnable_i, MsiCsr_i,
+   MsiAddr_i, MsiData_i, PCIeIrqEna_i, A2PMbWrAddr_i, A2PMbWrReq_i,
+   TxsReadDataValid_i, RxmIrq_i
+   );
 
-# (
-    parameter CG_AVALON_S_ADDR_WIDTH = 20,
-    parameter CB_PCIE_MODE = 0,
-    parameter CG_RXM_IRQ_NUM = 1,
-    parameter CB_A2P_ADDR_MAP_PASS_THRU_BITS = 24,
-    parameter CB_PCIE_RX_LITE = 0,
-    parameter BYPASSS_A2P_TRANSLATION = 0,
-    parameter AVALON_ADDR_WIDTH = 32
+   parameter CG_RXM_IRQ_NUM = 1;
+   parameter CB_A2P_ADDR_MAP_PASS_THRU_BITS = 24;
+   
+   input                                AvlClk_i;  // Avalon clock
+   input                                Rstn_i;    // Avalon reset
+   
+   // Avalon master port                
+   input                                TxChipSelect_i;  // avalon chip sel
+   input 				TxRead_i;        // avalon read
+   input                                TxWrite_i;       // avalon write
+   input [5:0] 				TxBurstCount_i;    // busrt count
+   input [CG_AVALON_S_ADDR_WIDTH-1:0] 	TxAddress_i; // word address
+   input [15:0] 			TxByteEnable_i;    // read enable
+   output                               TxWaitRequest_o;
+   
+   // Command/Data buffer interface
+   output 				TxReqWr;
+   output [98:0] 			TxReqHeader;
+   input [3:0] 				CmdFifoUsedW;
+   
+   // Tx Resp interface
+   output                               CmdFifoBusy_o;
+   
+   input [5:0] 				WrDatFifoUsedW_i;
+   output                               WrDatFifoWrReq_o;
+   output                               WrDatFifoEop_o;
+   
+   // cfg signals
+   input [31:0] 			DevCsr_i;
+   input [12:0] 			BusDev_i;
+   input                                MasterEnable_i;
+   input [15:0] 			MsiCsr_i;
+   input [63:0] 			MsiAddr_i;
+   input [15:0] 			MsiData_i;
+   input [31:0] 			PCIeIrqEna_i;
+   input [11:0] 			A2PMbWrAddr_i;
+   input                                A2PMbWrReq_i;
+   
+   input                                TxsReadDataValid_i;
+   
+   input [CG_RXM_IRQ_NUM-1 : 0] 	RxmIrq_i;
 
-   )
-    
-( input                                AvlClk_i,     // Avalon clock
-  input                                Rstn_i,    // Avalon reset
-                                       
-  // Avalon master port                
-  input                                TxChipSelect_i,  // avalon chip sel
-  input                                TxRead_i,        // avalon read
-  input                                TxWrite_i,       // avalon write
-  input  [5:0]                         TxBurstCount_i,    // busrt count
-  input  [CG_AVALON_S_ADDR_WIDTH-1:0]  TxAddress_i, // word address
-  input  [15:0] TxByteEnable_i,    // read enable
-  output                               TxWaitRequest_o,
-  
-  // Address translation interface
-  output                               AvlAddrVld_o,
-  output [CG_AVALON_S_ADDR_WIDTH-1:0]  AvlAddr_o, // byte address 
-  input                                AddrTransDone_i,     
-  input  [63:0]                        PCIeAddr_i,
-  input  [1:0]                         PCIeAddrSpace_i,
-  
-  // Command/Data buffer interface
-  output                               CmdFifoWrReq_o,
-  output      [98:0]                   TxReqHeader_o,
-  input       [3:0]                    CmdFifoUsedW_i,
-  
-  // Tx Resp interface
-  output                               CmdFifoBusy_o,
-  
-  input        [5:0]                   WrDatFifoUsedW_i,
-  output                               WrDatFifoWrReq_o,
-  output                               WrDatFifoEop_o,
-  
-  // cfg signals
-  input      [31:0]                    DevCsr_i,             
-  input      [12:0]                    BusDev_i,    
-  input                                MasterEnable_i,
-  input      [15:0]                    MsiCsr_i,
-  input      [63:0]                    MsiAddr_i,
-  input      [15:0]                    MsiData_i,
-  input      [31:0]                    PCIeIrqEna_i,
-  input      [11:0]                    A2PMbWrAddr_i,
-  input                                A2PMbWrReq_i,
-  
-  input                                TxsReadDataValid_i,
-  
-  input     [CG_RXM_IRQ_NUM-1 : 0]     RxmIrq_i
-);
-
-localparam      TXAVL_IDLE          = 10'h000;
-localparam      TXAVL_WAIT_WRADDR   = 10'h003;
-localparam      TXAVL_BURST_DATA    = 10'h005;
-localparam      TXAVL_WRHEADER      = 10'h009;
-localparam      TXAVL_WR_HOLD       = 10'h011;
-localparam      TXAVL_WAIT_RDADDR   = 10'h021;
-localparam      TXAVL_RDHEADER      = 10'h041;
-localparam      TXAVL_RDPIPE        = 10'h081;
-localparam      TXAVL_WRPIPE        = 10'h101;
-localparam      TXAVL_MSI           = 10'h201;
-
-localparam      TX_PNDGRD_IDLE     = 3'h0;
-localparam      TX_PNDGRD_LATCH    = 3'h3;
-localparam      TX_PNDGRD_CHECK    = 3'h5;
-
+   
+   localparam      TXAVL_IDLE          = 10'h000;
+   localparam      TXAVL_WAIT_WRADDR   = 10'h003;
+   localparam      TXAVL_BURST_DATA    = 10'h005;
+   localparam      TXAVL_WRHEADER      = 10'h009;
+   localparam      TXAVL_WR_HOLD       = 10'h011;
+   localparam      TXAVL_WAIT_RDADDR   = 10'h021;
+   localparam      TXAVL_RDHEADER      = 10'h041;
+   localparam      TXAVL_RDPIPE        = 10'h081;
+   localparam      TXAVL_WRPIPE        = 10'h101;
+   localparam      TXAVL_MSI           = 10'h201;
+   
+   localparam      TX_PNDGRD_IDLE     = 3'h0;
+   localparam      TX_PNDGRD_LATCH    = 3'h3;
+   localparam      TX_PNDGRD_CHECK    = 3'h5;
+   
 wire sm_idle;    
 wire sm_msi;
 wire sm_wait_wraddr;  
@@ -86,41 +80,21 @@ wire sm_rdheader;
 wire sm_wr_pipe;
 wire sm_rd_pipe;
 
-wire          rx_only;
-generate if(CB_PCIE_MODE == 1)
-  assign rx_only = 1'b1;
-else
-  assign rx_only = 1'b0;
-endgenerate
-
-wire bypass_trans;
-generate if (AVALON_ADDR_WIDTH == 64)
-		begin
-			assign bypass_trans = 1'b1;
-		end
-	else
-		begin
-			assign bypass_trans = 1'b0;
-		end
-endgenerate
-
 reg [CG_AVALON_S_ADDR_WIDTH-1:0]  wr_addr_reg;
 reg [CG_AVALON_S_ADDR_WIDTH-1:0]  rd_addr_reg;
 
-assign AvlAddrVld_o       = sm_wait_rdaddr | sm_wait_wraddr;
-assign AvlAddr_o          = (sm_wait_rdaddr | sm_rdheader)? rd_addr_reg : wr_addr_reg;
-
+   // ATU is bypassed
 wire   [1:0]  pcie_address_space;
 wire   [63:0] pci_exp_address;
 wire          trans_ready;
-assign pcie_address_space = bypass_trans? 2'b01 : PCIeAddrSpace_i;
-assign pci_exp_address    = bypass_trans? {{(64-CG_AVALON_S_ADDR_WIDTH){1'b0}}, AvlAddr_o} : PCIeAddr_i[63:0];
-assign trans_ready        = AddrTransDone_i;
+assign pcie_address_space = 2'b01;
+assign pci_exp_address    = {{(64-CG_AVALON_S_ADDR_WIDTH){1'b0}}, AvlAddr_o};
+assign trans_ready        = 1'b1;
 
 wire wrdat_fifo_ok;
 wire cmd_fifo_ok;
 assign wrdat_fifo_ok = (WrDatFifoUsedW_i <= 32);
-assign cmd_fifo_ok   = (CmdFifoUsedW_i <= 8);
+assign cmd_fifo_ok   = (CmdFifoUsedW <= 8);
 
 
 /// Tx control state machine
@@ -149,9 +123,9 @@ always @*
       TXAVL_IDLE :
         if(rxm_irq_sreg & cmd_fifo_ok & MasterEnable_i)
           txavl_nxt_state <= TXAVL_MSI;
-       else if((TxChipSelect_i & TxWrite_i & wr_fifos_ok & ~rx_only  & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready))    // write cycle detected and fifo ok (cmd and wr_dat fifo)
+       else if((TxChipSelect_i & TxWrite_i & wr_fifos_ok & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready))    // write cycle detected and fifo ok (cmd and wr_dat fifo)
           txavl_nxt_state <= TXAVL_WAIT_WRADDR;       
-        else if(TxChipSelect_i & TxRead_i & ~rx_only & reads_cntr < 8  & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready)   // read cycle
+        else if(TxChipSelect_i & TxRead_i & reads_cntr < 8  & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready)   // read cycle
           txavl_nxt_state <= TXAVL_WAIT_RDADDR;            
         else
           txavl_nxt_state <= TXAVL_IDLE;
@@ -713,7 +687,7 @@ wire       addr_bit2;
 reg  [3:0] addr_lsb;
 wire [8:0] wr_dw_len;
 
-    assign CmdFifoWrReq_o = sm_wrheader | sm_rdheader | sm_msi;
+   assign TxReqWr = sm_wrheader | sm_rdheader | sm_msi;
    // write header format
    // config write (always 32-bit in length)
       assign tag          = {4'h0, tag_cntr};
@@ -748,7 +722,7 @@ wire [8:0] tlp_len;
       
       assign tlp_len[8:0] = ({dw_size[8:2], 2'b00} - adjusted_dw_reg);
 
-    assign TxReqHeader_o[98:0] = { last_sub_read ,lbe[3:0], tlp_len[8:0] ,3'b000, sm_msi, 3'b000, tag_cntr[3:0], fbe[3:0], 2'b00, is_wr64, is_wr32, is_rd64, is_rd32, pcie_address[63:32], pcie_address[31:0] };
+    assign TxReqHeader[98:0] = { last_sub_read ,lbe[3:0], tlp_len[8:0] ,3'b000, sm_msi, 3'b000, tag_cntr[3:0], fbe[3:0], 2'b00, is_wr64, is_wr32, is_rd64, is_rd32, pcie_address[63:32], pcie_address[31:0] };
 
 reg         addr_trans_done_reg;
 always @(posedge AvlClk_i or negedge Rstn_i)  // state machine registers
@@ -964,4 +938,3 @@ always @(posedge AvlClk_i or negedge Rstn_i)
        rxm_irq_sreg <= 1'b0;
   end
 endmodule
-

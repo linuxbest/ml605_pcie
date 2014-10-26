@@ -44,11 +44,27 @@
 // 	ports                              : - Names begin with Uppercase
 // Code:
 module tlp_txcmd_fifo (/*AUTOARG*/
+   // Outputs
+   CmdFifoUsedW, CmdFifoEmpty, CmdFifoEmpty_r,
    // Inputs
-   clk, rst
+   clk, rst, TxReqHeader, TxReqWr, CplReqHeader, CplReqWr,
+   CmdFifoRdReq, CmdFifoDat
    );
    input clk;
    input rst;
+
+   input [98:0] TxReqHeader;
+   input        TxReqWr;
+
+   input [98:0] CplReqHeader;
+   input 	CplReqWr;
+   
+   output [3:0] CmdFifoUsedW;
+   output 	CmdFifoEmpty;
+   output 	CmdFifoEmpty_r;
+
+   input 	CmdFifoRdReq;
+   output [98:0] CmdFifoDat;
    
 endmodule
 // 

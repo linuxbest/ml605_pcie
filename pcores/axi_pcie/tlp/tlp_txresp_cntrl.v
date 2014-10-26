@@ -1,47 +1,44 @@
 `timescale 1ns / 1ps
 
-module tlp_txresp_cntrl
-
-#(
-
-    parameter TXCPL_BUFF_ADDR_WIDTH = 9
-
-)
-
-
+module tlp_txresp_cntrl (/*AUTOARG*/
+   // Outputs
+   RxPndgRdFifoRdReq_o, CplReqHeader, CplReqWr, CplRamWrAddr_o,
+   TxRespIdle_o,
+   // Inputs
+   AvlClk_i, Rstn_i, RxPndgRdFifoEmpty_i, RxPndgRdFifoDato_i,
+   TxReadDataValid_i, CmdFifoUsedw_i, CmdFifoBusy_i, DevCsr_i,
+   BusDev_i
+   );
    
-    
-( input                                AvlClk_i,     // Avalon clock
-  input                                Rstn_i,    // Avalon reset
-  
-  // interface to the Rx pending read FIFO
-  input                                RxPndgRdFifoEmpty_i,
-  input    [56:0]                      RxPndgRdFifoDato_i,
-  output                               RxPndgRdFifoRdReq_o,
-  
-  // interface to the Avalon bus
-  input                                TxReadDataValid_i,
-  
-  
-  // Interface to the Command Fifo
-  output      [98:0]                   CmdFifoDatin_o,
-  output                               CmdFifoWrReq_o,
-  input       [3:0]                    CmdFifoUsedw_i,
-  
-  // Interface to Completion data buffer
-  output     [TXCPL_BUFF_ADDR_WIDTH-1:0]                    CplRamWrAddr_o,
-  
-  // Interface to the Avalon Tx Control Module
-  input                                CmdFifoBusy_i,
-  
-  // cfg signals
-  input      [31:0]                    DevCsr_i,             
-  input      [12:0]                    BusDev_i,
-  output                               TxRespIdle_o
-  
-                                       
-);
+   parameter TXCPL_BUFF_ADDR_WIDTH = 9;
 
+   input                                AvlClk_i;     // Avalon clock
+   input                                Rstn_i;    // Avalon reset
+   
+   // interface to the Rx pending read FIFO
+   input                                RxPndgRdFifoEmpty_i;
+   input [56:0] 			RxPndgRdFifoDato_i;
+   output                               RxPndgRdFifoRdReq_o;
+   
+   // interface to the Avalon bus
+   input                                TxReadDataValid_i;
+   
+   // Interface to the Command Fifo
+   output [98:0] 			CplReqHeader;
+   output                               CplReqWr;
+   input [3:0] 				CmdFifoUsedw_i;
+   
+   // Interface to Completion data buffer
+   output [TXCPL_BUFF_ADDR_WIDTH-1:0] 	CplRamWrAddr_o;
+   
+   // Interface to the Avalon Tx Control Module
+   input                                CmdFifoBusy_i;
+   
+   // cfg signals
+   input [31:0] 			DevCsr_i;             
+   input [12:0] 			BusDev_i;
+   output                               TxRespIdle_o;
+   
 localparam      TXRESP_IDLE          = 14'h0000;
 localparam      TXRESP_RD_FIFO       = 14'h0003;
 localparam      TXRESP_LD_BCNT       = 14'h0005;
@@ -587,11 +584,11 @@ assign is_uns_rd_size = RxPndgRdFifoDato_i[56];
 
 assign dw_len[8:0] = is_uns_rd_size? 0 :  bytes_sent[10:2];
 
-assign CmdFifoDatin_o[98:0] = { 3'b000 ,attr, dw_len[8:0], tc, remain_bytes_reg, is_flush, 1'b1, 4'h0, 
+assign CplReqHeader[98:0] = { 3'b000 ,attr, dw_len[8:0], tc, remain_bytes_reg, is_flush, 1'b1, 4'h0, 
                                               32'h0, is_uns_rd_size, requester_id, tag, lower_addr_reg[6:0]};
             
                                       
-assign CmdFifoWrReq_o = sm_send_first | sm_send_last | sm_send_max;
+assign CplReqWr = sm_send_first | sm_send_last | sm_send_max;
 
 assign RxPndgRdFifoRdReq_o = sm_rd_fifo;
 
