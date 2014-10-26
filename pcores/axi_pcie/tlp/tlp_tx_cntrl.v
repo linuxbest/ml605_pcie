@@ -45,8 +45,8 @@ module tlp_tx_cntrl
   input   [127:0] TxCplDat_i,
   
   // write data fifo interface
-  output         WrDatFifoRdReq_o,
-  input [128:0]  TxWrDat_i,
+  output         WrDatFifoRdReq,
+  input [128:0]  WrDatFifoDo,
   
   // RP interface
   output           TxRpFifoRdReq_o,  
@@ -720,10 +720,10 @@ always @(posedge Clk_i or negedge Rstn_i)
     if(~Rstn_i)
      wrdat_fifo_rd_reg <= 1'b0 ;
     else 
-       wrdat_fifo_rd_reg <= WrDatFifoRdReq_o;
+       wrdat_fifo_rd_reg <= WrDatFifoRdReq;
    end
   
- assign WrDatFifoRdReq_o = (sm_wr_hdr & ~wrdat_fifo_eop) |(sm_wr_data & output_fifo_ok_reg & ~wrdat_fifo_eop) | (sm_check_cmdfifo & is_wr & output_fifo_ok_reg & ~msi_req) | (sm_wait & is_wr & output_fifo_ok_reg & ~wrdat_fifo_eop);
+ assign WrDatFifoRdReq = (sm_wr_hdr & ~wrdat_fifo_eop) |(sm_wr_data & output_fifo_ok_reg & ~wrdat_fifo_eop) | (sm_check_cmdfifo & is_wr & output_fifo_ok_reg & ~msi_req) | (sm_wait & is_wr & output_fifo_ok_reg & ~wrdat_fifo_eop);
  
  
 
@@ -793,7 +793,7 @@ wire [31:0]  tlp_dw2;
 wire         tlp_dw2_sel;
 wire         tlp_dw3_sel;
 
-assign wrdat_fifo_eop = TxWrDat_i[128];
+assign wrdat_fifo_eop = WrDatFifoDo[128];
 assign tlp_dw2_sel = (is_wr_32 | is_rd_32);           
 assign tlp_dw3_sel = (is_wr_32 | is_rd_32);           
 assign tlp_dw2     = tlp_dw2_sel? adr_low : adr_hi;
@@ -827,7 +827,7 @@ else
 endgenerate
 
 assign tlp_3dw_header = is_cpl | is_wr_32 | is_rd_32 | is_abort_cpl | is_flush_cpl;
-assign tlp_buff_data = (sm_wr_data | sm_wr_hdr)? TxWrDat_i : tx_completion_data;
+assign tlp_buff_data = (sm_wr_data | sm_wr_hdr)? WrDatFifoDo : tx_completion_data;
 
 
 reg  [127:0]        tlp_holding_reg;

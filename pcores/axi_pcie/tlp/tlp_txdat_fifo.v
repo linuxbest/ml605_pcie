@@ -45,11 +45,24 @@
 // Code:
 
 module tlp_txdat_fifo (/*AUTOARG*/
+   // Outputs
+   WrDatFifoUsedW, WrDatFifoFull, WrDatFifoDo,
    // Inputs
-   clk, rst
+   clk, rst, WrDatFifoWrReq, WrDatFifoEop, WrDatFifoDi,
+   WrDatFifoRdReq
    );
    input clk;
    input rst;
+
+   output [5:0] WrDatFifoUsedW;
+   output 	WrDatFifoFull;
+   
+   input 	WrDatFifoWrReq;
+   input 	WrDatFifoEop;
+   input [127:0] WrDatFifoDi;
+   
+   input 	 WrDatFifoRdReq;
+   output [128:0] WrDatFifoDo;
    
 endmodule
 // 

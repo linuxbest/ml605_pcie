@@ -1,12 +1,12 @@
 `timescale 1ns / 1ps
 module tlp_m_axi_cntrl (/*AUTOARG*/
    // Outputs
-   TxWaitRequest_o, TxReqWr, TxReqHeader, CmdFifoBusy_o,
-   WrDatFifoWrReq_o, WrDatFifoEop_o,
+   TxWaitRequest_o, TxReqWr, TxReqHeader, CmdFifoBusy, WrDatFifoWrReq,
+   WrDatFifoEop,
    // Inputs
    AvlClk_i, Rstn_i, TxChipSelect_i, TxRead_i, TxWrite_i,
    TxBurstCount_i, TxAddress_i, TxByteEnable_i, CmdFifoUsedW,
-   WrDatFifoUsedW_i, DevCsr_i, BusDev_i, MasterEnable_i, MsiCsr_i,
+   WrDatFifoUsedW, DevCsr_i, BusDev_i, MasterEnable_i, MsiCsr_i,
    MsiAddr_i, MsiData_i, PCIeIrqEna_i, A2PMbWrAddr_i, A2PMbWrReq_i,
    TxsReadDataValid_i, RxmIrq_i
    );
@@ -34,9 +34,9 @@ module tlp_m_axi_cntrl (/*AUTOARG*/
    // Tx Resp interface
    output                               CmdFifoBusy;
    
-   input [5:0] 				WrDatFifoUsedW_i;
-   output                               WrDatFifoWrReq_o;
-   output                               WrDatFifoEop_o;
+   input [5:0] 				WrDatFifoUsedW;
+   output                               WrDatFifoWrReq;
+   output                               WrDatFifoEop;
    
    // cfg signals
    input [31:0] 			DevCsr_i;
@@ -93,7 +93,7 @@ assign trans_ready        = 1'b1;
 
 wire wrdat_fifo_ok;
 wire cmd_fifo_ok;
-assign wrdat_fifo_ok = (WrDatFifoUsedW_i <= 32);
+assign wrdat_fifo_ok = (WrDatFifoUsedW <= 32);
 assign cmd_fifo_ok   = (CmdFifoUsedW <= 8);
 
 
@@ -206,8 +206,8 @@ assign  sm_msi          = txavl_state[9];
 wire last_sub_read; 
 assign last_sub_read    = sm_rdheader & last_rd_segment;
 
-assign WrDatFifoWrReq_o = sm_burst_data & TxWrite_i & TxChipSelect_i;
-assign WrDatFifoEop_o   = sm_burst_data & ( (pcie_boundary == 1 | burst_counter == 1 | maxpayload_reached) & TxChipSelect_i & TxWrite_i);
+assign WrDatFifoWrReq  = sm_burst_data & TxWrite_i & TxChipSelect_i;
+assign WrDatFifoEop    = sm_burst_data & ( (pcie_boundary == 1 | burst_counter == 1 | maxpayload_reached) & TxChipSelect_i & TxWrite_i);
 /// //////////////////state machine supporting signals //////////////////
 
 wire          txready;
