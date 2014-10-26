@@ -86,140 +86,29 @@ localparam      TXAVL_RDPIPE        = 10'h081;
 localparam      TXAVL_WRPIPE        = 10'h101;
 localparam      TXAVL_MSI           = 10'h201;
 
-
 localparam      TX_PNDGRD_IDLE     = 3'h0;
 localparam      TX_PNDGRD_LATCH    = 3'h3;
 localparam      TX_PNDGRD_CHECK    = 3'h5;
 
-
-
-
-
-wire          wr_fifos_ok; 
-wire          pcie_boundary;
-wire          maxpayload_reached;
-wire          last_rd_segment; 
-wire [12:0]   bytes_to_4KB;
-wire [12:0]   unadjusted_bytes_to_4KB;
-wire [12:0]   wr_bytes_to_4KB;
-wire          wr_bytes_to_4KB_lte_16;
-wire          to_4KB_sel;
-wire          remain_bytes_sel;
-
-wire          sm_idle;    
-reg           sm_idle_reg;
-wire          sm_msi;
-wire          sm_wait_wraddr;  
-wire          sm_burst_data;   
-wire          sm_wrheader;     
-wire          sm_wr_hold;      
-wire          sm_wait_rdaddr;  
-wire          sm_rdheader;
-wire [8:0]    rd_dw_len;
-wire [8:0]    wr_dw_len;
-wire          txready;
-wire          mid_wr_header;
-wire          rx_only;
-wire reads_up;  
-wire reads_down;
-wire cmd_fifo_ok;
-wire wrdat_fifo_ok;
-wire bypass_trans;
-wire pcie_space_64;
-
-   
-
-wire [15:0] requestor_id;
-wire [7:0] tag;
-reg [3:0] fbe;
-reg [3:0] lbe;
-wire       addr_bit2;
-wire [CG_RXM_IRQ_NUM-1:0]  generate_irq;
-
-reg [9:0]                         txavl_state;
-reg [9:0]                         txavl_nxt_state;
-reg [9:0]                         burst_counter;
-reg [CG_AVALON_S_ADDR_WIDTH-1:0]  wr_addr_reg;
-reg [CG_AVALON_S_ADDR_WIDTH-1:0]  avl_wr_addr_cntr;
-reg [12:0]                        payload_byte_cntr;
-reg [CG_AVALON_S_ADDR_WIDTH-1:0]  rd_addr_reg;
-reg [9:0]                        rd_size;
-reg [9:0]                        unadjusted_rd_size;
-reg [9:0]                        remain_rdbytecnt_reg;
-reg [9:0]                        unadjusted_remain_rdbytecnt_reg;
-reg [11:0]                        max_rd_size;
-reg [11:0]                        max_payload_size;
-reg [3:0]                         tag_cntr;
-reg [1:0]                         rdsize_sel_reg;
-reg [3:0]                         adjusted_dw_reg;
-reg [15:0]                         first_avlbe_reg;
-reg [15:0]                         last_avlbe_reg;
-
-
-reg [12:0]                       bytes_to_4KB_reg;
-reg [12:0]                       unadjusted_bytes_to_4KB_reg;
-wire [1:0]                       rdsize_sel;
-wire [8:0]                       dw_size;    
-reg  [8:0]                       dw_size_reg;            
-wire [8:0]                       tlp_len;
-
-wire is_rd32;
-wire is_rd64;
-wire is_wr32;
-wire is_wr64;
+wire sm_idle;    
+wire sm_msi;
+wire sm_wait_wraddr;  
+wire sm_burst_data;   
+wire sm_wrheader;     
+wire sm_wr_hold;      
+wire sm_wait_rdaddr;  
+wire sm_rdheader;
 wire sm_wr_pipe;
 wire sm_rd_pipe;
-wire byte_eq_maxpayload;
 
-reg [3:0] reads_cntr;                     
-
-reg [2:0]  pendingrd_state;
-reg [2:0]  pendingrd_nxt_state;
-wire       pendingrd_fifo_wrreq;
-wire       pendingrd_fifo_rdreq;
-wire       pendingrd_fifo_rdempty;
-wire   [9:0] pendingrd_fifo_q;
-reg    [9:0] read_valid_counter;
-wire         pendingrd_check_state;
-wire         terminal_count;
-reg          terminal_count_reg;
-wire         pendingrd_fifo_latch;
-reg  [9:0]     pendingrd_fifo_q_reg;
-reg          rxm_irq_reg;
-wire        rxm_irq_rise;
-reg         rxm_irq_sreg  /* synthesis ALTERA_ATTRIBUTE = "SUPPRESS_DA_RULE_INTERNAL =D101" */;   
-reg [9:0]  rd_byte_count;                        
-reg [9:0]  adjusted_rd_byte_count;
-reg [CG_AVALON_S_ADDR_WIDTH-1:0] tx_byte_address;
-reg [1:0]  adjusted_dw_non_burst;
-reg [3:0]  adjusted_dw_burst;
-reg [3:0]  fbe_nibble_sel;
-reg [3:0]  lbe_nibble_sel;
-reg [63:CB_A2P_ADDR_MAP_PASS_THRU_BITS]   translated_address_upper_reg;
-reg [1:0]  address_space_reg;
-reg [CB_A2P_ADDR_MAP_PASS_THRU_BITS-1:0] translated_address_cntr;
-reg         addr_trans_done_reg;
-wire        addr_trans_done_rise;
-wire [63:0]  pcie_address;
-reg  [5:0]   tx_burst_cnt_reg;
-reg [CB_A2P_ADDR_MAP_PASS_THRU_BITS-1:0]  wr_addr_counter;
-reg  [3:0]  addr_lsb;
-wire        one_dw_read;      
-wire        one_dw_write;
-wire        one_dw;
-reg         tx_single_qw_reg;
-reg         wr_split_pending;
-wire   [63:0] pci_exp_address;
-wire   [1:0] pcie_address_space;
-wire         trans_ready;
-
-
+wire          rx_only;
 generate if(CB_PCIE_MODE == 1)
   assign rx_only = 1'b1;
 else
   assign rx_only = 1'b0;
 endgenerate
 
+wire bypass_trans;
 generate if (AVALON_ADDR_WIDTH == 64)
 		begin
 			assign bypass_trans = 1'b1;
@@ -229,18 +118,29 @@ generate if (AVALON_ADDR_WIDTH == 64)
 			assign bypass_trans = 1'b0;
 		end
 endgenerate
-			assign AvlAddrVld_o = sm_wait_rdaddr | sm_wait_wraddr;
-assign AvlAddr_o = (sm_wait_rdaddr | sm_rdheader)? rd_addr_reg : wr_addr_reg;
-assign pcie_address_space = bypass_trans? 2'b01 : PCIeAddrSpace_i;
-assign pci_exp_address  = bypass_trans? {{(64-CG_AVALON_S_ADDR_WIDTH){1'b0}}, AvlAddr_o} : PCIeAddr_i[63:0];
-assign trans_ready   = AddrTransDone_i;
 
+reg [CG_AVALON_S_ADDR_WIDTH-1:0]  wr_addr_reg;
+reg [CG_AVALON_S_ADDR_WIDTH-1:0]  rd_addr_reg;
+
+assign AvlAddrVld_o       = sm_wait_rdaddr | sm_wait_wraddr;
+assign AvlAddr_o          = (sm_wait_rdaddr | sm_rdheader)? rd_addr_reg : wr_addr_reg;
+
+wire   [1:0]  pcie_address_space;
+wire   [63:0] pci_exp_address;
+wire          trans_ready;
+assign pcie_address_space = bypass_trans? 2'b01 : PCIeAddrSpace_i;
+assign pci_exp_address    = bypass_trans? {{(64-CG_AVALON_S_ADDR_WIDTH){1'b0}}, AvlAddr_o} : PCIeAddr_i[63:0];
+assign trans_ready        = AddrTransDone_i;
+
+wire wrdat_fifo_ok;
+wire cmd_fifo_ok;
 assign wrdat_fifo_ok = (WrDatFifoUsedW_i <= 32);
-assign cmd_fifo_ok = (CmdFifoUsedW_i <= 8);
+assign cmd_fifo_ok   = (CmdFifoUsedW_i <= 8);
 
 
 /// Tx control state machine
-
+reg [9:0]                         txavl_state;
+reg [9:0]                         txavl_nxt_state;
 always @(posedge AvlClk_i or negedge Rstn_i)  // state machine registers
   begin
     if(~Rstn_i)
@@ -250,15 +150,21 @@ always @(posedge AvlClk_i or negedge Rstn_i)  // state machine registers
   end
 
 // state machine next state gen
-
-
+wire          wr_fifos_ok; 
+wire          pcie_boundary;
+wire          maxpayload_reached;
+wire          last_rd_segment; 
+reg [CB_A2P_ADDR_MAP_PASS_THRU_BITS-1:0]  wr_addr_counter;
+reg [9:0]     burst_counter;
+reg [3:0]     reads_cntr;                     
+reg           rxm_irq_sreg  /* synthesis ALTERA_ATTRIBUTE = "SUPPRESS_DA_RULE_INTERNAL =D101" */;   
 always @*  
   begin
     case(txavl_state)
       TXAVL_IDLE :
         if(rxm_irq_sreg & cmd_fifo_ok & MasterEnable_i)
           txavl_nxt_state <= TXAVL_MSI;
-       else if((TxChipSelect_i & TxWrite_i & wr_fifos_ok & ~rx_only  & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready))        // write cycle detected and fifo ok (cmd and wr_dat fifo)
+       else if((TxChipSelect_i & TxWrite_i & wr_fifos_ok & ~rx_only  & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready))    // write cycle detected and fifo ok (cmd and wr_dat fifo)
           txavl_nxt_state <= TXAVL_WAIT_WRADDR;       
         else if(TxChipSelect_i & TxRead_i & ~rx_only & reads_cntr < 8  & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready)   // read cycle
           txavl_nxt_state <= TXAVL_WAIT_RDADDR;            
@@ -326,12 +232,7 @@ always @*
     endcase
  end
  
- 
- 
- 
  /// assign sm outputs
-wire last_sub_read; 
-
 assign  sm_idle         = ~txavl_state[0];    
 assign  sm_wait_wraddr  = txavl_state[1] ;  
 assign  sm_burst_data   = txavl_state[2];    
@@ -343,21 +244,23 @@ assign  sm_rd_pipe      = txavl_state[7];
 assign  sm_wr_pipe      = txavl_state[8];
 assign  sm_msi          = txavl_state[9];
 
-assign last_sub_read = sm_rdheader & last_rd_segment;
+wire last_sub_read; 
+assign last_sub_read    = sm_rdheader & last_rd_segment;
 
 assign WrDatFifoWrReq_o = sm_burst_data & TxWrite_i & TxChipSelect_i;
 assign WrDatFifoEop_o   = sm_burst_data & ( (pcie_boundary == 1 | burst_counter == 1 | maxpayload_reached) & TxChipSelect_i & TxWrite_i);
 /// //////////////////state machine supporting signals //////////////////
 
-
-assign txready = sm_burst_data | (sm_idle & TxChipSelect_i & TxRead_i & reads_cntr < 8 & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready) ; // do not assert ready when IRQ pending
+wire          txready;
+assign txready          = sm_burst_data | (sm_idle & TxChipSelect_i & TxRead_i & reads_cntr < 8 & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready) ; // do not assert ready when IRQ pending
                           
 assign TxWaitRequest_o  = ~txready;                     
 // write fifo ok
-assign wr_fifos_ok = cmd_fifo_ok & wrdat_fifo_ok;
+assign wr_fifos_ok      = cmd_fifo_ok & wrdat_fifo_ok;
 
 // PCI Express address boundary (4-KB)
 /// write address counter with 128-bit granuality
+wire        addr_trans_done_rise;
   always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -368,6 +271,8 @@ assign wr_fifos_ok = cmd_fifo_ok & wrdat_fifo_ok;
       wr_addr_counter <= wr_addr_counter + 16;
   end
   
+reg [CG_AVALON_S_ADDR_WIDTH-1:0] avl_wr_addr_cntr;
+reg [CG_AVALON_S_ADDR_WIDTH-1:0] tx_byte_address;
   always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -377,8 +282,9 @@ assign wr_fifos_ok = cmd_fifo_ok & wrdat_fifo_ok;
     else if(sm_burst_data &  TxWrite_i & TxChipSelect_i)
       avl_wr_addr_cntr <= avl_wr_addr_cntr + 16;
   end
+
   // hold the address for address translation
-   // adjust the address based on Byte enable. Shoud use casez to maske don't care upper bits
+  // adjust the address based on Byte enable. Shoud use casez to maske don't care upper bits
   always @*
     begin
        case(TxByteEnable_i[15:0])
@@ -389,6 +295,7 @@ assign wr_fifos_ok = cmd_fifo_ok & wrdat_fifo_ok;
        endcase
     end
   
+reg         tx_single_qw_reg;
  always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -401,6 +308,7 @@ assign wr_fifos_ok = cmd_fifo_ok & wrdat_fifo_ok;
      end
   end
  
+reg         wr_split_pending;
  always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -421,8 +329,8 @@ assign wr_fifos_ok = cmd_fifo_ok & wrdat_fifo_ok;
        wr_addr_reg <= avl_wr_addr_cntr;
   end
  
- 
- 
+reg  [8:0]                       dw_size_reg;            
+wire [8:0]                       dw_size;    
   always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -452,6 +360,7 @@ assign wr_fifos_ok = cmd_fifo_ok & wrdat_fifo_ok;
   end
   
 //Max payload reached
+reg [12:0]                        payload_byte_cntr;
 always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -462,11 +371,10 @@ always @(posedge AvlClk_i or negedge Rstn_i)
       payload_byte_cntr <= payload_byte_cntr + 16;
   end
 
+reg [11:0]                        max_payload_size;
 assign maxpayload_reached = (payload_byte_cntr == (max_payload_size-16)) & TxChipSelect_i & TxWrite_i;
 
 // decode the max payload size
-
-
 always @*
   begin
     case(DevCsr_i[7:5])
@@ -486,7 +394,7 @@ always @*
 
 
 // decode the max read size
-
+reg [11:0]                        max_rd_size;
 always @*
   begin
     case(DevCsr_i[14:12])
@@ -496,8 +404,8 @@ always @*
     endcase
   end
 
-
 // read address reg increments byte the amount of byte in each read header
+reg [9:0]                        rd_size;
 always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -511,8 +419,7 @@ always @(posedge AvlClk_i or negedge Rstn_i)
   /// the reaming byte count after a read header is written into the Command FIFO   
   /// since the address is adjusted based on the byte enables, the byte count also needs to be calculated from byte enables
   /// We may need to add support for the starting BE at any byte position and with any contiguous bytes within a word.
-  
-  
+reg  [5:0]   tx_burst_cnt_reg;
 always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -524,6 +431,9 @@ always @(posedge AvlClk_i or negedge Rstn_i)
 // Since the read with burst count > 1 must have all byte enable asserted
 // it might not make sense to use the   tx_burst_cnt_reg in the logic
 // below. We could hard code to 4, 8, 12, or 16 ???  
+reg [9:0]  rd_byte_count;                        
+reg [9:0]  adjusted_rd_byte_count;
+reg [15:0] first_avlbe_reg;
 always @*
   begin
     case (first_avlbe_reg[15:0])
@@ -531,9 +441,9 @@ always @*
     //  16'hFFF0, 16'h0FFF                     : rd_byte_count = {tx_burst_cnt_reg[5:1], 4'b1100}; // + 12;
     //  16'hFF00, 16'h0FF0, 16'h00FF           : rd_byte_count = {tx_burst_cnt_reg[5:1], 4'b1000}; // + 8;
     //  16'hF000                               : rd_byte_count = {tx_burst_cnt_reg[5:1], 4'b0100}; // + 4;        
-    16'h000F, 16'h00F0, 16'h0F00, 16'hF000 :  rd_byte_count = 16;                                         
-    16'hFFF0, 16'h0FFF                     :  rd_byte_count = 16; 
-    16'hFF00, 16'h0FF0, 16'h00FF           :  rd_byte_count = 16;  
+    16'h000F, 16'h00F0, 16'h0F00, 16'hF000 : rd_byte_count = 16;                                         
+    16'hFFF0, 16'h0FFF                     : rd_byte_count = 16; 
+    16'hFF00, 16'h0FF0, 16'h00FF           : rd_byte_count = 16;  
     default                                : rd_byte_count = {tx_burst_cnt_reg[5:0], 4'b0000};
     endcase
   end  
@@ -549,6 +459,7 @@ always @*
     endcase
   end    
   
+reg           sm_idle_reg;
 always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -557,8 +468,7 @@ always @(posedge AvlClk_i or negedge Rstn_i)
       sm_idle_reg <= sm_idle;
   end  
   
-  
-  
+reg [9:0]                        remain_rdbytecnt_reg;
 always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -569,6 +479,7 @@ always @(posedge AvlClk_i or negedge Rstn_i)
       remain_rdbytecnt_reg <= remain_rdbytecnt_reg - rd_size;
   end
   
+reg [9:0]                        unadjusted_remain_rdbytecnt_reg;
 always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -580,10 +491,15 @@ always @(posedge AvlClk_i or negedge Rstn_i)
   end
 
   // bytes to 4KB boundary
+wire [12:0]   bytes_to_4KB;
+wire [12:0]   unadjusted_bytes_to_4KB;
+
   assign bytes_to_4KB = 13'h1000 - rd_addr_reg[11:0];
   assign unadjusted_bytes_to_4KB = 13'h1000 - {rd_addr_reg[11:4], 4'h0};
   
   // pipeline for fmax
+reg [12:0]                       bytes_to_4KB_reg;
+reg [12:0]                       unadjusted_bytes_to_4KB_reg;
   always @(posedge AvlClk_i or negedge Rstn_i)
     begin
       if(~Rstn_i)
@@ -600,10 +516,14 @@ always @(posedge AvlClk_i or negedge Rstn_i)
   
   
   // decode the mux select between remain bytes, bytes to 4KB, or max read size
+wire          to_4KB_sel;
+wire          remain_bytes_sel;
   assign to_4KB_sel = (max_rd_size >= bytes_to_4KB) & (remain_rdbytecnt_reg > bytes_to_4KB);
   assign  remain_bytes_sel = (remain_rdbytecnt_reg <= max_rd_size) & (remain_rdbytecnt_reg <= bytes_to_4KB);
   
   
+wire [1:0]                       rdsize_sel;
+reg [1:0]                        rdsize_sel_reg;
   assign rdsize_sel = {to_4KB_sel,remain_bytes_sel};
   // pipeline the select for better fmax
   always @(posedge AvlClk_i or negedge Rstn_i)
@@ -624,6 +544,7 @@ always @(posedge AvlClk_i or negedge Rstn_i)
       endcase
     end
 
+reg [9:0]                        unadjusted_rd_size;
   always @*
     begin
       case(rdsize_sel_reg)
@@ -633,8 +554,8 @@ always @(posedge AvlClk_i or negedge Rstn_i)
       endcase
     end
 
-
-                        
+reg [15:0]                         last_avlbe_reg;
+wire        one_dw;
 assign one_dw =        ((first_avlbe_reg == 16'h000F |
                         first_avlbe_reg == 16'h00F0 |
                         first_avlbe_reg == 16'h0F00 | 
@@ -646,12 +567,12 @@ assign one_dw =        ((first_avlbe_reg == 16'h000F |
                         last_avlbe_reg == 16'hF000 ) & (dw_size_reg == 4)) ; 
     
     
+wire [8:0]    rd_dw_len;
 assign rd_dw_len[8:0] = {1'b0, unadjusted_rd_size[9:2]};
- 
-  assign last_rd_segment = (rdsize_sel == 2'b01);
-
+assign last_rd_segment = (rdsize_sel == 2'b01);
 
 /// tag generation counter
+reg [3:0]                         tag_cntr;
 always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -662,14 +583,17 @@ always @(posedge AvlClk_i or negedge Rstn_i)
   
 
 /// calculate byte enable
-
+wire [12:0]   wr_bytes_to_4KB;
+wire          wr_bytes_to_4KB_lte_16;
 assign wr_bytes_to_4KB = 13'h1000 - wr_addr_reg[11:0];
 assign wr_bytes_to_4KB_lte_16 = (wr_bytes_to_4KB <= 16) ;
 
-
+wire byte_eq_maxpayload;
+wire mid_wr_header;
   assign byte_eq_maxpayload = (payload_byte_cntr == max_payload_size);
   assign mid_wr_header = sm_wrheader & (pcie_boundary == 0 | byte_eq_maxpayload) & burst_counter != 0;
   
+reg [1:0]  adjusted_dw_non_burst;
  always @*
   begin
     case(first_avlbe_reg[15:0])
@@ -687,7 +611,7 @@ assign wr_bytes_to_4KB_lte_16 = (wr_bytes_to_4KB <= 16) ;
     endcase
   end
   
-  
+reg [3:0]  adjusted_dw_burst;
 always @*
   begin
     case({last_avlbe_reg[15:0], first_avlbe_reg[15:0]})                              
@@ -714,6 +638,7 @@ always @*
     endcase                                                                          
 end
 
+reg [3:0]                         adjusted_dw_reg;
 always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -725,7 +650,6 @@ always @(posedge AvlClk_i or negedge Rstn_i)
       adjusted_dw_reg <= adjusted_dw_burst;
   end 
 
-  
 always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -744,7 +668,7 @@ always @(posedge AvlClk_i or negedge Rstn_i)
       last_avlbe_reg <= TxByteEnable_i[15:0];
   end   
   
-
+reg [3:0]  fbe_nibble_sel;
 always @*
   begin
     case(first_avlbe_reg[15:0])
@@ -762,6 +686,7 @@ always @*
     endcase
   end
 
+reg [3:0]  lbe_nibble_sel;
 always @*
   begin
     case(last_avlbe_reg[15:0])
@@ -775,7 +700,8 @@ always @*
     endcase
   end
   
-
+reg [3:0] fbe;
+reg [3:0] lbe;
 always @*
   begin
      case({fbe_nibble_sel[3:0]})  // first BE
@@ -785,9 +711,6 @@ always @*
        default : fbe[3:0] = first_avlbe_reg[3:0];
      endcase
   end    
-
-
-
 always @*
   begin
      case({one_dw, lbe_nibble_sel[3:0]})  // Last BE
@@ -799,13 +722,14 @@ always @*
      endcase
   end    
 
-
-
-
-
  /// command fifo interface
+wire [7:0] tag;
+wire       addr_bit2;
+reg  [3:0] addr_lsb;
+wire [8:0] wr_dw_len;
+
     assign CmdFifoWrReq_o = sm_wrheader | sm_rdheader | sm_msi;
- // write header format
+   // write header format
    // config write (always 32-bit in length)
       assign tag          = {4'h0, tag_cntr};
       // if the first dw is not enable, then the second dw is
@@ -821,22 +745,27 @@ always @*
            endcase
          end  
       
-                            
       assign wr_dw_len    = payload_byte_cntr[10:2];  
       assign dw_size[8:0] = (sm_rdheader | sm_wait_rdaddr)? rd_dw_len[8:0] : wr_dw_len[8:0];      
 
+wire [63:0] pcie_address;
+reg [1:0] address_space_reg;
+wire is_rd32;
+wire is_rd64;
+wire is_wr32;
+wire is_wr64;
+wire [8:0] tlp_len;
+
       assign is_rd32 =  sm_rdheader & (~address_space_reg[0] | pcie_address[63:32] == 32'h0);
       assign is_rd64 =  sm_rdheader & (address_space_reg[0] & pcie_address[63:32] != 32'h0);
-      
-      
       assign is_wr32 =  (sm_wrheader & (~address_space_reg[0] | pcie_address[63:32] == 32'h0)) | (sm_msi & MsiAddr_i[63:32] == 32'h0) ;
       assign is_wr64 =  (sm_wrheader & (address_space_reg[0] & pcie_address[63:32] != 32'h0)) |  (sm_msi & MsiAddr_i[63:32] != 32'h0);
       
       assign tlp_len[8:0] = ({dw_size[8:2], 2'b00} - adjusted_dw_reg);
 
     assign TxReqHeader_o[98:0] = { last_sub_read ,lbe[3:0], tlp_len[8:0] ,3'b000, sm_msi, 3'b000, tag_cntr[3:0], fbe[3:0], 2'b00, is_wr64, is_wr32, is_rd64, is_rd32, pcie_address[63:32], pcie_address[31:0] };
-    
 
+reg         addr_trans_done_reg;
 always @(posedge AvlClk_i or negedge Rstn_i)  // state machine registers
   begin
     if(~Rstn_i)
@@ -848,6 +777,7 @@ always @(posedge AvlClk_i or negedge Rstn_i)  // state machine registers
 assign addr_trans_done_rise = ~addr_trans_done_reg & trans_ready;
 
  // latch the translated address
+reg [63:CB_A2P_ADDR_MAP_PASS_THRU_BITS]   translated_address_upper_reg;
  always @(posedge AvlClk_i or negedge Rstn_i) 
   begin
     if(~Rstn_i)
@@ -862,6 +792,7 @@ assign addr_trans_done_rise = ~addr_trans_done_reg & trans_ready;
       end
  end
  
+reg [CB_A2P_ADDR_MAP_PASS_THRU_BITS-1:0] translated_address_cntr;
  always @(posedge AvlClk_i or negedge Rstn_i)  
   begin
     if(~Rstn_i)
@@ -879,7 +810,8 @@ assign pcie_address[63:0] = {translated_address_upper_reg[63:CB_A2P_ADDR_MAP_PAS
 assign CmdFifoBusy_o = sm_burst_data | sm_wait_rdaddr | sm_wr_pipe | sm_wr_hold | sm_wait_wraddr | sm_wrheader | rxm_irq_sreg; //  indicate busy one clock before accessing it
 
 // Logic to keep track of the numbers of outstanding reads
-
+reg [2:0]  pendingrd_state;
+reg [2:0]  pendingrd_nxt_state;
 always @(posedge AvlClk_i or negedge Rstn_i)  // state machine registers
   begin
     if(~Rstn_i)
@@ -888,6 +820,15 @@ always @(posedge AvlClk_i or negedge Rstn_i)  // state machine registers
       pendingrd_state <= pendingrd_nxt_state;
   end
 
+wire       pendingrd_fifo_wrreq;
+wire       pendingrd_fifo_rdreq;
+wire       pendingrd_fifo_rdempty;
+wire   [9:0] pendingrd_fifo_q;
+reg    [9:0] read_valid_counter;
+wire         pendingrd_check_state;
+wire         terminal_count;
+wire         pendingrd_fifo_latch;
+reg  [9:0]   pendingrd_fifo_q_reg;
 
 always @ *
   begin
@@ -914,8 +855,6 @@ always @ *
          
     endcase
  end
-
-
 
 assign pendingrd_fifo_wrreq = (sm_idle & TxChipSelect_i & TxRead_i & ~TxWaitRequest_o & reads_cntr < 8 & ~rxm_irq_sreg & ~trans_ready); // no read accepted when IRQ pending
 assign pendingrd_fifo_rdreq = (!pendingrd_state[0] & !pendingrd_fifo_rdempty) | (pendingrd_check_state & ~pendingrd_fifo_rdempty & (read_valid_counter == pendingrd_fifo_q_reg));
@@ -958,7 +897,6 @@ always @(posedge AvlClk_i or negedge Rstn_i)
        read_valid_counter <= read_valid_counter + 1;
   end
 
-
 always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -967,9 +905,13 @@ always @(posedge AvlClk_i or negedge Rstn_i)
       pendingrd_fifo_q_reg <= pendingrd_fifo_q;
   end
 
+wire reads_up;  
+wire reads_down;
+
 assign reads_up       = (sm_idle & TxChipSelect_i & TxRead_i &  ~TxWaitRequest_o & reads_cntr < 8 & ~rxm_irq_sreg & ~trans_ready); // no read accepted when IRQ pending
 assign terminal_count = (read_valid_counter == pendingrd_fifo_q_reg);
 
+reg          terminal_count_reg;
 always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
@@ -977,7 +919,6 @@ always @(posedge AvlClk_i or negedge Rstn_i)
     else
        terminal_count_reg <= terminal_count;
   end
-
 
 assign reads_down = !terminal_count_reg & terminal_count; // rise edge
 
@@ -993,8 +934,7 @@ always @(posedge AvlClk_i or negedge Rstn_i)
 
 // MSI insertion to the command FIFO when the Rxm Irq is asserted
 // this mechanism is to maintain the "write" ordering between MSI and upstream writes
-
-
+wire [CG_RXM_IRQ_NUM-1:0]  generate_irq;
 generate
   genvar i;
      for(i=0; i<CG_RXM_IRQ_NUM; i=i+1)
@@ -1002,6 +942,9 @@ generate
               assign generate_irq[i] = (RxmIrq_i[i] & PCIeIrqEna_i[i]);
         end
 endgenerate
+
+reg  rxm_irq_reg;
+wire rxm_irq_rise;
 
 always @(posedge AvlClk_i or negedge Rstn_i)
   begin
@@ -1012,7 +955,6 @@ always @(posedge AvlClk_i or negedge Rstn_i)
   end
   
 assign rxm_irq_rise = |generate_irq & ~rxm_irq_reg;
-
 
 wire   rxm_irq_set;
 assign rxm_irq_set  =( rxm_irq_rise| 
@@ -1026,7 +968,6 @@ assign rxm_irq_set  =( rxm_irq_rise|
                      (A2PMbWrReq_i & A2PMbWrAddr_i[2:0] == 3'b111 & PCIeIrqEna_i[23])
                      ) 
                      & MsiCsr_i[0];  //  Msi go through Cmd FiFO
-                      
 
 always @(posedge AvlClk_i or negedge Rstn_i)
   begin
@@ -1037,7 +978,5 @@ always @(posedge AvlClk_i or negedge Rstn_i)
    else if(sm_msi)
        rxm_irq_sreg <= 1'b0;
   end
-
-
 endmodule
 
