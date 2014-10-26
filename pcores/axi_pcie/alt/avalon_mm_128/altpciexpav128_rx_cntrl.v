@@ -167,30 +167,18 @@ wire              rxsm_cplena_0;
 wire              header1_sel;
 wire    [6:0]     fabric_bar_hit_reg;
 wire              rx_only = 1'b0;
-wire  [(CB_RXM_DATA_WIDTH/8)-1:0]      rx_be;
 reg   [9:0]       rx_dw_count_0;
 wire  [9:0]       rx_dw_count;
 reg   [15:0]      tail_mask;
-reg  [7:0]       rx_modlen_qdword;    
-reg  [7:0]       rx_modlen_qdword_reg_0;   
-wire  [7:0]       rx_modlen_qdword_reg;          
-reg  [7:0]       txcpl_buffer_size;
 wire              cpl_buff_ok;
-reg   [63:0]      avl_addr_reg;
-wire  [31:0]      avl_translated_addr;
-wire  [63:0]      avl_addr;
 wire[3:0]         zeros_4;   assign zeros_4  = 4'h0; 
 wire[7:0]         zeros_8;   assign zeros_8  = 8'h0; 
 wire[11:0]        zeros_12;  assign zeros_12 = 12'h0;
 reg               pndgrd_fifo_ok_reg;
 wire              rxsm_idle_0;
 wire              rxsm_rdena_0;      
-wire              store_rd;
 wire              rxsm_store_rd_0;
-reg    [5:0]     cpl_add_cntr_previous[15:0];         
-reg    [5:0]     cpl_add_cntr;           
 wire             rxsm_chk_hdr_0;
-wire   [6:0]     rd_addr;       
 wire             rxsm_rd_header_0;
 wire             rxsm_wrwait_0;
 wire             rxsm_msg_dump_0;
@@ -201,20 +189,10 @@ wire             first_write_state;
 wire  [5:0]      bar_hit;
 reg   [5:0]      bar_dec_reg;
 wire             is_read_bar_changed;
-reg   [5:0]      previous_bar_read;
 wire             rxm_wait_req;
-wire   [5:0]     rx_modlen_sel;
 reg              rxsm_wrwait_0_reg;
 wire             fabric_transmit;
-wire             tx_accumulator_dump;
-reg   [7:0]      txcpl_buffer_accumulator;
 wire             rxsm_rp_stream;
-wire             fabric_write;              
-wire             fabric_read;               
-wire  [AVALON_ADDR_WIDTH-1:0]     fabric_address;          
-wire  [127:0]    fabric_write_data;     
-wire  [15:0]     fabric_write_be;      
-wire  [6:0]      fabric_burst_count;   
 
 
 wire             is_rx_lite_core;
@@ -939,6 +917,10 @@ assign RxRpFifoWrData_o     = {input_fifo_dataout[154] ,input_fifo_dataout[145] 
 
 
 /// The payload count in DQWORD. Adjusted to account for the unused space of the DQWORDs       
+wire   [5:0]     rx_modlen_sel;
+reg  [7:0]       rx_modlen_qdword;    
+reg  [7:0]       rx_modlen_qdword_reg_0;   
+wire  [7:0]      rx_modlen_qdword_reg;          
 
 assign rx_modlen_sel = {rx_address_lsb_fifo, rx_dwlen_fifo[1:0]};
     
@@ -964,7 +946,6 @@ assign rx_modlen_sel = {rx_address_lsb_fifo, rx_dwlen_fifo[1:0]};
           default:     rx_modlen_qdword[7:0] <= rx_dwlen_fifo[9:2];  
         endcase
       end
-      
 always @(posedge Clk_i or negedge Rstn_i)        
   begin                                             
     if(~Rstn_i)                                     
@@ -972,15 +953,16 @@ always @(posedge Clk_i or negedge Rstn_i)
     else if(rxsm_rd_header_0_reg)                                            
       rx_modlen_qdword_reg_0 <= is_uns_rd_size_fifo? 0 : rx_modlen_qdword;  
   end     
-      
-
-
 assign rx_modlen_qdword_reg =  rx_modlen_qdword_reg_0[5:0];
 
 
 /// Tx Completion Buffer status       
 
 // Tx Cpl space accumulator to be put back to the pool
+wire             store_rd;
+wire             tx_accumulator_dump;
+reg   [7:0]      txcpl_buffer_accumulator;
+reg  [7:0]       txcpl_buffer_size;
 
 assign tx_accumulator_dump = !store_rd & txcpl_buffer_accumulator != 0;
 
@@ -993,8 +975,6 @@ assign tx_accumulator_dump = !store_rd & txcpl_buffer_accumulator != 0;
       else if(tx_accumulator_dump)
         txcpl_buffer_accumulator <= 8'h00;
     end
-    
- 
                      
  always @(posedge Clk_i or negedge Rstn_i)
     begin
@@ -1023,6 +1003,7 @@ assign store_rd = rxsm_store_rd_0 ;
 assign  cpl_buff_ok = (txcpl_buffer_size > rx_modlen_qdword_reg) | is_rx_lite_core; 
 
 // address translation (PCIe to Avl)
+wire  [31:0]      avl_translated_addr;
 altpciexpav128_p2a_addrtrans
    p2a_addr_trans
  (    .k_bar_i(k_bar_i), 
@@ -1038,8 +1019,10 @@ altpciexpav128_p2a_addrtrans
       .AvlAddr_o(avl_translated_addr[31:0])      
 );                      
 
-    assign avl_addr = {32'h0, avl_translated_addr};
+wire  [63:0]      avl_addr;
+reg   [63:0]      avl_addr_reg;
 
+assign avl_addr = {32'h0, avl_translated_addr};
 
 always @(posedge Clk_i or negedge Rstn_i) 
   begin
@@ -1049,9 +1032,8 @@ always @(posedge Clk_i or negedge Rstn_i)
       avl_addr_reg <= avl_addr;
   end
   
-  
-  
   /// Previous Read Bar registers
+reg   [5:0]      previous_bar_read;
 
 generate
    genvar j;
@@ -1085,11 +1067,6 @@ endgenerate
 //         end
 //     end
 //endgenerate
-
-
-
-
-
         
 assign is_read_bar_changed = ((previous_bar_read[0] ^ bar_hit_reg[0]) & bar_hit_reg[0])|
                              ((previous_bar_read[1] ^ bar_hit_reg[1]) & bar_hit_reg[1])| 
@@ -1098,10 +1075,16 @@ assign is_read_bar_changed = ((previous_bar_read[0] ^ bar_hit_reg[0]) & bar_hit_
                              ((previous_bar_read[4] ^ bar_hit_reg[4]) & bar_hit_reg[4])| 
                              ((previous_bar_read[5] ^ bar_hit_reg[5]) & bar_hit_reg[5]) ;
   
-
+wire  [(CB_RXM_DATA_WIDTH/8)-1:0]      rx_be;
 assign rx_be = rxsm_rdena_0? rx_rd_be_reg : rx_wr_be_reg;
   
-  
+wire             fabric_write;              
+wire             fabric_read;               
+wire  [AVALON_ADDR_WIDTH-1:0]     fabric_address;          
+wire  [127:0]    fabric_write_data;     
+wire  [15:0]     fabric_write_be;      
+wire  [6:0]      fabric_burst_count;   
+
  generate if(CB_PCIE_RX_LITE == 0)
   begin
      
@@ -1240,6 +1223,8 @@ endgenerate
 
 
 /// an array to store the last write address for each tag
+reg    [5:0]     cpl_add_cntr_previous[15:0];         
+reg    [5:0]     cpl_add_cntr;           
 
 generate
    genvar k;
@@ -1302,6 +1287,7 @@ always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
       pndgrd_fifo_ok_reg <= is_rx_lite_core? 1'b1 : (PndngRdFifoUsedW_i <= 8);
      end
   end  
+wire   [6:0]     rd_addr;       
   
 assign rd_addr[6:0]        = rx_header_reg[29]? rx_header_reg[101:96] : rx_header_reg[70:64];
 assign PndgRdHeader_o      = {is_uns_rd_size, rx_lbe, rx_tc, rx_attr, rx_fbe, rx_dwlen_reg, requestor_id, is_flush, rx_addr[6:0], rdreq_tag};
