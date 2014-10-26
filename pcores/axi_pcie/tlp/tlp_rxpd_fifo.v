@@ -45,7 +45,7 @@
 // Code:
 module tlp_rxpd_fifo (/*AUTOARG*/
    // Outputs
-   TxRpFifoData, RpTLPReady,
+   TxRpFifoData, RpTLPReady, RxRdInProgress,
    // Inputs
    clk, rst, TxRpFifoRdReq
    );
@@ -56,9 +56,13 @@ module tlp_rxpd_fifo (/*AUTOARG*/
    input 	  TxRpFifoRdReq;
    output 	  RpTLPReady;
 
+   output         RxRdInProgress;
+
    // not root port.
    assign RpTLPReady   = 1'b0;
    assign TxRpFifoData = 131'h0;
+   assign RxRdInProgress = 1'b0;
+
 endmodule
 // 
 // tlp_rxpd_fifo.v ends here

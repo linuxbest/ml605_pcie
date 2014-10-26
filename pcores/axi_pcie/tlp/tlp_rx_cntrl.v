@@ -20,7 +20,7 @@ module tlp_rx_cntrl (/*AUTOARG*/
    RxStBarDec2_i, RxmWaitRequest_0_i, RxmWaitRequest_1_i,
    RxmWaitRequest_2_i, RxmWaitRequest_3_i, RxmWaitRequest_4_i,
    RxmWaitRequest_5_i, PndngRdFifoUsedW, PndngRdFifoEmpty,
-   RxRdInProgress_i, TxCplWr, TxCplLine, TxRespIdle, DevCsr_i,
+   RxRdInProgress, TxCplWr, TxCplLine, TxRespIdle, DevCsr_i,
    cb_p2a_avalon_addr_b0_i, cb_p2a_avalon_addr_b1_i,
    cb_p2a_avalon_addr_b2_i, cb_p2a_avalon_addr_b3_i,
    cb_p2a_avalon_addr_b4_i, cb_p2a_avalon_addr_b5_i,
@@ -107,7 +107,7 @@ module tlp_rx_cntrl (/*AUTOARG*/
     output                    PndgRdFifoWrReq;
     output [56:0]             PndgRdHeader;
     
-    input                     RxRdInProgress_i;
+    input                     RxRdInProgress;
     
 
    // Completion data dual port ram interface
@@ -845,7 +845,7 @@ always @*
           rx_nxt_state_0 <= RX_PIPE_0;
           
       RX_CHECK_TXCPLSIZE_0:
-        if((cpl_buff_ok & ~is_rx_lite_core & (~is_read_bar_changed | is_read_bar_changed & TxRespIdle_i)) |  ( is_rx_lite_core & ~RxRdInProgress_i))
+        if((cpl_buff_ok & ~is_rx_lite_core & (~is_read_bar_changed | is_read_bar_changed & TxRespIdle_i)) |  ( is_rx_lite_core & ~RxRdInProgress))
            rx_nxt_state_0 <= RX_STORE_RD_0;
         else
            rx_nxt_state_0 <= RX_CHECK_TXCPLSIZE_0;

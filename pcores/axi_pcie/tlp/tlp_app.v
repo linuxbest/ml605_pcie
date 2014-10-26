@@ -57,10 +57,10 @@ module tlp_app (/*AUTOARG*/
    TxWrite_i, TxRespIdle, TxRead_i, TxReadData_i, TxReadDataValid_i,
    TxCredNpHdrLimit_i, TxCredInfinit_i, TxCredHipCons_i,
    TxChipSelect_i, TxByteEnable_i, TxBurstCount_i, TxAddress_i,
-   TxAdapterFifoEmpty_i, RxmRstn_i, RxmIrq_i, RxRdInProgress_i,
-   Rstn_i, PCIeIrqEna_i, MsiData_i, MsiCsr_i, MsiAddr_i, MsiAck_i,
-   MasterEnable_i, IntxAck_i, DevCsr_i, Clk_i, BusDev_i, AvlClk_i,
-   A2PMbWrReq_i, A2PMbWrAddr_i, clk, rst
+   TxAdapterFifoEmpty_i, RxmRstn_i, RxmIrq_i, Rstn_i, PCIeIrqEna_i,
+   MsiData_i, MsiCsr_i, MsiAddr_i, MsiAck_i, MasterEnable_i,
+   IntxAck_i, DevCsr_i, Clk_i, BusDev_i, AvlClk_i, A2PMbWrReq_i,
+   A2PMbWrAddr_i, clk, rst
    );
    parameter TXCPL_BUFF_ADDR_WIDTH = 8; // TODO
    
@@ -83,7 +83,6 @@ module tlp_app (/*AUTOARG*/
    input [15:0]		MsiData_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input [31:0]		PCIeIrqEna_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input		Rstn_i;			// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v, ...
-   input		RxRdInProgress_i;	// To tlp_rx_cntrl of tlp_rx_cntrl.v
    input [CG_RXM_IRQ_NUM-1:0] RxmIrq_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input		RxmRstn_i;		// To tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
    input		TxAdapterFifoEmpty_i;	// To tlp_tx_cntrl of tlp_tx_cntrl.v
@@ -162,6 +161,7 @@ module tlp_app (/*AUTOARG*/
    wire			RxCplReq;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
    wire [56:0]		RxPndgRdFifoDato;	// From tlp_pndgtxrd_fifo of tlp_pndgtxrd_fifo.v
    wire			RxPndgRdFifoEmpty;	// From tlp_pndgtxrd_fifo of tlp_pndgtxrd_fifo.v
+   wire			RxRdInProgress;		// From tlp_rxpd_fifo of tlp_rxpd_fifo.v
    wire [7:0]		RxStBarDec1_i;		// From txm_dummy of rxm_dummy.v
    wire [7:0]		RxStBarDec2_i;		// From txm_dummy of rxm_dummy.v
    wire [15:0]		RxStBe_i;		// From txm_dummy of rxm_dummy.v
@@ -486,7 +486,7 @@ module tlp_app (/*AUTOARG*/
 		  .RxmWaitRequest_5_i	(RxmWaitRequest_5_i),
 		  .PndngRdFifoUsedW	(PndngRdFifoUsedW[3:0]),
 		  .PndngRdFifoEmpty	(PndngRdFifoEmpty),
-		  .RxRdInProgress_i	(RxRdInProgress_i),
+		  .RxRdInProgress	(RxRdInProgress),
 		  .TxCplWr		(TxCplWr),
 		  .TxCplLine		(TxCplLine[4:0]),
 		  .TxRespIdle		(TxRespIdle),
@@ -505,6 +505,7 @@ module tlp_app (/*AUTOARG*/
 		   // Outputs
 		   .TxRpFifoData	(TxRpFifoData[130:0]),
 		   .RpTLPReady		(RpTLPReady),
+		   .RxRdInProgress	(RxRdInProgress),
 		   // Inputs
 		   .clk			(clk),
 		   .rst			(rst),
