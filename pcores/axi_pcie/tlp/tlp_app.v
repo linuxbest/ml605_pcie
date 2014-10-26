@@ -46,25 +46,24 @@
 module tlp_app (/*AUTOARG*/
    // Outputs
    tx_cons_cred_sel, WrDatFifoFull, TxsReadData_o, TxsReadDataValid_o,
-   TxWaitRequest_o, TxRespIdle_o, TxCplSent_o, TxCplLineSent_o,
-   TagRelease_o, RxRpFifoWrReq_o, RxRpFifoWrData_o, RxPndgRdFifoRdReq,
-   MsiReq_o, IntxReq_o, CplReq_o, CplRdAddr_o, CplRamWrEna_o,
-   CplRamWrDat_o, CplRamWrAddr_o, CplPending_o, CplDesc_o,
-   CmdFifoEmpty,
+   TxWaitRequest_o, TxRespIdle_o, RxRpFifoWrReq_o, RxRpFifoWrData_o,
+   RxPndgRdFifoRdReq, MsiReq_o, IntxReq_o, CplReq_o, CplRdAddr_o,
+   CplRamWrEna_o, CplRamWrDat_o, CplRamWrAddr_o, CplPending_o,
+   CplDesc_o, CmdFifoEmpty,
    // Inputs
    pld_clk_inuse, ko_cpl_spc_header, ko_cpl_spc_data, k_bar_i,
    cb_p2a_avalon_addr_b6_i, cb_p2a_avalon_addr_b5_i,
    cb_p2a_avalon_addr_b4_i, cb_p2a_avalon_addr_b3_i,
    cb_p2a_avalon_addr_b2_i, cb_p2a_avalon_addr_b1_i,
    cb_p2a_avalon_addr_b0_i, WrDatFifoDi, TxsReadDataValid_i,
-   TxWrite_i, TxRespIdle_i, TxRead_i, TxReadData_i, TxReadDataValid_i,
-   TxCredNpHdrLimit_i, TxCredInfinit_i, TxCredHipCons_i, TxCpl_i,
-   TxCplLen_i, TxChipSelect_i, TxByteEnable_i, TxBurstCount_i,
-   TxAddress_i, TxAdapterFifoEmpty_i, RxmRstn_i, RxmIrq_i,
-   RxRdInProgress_i, RxCplBuffFree_i, Rstn_i, PCIeIrqEna_i, MsiData_i,
-   MsiCsr_i, MsiAddr_i, MsiAck_i, MasterEnable_i, IntxAck_i, DevCsr_i,
-   CplReq_i, CplDesc_i, CplBufData_i, Clk_i, BusDev_i, AvlClk_i,
-   A2PMbWrReq_i, A2PMbWrAddr_i, clk, rst
+   TxWrite_i, TxRespIdle, TxRead_i, TxReadData_i, TxReadDataValid_i,
+   TxCredNpHdrLimit_i, TxCredInfinit_i, TxCredHipCons_i,
+   TxChipSelect_i, TxByteEnable_i, TxBurstCount_i, TxAddress_i,
+   TxAdapterFifoEmpty_i, RxmRstn_i, RxmIrq_i, RxRdInProgress_i,
+   Rstn_i, PCIeIrqEna_i, MsiData_i, MsiCsr_i, MsiAddr_i, MsiAck_i,
+   MasterEnable_i, IntxAck_i, DevCsr_i, CplReq_i, CplDesc_i,
+   CplBufData_i, Clk_i, BusDev_i, AvlClk_i, A2PMbWrReq_i,
+   A2PMbWrAddr_i, clk, rst
    );
    parameter TXCPL_BUFF_ADDR_WIDTH = 8; // TODO
    
@@ -90,7 +89,6 @@ module tlp_app (/*AUTOARG*/
    input [15:0]		MsiData_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input [31:0]		PCIeIrqEna_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input		Rstn_i;			// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v, ...
-   input		RxCplBuffFree_i;	// To tlp_tx_cntrl of tlp_tx_cntrl.v
    input		RxRdInProgress_i;	// To tlp_rx_cntrl of tlp_rx_cntrl.v
    input [CG_RXM_IRQ_NUM-1:0] RxmIrq_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input		RxmRstn_i;		// To tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
@@ -99,15 +97,13 @@ module tlp_app (/*AUTOARG*/
    input [5:0]		TxBurstCount_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input [15:0]		TxByteEnable_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input		TxChipSelect_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
-   input [4:0]		TxCplLen_i;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
-   input		TxCpl_i;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
    input [5:0]		TxCredHipCons_i;	// To tlp_tx_cntrl of tlp_tx_cntrl.v
    input [5:0]		TxCredInfinit_i;	// To tlp_tx_cntrl of tlp_tx_cntrl.v
    input [7:0]		TxCredNpHdrLimit_i;	// To tlp_tx_cntrl of tlp_tx_cntrl.v
    input		TxReadDataValid_i;	// To tlp_txcpl_buffer of tlp_txcpl_buffer.v, ...
    input [31:0]		TxReadData_i;		// To tlp_txcpl_buffer of tlp_txcpl_buffer.v
    input		TxRead_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
-   input		TxRespIdle_i;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
+   input		TxRespIdle;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
    input		TxWrite_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input		TxsReadDataValid_i;	// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input [127:0]	WrDatFifoDi;		// To tlp_txdat_fifo of tlp_txdat_fifo.v
@@ -138,9 +134,6 @@ module tlp_app (/*AUTOARG*/
    output		RxPndgRdFifoRdReq;	// From tlp_txresp_cntrl of tlp_txresp_cntrl.v, ...
    output [130:0]	RxRpFifoWrData_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
    output		RxRpFifoWrReq_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output		TagRelease_o;		// From tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
-   output [4:0]		TxCplLineSent_o;	// From tlp_tx_cntrl of tlp_tx_cntrl.v
-   output		TxCplSent_o;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
    output		TxRespIdle_o;		// From tlp_txresp_cntrl of tlp_txresp_cntrl.v
    output		TxWaitRequest_o;	// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    output		TxsReadDataValid_o;	// From tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
@@ -171,6 +164,7 @@ module tlp_app (/*AUTOARG*/
    wire [6:0]		RdBypassFifoUsedw;	// From tlp_rd_bypass_fifo of tlp_rd_bypass_fifo.v
    wire			RdBypassFifoWrReq;	// From tlp_tx_cntrl of tlp_tx_cntrl.v
    wire			RpTLPReady;		// From tlp_rxpd_fifo of tlp_rxpd_fifo.v
+   wire			RxCplBuffFree;		// From tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
    wire [56:0]		RxPndgRdFifoDato;	// From tlp_pndgtxrd_fifo of tlp_pndgtxrd_fifo.v
    wire			RxPndgRdFifoEmpty;	// From tlp_pndgtxrd_fifo of tlp_pndgtxrd_fifo.v
    wire [7:0]		RxStBarDec1_i;		// From txm_dummy of rxm_dummy.v
@@ -228,6 +222,8 @@ module tlp_app (/*AUTOARG*/
    wire			RxmWrite_4_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
    wire			RxmWrite_5_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
    wire [127:0]		TxCplDat;		// From tlp_txcpl_buffer of tlp_txcpl_buffer.v
+   wire [4:0]		TxCplLine;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
+   wire			TxCplWr;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
    wire [98:0]		TxReqHeader;		// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    wire			TxReqWr;		// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    wire [130:0]		TxRpFifoData;		// From tlp_rxpd_fifo of tlp_rxpd_fifo.v
@@ -378,8 +374,8 @@ module tlp_app (/*AUTOARG*/
 		  .CplBuffRdAddr	(CplBuffRdAddr[6:0]),
 		  .WrDatFifoRdReq	(WrDatFifoRdReq),
 		  .TxRpFifoRdReq	(TxRpFifoRdReq),
-		  .TxCplSent_o		(TxCplSent_o),
-		  .TxCplLineSent_o	(TxCplLineSent_o[4:0]),
+		  .TxCplWr		(TxCplWr),
+		  .TxCplLine		(TxCplLine[4:0]),
 		  .MsiReq_o		(MsiReq_o),
 		  .IntxReq_o		(IntxReq_o),
 		  .CplPending_o		(CplPending_o),
@@ -404,7 +400,7 @@ module tlp_app (/*AUTOARG*/
 		  .WrDatFifoDo		(WrDatFifoDo[128:0]),
 		  .TxRpFifoData		(TxRpFifoData[130:0]),
 		  .RpTLPReady		(RpTLPReady),
-		  .RxCplBuffFree_i	(RxCplBuffFree_i),
+		  .RxCplBuffFree	(RxCplBuffFree),
 		  .BusDev_i		(BusDev_i[12:0]),
 		  .MsiCsr_i		(MsiCsr_i[15:0]),
 		  .MsiAck_i		(MsiAck_i),
@@ -496,9 +492,9 @@ module tlp_app (/*AUTOARG*/
 		  .PndngRdFifoUsedW	(PndngRdFifoUsedW[3:0]),
 		  .PndngRdFifoEmpty	(PndngRdFifoEmpty),
 		  .RxRdInProgress_i	(RxRdInProgress_i),
-		  .TxCpl_i		(TxCpl_i),
-		  .TxCplLen_i		(TxCplLen_i[4:0]),
-		  .TxRespIdle_i		(TxRespIdle_i),
+		  .TxCplWr		(TxCplWr),
+		  .TxCplLine		(TxCplLine[4:0]),
+		  .TxRespIdle		(TxRespIdle),
 		  .DevCsr_i		(DevCsr_i[31:0]),
 		  .cb_p2a_avalon_addr_b0_i(cb_p2a_avalon_addr_b0_i[31:0]),
 		  .cb_p2a_avalon_addr_b1_i(cb_p2a_avalon_addr_b1_i[31:0]),
@@ -545,7 +541,7 @@ module tlp_app (/*AUTOARG*/
    tlp_rxresp_cntrl (/*AUTOINST*/
 		     // Outputs
 		     .CplRdAddr_o	(CplRdAddr_o[8:0]),
-		     .TagRelease_o	(TagRelease_o),
+		     .RxCplBuffFree	(RxCplBuffFree),
 		     .TxsReadData_o	(TxsReadData_o[127:0]),
 		     .TxsReadDataValid_o(TxsReadDataValid_o),
 		     // Inputs

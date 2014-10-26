@@ -1,121 +1,141 @@
 `timescale 1ns / 1ps
-module tlp_rx_cntrl
+module tlp_rx_cntrl (/*AUTOARG*/
+   // Outputs
+   RxStReady_o, RxStMask_o, RxmWrite_0_o, RxmAddress_0_o,
+   RxmWriteData_0_o, RxmByteEnable_0_o, RxmBurstCount_0_o,
+   RxmRead_0_o, RxmWrite_1_o, RxmAddress_1_o, RxmWriteData_1_o,
+   RxmByteEnable_1_o, RxmBurstCount_1_o, RxmRead_1_o, RxmWrite_2_o,
+   RxmAddress_2_o, RxmWriteData_2_o, RxmByteEnable_2_o,
+   RxmBurstCount_2_o, RxmRead_2_o, RxmWrite_3_o, RxmAddress_3_o,
+   RxmWriteData_3_o, RxmByteEnable_3_o, RxmBurstCount_3_o,
+   RxmRead_3_o, RxmWrite_4_o, RxmAddress_4_o, RxmWriteData_4_o,
+   RxmByteEnable_4_o, RxmBurstCount_4_o, RxmRead_4_o, RxmWrite_5_o,
+   RxmAddress_5_o, RxmWriteData_5_o, RxmByteEnable_5_o,
+   RxmBurstCount_5_o, RxmRead_5_o, RxRpFifoWrData_o, RxRpFifoWrReq_o,
+   PndgRdFifoWrReq, PndgRdHeader, CplRamWrAddr_o, CplRamWrDat_o,
+   CplRamWrEna_o, CplReq_o, CplDesc_o,
+   // Inputs
+   Clk_i, Rstn_i, RxStData_i, RxStParity_i, RxStBe_i, RxStEmpty_i,
+   RxStErr_i, RxStSop_i, RxStEop_i, RxStValid_i, RxStBarDec1_i,
+   RxStBarDec2_i, RxmWaitRequest_0_i, RxmWaitRequest_1_i,
+   RxmWaitRequest_2_i, RxmWaitRequest_3_i, RxmWaitRequest_4_i,
+   RxmWaitRequest_5_i, PndngRdFifoUsedW, PndngRdFifoEmpty,
+   RxRdInProgress_i, TxCplWr, TxCplLine, TxRespIdle, DevCsr_i,
+   cb_p2a_avalon_addr_b0_i, cb_p2a_avalon_addr_b1_i,
+   cb_p2a_avalon_addr_b2_i, cb_p2a_avalon_addr_b3_i,
+   cb_p2a_avalon_addr_b4_i, cb_p2a_avalon_addr_b5_i,
+   cb_p2a_avalon_addr_b6_i, k_bar_i
+   )
+     parameter              CB_PCIE_MODE           = 0;
+     parameter              CB_PCIE_RX_LITE        = 0;      
+     parameter              CB_RXM_DATA_WIDTH      = 128;
+     parameter              port_type_hwtcl        = "Native endpoint";
+     parameter             AVALON_ADDR_WIDTH = 32;
 
-# ( 
-     parameter              CB_PCIE_MODE           = 0,
-     parameter              CB_PCIE_RX_LITE        = 0,      
-     parameter              CB_RXM_DATA_WIDTH      = 128,
-     parameter              port_type_hwtcl        = "Native endpoint",
-      parameter             AVALON_ADDR_WIDTH = 32
-    ) 
-  
-  ( input                     Clk_i,
-    input                     Rstn_i,
+    input                     Clk_i,
+    input                     Rstn_i;
     
     // Rx port interface to PCI Exp core
-    output   reg              RxStReady_o,
-    output                    RxStMask_o,
-    input   [127:0]           RxStData_i,
-    input   [64:0]            RxStParity_i,
-    input   [15:0]            RxStBe_i,
-    input   [1:0]             RxStEmpty_i,
-    input   [7:0]             RxStErr_i,
-    input                     RxStSop_i,
-    input                     RxStEop_i,
-    input                     RxStValid_i,
-    input   [7:0]             RxStBarDec1_i,
-    input   [7:0]             RxStBarDec2_i,
+    output   reg              RxStReady_o;
+    output                    RxStMask_o;
+    input   [127:0]           RxStData_i;
+    input   [64:0]            RxStParity_i;
+    input   [15:0]            RxStBe_i;
+    input   [1:0]             RxStEmpty_i;
+    input   [7:0]             RxStErr_i;
+    input                     RxStSop_i;
+    input                     RxStEop_i;
+    input                     RxStValid_i;
+    input   [7:0]             RxStBarDec1_i;
+    input   [7:0]             RxStBarDec2_i;
     
    /// RX Master Read Write Interface
+   output                                 RxmWrite_0_o;
+   output [AVALON_ADDR_WIDTH-1:0]         RxmAddress_0_o;
+   output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_0_o;
+   output [(CB_RXM_DATA_WIDTH/8)-1:0]     RxmByteEnable_0_o;
+   output [6:0]                           RxmBurstCount_0_o; 
+   input                                  RxmWaitRequest_0_i;
+   output                                 RxmRead_0_o;
    
-   output                                 RxmWrite_0_o,
-   output [AVALON_ADDR_WIDTH-1:0]         RxmAddress_0_o,
-   output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_0_o,
-   output [(CB_RXM_DATA_WIDTH/8)-1:0]     RxmByteEnable_0_o,
-   output [6:0]                           RxmBurstCount_0_o, 
-   input                                  RxmWaitRequest_0_i,
-   output                                 RxmRead_0_o,
+   output                                 RxmWrite_1_o;
+   output [AVALON_ADDR_WIDTH-1:0]         RxmAddress_1_o;
+   output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_1_o;
+   output [(CB_RXM_DATA_WIDTH/8)-1:0]     RxmByteEnable_1_o;
+   output [6:0]                           RxmBurstCount_1_o; 
+   input                                  RxmWaitRequest_1_i;
+   output                                 RxmRead_1_o;
    
-   output                                 RxmWrite_1_o,
-   output [AVALON_ADDR_WIDTH-1:0]         RxmAddress_1_o,
-   output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_1_o,
-   output [(CB_RXM_DATA_WIDTH/8)-1:0]     RxmByteEnable_1_o,
-   output [6:0]                           RxmBurstCount_1_o, 
-   input                                  RxmWaitRequest_1_i,
-   output                                 RxmRead_1_o,
+   output                                 RxmWrite_2_o;
+   output [AVALON_ADDR_WIDTH-1:0]         RxmAddress_2_o;
+   output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_2_o;
+   output [(CB_RXM_DATA_WIDTH/8)-1:0]     RxmByteEnable_2_o;
+   output [6:0]                           RxmBurstCount_2_o; 
+   input                                  RxmWaitRequest_2_i;
+   output                                 RxmRead_2_o;
    
-   output                                 RxmWrite_2_o,
-   output [AVALON_ADDR_WIDTH-1:0]         RxmAddress_2_o,
-   output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_2_o,
-   output [(CB_RXM_DATA_WIDTH/8)-1:0]     RxmByteEnable_2_o,
-   output [6:0]                           RxmBurstCount_2_o, 
-   input                                  RxmWaitRequest_2_i,
-   output                                 RxmRead_2_o,
+   output                                 RxmWrite_3_o;
+   output [AVALON_ADDR_WIDTH-1:0]         RxmAddress_3_o;
+   output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_3_o;
+   output [(CB_RXM_DATA_WIDTH/8)-1:0]     RxmByteEnable_3_o;
+   output [6:0]                           RxmBurstCount_3_o; 
+   input                                  RxmWaitRequest_3_i;
+   output                                 RxmRead_3_o;
    
-   output                                 RxmWrite_3_o,
-   output [AVALON_ADDR_WIDTH-1:0]         RxmAddress_3_o,
-   output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_3_o,
-   output [(CB_RXM_DATA_WIDTH/8)-1:0]     RxmByteEnable_3_o,
-   output [6:0]                           RxmBurstCount_3_o, 
-   input                                  RxmWaitRequest_3_i,
-   output                                 RxmRead_3_o,
+   output                                 RxmWrite_4_o;
+   output [AVALON_ADDR_WIDTH-1:0]         RxmAddress_4_o;
+   output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_4_o;
+   output [(CB_RXM_DATA_WIDTH/8)-1:0]     RxmByteEnable_4_o;
+   output [6:0]                           RxmBurstCount_4_o; 
+   input                                  RxmWaitRequest_4_i;
+   output                                 RxmRead_4_o;
    
-   output                                 RxmWrite_4_o,
-   output [AVALON_ADDR_WIDTH-1:0]         RxmAddress_4_o,
-   output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_4_o,
-   output [(CB_RXM_DATA_WIDTH/8)-1:0]     RxmByteEnable_4_o,
-   output [6:0]                           RxmBurstCount_4_o, 
-   input                                  RxmWaitRequest_4_i,
-   output                                 RxmRead_4_o,
+   output                                 RxmWrite_5_o;
+   output [AVALON_ADDR_WIDTH-1:0]         RxmAddress_5_o;
+   output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_5_o;
+   output [(CB_RXM_DATA_WIDTH/8)-1:0]     RxmByteEnable_5_o;
+   output [6:0]                           RxmBurstCount_5_o; 
+   input                                  RxmWaitRequest_5_i;
+   output                                 RxmRead_5_o;
    
-   output                                 RxmWrite_5_o,
-   output [AVALON_ADDR_WIDTH-1:0]         RxmAddress_5_o,
-   output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_5_o,
-   output [(CB_RXM_DATA_WIDTH/8)-1:0]     RxmByteEnable_5_o,
-   output [6:0]                           RxmBurstCount_5_o, 
-   input                                  RxmWaitRequest_5_i,
-   output                                 RxmRead_5_o,
-   
-   output  [130:0]                        RxRpFifoWrData_o,      
-   output                                 RxRpFifoWrReq_o,     
+   output  [130:0]                        RxRpFifoWrData_o;      
+   output                                 RxRpFifoWrReq_o;     
     
     // Pending Read FIFO interface
-    input  [3:0]              PndngRdFifoUsedW,
-    input                     PndngRdFifoEmpty,
-    output                    PndgRdFifoWrReq,
-    output [56:0]             PndgRdHeader,
+    input  [3:0]              PndngRdFifoUsedW;
+    input                     PndngRdFifoEmpty;
+    output                    PndgRdFifoWrReq;
+    output [56:0]             PndgRdHeader;
     
-    input                     RxRdInProgress_i,
+    input                     RxRdInProgress_i;
     
 
    // Completion data dual port ram interface
-    output  [8:0]              CplRamWrAddr_o,
-    output  [129:0]            CplRamWrDat_o,
-    output                    CplRamWrEna_o,
-    output  reg               CplReq_o,
-    output  reg [5:0]         CplDesc_o,
+    output  [8:0]              CplRamWrAddr_o;
+    output  [129:0]            CplRamWrDat_o;
+    output                    CplRamWrEna_o;
+    output  reg               CplReq_o;
+    output  reg [5:0]         CplDesc_o;
     
     // Read respose module interface
     
     // Tx Completion interface
-    input                      TxCpl_i,
-    input  [4:0]               TxCplLen_i, // 128-bit lines
-    input                      TxRespIdle_i,
+    input                      TxCplWr;
+    input  [4:0]               TxCplLine; // 128-bit lines
+    input                      TxRespIdle;
     
       // cfg signals
-    input  [31:0]               DevCsr_i,   
+    input  [31:0]               DevCsr_i;   
         /// paramter signals
-    input  [31:0]              cb_p2a_avalon_addr_b0_i,
-    input  [31:0]              cb_p2a_avalon_addr_b1_i,
-    input  [31:0]              cb_p2a_avalon_addr_b2_i,
-    input  [31:0]              cb_p2a_avalon_addr_b3_i,
-    input  [31:0]              cb_p2a_avalon_addr_b4_i,
-    input  [31:0]              cb_p2a_avalon_addr_b5_i,
-    input  [31:0]              cb_p2a_avalon_addr_b6_i,
-    input  [223:0]             k_bar_i
+    input  [31:0]              cb_p2a_avalon_addr_b0_i;
+    input  [31:0]              cb_p2a_avalon_addr_b1_i;
+    input  [31:0]              cb_p2a_avalon_addr_b2_i;
+    input  [31:0]              cb_p2a_avalon_addr_b3_i;
+    input  [31:0]              cb_p2a_avalon_addr_b4_i;
+    input  [31:0]              cb_p2a_avalon_addr_b5_i;
+    input  [31:0]              cb_p2a_avalon_addr_b6_i;
+    input  [223:0]             k_bar_i;
     
-  );
-  
   //state machine encoding
   localparam RX_IDLE_0                    = 12'h000;  
   localparam RX_RD_HEADER_0               = 12'h003; 
@@ -952,8 +972,8 @@ assign tx_accumulator_dump = !store_rd & txcpl_buffer_accumulator != 0;
     begin                                                 
       if(~Rstn_i)                                         
         txcpl_buffer_accumulator <= 8'h00; 
-      else if (TxCpl_i)
-        txcpl_buffer_accumulator <= txcpl_buffer_accumulator + TxCplLen_i;
+      else if (TxCplWr)
+        txcpl_buffer_accumulator <= txcpl_buffer_accumulator + TxCplLine;
       else if(tx_accumulator_dump)
         txcpl_buffer_accumulator <= 8'h00;
     end
@@ -973,12 +993,12 @@ assign store_rd = rxsm_store_rd_0 ;
 //    begin
 //      if(~Rstn_i)
 //        txcpl_buffer_size <= 64; // 64 lines of 128-bit available
-//      else if(store_rd & ~TxCpl_i)
+//      else if(store_rd & ~TxCplWr)
 //        txcpl_buffer_size <= txcpl_buffer_size - rx_modlen_qdword_reg;
-//      else if(TxCpl_i & ~store_rd)
-//        txcpl_buffer_size <= txcpl_buffer_size + TxCplLen_i;
-//      else if(TxCpl_i & store_rd)
-//        txcpl_buffer_size <= txcpl_buffer_size + TxCplLen_i - rx_modlen_qdword_reg;
+//      else if(TxCplWr & ~store_rd)
+//        txcpl_buffer_size <= txcpl_buffer_size + TxCplLine;
+//      else if(TxCplWr & store_rd)
+//        txcpl_buffer_size <= txcpl_buffer_size + TxCplLine - rx_modlen_qdword_reg;
 //    end
 
 

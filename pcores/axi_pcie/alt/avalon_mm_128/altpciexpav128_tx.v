@@ -45,7 +45,7 @@ module altpciexpav128_tx
     input   [127:0]                        TxWriteData_i,
     input   [5:0]                          TxBurstCount_i,
     input   [CG_AVALON_S_ADDR_WIDTH-1:0]   TxAddress_i,
-    input   [15:0]                          TxByteEnable_i,
+    input   [15:0]                         TxByteEnable_i,
     input                                  TxReadDataValid_i,
     input   [CB_RXM_DATA_WIDTH-1:0]        TxReadData_i,
     output                                 TxWaitRequest_o,            

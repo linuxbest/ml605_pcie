@@ -3,14 +3,14 @@ module tlp_tx_cntrl (/*AUTOARG*/
    // Outputs
    TxStData_o, TxStSop_o, TxStEop_o, TxStEmpty_o, TxStValid_o,
    CmdFifoRdReq, RdBypassFifoWrReq, RdBypassFifoRdReq, CplBuffRdAddr,
-   WrDatFifoRdReq, TxRpFifoRdReq, TxCplSent_o, TxCplLineSent_o,
-   MsiReq_o, IntxReq_o, CplPending_o, tx_cons_cred_sel,
+   WrDatFifoRdReq, TxRpFifoRdReq, TxCplWr, TxCplLine, MsiReq_o,
+   IntxReq_o, CplPending_o, tx_cons_cred_sel,
    // Inputs
    Clk_i, Rstn_i, TxStReady_i, TxAdapterFifoEmpty_i, TxCredHipCons_i,
    TxCredInfinit_i, TxCredNpHdrLimit_i, ko_cpl_spc_header,
    ko_cpl_spc_data, CmdFifoDat, CmdFifoEmpty_r, RdBypassFifoEmpty,
    RdBypassFifoFull, RdBypassFifoUsedw, RdBypassFifoDat, TxCplDat,
-   WrDatFifoDo, TxRpFifoData, RpTLPReady, RxCplBuffFree_i, BusDev_i,
+   WrDatFifoDo, TxRpFifoData, RpTLPReady, RxCplBuffFree, BusDev_i,
    MsiCsr_i, MsiAck_i, IntxAck_i, pld_clk_inuse
    );
    
@@ -64,9 +64,9 @@ module tlp_tx_cntrl (/*AUTOARG*/
    input 	  RpTLPReady;      
    
    // Rx/Tx Completion interface for buffer credit keeping
-   input          RxCplBuffFree_i;
-   output         TxCplSent_o;
-   output [4:0]   TxCplLineSent_o; // in 128-bit line unit
+   input          RxCplBuffFree;
+   output         TxCplWr;
+   output [4:0]   TxCplLine; // in 128-bit line unit
    
    // Rx Completion interface for buffer credit keeping
    // cfg register
@@ -670,8 +670,8 @@ wire              tlp_eop;
 
 assign sm_cpldata_fall = (sm_idle & sm_cpldata_reg) | (sm_idle & sm_cpl_hdr_reg);
 
-//assign TxCplSent_o = sm_cpldata_fall & ~is_abort_cpl;  // end of CPL data phases     
-assign TxCplSent_o = is_cpl & tlp_eop;  // end of CPL data phases 
+//assign TxCplWr = sm_cpldata_fall & ~is_abort_cpl;  // end of CPL data phases     
+assign TxCplWr = is_cpl & tlp_eop;  // end of CPL data phases 
 
 always @(posedge Clk_i or negedge Rstn_i)
   begin
@@ -681,22 +681,17 @@ always @(posedge Clk_i or negedge Rstn_i)
       cpl_sent_reg <= txavl_modlen_qdword[4:0];
   end
   
-assign TxCplLineSent_o[4:0] =  is_abort_cpl? 5'h0:  cpl_sent_reg[4:0];
-
-
+assign TxCplLine[4:0] =  is_abort_cpl? 5'h0:  cpl_sent_reg[4:0];
 
 always @(posedge Clk_i or negedge Rstn_i)
   begin
     if (~Rstn_i)
       rxcplbuff_free_reg <= 1'b0;
     else
-      rxcplbuff_free_reg <= RxCplBuffFree_i;
+      rxcplbuff_free_reg <= RxCplBuffFree;
   end
 
-
-assign up_cpl_cnt    = ~rxcplbuff_free_reg & RxCplBuffFree_i;   
-
-
+assign up_cpl_cnt    = ~rxcplbuff_free_reg & RxCplBuffFree;   
 
 always @(posedge Clk_i or negedge Rstn_i)
   begin

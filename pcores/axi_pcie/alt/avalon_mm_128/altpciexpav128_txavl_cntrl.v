@@ -39,7 +39,6 @@ module altpciexpav128_txavl_cntrl
   input  [15:0] TxByteEnable_i,    // read enable
   output                               TxWaitRequest_o,
   
-  
   // Address translation interface
   output                               AvlAddrVld_o,
   output [CG_AVALON_S_ADDR_WIDTH-1:0]  AvlAddr_o, // byte address 
