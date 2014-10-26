@@ -45,13 +45,24 @@
 // Code:
 
 module tlp_rd_bypass_fifo (/*AUTOARG*/
+   // Outputs
+   RdBypassFifoEmpty, RdBypassFifoFull, RdBypassFifoUsedw,
+   RdBypassFifoDat,
    // Inputs
-   clk, rst
+   clk, rst, RdBypassFifoWrReq, RdBypassFifoRdReq, CmdFifoDat
    );
    input clk;
    input rst;
    
-
+   output RdBypassFifoEmpty;
+   output RdBypassFifoFull;
+   output [6:0] RdBypassFifoUsedw;
+   output [98:0] RdBypassFifoDat;
+   input         RdBypassFifoWrReq;
+   input         RdBypassFifoRdReq;
+   
+   input [98:0]  CmdFifoDat;
+   
 endmodule // tlp_rd_bypass_fifo
 
 // 

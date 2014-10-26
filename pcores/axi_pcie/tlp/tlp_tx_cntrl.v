@@ -33,12 +33,12 @@ module tlp_tx_cntrl
   output         CmdFifoRdReq,
   
   // Read bypass buffer interface
-  input          RdBypassFifoEmpty_i,
-  input          RdBypassFifoFull_i,
-  input [6:0]    RdBypassFifoUsedw_i,
-  input [97:0]   RdBypassFifoDat_i,
-  output         RdBypassFifoWrReq_o,
-  output         RdBypassFifoRdReq_o,
+  input          RdBypassFifoEmpty,
+  input          RdBypassFifoFull,
+  input [6:0]    RdBypassFifoUsedw,
+  input [97:0]   RdBypassFifoDat,
+  output         RdBypassFifoWrReq,
+  output         RdBypassFifoRdReq,
   
   // Completion buffer interface
   output  [6:0]   CplBuffRdAddr,
@@ -270,19 +270,19 @@ generate if (deviceFamily == "Arria V" ||  deviceFamily == "Cyclone V")
 endgenerate
 
 
-assign dw_len = rdbp_fifo_sel? {1'b0, RdBypassFifoDat_i[93:85]} : {1'b0, CmdFifoDat[93:85]}; // for completion and write
+assign dw_len = rdbp_fifo_sel? {1'b0, RdBypassFifoDat[93:85]} : {1'b0, CmdFifoDat[93:85]}; // for completion and write
 assign requestor_id = {BusDev_i, 3'b000};
 
-assign req_tag      = rdbp_fifo_sel? RdBypassFifoDat_i[81:74]: CmdFifoDat[81:74];
-assign cpl_tag      = rdbp_fifo_sel? RdBypassFifoDat_i[14:7]: CmdFifoDat[14:7];
-assign fbe          = rdbp_fifo_sel?  RdBypassFifoDat_i[73:70]: CmdFifoDat[73:70];
-assign lbe          =  rdbp_fifo_sel? RdBypassFifoDat_i[97:94] : CmdFifoDat[97:94];
-assign lower_adr    = rdbp_fifo_sel? RdBypassFifoDat_i[6:0]: CmdFifoDat[6:0];
-assign cpl_req_id   = rdbp_fifo_sel? RdBypassFifoDat_i[30:15]: CmdFifoDat[30:15];
+assign req_tag      = rdbp_fifo_sel? RdBypassFifoDat[81:74]: CmdFifoDat[81:74];
+assign cpl_tag      = rdbp_fifo_sel? RdBypassFifoDat[14:7]: CmdFifoDat[14:7];
+assign fbe          = rdbp_fifo_sel?  RdBypassFifoDat[73:70]: CmdFifoDat[73:70];
+assign lbe          =  rdbp_fifo_sel? RdBypassFifoDat[97:94] : CmdFifoDat[97:94];
+assign lower_adr    = rdbp_fifo_sel? RdBypassFifoDat[6:0]: CmdFifoDat[6:0];
+assign cpl_req_id   = rdbp_fifo_sel? RdBypassFifoDat[30:15]: CmdFifoDat[30:15];
 assign cpl_cplter_id = requestor_id;
-assign cpl_remain_bytes = rdbp_fifo_sel? RdBypassFifoDat_i[81:70]: CmdFifoDat[81:70];
-assign cpl_attr         = rdbp_fifo_sel? RdBypassFifoDat_i[97:94]: CmdFifoDat[97:94];
-assign cpl_tc         = rdbp_fifo_sel? RdBypassFifoDat_i[84:82]: CmdFifoDat[84:82];
+assign cpl_remain_bytes = rdbp_fifo_sel? RdBypassFifoDat[81:70]: CmdFifoDat[81:70];
+assign cpl_attr         = rdbp_fifo_sel? RdBypassFifoDat[97:94]: CmdFifoDat[97:94];
+assign cpl_tc         = rdbp_fifo_sel? RdBypassFifoDat[84:82]: CmdFifoDat[84:82];
 assign  msi_req       = CmdFifoDat[81] & (is_wr_32 | is_wr_64);
 always @(posedge Clk_i or negedge Rstn_i)
   begin
@@ -435,7 +435,7 @@ always @*
    begin
       case(tx_state)
          TX_IDLE :
-            if(np_header_avail_reg & ~RdBypassFifoEmpty_i & (outstanding_tag_cntr != 0) & output_fifo_ok_reg & ~rx_only & txrp_sm_idle & ~RpTLPReady_i) // use tag_available instead of *_reg because it is not updated in time by read_header state
+            if(np_header_avail_reg & ~RdBypassFifoEmpty & (outstanding_tag_cntr != 0) & output_fifo_ok_reg & ~rx_only & txrp_sm_idle & ~RpTLPReady_i) // use tag_available instead of *_reg because it is not updated in time by read_header state
                tx_nxt_state <= TX_POP_BPFIFO;
             else if(~CmdFifoEmpty_r & txrp_sm_idle & ~RpTLPReady_i)
                tx_nxt_state <= TX_CHECK_CMDFIFO; // read the command fifo
@@ -457,7 +457,7 @@ always @*
          TX_CHECK_CMDFIFO:
             if(msi_req)
                tx_nxt_state <= TX_MSI_REQ;
-            else if(is_rd & (~np_header_avail_reg | ~tag_available_reg) | (is_rd & ~RdBypassFifoEmpty_i) )
+            else if(is_rd & (~np_header_avail_reg | ~tag_available_reg) | (is_rd & ~RdBypassFifoEmpty) )
                tx_nxt_state <= TX_STORE_RD;
             else if(is_rd & tag_available_reg & output_fifo_ok_reg & np_header_avail_reg)
                tx_nxt_state <= TX_RD_HDR;
@@ -481,7 +481,7 @@ always @*
                tx_nxt_state <= TX_WR_DATA;
         
          TX_WR_DATA:
-            if(wr_dat_eop_mux & (CmdFifoEmpty_r | ~RdBypassFifoEmpty_i | RpTLPReady_i))
+            if(wr_dat_eop_mux & (CmdFifoEmpty_r | ~RdBypassFifoEmpty | RpTLPReady_i))
                tx_nxt_state <= TX_IDLE;
             else if(wr_dat_eop_mux & ~CmdFifoEmpty_r )
                tx_nxt_state <= TX_CHECK_CMDFIFO;
@@ -589,7 +589,7 @@ always @(posedge Clk_i or negedge Rstn_i)
   end
 
 
-assign tx_address_lsb = rdbp_fifo_sel?  {RdBypassFifoDat_i[3:2], 2'b00}: {CmdFifoDat[3:2], 2'b00}; 
+assign tx_address_lsb = rdbp_fifo_sel?  {RdBypassFifoDat[3:2], 2'b00}: {CmdFifoDat[3:2], 2'b00}; 
 assign addr_bit2    = rdbp_fifo_sel? RdBypassFifoDat[2]: CmdFifoDat[2];       
 assign cpl_dat_clken = ((sm_cpl_data ) |  (sm_wait & output_fifo_ok_reg & is_cpl) | (sm_cpl_hdr & (tx_address_lsb !=0))) & cpl_clken_cntr != 0 & ~is_abort_cpl;   
 assign CplBuffRdAddr[6:0] = cpl_dat_clken & ~is_flush_cpl? (cpl_addr_reg + 1) : cpl_addr_reg;
@@ -706,8 +706,8 @@ always @(posedge Clk_i or negedge Rstn_i)
 assign CplPending_o = (outstanding_tag_cntr != max_outstanding_read);
 
 /// Command FIFo Interface
-assign to_pop_bpfifo  = (np_header_avail_reg & ~RdBypassFifoEmpty_i & (outstanding_tag_cntr != 0) & output_fifo_ok_reg & ~rx_only );  // will read bypass fifo on the next clock
-assign CmdFifoRdReq = (sm_idle & ~CmdFifoEmpty_r & ~to_pop_bpfifo & txrp_sm_idle & ~RpTLPReady_i) | (sm_wr_data & RdBypassFifoEmpty_i &  ~RpTLPReady_i & (wr_dat_eop_mux  & ~CmdFifoEmpty_r));      
+assign to_pop_bpfifo  = (np_header_avail_reg & ~RdBypassFifoEmpty & (outstanding_tag_cntr != 0) & output_fifo_ok_reg & ~rx_only );  // will read bypass fifo on the next clock
+assign CmdFifoRdReq = (sm_idle & ~CmdFifoEmpty_r & ~to_pop_bpfifo & txrp_sm_idle & ~RpTLPReady_i) | (sm_wr_data & RdBypassFifoEmpty &  ~RpTLPReady_i & (wr_dat_eop_mux  & ~CmdFifoEmpty_r));      
 
 // Write Data FIFO Interface
 reg              wrdat_fifo_rd_reg;
@@ -727,12 +727,12 @@ always @(posedge Clk_i or negedge Rstn_i)
 
 assign rdbp_fifo_sel = sm_check_bpfifo | sm_rbp_hdr;
 
-assign addr_low      =  rdbp_fifo_sel? RdBypassFifoDat_i[31:0]: CmdFifoDat[31:0];
-assign addr_hi       =  rdbp_fifo_sel? RdBypassFifoDat_i[63:32]: CmdFifoDat[63:32];
-assign is_rd_32      =  rdbp_fifo_sel? RdBypassFifoDat_i[64]: CmdFifoDat[64];
-assign is_rd_64      =  rdbp_fifo_sel? RdBypassFifoDat_i[65]: CmdFifoDat[65];
-assign is_wr_32      =  rdbp_fifo_sel? RdBypassFifoDat_i[66]: CmdFifoDat[66];
-assign is_wr_64      =  rdbp_fifo_sel? RdBypassFifoDat_i[67]: CmdFifoDat[67];
+assign addr_low      =  rdbp_fifo_sel? RdBypassFifoDat[31:0]: CmdFifoDat[31:0];
+assign addr_hi       =  rdbp_fifo_sel? RdBypassFifoDat[63:32]: CmdFifoDat[63:32];
+assign is_rd_32      =  rdbp_fifo_sel? RdBypassFifoDat[64]: CmdFifoDat[64];
+assign is_rd_64      =  rdbp_fifo_sel? RdBypassFifoDat[65]: CmdFifoDat[65];
+assign is_wr_32      =  rdbp_fifo_sel? RdBypassFifoDat[66]: CmdFifoDat[66];
+assign is_wr_64      =  rdbp_fifo_sel? RdBypassFifoDat[67]: CmdFifoDat[67];
 assign is_cpl        =  rdbp_fifo_sel? 1'b0: (CmdFifoDat[68] | rx_only);
 assign is_flush_cpl  =  rdbp_fifo_sel? 1'b0: CmdFifoDat[69] & CmdFifoDat[68];
 assign is_abort_cpl  =  rdbp_fifo_sel? 1'b0: CmdFifoDat[31] & CmdFifoDat[68];
@@ -1121,8 +1121,8 @@ assign TxStValid_o = output_transmit;
  // assign IntxReq_o = 1'b0;
  
  /// By pass buffer control
-assign RdBypassFifoWrReq_o =  sm_store_rd;             
-assign RdBypassFifoRdReq_o = sm_pop_bpfifo;
+assign RdBypassFifoWrReq =  sm_store_rd;             
+assign RdBypassFifoRdReq = sm_pop_bpfifo;
 
 /// ROOT PORT INTERFACE 
 
