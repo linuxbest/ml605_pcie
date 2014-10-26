@@ -46,41 +46,25 @@
 module tlp_app (/*AUTOARG*/
    // Outputs
    tx_cons_cred_sel, WrDatFifoFull, TxsReadData_o, TxsReadDataValid_o,
-   TxWaitRequest_o, TxStValid_o, TxStSop_o, TxStEop_o, TxStEmpty_o,
-   TxStData_o, TxRespIdle_o, TxCplSent_o, TxCplLineSent_o,
-   TagRelease_o, RxmWrite_5_o, RxmWrite_4_o, RxmWrite_3_o,
-   RxmWrite_2_o, RxmWrite_1_o, RxmWrite_0_o, RxmWriteData_5_o,
-   RxmWriteData_4_o, RxmWriteData_3_o, RxmWriteData_2_o,
-   RxmWriteData_1_o, RxmWriteData_0_o, RxmRead_5_o, RxmRead_4_o,
-   RxmRead_3_o, RxmRead_2_o, RxmRead_1_o, RxmRead_0_o,
-   RxmByteEnable_5_o, RxmByteEnable_4_o, RxmByteEnable_3_o,
-   RxmByteEnable_2_o, RxmByteEnable_1_o, RxmByteEnable_0_o,
-   RxmBurstCount_5_o, RxmBurstCount_4_o, RxmBurstCount_3_o,
-   RxmBurstCount_2_o, RxmBurstCount_1_o, RxmBurstCount_0_o,
-   RxmAddress_5_o, RxmAddress_4_o, RxmAddress_3_o, RxmAddress_2_o,
-   RxmAddress_1_o, RxmAddress_0_o, RxStReady_o, RxStMask_o,
-   RxRpFifoWrReq_o, RxRpFifoWrData_o, RxPndgRdFifoRdReq, MsiReq_o,
-   IntxReq_o, CplReq_o, CplRdAddr_o, CplRamWrEna_o, CplRamWrDat_o,
-   CplRamWrAddr_o, CplPending_o, CplDesc_o, CmdFifoEmpty,
+   TxWaitRequest_o, TxRespIdle_o, TxCplSent_o, TxCplLineSent_o,
+   TagRelease_o, RxRpFifoWrReq_o, RxRpFifoWrData_o, RxPndgRdFifoRdReq,
+   MsiReq_o, IntxReq_o, CplReq_o, CplRdAddr_o, CplRamWrEna_o,
+   CplRamWrDat_o, CplRamWrAddr_o, CplPending_o, CplDesc_o,
+   CmdFifoEmpty,
    // Inputs
    pld_clk_inuse, ko_cpl_spc_header, ko_cpl_spc_data, k_bar_i,
    cb_p2a_avalon_addr_b6_i, cb_p2a_avalon_addr_b5_i,
    cb_p2a_avalon_addr_b4_i, cb_p2a_avalon_addr_b3_i,
    cb_p2a_avalon_addr_b2_i, cb_p2a_avalon_addr_b1_i,
    cb_p2a_avalon_addr_b0_i, WrDatFifoDi, TxsReadDataValid_i,
-   TxWrite_i, TxStReady_i, TxRespIdle_i, TxRead_i, TxReadData_i,
-   TxReadDataValid_i, TxCredNpHdrLimit_i, TxCredInfinit_i,
-   TxCredHipCons_i, TxCpl_i, TxCplLen_i, TxChipSelect_i,
-   TxByteEnable_i, TxBurstCount_i, TxAddress_i, TxAdapterFifoEmpty_i,
-   RxmWaitRequest_5_i, RxmWaitRequest_4_i, RxmWaitRequest_3_i,
-   RxmWaitRequest_2_i, RxmWaitRequest_1_i, RxmWaitRequest_0_i,
-   RxmRstn_i, RxmIrq_i, RxStValid_i, RxStSop_i, RxStParity_i,
-   RxStErr_i, RxStEop_i, RxStEmpty_i, RxStData_i, RxStBe_i,
-   RxStBarDec2_i, RxStBarDec1_i, RxRdInProgress_i, RxCplBuffFree_i,
-   Rstn_i, PCIeIrqEna_i, MsiData_i, MsiCsr_i, MsiAddr_i, MsiAck_i,
-   MasterEnable_i, IntxAck_i, DevCsr_i, CplReq_i, CplDesc_i,
-   CplBufData_i, Clk_i, BusDev_i, AvlClk_i, A2PMbWrReq_i,
-   A2PMbWrAddr_i, clk, rst
+   TxWrite_i, TxRespIdle_i, TxRead_i, TxReadData_i, TxReadDataValid_i,
+   TxCredNpHdrLimit_i, TxCredInfinit_i, TxCredHipCons_i, TxCpl_i,
+   TxCplLen_i, TxChipSelect_i, TxByteEnable_i, TxBurstCount_i,
+   TxAddress_i, TxAdapterFifoEmpty_i, RxmRstn_i, RxmIrq_i,
+   RxRdInProgress_i, RxCplBuffFree_i, Rstn_i, PCIeIrqEna_i, MsiData_i,
+   MsiCsr_i, MsiAddr_i, MsiAck_i, MasterEnable_i, IntxAck_i, DevCsr_i,
+   CplReq_i, CplDesc_i, CplBufData_i, Clk_i, BusDev_i, AvlClk_i,
+   A2PMbWrReq_i, A2PMbWrAddr_i, clk, rst
    );
    parameter TXCPL_BUFF_ADDR_WIDTH = 8; // TODO
    
@@ -108,24 +92,8 @@ module tlp_app (/*AUTOARG*/
    input		Rstn_i;			// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v, ...
    input		RxCplBuffFree_i;	// To tlp_tx_cntrl of tlp_tx_cntrl.v
    input		RxRdInProgress_i;	// To tlp_rx_cntrl of tlp_rx_cntrl.v
-   input [7:0]		RxStBarDec1_i;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
-   input [7:0]		RxStBarDec2_i;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
-   input [15:0]		RxStBe_i;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
-   input [127:0]	RxStData_i;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
-   input [1:0]		RxStEmpty_i;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
-   input		RxStEop_i;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
-   input [7:0]		RxStErr_i;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
-   input [64:0]		RxStParity_i;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
-   input		RxStSop_i;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
-   input		RxStValid_i;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
    input [CG_RXM_IRQ_NUM-1:0] RxmIrq_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input		RxmRstn_i;		// To tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
-   input		RxmWaitRequest_0_i;	// To tlp_rx_cntrl of tlp_rx_cntrl.v
-   input		RxmWaitRequest_1_i;	// To tlp_rx_cntrl of tlp_rx_cntrl.v
-   input		RxmWaitRequest_2_i;	// To tlp_rx_cntrl of tlp_rx_cntrl.v
-   input		RxmWaitRequest_3_i;	// To tlp_rx_cntrl of tlp_rx_cntrl.v
-   input		RxmWaitRequest_4_i;	// To tlp_rx_cntrl of tlp_rx_cntrl.v
-   input		RxmWaitRequest_5_i;	// To tlp_rx_cntrl of tlp_rx_cntrl.v
    input		TxAdapterFifoEmpty_i;	// To tlp_tx_cntrl of tlp_tx_cntrl.v
    input [CG_AVALON_S_ADDR_WIDTH-1:0] TxAddress_i;// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input [5:0]		TxBurstCount_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
@@ -140,7 +108,6 @@ module tlp_app (/*AUTOARG*/
    input [31:0]		TxReadData_i;		// To tlp_txcpl_buffer of tlp_txcpl_buffer.v
    input		TxRead_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input		TxRespIdle_i;		// To tlp_rx_cntrl of tlp_rx_cntrl.v
-   input		TxStReady_i;		// To tlp_tx_cntrl of tlp_tx_cntrl.v
    input		TxWrite_i;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input		TxsReadDataValid_i;	// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    input [127:0]	WrDatFifoDi;		// To tlp_txdat_fifo of tlp_txdat_fifo.v
@@ -171,53 +138,10 @@ module tlp_app (/*AUTOARG*/
    output		RxPndgRdFifoRdReq;	// From tlp_txresp_cntrl of tlp_txresp_cntrl.v, ...
    output [130:0]	RxRpFifoWrData_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
    output		RxRpFifoWrReq_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output		RxStMask_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output		RxStReady_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [AVALON_ADDR_WIDTH-1:0] RxmAddress_0_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [AVALON_ADDR_WIDTH-1:0] RxmAddress_1_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [AVALON_ADDR_WIDTH-1:0] RxmAddress_2_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [AVALON_ADDR_WIDTH-1:0] RxmAddress_3_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [AVALON_ADDR_WIDTH-1:0] RxmAddress_4_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [AVALON_ADDR_WIDTH-1:0] RxmAddress_5_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [6:0]		RxmBurstCount_0_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [6:0]		RxmBurstCount_1_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [6:0]		RxmBurstCount_2_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [6:0]		RxmBurstCount_3_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [6:0]		RxmBurstCount_4_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [6:0]		RxmBurstCount_5_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [(CB_RXM_DATA_WIDTH/8)-1:0] RxmByteEnable_0_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [(CB_RXM_DATA_WIDTH/8)-1:0] RxmByteEnable_1_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [(CB_RXM_DATA_WIDTH/8)-1:0] RxmByteEnable_2_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [(CB_RXM_DATA_WIDTH/8)-1:0] RxmByteEnable_3_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [(CB_RXM_DATA_WIDTH/8)-1:0] RxmByteEnable_4_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [(CB_RXM_DATA_WIDTH/8)-1:0] RxmByteEnable_5_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output		RxmRead_0_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output		RxmRead_1_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output		RxmRead_2_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output		RxmRead_3_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output		RxmRead_4_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output		RxmRead_5_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [CB_RXM_DATA_WIDTH-1:0] RxmWriteData_0_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [CB_RXM_DATA_WIDTH-1:0] RxmWriteData_1_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [CB_RXM_DATA_WIDTH-1:0] RxmWriteData_2_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [CB_RXM_DATA_WIDTH-1:0] RxmWriteData_3_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [CB_RXM_DATA_WIDTH-1:0] RxmWriteData_4_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output [CB_RXM_DATA_WIDTH-1:0] RxmWriteData_5_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output		RxmWrite_0_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output		RxmWrite_1_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output		RxmWrite_2_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output		RxmWrite_3_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output		RxmWrite_4_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
-   output		RxmWrite_5_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
    output		TagRelease_o;		// From tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
    output [4:0]		TxCplLineSent_o;	// From tlp_tx_cntrl of tlp_tx_cntrl.v
    output		TxCplSent_o;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
    output		TxRespIdle_o;		// From tlp_txresp_cntrl of tlp_txresp_cntrl.v
-   output [127:0]	TxStData_o;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
-   output [1:0]		TxStEmpty_o;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
-   output		TxStEop_o;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
-   output		TxStSop_o;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
-   output		TxStValid_o;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
    output		TxWaitRequest_o;	// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    output		TxsReadDataValid_o;	// From tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
    output [127:0]	TxsReadData_o;		// From tlp_rxresp_cntrl of tlp_rxresp_cntrl.v
@@ -249,11 +173,71 @@ module tlp_app (/*AUTOARG*/
    wire			RpTLPReady;		// From tlp_rxpd_fifo of tlp_rxpd_fifo.v
    wire [56:0]		RxPndgRdFifoDato;	// From tlp_pndgtxrd_fifo of tlp_pndgtxrd_fifo.v
    wire			RxPndgRdFifoEmpty;	// From tlp_pndgtxrd_fifo of tlp_pndgtxrd_fifo.v
+   wire [7:0]		RxStBarDec1_i;		// From txm_dummy of rxm_dummy.v
+   wire [7:0]		RxStBarDec2_i;		// From txm_dummy of rxm_dummy.v
+   wire [15:0]		RxStBe_i;		// From txm_dummy of rxm_dummy.v
+   wire [127:0]		RxStData_i;		// From txm_dummy of rxm_dummy.v
+   wire [1:0]		RxStEmpty_i;		// From txm_dummy of rxm_dummy.v
+   wire			RxStEop_i;		// From txm_dummy of rxm_dummy.v
+   wire [7:0]		RxStErr_i;		// From txm_dummy of rxm_dummy.v
+   wire			RxStMask_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [64:0]		RxStParity_i;		// From txm_dummy of rxm_dummy.v
+   wire			RxStReady_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire			RxStSop_i;		// From txm_dummy of rxm_dummy.v
+   wire			RxStValid_i;		// From txm_dummy of rxm_dummy.v
+   wire [AVALON_ADDR_WIDTH-1:0] RxmAddress_0_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [AVALON_ADDR_WIDTH-1:0] RxmAddress_1_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [AVALON_ADDR_WIDTH-1:0] RxmAddress_2_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [AVALON_ADDR_WIDTH-1:0] RxmAddress_3_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [AVALON_ADDR_WIDTH-1:0] RxmAddress_4_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [AVALON_ADDR_WIDTH-1:0] RxmAddress_5_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [6:0]		RxmBurstCount_0_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [6:0]		RxmBurstCount_1_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [6:0]		RxmBurstCount_2_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [6:0]		RxmBurstCount_3_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [6:0]		RxmBurstCount_4_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [6:0]		RxmBurstCount_5_o;	// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [(CB_RXM_DATA_WIDTH/8)-1:0] RxmByteEnable_0_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [(CB_RXM_DATA_WIDTH/8)-1:0] RxmByteEnable_1_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [(CB_RXM_DATA_WIDTH/8)-1:0] RxmByteEnable_2_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [(CB_RXM_DATA_WIDTH/8)-1:0] RxmByteEnable_3_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [(CB_RXM_DATA_WIDTH/8)-1:0] RxmByteEnable_4_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [(CB_RXM_DATA_WIDTH/8)-1:0] RxmByteEnable_5_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire			RxmRead_0_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire			RxmRead_1_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire			RxmRead_2_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire			RxmRead_3_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire			RxmRead_4_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire			RxmRead_5_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire			RxmWaitRequest_0_i;	// From txm_dummy of rxm_dummy.v
+   wire			RxmWaitRequest_1_i;	// From txm_dummy of rxm_dummy.v
+   wire			RxmWaitRequest_2_i;	// From txm_dummy of rxm_dummy.v
+   wire			RxmWaitRequest_3_i;	// From txm_dummy of rxm_dummy.v
+   wire			RxmWaitRequest_4_i;	// From txm_dummy of rxm_dummy.v
+   wire			RxmWaitRequest_5_i;	// From txm_dummy of rxm_dummy.v
+   wire [CB_RXM_DATA_WIDTH-1:0] RxmWriteData_0_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [CB_RXM_DATA_WIDTH-1:0] RxmWriteData_1_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [CB_RXM_DATA_WIDTH-1:0] RxmWriteData_2_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [CB_RXM_DATA_WIDTH-1:0] RxmWriteData_3_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [CB_RXM_DATA_WIDTH-1:0] RxmWriteData_4_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire [CB_RXM_DATA_WIDTH-1:0] RxmWriteData_5_o;// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire			RxmWrite_0_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire			RxmWrite_1_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire			RxmWrite_2_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire			RxmWrite_3_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire			RxmWrite_4_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
+   wire			RxmWrite_5_o;		// From tlp_rx_cntrl of tlp_rx_cntrl.v
    wire [127:0]		TxCplDat;		// From tlp_txcpl_buffer of tlp_txcpl_buffer.v
    wire [98:0]		TxReqHeader;		// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    wire			TxReqWr;		// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    wire [130:0]		TxRpFifoData;		// From tlp_rxpd_fifo of tlp_rxpd_fifo.v
    wire			TxRpFifoRdReq;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
+   wire [127:0]		TxStData_o;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
+   wire [1:0]		TxStEmpty_o;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
+   wire			TxStEop_o;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
+   wire			TxStReady_i;		// From txm_dummy of rxm_dummy.v
+   wire			TxStSop_o;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
+   wire			TxStValid_o;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
    wire [128:0]		WrDatFifoDo;		// From tlp_txdat_fifo of tlp_txdat_fifo.v
    wire			WrDatFifoEop;		// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
    wire			WrDatFifoRdReq;		// From tlp_tx_cntrl of tlp_tx_cntrl.v
@@ -572,6 +556,72 @@ module tlp_app (/*AUTOARG*/
 		     .CplReq_i		(CplReq_i),
 		     .CplDesc_i		(CplDesc_i[5:0]),
 		     .CplBufData_i	(CplBufData_i[129:0]));
+
+   rxm_dummy
+     txm_dummy (/*AUTOINST*/
+		// Outputs
+		.RxmWaitRequest_0_i	(RxmWaitRequest_0_i),
+		.RxmWaitRequest_1_i	(RxmWaitRequest_1_i),
+		.RxmWaitRequest_2_i	(RxmWaitRequest_2_i),
+		.RxmWaitRequest_3_i	(RxmWaitRequest_3_i),
+		.RxmWaitRequest_4_i	(RxmWaitRequest_4_i),
+		.RxmWaitRequest_5_i	(RxmWaitRequest_5_i),
+		.RxStData_i		(RxStData_i[127:0]),
+		.RxStParity_i		(RxStParity_i[64:0]),
+		.RxStBe_i		(RxStBe_i[15:0]),
+		.RxStEmpty_i		(RxStEmpty_i[1:0]),
+		.RxStErr_i		(RxStErr_i[7:0]),
+		.RxStSop_i		(RxStSop_i),
+		.RxStEop_i		(RxStEop_i),
+		.RxStValid_i		(RxStValid_i),
+		.RxStBarDec1_i		(RxStBarDec1_i[7:0]),
+		.RxStBarDec2_i		(RxStBarDec2_i[7:0]),
+		.TxStReady_i		(TxStReady_i),
+		// Inputs
+		.RxmWrite_0_o		(RxmWrite_0_o),
+		.RxmAddress_0_o		(RxmAddress_0_o[AVALON_ADDR_WIDTH-1:0]),
+		.RxmWriteData_0_o	(RxmWriteData_0_o[CB_RXM_DATA_WIDTH-1:0]),
+		.RxmByteEnable_0_o	(RxmByteEnable_0_o[(CB_RXM_DATA_WIDTH/8)-1:0]),
+		.RxmBurstCount_0_o	(RxmBurstCount_0_o[6:0]),
+		.RxmRead_0_o		(RxmRead_0_o),
+		.RxmWrite_1_o		(RxmWrite_1_o),
+		.RxmAddress_1_o		(RxmAddress_1_o[AVALON_ADDR_WIDTH-1:0]),
+		.RxmWriteData_1_o	(RxmWriteData_1_o[CB_RXM_DATA_WIDTH-1:0]),
+		.RxmByteEnable_1_o	(RxmByteEnable_1_o[(CB_RXM_DATA_WIDTH/8)-1:0]),
+		.RxmBurstCount_1_o	(RxmBurstCount_1_o[6:0]),
+		.RxmRead_1_o		(RxmRead_1_o),
+		.RxmWrite_2_o		(RxmWrite_2_o),
+		.RxmAddress_2_o		(RxmAddress_2_o[AVALON_ADDR_WIDTH-1:0]),
+		.RxmWriteData_2_o	(RxmWriteData_2_o[CB_RXM_DATA_WIDTH-1:0]),
+		.RxmByteEnable_2_o	(RxmByteEnable_2_o[(CB_RXM_DATA_WIDTH/8)-1:0]),
+		.RxmBurstCount_2_o	(RxmBurstCount_2_o[6:0]),
+		.RxmRead_2_o		(RxmRead_2_o),
+		.RxmWrite_3_o		(RxmWrite_3_o),
+		.RxmAddress_3_o		(RxmAddress_3_o[AVALON_ADDR_WIDTH-1:0]),
+		.RxmWriteData_3_o	(RxmWriteData_3_o[CB_RXM_DATA_WIDTH-1:0]),
+		.RxmByteEnable_3_o	(RxmByteEnable_3_o[(CB_RXM_DATA_WIDTH/8)-1:0]),
+		.RxmBurstCount_3_o	(RxmBurstCount_3_o[6:0]),
+		.RxmRead_3_o		(RxmRead_3_o),
+		.RxmWrite_4_o		(RxmWrite_4_o),
+		.RxmAddress_4_o		(RxmAddress_4_o[AVALON_ADDR_WIDTH-1:0]),
+		.RxmWriteData_4_o	(RxmWriteData_4_o[CB_RXM_DATA_WIDTH-1:0]),
+		.RxmByteEnable_4_o	(RxmByteEnable_4_o[(CB_RXM_DATA_WIDTH/8)-1:0]),
+		.RxmBurstCount_4_o	(RxmBurstCount_4_o[6:0]),
+		.RxmRead_4_o		(RxmRead_4_o),
+		.RxmWrite_5_o		(RxmWrite_5_o),
+		.RxmAddress_5_o		(RxmAddress_5_o[AVALON_ADDR_WIDTH-1:0]),
+		.RxmWriteData_5_o	(RxmWriteData_5_o[CB_RXM_DATA_WIDTH-1:0]),
+		.RxmByteEnable_5_o	(RxmByteEnable_5_o[(CB_RXM_DATA_WIDTH/8)-1:0]),
+		.RxmBurstCount_5_o	(RxmBurstCount_5_o[6:0]),
+		.RxmRead_5_o		(RxmRead_5_o),
+		.RxStReady_o		(RxStReady_o),
+		.RxStMask_o		(RxStMask_o),
+		.TxStData_o		(TxStData_o[127:0]),
+		.TxStSop_o		(TxStSop_o),
+		.TxStEop_o		(TxStEop_o),
+		.TxStEmpty_o		(TxStEmpty_o[1:0]),
+		.TxStValid_o		(TxStValid_o));
+   
 endmodule
 // 
 // tlp_app.v ends here
