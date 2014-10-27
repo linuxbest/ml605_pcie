@@ -2,13 +2,20 @@
 module tlp_m_axi_cntrl (/*AUTOARG*/
    // Outputs
    TxWaitRequest_o, TxReqWr, TxReqHeader, CmdFifoBusy, WrDatFifoWrReq,
-   WrDatFifoEop,
+   WrDatFifoEop, S_AWREADY, S_WREADY, S_BVALID, S_BRESP, S_BID,
+   S_BUSER, S_ARREADY, S_RVALID, S_RDATA, S_RRESP, S_RLAST, S_RID,
+   S_RUSER,
    // Inputs
    AvlClk_i, Rstn_i, TxChipSelect_i, TxRead_i, TxWrite_i,
    TxBurstCount_i, TxAddress_i, TxByteEnable_i, CmdFifoUsedW,
-   WrDatFifoUsedW, DevCsr_i, BusDev_i, MasterEnable_i, MsiCsr_i,
-   MsiAddr_i, MsiData_i, PCIeIrqEna_i, A2PMbWrAddr_i, A2PMbWrReq_i,
-   TxsReadDataValid_i, RxmIrq_i
+   WrDatFifoUsedW, DevCsr_i, BusDev_i, MasterEnable, MsiCsr_i,
+   MsiAddr_i, MsiData_i, PCIeIrqEna, A2PMbWrAddr, A2PMbWrReq,
+   TxsReadDataValid_i, RxmIrq, ACLK, ARESETn, S_AWVALID, S_AWADDR,
+   S_AWPROT, S_AWREGION, S_AWLEN, S_AWSIZE, S_AWBURST, S_AWLOCK,
+   S_AWCACHE, S_AWQOS, S_AWID, S_AWUSER, S_WVALID, S_WDATA, S_WSTRB,
+   S_WLAST, S_WUSER, S_BREADY, S_ARVALID, S_ARADDR, S_ARPROT,
+   S_ARREGION, S_ARLEN, S_ARSIZE, S_ARBURST, S_ARLOCK, S_ARCACHE,
+   S_ARQOS, S_ARID, S_ARUSER, S_RREADY
    );
 
    parameter CG_RXM_IRQ_NUM = 1;
@@ -53,6 +60,59 @@ module tlp_m_axi_cntrl (/*AUTOARG*/
    
    input [CG_RXM_IRQ_NUM-1 : 0] 	RxmIrq;
 
+   parameter AXI4_ADDRESS_WIDTH = 64;
+   parameter AXI4_RDATA_WIDTH = 128;
+   parameter AXI4_WDATA_WIDTH = 128;
+   parameter AXI4_ID_WIDTH = 3;
+   
+   input 				ACLK;
+   input 				ARESETn;
+   input 				S_AWVALID;
+   input [((AXI4_ADDRESS_WIDTH) - 1):0] S_AWADDR;
+   input [2:0] 				S_AWPROT;
+   input [3:0] 				S_AWREGION;
+   input [7:0] 				S_AWLEN;
+   input [2:0] 				S_AWSIZE;
+   input [1:0] 				S_AWBURST;
+   input 				S_AWLOCK;
+   input [3:0] 				S_AWCACHE;
+   input [3:0] 				S_AWQOS;
+   input [((AXI4_ID_WIDTH) - 1):0] 	S_AWID;
+   input [((AXI4_USER_WIDTH) - 1):0] 	S_AWUSER;
+   output 				S_AWREADY;
+   input 				S_WVALID;
+   input [((AXI4_WDATA_WIDTH) - 1):0] 	S_WDATA;
+   input [(((AXI4_WDATA_WIDTH / 8)) - 1):0] S_WSTRB;
+   input 				    S_WLAST;
+   input [((AXI4_USER_WIDTH) - 1):0] 	    S_WUSER;
+   output 				    S_WREADY;
+   output 				    S_BVALID;
+   output [1:0] 			    S_BRESP;
+   output [((AXI4_ID_WIDTH) - 1):0] 	    S_BID;
+   output [((AXI4_USER_WIDTH) - 1):0] 	    S_BUSER;
+   input 				    S_BREADY;
+   
+   input 				    S_ARVALID;
+   input [((AXI4_ADDRESS_WIDTH) - 1):0]     S_ARADDR;
+   input [2:0] 				    S_ARPROT;
+   input [3:0] 				    S_ARREGION;
+   input [7:0] 				    S_ARLEN;
+   input [2:0] 				    S_ARSIZE;
+   input [1:0] 				    S_ARBURST;
+   input 				    S_ARLOCK;
+   input [3:0] 				    S_ARCACHE;
+   input [3:0] 				    S_ARQOS;
+   input [((AXI4_ID_WIDTH) - 1):0] 	    S_ARID;
+   input [((AXI4_USER_WIDTH) - 1):0] 	    S_ARUSER;
+   output 				    S_ARREADY;
+   output 				    S_RVALID;
+   output [((AXI4_RDATA_WIDTH) - 1):0] 	    S_RDATA;
+   output [1:0] 			    S_RRESP;
+   output 				    S_RLAST;
+   output [((AXI4_ID_WIDTH) - 1):0] 	    S_RID;
+   output [((AXI4_USER_WIDTH) - 1):0] 	    S_RUSER;
+   input 				    S_RREADY;
+   
    
    localparam      TXAVL_IDLE          = 10'h000;
    localparam      TXAVL_WAIT_WRADDR   = 10'h003;

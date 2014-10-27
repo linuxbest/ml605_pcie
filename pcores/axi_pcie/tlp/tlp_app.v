@@ -44,8 +44,23 @@
 // 	ports                              : - Names begin with Uppercase
 // Code:
 module tlp_app (/*AUTOARG*/
+   // Outputs
+   S_WREADY, S_RVALID, S_RUSER, S_RRESP, S_RLAST, S_RID, S_RDATA,
+   S_BVALID, S_BUSER, S_BRESP, S_BID, S_AWREADY, S_ARREADY, M_WVALID,
+   M_WUSER, M_WSTRB, M_WLAST, M_WDATA, M_RREADY, M_BREADY, M_AWVALID,
+   M_AWUSER, M_AWSIZE, M_AWREGION, M_AWQOS, M_AWPROT, M_AWLOCK,
+   M_AWLEN, M_AWID, M_AWCACHE, M_AWBURST, M_AWADDR, M_ARVALID,
+   M_ARUSER, M_ARSIZE, M_ARREGION, M_ARQOS, M_ARPROT, M_ARLOCK,
+   M_ARLEN, M_ARID, M_ARCACHE, M_ARBURST, M_ARADDR,
    // Inputs
-   clk, rst
+   S_WVALID, S_WUSER, S_WSTRB, S_WLAST, S_WDATA, S_RREADY, S_BREADY,
+   S_AWVALID, S_AWUSER, S_AWSIZE, S_AWREGION, S_AWQOS, S_AWPROT,
+   S_AWLOCK, S_AWLEN, S_AWID, S_AWCACHE, S_AWBURST, S_AWADDR,
+   S_ARVALID, S_ARUSER, S_ARSIZE, S_ARREGION, S_ARQOS, S_ARPROT,
+   S_ARLOCK, S_ARLEN, S_ARID, S_ARCACHE, S_ARBURST, S_ARADDR,
+   M_WREADY, M_RVALID, M_RUSER, M_RRESP, M_RLAST, M_RID, M_RDATA,
+   M_BVALID, M_BUSER, M_BRESP, M_BID, M_AWREADY, M_ARREADY, ARESETn,
+   ACLK, clk, rst
    );
    parameter TXCPL_BUFF_ADDR_WIDTH = 8; // TODO
    
@@ -53,7 +68,101 @@ module tlp_app (/*AUTOARG*/
    input rst;
 
    /*AUTOINPUT*/
+   // Beginning of automatic inputs (from unused autoinst inputs)
+   input		ACLK;			// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v, ...
+   input		ARESETn;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v, ...
+   input		M_ARREADY;		// To tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   input		M_AWREADY;		// To tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   input [((AXI4_ID_WIDTH)-1):0] M_BID;		// To tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   input [1:0]		M_BRESP;		// To tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   input [((AXI4_USER_WIDTH)-1):0] M_BUSER;	// To tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   input		M_BVALID;		// To tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   input [((AXI4_RDATA_WIDTH)-1):0] M_RDATA;	// To tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   input [((AXI4_ID_WIDTH)-1):0] M_RID;		// To tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   input		M_RLAST;		// To tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   input [1:0]		M_RRESP;		// To tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   input [((AXI4_USER_WIDTH)-1):0] M_RUSER;	// To tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   input		M_RVALID;		// To tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   input		M_WREADY;		// To tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   input [((AXI4_ADDRESS_WIDTH)-1):0] S_ARADDR;	// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [1:0]		S_ARBURST;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [3:0]		S_ARCACHE;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [((AXI4_ID_WIDTH)-1):0] S_ARID;	// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [7:0]		S_ARLEN;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input		S_ARLOCK;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [2:0]		S_ARPROT;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [3:0]		S_ARQOS;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [3:0]		S_ARREGION;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [2:0]		S_ARSIZE;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [((AXI4_USER_WIDTH)-1):0] S_ARUSER;	// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input		S_ARVALID;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [((AXI4_ADDRESS_WIDTH)-1):0] S_AWADDR;	// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [1:0]		S_AWBURST;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [3:0]		S_AWCACHE;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [((AXI4_ID_WIDTH)-1):0] S_AWID;	// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [7:0]		S_AWLEN;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input		S_AWLOCK;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [2:0]		S_AWPROT;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [3:0]		S_AWQOS;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [3:0]		S_AWREGION;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [2:0]		S_AWSIZE;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [((AXI4_USER_WIDTH)-1):0] S_AWUSER;	// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input		S_AWVALID;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input		S_BREADY;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input		S_RREADY;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [((AXI4_WDATA_WIDTH)-1):0] S_WDATA;	// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input		S_WLAST;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [(((AXI4_WDATA_WIDTH/8))-1):0] S_WSTRB;// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input [((AXI4_USER_WIDTH)-1):0] S_WUSER;	// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   input		S_WVALID;		// To tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   // End of automatics
    /*AUTOOUTPUT*/
+   // Beginning of automatic outputs (from unused autoinst outputs)
+   output [((AXI4_ADDRESS_WIDTH)-1):0] M_ARADDR;// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [1:0]		M_ARBURST;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [3:0]		M_ARCACHE;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [((AXI4_ID_WIDTH)-1):0] M_ARID;	// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [7:0]		M_ARLEN;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output		M_ARLOCK;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [2:0]		M_ARPROT;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [3:0]		M_ARQOS;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [3:0]		M_ARREGION;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [2:0]		M_ARSIZE;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [((AXI4_USER_WIDTH)-1):0] M_ARUSER;	// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output		M_ARVALID;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [((AXI4_ADDRESS_WIDTH)-1):0] M_AWADDR;// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [1:0]		M_AWBURST;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [3:0]		M_AWCACHE;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [((AXI4_ID_WIDTH)-1):0] M_AWID;	// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [7:0]		M_AWLEN;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output		M_AWLOCK;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [2:0]		M_AWPROT;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [3:0]		M_AWQOS;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [3:0]		M_AWREGION;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [2:0]		M_AWSIZE;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [((AXI4_USER_WIDTH)-1):0] M_AWUSER;	// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output		M_AWVALID;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output		M_BREADY;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output		M_RREADY;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [((AXI4_WDATA_WIDTH)-1):0] M_WDATA;	// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output		M_WLAST;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [(((AXI4_WDATA_WIDTH/8))-1):0] M_WSTRB;// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output [((AXI4_USER_WIDTH)-1):0] M_WUSER;	// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output		M_WVALID;		// From tlp_s_axi_cntrl of tlp_s_axi_cntrl.v
+   output		S_ARREADY;		// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   output		S_AWREADY;		// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   output [((AXI4_ID_WIDTH)-1):0] S_BID;	// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   output [1:0]		S_BRESP;		// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   output [((AXI4_USER_WIDTH)-1):0] S_BUSER;	// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   output		S_BVALID;		// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   output [((AXI4_RDATA_WIDTH)-1):0] S_RDATA;	// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   output [((AXI4_ID_WIDTH)-1):0] S_RID;	// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   output		S_RLAST;		// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   output [1:0]		S_RRESP;		// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   output [((AXI4_USER_WIDTH)-1):0] S_RUSER;	// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   output		S_RVALID;		// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   output		S_WREADY;		// From tlp_m_axi_cntrl of tlp_m_axi_cntrl.v
+   // End of automatics
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
@@ -220,7 +329,11 @@ module tlp_app (/*AUTOARG*/
    tlp_m_axi_cntrl #(/*AUTOINSTPARAM*/
 		     // Parameters
 		     .CG_RXM_IRQ_NUM	(CG_RXM_IRQ_NUM),
-		     .CB_A2P_ADDR_MAP_PASS_THRU_BITS(CB_A2P_ADDR_MAP_PASS_THRU_BITS))
+		     .CB_A2P_ADDR_MAP_PASS_THRU_BITS(CB_A2P_ADDR_MAP_PASS_THRU_BITS),
+		     .AXI4_ADDRESS_WIDTH(AXI4_ADDRESS_WIDTH),
+		     .AXI4_RDATA_WIDTH	(AXI4_RDATA_WIDTH),
+		     .AXI4_WDATA_WIDTH	(AXI4_WDATA_WIDTH),
+		     .AXI4_ID_WIDTH	(AXI4_ID_WIDTH))
    tlp_m_axi_cntrl  (/*AUTOINST*/
 		     // Outputs
 		     .TxWaitRequest_o	(TxWaitRequest_o),
@@ -229,6 +342,19 @@ module tlp_app (/*AUTOARG*/
 		     .CmdFifoBusy	(CmdFifoBusy),
 		     .WrDatFifoWrReq	(WrDatFifoWrReq),
 		     .WrDatFifoEop	(WrDatFifoEop),
+		     .S_AWREADY		(S_AWREADY),
+		     .S_WREADY		(S_WREADY),
+		     .S_BVALID		(S_BVALID),
+		     .S_BRESP		(S_BRESP[1:0]),
+		     .S_BID		(S_BID[((AXI4_ID_WIDTH)-1):0]),
+		     .S_BUSER		(S_BUSER[((AXI4_USER_WIDTH)-1):0]),
+		     .S_ARREADY		(S_ARREADY),
+		     .S_RVALID		(S_RVALID),
+		     .S_RDATA		(S_RDATA[((AXI4_RDATA_WIDTH)-1):0]),
+		     .S_RRESP		(S_RRESP[1:0]),
+		     .S_RLAST		(S_RLAST),
+		     .S_RID		(S_RID[((AXI4_ID_WIDTH)-1):0]),
+		     .S_RUSER		(S_RUSER[((AXI4_USER_WIDTH)-1):0]),
 		     // Inputs
 		     .AvlClk_i		(AvlClk_i),
 		     .Rstn_i		(Rstn_i),
@@ -250,7 +376,40 @@ module tlp_app (/*AUTOARG*/
 		     .A2PMbWrAddr	(A2PMbWrAddr[11:0]),
 		     .A2PMbWrReq	(A2PMbWrReq),
 		     .TxsReadDataValid_i(TxsReadDataValid_i),
-		     .RxmIrq		(RxmIrq[CG_RXM_IRQ_NUM-1:0]));
+		     .RxmIrq		(RxmIrq[CG_RXM_IRQ_NUM-1:0]),
+		     .ACLK		(ACLK),
+		     .ARESETn		(ARESETn),
+		     .S_AWVALID		(S_AWVALID),
+		     .S_AWADDR		(S_AWADDR[((AXI4_ADDRESS_WIDTH)-1):0]),
+		     .S_AWPROT		(S_AWPROT[2:0]),
+		     .S_AWREGION	(S_AWREGION[3:0]),
+		     .S_AWLEN		(S_AWLEN[7:0]),
+		     .S_AWSIZE		(S_AWSIZE[2:0]),
+		     .S_AWBURST		(S_AWBURST[1:0]),
+		     .S_AWLOCK		(S_AWLOCK),
+		     .S_AWCACHE		(S_AWCACHE[3:0]),
+		     .S_AWQOS		(S_AWQOS[3:0]),
+		     .S_AWID		(S_AWID[((AXI4_ID_WIDTH)-1):0]),
+		     .S_AWUSER		(S_AWUSER[((AXI4_USER_WIDTH)-1):0]),
+		     .S_WVALID		(S_WVALID),
+		     .S_WDATA		(S_WDATA[((AXI4_WDATA_WIDTH)-1):0]),
+		     .S_WSTRB		(S_WSTRB[(((AXI4_WDATA_WIDTH/8))-1):0]),
+		     .S_WLAST		(S_WLAST),
+		     .S_WUSER		(S_WUSER[((AXI4_USER_WIDTH)-1):0]),
+		     .S_BREADY		(S_BREADY),
+		     .S_ARVALID		(S_ARVALID),
+		     .S_ARADDR		(S_ARADDR[((AXI4_ADDRESS_WIDTH)-1):0]),
+		     .S_ARPROT		(S_ARPROT[2:0]),
+		     .S_ARREGION	(S_ARREGION[3:0]),
+		     .S_ARLEN		(S_ARLEN[7:0]),
+		     .S_ARSIZE		(S_ARSIZE[2:0]),
+		     .S_ARBURST		(S_ARBURST[1:0]),
+		     .S_ARLOCK		(S_ARLOCK),
+		     .S_ARCACHE		(S_ARCACHE[3:0]),
+		     .S_ARQOS		(S_ARQOS[3:0]),
+		     .S_ARID		(S_ARID[((AXI4_ID_WIDTH)-1):0]),
+		     .S_ARUSER		(S_ARUSER[((AXI4_USER_WIDTH)-1):0]),
+		     .S_RREADY		(S_RREADY));
    
    tlp_txcmd_fifo #(/*AUTOINSTPARAM*/)
    tlp_txcmd_fifo  (/*AUTOINST*/
@@ -383,11 +542,61 @@ module tlp_app (/*AUTOARG*/
 		  .pld_clk_inuse	(pld_clk_inuse));
   
    /* RX */
-   tlp_s_axi_cntrl #(/*AUTOINSTPARAM*/)
+   tlp_s_axi_cntrl #(/*AUTOINSTPARAM*/
+		     // Parameters
+		     .AXI4_ADDRESS_WIDTH(AXI4_ADDRESS_WIDTH),
+		     .AXI4_RDATA_WIDTH	(AXI4_RDATA_WIDTH),
+		     .AXI4_WDATA_WIDTH	(AXI4_WDATA_WIDTH),
+		     .AXI4_ID_WIDTH	(AXI4_ID_WIDTH))
    tlp_s_axi_cntrl  (/*AUTOINST*/
+		     // Outputs
+		     .M_AWVALID		(M_AWVALID),
+		     .M_AWADDR		(M_AWADDR[((AXI4_ADDRESS_WIDTH)-1):0]),
+		     .M_AWPROT		(M_AWPROT[2:0]),
+		     .M_AWREGION	(M_AWREGION[3:0]),
+		     .M_AWLEN		(M_AWLEN[7:0]),
+		     .M_AWSIZE		(M_AWSIZE[2:0]),
+		     .M_AWBURST		(M_AWBURST[1:0]),
+		     .M_AWLOCK		(M_AWLOCK),
+		     .M_AWCACHE		(M_AWCACHE[3:0]),
+		     .M_AWQOS		(M_AWQOS[3:0]),
+		     .M_AWID		(M_AWID[((AXI4_ID_WIDTH)-1):0]),
+		     .M_AWUSER		(M_AWUSER[((AXI4_USER_WIDTH)-1):0]),
+		     .M_WVALID		(M_WVALID),
+		     .M_WDATA		(M_WDATA[((AXI4_WDATA_WIDTH)-1):0]),
+		     .M_WSTRB		(M_WSTRB[(((AXI4_WDATA_WIDTH/8))-1):0]),
+		     .M_WLAST		(M_WLAST),
+		     .M_WUSER		(M_WUSER[((AXI4_USER_WIDTH)-1):0]),
+		     .M_BREADY		(M_BREADY),
+		     .M_ARVALID		(M_ARVALID),
+		     .M_ARADDR		(M_ARADDR[((AXI4_ADDRESS_WIDTH)-1):0]),
+		     .M_ARPROT		(M_ARPROT[2:0]),
+		     .M_ARREGION	(M_ARREGION[3:0]),
+		     .M_ARLEN		(M_ARLEN[7:0]),
+		     .M_ARSIZE		(M_ARSIZE[2:0]),
+		     .M_ARBURST		(M_ARBURST[1:0]),
+		     .M_ARLOCK		(M_ARLOCK),
+		     .M_ARCACHE		(M_ARCACHE[3:0]),
+		     .M_ARQOS		(M_ARQOS[3:0]),
+		     .M_ARID		(M_ARID[((AXI4_ID_WIDTH)-1):0]),
+		     .M_ARUSER		(M_ARUSER[((AXI4_USER_WIDTH)-1):0]),
+		     .M_RREADY		(M_RREADY),
 		     // Inputs
-		     .clk		(clk),
-		     .rst		(rst));
+		     .ACLK		(ACLK),
+		     .ARESETn		(ARESETn),
+		     .M_AWREADY		(M_AWREADY),
+		     .M_WREADY		(M_WREADY),
+		     .M_BVALID		(M_BVALID),
+		     .M_BRESP		(M_BRESP[1:0]),
+		     .M_BID		(M_BID[((AXI4_ID_WIDTH)-1):0]),
+		     .M_BUSER		(M_BUSER[((AXI4_USER_WIDTH)-1):0]),
+		     .M_ARREADY		(M_ARREADY),
+		     .M_RVALID		(M_RVALID),
+		     .M_RDATA		(M_RDATA[((AXI4_RDATA_WIDTH)-1):0]),
+		     .M_RRESP		(M_RRESP[1:0]),
+		     .M_RLAST		(M_RLAST),
+		     .M_RID		(M_RID[((AXI4_ID_WIDTH)-1):0]),
+		     .M_RUSER		(M_RUSER[((AXI4_USER_WIDTH)-1):0]));
    
    tlp_rx_cntrl #(/*AUTOINSTPARAM*/
 		  // Parameters
