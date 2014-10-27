@@ -45,7 +45,8 @@
 // Code:
 module tlp_rxpd_fifo (/*AUTOARG*/
    // Outputs
-   TxRpFifoData, RpTLPReady, RxRdInProgress,
+   TxRpFifoData, RpTLPReady, RxRdInProgress, A2PMbWrAddr, A2PMbWrReq,
+   PCIeIrqEna,
    // Inputs
    clk, rst, TxRpFifoRdReq, RxRpFifoWrData, RxRpFifoWrReq
    );
@@ -61,10 +62,22 @@ module tlp_rxpd_fifo (/*AUTOARG*/
    input [130:0]  RxRpFifoWrData;
    input 	  RxRpFifoWrReq;
 		  
+   output [11:0]  A2PMbWrAddr;
+   output 	  A2PMbWrReq;
+   output [31:0]  PCIeIrqEna;
+
+   output         MasterEnable;
+
    // not root port.
    assign RpTLPReady   = 1'b0;
    assign TxRpFifoData = 131'h0;
    assign RxRdInProgress = 1'b0;
+
+   assign A2PMbWrReq  = 1'b0;
+   assign A2PMbWrAddr = 32'h0;
+   assign PCIeIrqEna  = 32'h0;
+  
+   assign MasterEnable = 1'b1;
 
 endmodule
 // 

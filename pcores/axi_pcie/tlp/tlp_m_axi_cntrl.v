@@ -21,9 +21,9 @@ module tlp_m_axi_cntrl (/*AUTOARG*/
    input                                TxChipSelect_i;  // avalon chip sel
    input 				TxRead_i;        // avalon read
    input                                TxWrite_i;       // avalon write
-   input [5:0] 				TxBurstCount_i;    // busrt count
-   input [CG_AVALON_S_ADDR_WIDTH-1:0] 	TxAddress_i; // word address
-   input [15:0] 			TxByteEnable_i;    // read enable
+   input [5:0] 				TxBurstCount_i;  // busrt count
+   input [CG_AVALON_S_ADDR_WIDTH-1:0] 	TxAddress_i;     // word address
+   input [15:0] 			TxByteEnable_i;  // read enable
    output                               TxWaitRequest_o;
    
    // Command/Data buffer interface
@@ -41,17 +41,17 @@ module tlp_m_axi_cntrl (/*AUTOARG*/
    // cfg signals
    input [31:0] 			DevCsr_i;
    input [12:0] 			BusDev_i;
-   input                                MasterEnable_i;
+   input                                MasterEnable;
    input [15:0] 			MsiCsr_i;
    input [63:0] 			MsiAddr_i;
    input [15:0] 			MsiData_i;
-   input [31:0] 			PCIeIrqEna_i;
-   input [11:0] 			A2PMbWrAddr_i;
-   input                                A2PMbWrReq_i;
+   input [31:0] 			PCIeIrqEna;
+   input [11:0] 			A2PMbWrAddr;
+   input                                A2PMbWrReq;
    
    input                                TxsReadDataValid_i;
    
-   input [CG_RXM_IRQ_NUM-1 : 0] 	RxmIrq_i;
+   input [CG_RXM_IRQ_NUM-1 : 0] 	RxmIrq;
 
    
    localparam      TXAVL_IDLE          = 10'h000;
@@ -121,11 +121,11 @@ always @*
   begin
     case(txavl_state)
       TXAVL_IDLE :
-        if(rxm_irq_sreg & cmd_fifo_ok & MasterEnable_i)
+        if(rxm_irq_sreg & cmd_fifo_ok & MasterEnable)
           txavl_nxt_state <= TXAVL_MSI;
-       else if((TxChipSelect_i & TxWrite_i & wr_fifos_ok & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready))    // write cycle detected and fifo ok (cmd and wr_dat fifo)
+       else if((TxChipSelect_i & TxWrite_i & wr_fifos_ok & ~rxm_irq_sreg & MasterEnable & ~trans_ready))    // write cycle detected and fifo ok (cmd and wr_dat fifo)
           txavl_nxt_state <= TXAVL_WAIT_WRADDR;       
-        else if(TxChipSelect_i & TxRead_i & reads_cntr < 8  & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready)   // read cycle
+        else if(TxChipSelect_i & TxRead_i & reads_cntr < 8  & ~rxm_irq_sreg & MasterEnable & ~trans_ready)   // read cycle
           txavl_nxt_state <= TXAVL_WAIT_RDADDR;            
         else
           txavl_nxt_state <= TXAVL_IDLE;
@@ -211,7 +211,7 @@ assign WrDatFifoEop    = sm_burst_data & ( (pcie_boundary == 1 | burst_counter =
 /// //////////////////state machine supporting signals //////////////////
 
 wire          txready;
-assign txready          = sm_burst_data | (sm_idle & TxChipSelect_i & TxRead_i & reads_cntr < 8 & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready) ; // do not assert ready when IRQ pending
+assign txready          = sm_burst_data | (sm_idle & TxChipSelect_i & TxRead_i & reads_cntr < 8 & ~rxm_irq_sreg & MasterEnable & ~trans_ready) ; // do not assert ready when IRQ pending
                           
 assign TxWaitRequest_o  = ~txready;                     
 // write fifo ok
@@ -898,7 +898,7 @@ generate
   genvar i;
      for(i=0; i<CG_RXM_IRQ_NUM; i=i+1)
         begin: irq_gen
-              assign generate_irq[i] = (RxmIrq_i[i] & PCIeIrqEna_i[i]);
+              assign generate_irq[i] = (RxmIrq[i] & PCIeIrqEna[i]);
         end
 endgenerate
 
@@ -917,14 +917,14 @@ assign rxm_irq_rise = |generate_irq & ~rxm_irq_reg;
 
 wire   rxm_irq_set;
 assign rxm_irq_set  =( rxm_irq_rise| 
-                     (A2PMbWrReq_i & A2PMbWrAddr_i[2:0] == 3'b000 & PCIeIrqEna_i[16])|
-                     (A2PMbWrReq_i & A2PMbWrAddr_i[2:0] == 3'b001 & PCIeIrqEna_i[17])|
-                     (A2PMbWrReq_i & A2PMbWrAddr_i[2:0] == 3'b010 & PCIeIrqEna_i[18])|
-                     (A2PMbWrReq_i & A2PMbWrAddr_i[2:0] == 3'b011 & PCIeIrqEna_i[19])|
-                     (A2PMbWrReq_i & A2PMbWrAddr_i[2:0] == 3'b100 & PCIeIrqEna_i[20])|
-                     (A2PMbWrReq_i & A2PMbWrAddr_i[2:0] == 3'b101 & PCIeIrqEna_i[21])|
-                     (A2PMbWrReq_i & A2PMbWrAddr_i[2:0] == 3'b110 & PCIeIrqEna_i[22])|
-                     (A2PMbWrReq_i & A2PMbWrAddr_i[2:0] == 3'b111 & PCIeIrqEna_i[23])
+                     (A2PMbWrReq & A2PMbWrAddr[2:0] == 3'b000 & PCIeIrqEna[16])|
+                     (A2PMbWrReq & A2PMbWrAddr[2:0] == 3'b001 & PCIeIrqEna[17])|
+                     (A2PMbWrReq & A2PMbWrAddr[2:0] == 3'b010 & PCIeIrqEna[18])|
+                     (A2PMbWrReq & A2PMbWrAddr[2:0] == 3'b011 & PCIeIrqEna[19])|
+                     (A2PMbWrReq & A2PMbWrAddr[2:0] == 3'b100 & PCIeIrqEna[20])|
+                     (A2PMbWrReq & A2PMbWrAddr[2:0] == 3'b101 & PCIeIrqEna[21])|
+                     (A2PMbWrReq & A2PMbWrAddr[2:0] == 3'b110 & PCIeIrqEna[22])|
+                     (A2PMbWrReq & A2PMbWrAddr[2:0] == 3'b111 & PCIeIrqEna[23])
                      ) 
                      & MsiCsr_i[0];  //  Msi go through Cmd FiFO
 
