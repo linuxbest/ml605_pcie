@@ -244,7 +244,104 @@ module tb (/*AUTOARG*/
    input 		cfg_to_turnoff;
    output 		cfg_turnoff_ok;
    input [15:0] 	cfg_completer_id;
+
+
+   /*AUTOREG*/
+   // Beginning of automatic regs (for this module's undeclared outputs)
+   reg [7:0]		RxStBarDec1_i;
+   reg [7:0]		RxStBarDec2_i;
+   reg [1:0]		current_speed;
+   reg [3:0]		lane_act;
+   reg [4:0]		ltssm_state;
+   // End of automatics
    
+   assign AvlClk_i  = user_clk;
+   assign Rstn_i    = ~user_reset;
+   
+   assign CfgAddr_i = 0;
+   assign CfgCtl_i  = 0;
+   assign CfgCtlWr_i= 0;
+
+   assign CraWriteData_i = 0;
+   assign CraAddress_i   = 0;
+   assign CraByteEnable_i= 0;
+   assign CraChipSelect_i= 0;
+   assign CraClk_i       = user_clk;
+   assign CraRead        = 0;
+   assign CraRstn_i      = ~user_reset;
+   assign CraWriteData_i = 0;
+   assign CraWrite       = 0;
+
+   assign IntxAck_i      = 0;
+   assign MsiAck_i       = 0;
+   assign RxIntStatus_i  = 0;
+
+   assign RxmIrq_i       = 0;
+   
+   assign RxmReadData_0_i = 0;
+   assign RxmReadData_1_i = 0;
+   assign RxmReadData_2_i = 0;
+   assign RxmReadData_3_i = 0;
+   assign RxmReadData_4_i = 0;
+   assign RxmReadData_5_i = 0;
+
+   assign RxmReadDataValid_0_i = 0;
+   assign RxmReadDataValid_1_i = 0;
+   assign RxmReadDataValid_2_i = 0;
+   assign RxmReadDataValid_3_i = 0;
+   assign RxmReadDataValid_4_i = 0;
+   assign RxmReadDataValid_5_i = 0;   
+
+   assign RxmWaitRequest_0_i = 0;
+   assign RxmWaitRequest_1_i = 0;
+   assign RxmWaitRequest_2_i = 0;
+   assign RxmWaitRequest_3_i = 0;
+   assign RxmWaitRequest_4_i = 0;
+   assign RxmWaitRequest_5_i = 0;
+   
+   assign TxCredCplDataLimit_i = ~0;
+   assign TxCredCplHdrLimit_i  = ~0;
+   assign TxCredHipCons_i      = ~0;
+   assign TxCredInfinit_i      = ~0;
+   assign TxCredNpDataLimit_i  = ~0;
+   assign TxCredNpHdrLimit_i   = ~0;
+   assign TxCredPDataLimit_i   = ~0;
+   assign TxCredPHdrLimit_i    = ~0;
+
+   assign TxsClk_i        = user_clk;
+   assign TxsRstn_i       = ~user_reset;
+   
+   assign TxsAddress_i    = 0;
+   assign TxsBurstCount_i = 0;
+   assign TxsByteEnable_i = 0;
+   assign TxsChipSelect_i = 0;
+   assign TxsRead_i       = 0;
+   assign TxsWrite_i      = 0;
+   assign TxsWriteData_i  = 0;
+
+   assign ko_cpl_spc_data   = 0;
+   assign ko_cpl_spc_header = 0;
+   assign pld_clk_inuse     = 0;
+
+   assign RxStBe_i          = m_axis_rx_tkeep;
+   assign RxStData_i        = m_axis_rx_tdata;
+   assign RxStEop_i         = m_axis_rx_tlast;
+   assign RxStValid_i       = m_axis_rx_tvalid;   
+   assign RxStSop_i         = 1'b0;
+   assign RxStErr_i         = 1'b0;
+   assign RxStEmpty_i       = 1'b0;
+   assign m_axis_rx_tready  = RxStReady_o;
+
+   assign TxAdapterFifoEmpty_i = 1'b0;
+
+   assign s_axis_tx_tdata   = TxStData_o;
+   assign s_axis_tx_tkeep   = 16'hFFFF;
+   assign s_axis_tx_tvalid  = TxStValid_o;
+   assign s_axis_tx_tlast   = TxStEop_o;
+   assign tx_src_dsc        = 1'b0;
+   assign TxStReady_i       = s_axis_tx_tready;
+
+   assign cfg_turnoff_ok    = 1'b1;
 endmodule
 // 
 // tb.v ends here
