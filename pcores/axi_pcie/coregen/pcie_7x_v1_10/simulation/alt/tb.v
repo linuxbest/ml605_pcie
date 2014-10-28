@@ -250,6 +250,7 @@ module tb (/*AUTOARG*/
    // Beginning of automatic regs (for this module's undeclared outputs)
    reg [7:0]		RxStBarDec1_i;
    reg [7:0]		RxStBarDec2_i;
+   reg			RxStSop_i;
    reg [1:0]		current_speed;
    reg [3:0]		lane_act;
    reg [4:0]		ltssm_state;
@@ -325,9 +326,9 @@ module tb (/*AUTOARG*/
 
    assign RxStBe_i          = m_axis_rx_tkeep;
    assign RxStData_i        = m_axis_rx_tdata;
-   assign RxStEop_i         = m_axis_rx_tlast;
+   assign RxStEop_i         = m_axis_rx_tuser[21];
    assign RxStValid_i       = m_axis_rx_tvalid;   
-   assign RxStSop_i         = 1'b0;
+   //assign RxStSop_i         = 1'b0;
    assign RxStErr_i         = 1'b0;
    assign RxStEmpty_i       = 1'b0;
    assign m_axis_rx_tready  = RxStReady_o;
@@ -342,6 +343,18 @@ module tb (/*AUTOARG*/
    assign TxStReady_i       = s_axis_tx_tready;
 
    assign cfg_turnoff_ok    = 1'b1;
+
+   always @(posedge user_clk)
+     begin
+	if ((RxStValid_i && RxStReady_o && ~RxStSop_i && RxStEop_i) || user_reset)
+	  begin
+	     RxStSop_i <= #1 1'b1;
+	  end
+	else if (RxStValid_i && RxStReady_o && ~RxStReady_o)
+	  begin
+	     RxStSop_i <= #1 1'b0;
+	  end
+     end // always @ (posedge user_clk)
 endmodule
 // 
 // tb.v ends here

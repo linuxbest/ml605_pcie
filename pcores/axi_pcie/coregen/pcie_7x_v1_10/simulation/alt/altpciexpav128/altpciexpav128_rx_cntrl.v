@@ -132,18 +132,19 @@ module altpciexpav128_rx_cntrl
   );
   
   //state machine encoding
-  localparam RX_IDLE_0                    = 12'h000;  
-  localparam RX_RD_HEADER_0               = 12'h003; 
-  localparam RX_CHECK_HEADER_0            = 12'h005;
-  localparam RX_WRENA_0                   = 12'h009;
-  localparam RX_WRWAIT_0                  = 12'h011;
-  localparam RX_STORE_RD_0                = 12'h021;
-  localparam RX_RDENA_0                   = 12'h041;
-  localparam RX_CHECK_TXCPLSIZE_0         = 12'h081;
-  localparam RX_CPLENA_0                  = 12'h101;
-  localparam RX_PIPE_0                    = 12'h201;  
-  localparam RX_MSG_DUMP_0                = 12'h401;
-  localparam RX_RP_STREAM_0                 = 12'h801;
+  localparam [11:0] // synopsys enum rx_state0_info
+   RX_IDLE_0                    = 12'h000,  
+   RX_RD_HEADER_0               = 12'h003, 
+   RX_CHECK_HEADER_0            = 12'h005,
+   RX_WRENA_0                   = 12'h009,
+   RX_WRWAIT_0                  = 12'h011,
+   RX_STORE_RD_0                = 12'h021,
+   RX_RDENA_0                   = 12'h041,
+   RX_CHECK_TXCPLSIZE_0         = 12'h081,
+   RX_CPLENA_0                  = 12'h101,
+   RX_PIPE_0                    = 12'h201,  
+   RX_MSG_DUMP_0                = 12'h401,
+   RX_RP_STREAM_0               = 12'h801;
   
   localparam RX_IDLE_1                    = 11'h000;  
   localparam RX_RD_HEADER_1               = 11'h003; 
@@ -213,7 +214,8 @@ wire  [3:0]       rx_address_lsb_fifo;
 reg   [9:0]       rx_dw_count_0;
 wire  [9:0]       rx_dw_count;
 reg   [15:0]      tail_mask;
-reg   [11:0]       rx_state_0; 
+reg   [11:0]       // synopsys enum rx_state0_info
+		   rx_state_0; 
 reg   [11:0]       rx_nxt_state_0;
 reg  [7:0]       rx_modlen_qdword;    
 reg  [7:0]       rx_modlen_qdword_reg_0;   
@@ -1324,4 +1326,26 @@ assign input_fifo_rdreq = rxsm_rd_header_0 | (rxsm_rp_stream & ~rx_eop_fifo) |
 // Mask Hardwired
 assign RxStMask_o = 1'b0;
 
+   /*AUTOASCIIENUM("rx_state_0", "rx_state0_ascii", "RX_")*/
+   // Beginning of automatic ASCII enum decoding
+   reg [135:0]		rx_state0_ascii;	// Decode of rx_state_0
+   always @(rx_state_0) begin
+      case ({rx_state_0})
+	RX_IDLE_0:            rx_state0_ascii = "idle_0           ";
+	RX_RD_HEADER_0:       rx_state0_ascii = "rd_header_0      ";
+	RX_CHECK_HEADER_0:    rx_state0_ascii = "check_header_0   ";
+	RX_WRENA_0:           rx_state0_ascii = "wrena_0          ";
+	RX_WRWAIT_0:          rx_state0_ascii = "wrwait_0         ";
+	RX_STORE_RD_0:        rx_state0_ascii = "store_rd_0       ";
+	RX_RDENA_0:           rx_state0_ascii = "rdena_0          ";
+	RX_CHECK_TXCPLSIZE_0: rx_state0_ascii = "check_txcplsize_0";
+	RX_CPLENA_0:          rx_state0_ascii = "cplena_0         ";
+	RX_PIPE_0:            rx_state0_ascii = "pipe_0           ";
+	RX_MSG_DUMP_0:        rx_state0_ascii = "msg_dump_0       ";
+	RX_RP_STREAM_0:       rx_state0_ascii = "rp_stream_0      ";
+	default:              rx_state0_ascii = "%Error           ";
+      endcase
+   end
+   // End of automatics
+   
 endmodule

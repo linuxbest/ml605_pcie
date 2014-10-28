@@ -43,6 +43,11 @@ eval add wave -noupdate $hexopt \"$pcie${ps}rx${ps}TxReadData_o(63 downto 32)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}rx${ps}TxReadData_o(31 downto 0)\"
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}TxReadDataValid_o
 
+eval add wave -noupdate -divider {"PCIE RX CNTRL"}
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}Clk_i
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}Rstn_i
+
+eval add wave -noupdate $ascopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rx_state0_ascii
 
 ################################
 eval add wave -noupdate -divider {"PCIE stream TX"}
