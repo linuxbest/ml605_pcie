@@ -248,9 +248,9 @@ module tb (/*AUTOARG*/
 
    /*AUTOREG*/
    // Beginning of automatic regs (for this module's undeclared outputs)
-   reg [7:0]		RxStBarDec1_i;
-   reg [7:0]		RxStBarDec2_i;
    reg			RxStSop_i;
+   reg			RxmReadDataValid_0_i;
+   reg [CB_RXM_DATA_WIDTH-1:0] RxmReadData_0_i;
    reg [1:0]		current_speed;
    reg [3:0]		lane_act;
    reg [4:0]		ltssm_state;
@@ -258,7 +258,9 @@ module tb (/*AUTOARG*/
    
    assign AvlClk_i  = user_clk;
    assign Rstn_i    = ~user_reset;
-   
+   assign RxStBarDec1_i = 8'b0000_0001;
+   assign RxStBarDec2_i = 8'b0000_0000;
+
    assign CfgAddr_i = 0;
    assign CfgCtl_i  = 0;
    assign CfgCtlWr_i= 0;
@@ -279,14 +281,12 @@ module tb (/*AUTOARG*/
 
    assign RxmIrq_i       = 0;
    
-   assign RxmReadData_0_i = 0;
    assign RxmReadData_1_i = 0;
    assign RxmReadData_2_i = 0;
    assign RxmReadData_3_i = 0;
    assign RxmReadData_4_i = 0;
    assign RxmReadData_5_i = 0;
 
-   assign RxmReadDataValid_0_i = 0;
    assign RxmReadDataValid_1_i = 0;
    assign RxmReadDataValid_2_i = 0;
    assign RxmReadDataValid_3_i = 0;
@@ -355,6 +355,22 @@ module tb (/*AUTOARG*/
 	     RxStSop_i <= #1 1'b0;
 	  end
      end // always @ (posedge user_clk)
+
+
+   reg [CB_RXM_DATA_WIDTH-1:0] rxm_data [0:1023];
+   wire [11:0] 		       rxm_addr;
+   reg [11:0] 		       rxm_raddr;
+   always @(posedge user_clk)
+     begin
+	if (RxmWrite_0_o)
+	  begin
+	     rxm_data[rxm_addr] <= RxmWriteData_0_o;
+	  end
+	rxm_raddr            <= rxm_addr;
+	RxmReadData_0_i      <= rxm_data[rxm_raddr];
+	RxmReadDataValid_0_i <= RxmRead_0_o;
+     end
+   assign rxm_addr = RxmAddress_0_o;
 endmodule
 // 
 // tb.v ends here

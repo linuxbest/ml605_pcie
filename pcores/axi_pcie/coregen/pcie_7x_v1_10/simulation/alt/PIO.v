@@ -284,7 +284,7 @@ module PIO #(
       parameter bar_prefetchable = 1;
       parameter avmm_width_hwtcl = 64;
       parameter avmm_burst_width_hwtcl = 7;
-      parameter CB_RXM_DATA_WIDTH = 64;
+      parameter CB_RXM_DATA_WIDTH = 128;
       parameter AVALON_ADDR_WIDTH = 32;
       parameter BYPASSS_A2P_TRANSLATION = 0;
 

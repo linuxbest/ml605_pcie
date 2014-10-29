@@ -1109,7 +1109,7 @@ assign rx_be = rxsm_rdena_0? rx_rd_be_reg : rx_wr_be_reg;
   
   
  generate if(CB_PCIE_RX_LITE == 0)
-  begin
+  begin : rxm_0
      
      
      altpciexpav128_rxm_adapter 
