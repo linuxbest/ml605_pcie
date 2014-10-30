@@ -93,20 +93,21 @@ module altpciexpav128_tx_cntrl
 );
 
 
-localparam      TX_IDLE            = 14'h0000; 
-localparam      TX_CHECK_CMDFIFO   = 14'h0003;
-localparam      TX_RD_HDR          = 14'h0005;
-localparam      TX_WR_HDR          = 14'h0009;
-localparam      TX_WR_DATA         = 14'h0011;
-localparam      TX_CPL_HDR         = 14'h0021;
-localparam      TX_CPL_DATA        = 14'h0041;
-localparam      TX_MSI_REQ         = 14'h0081;
-localparam      TX_POP_BPFIFO      = 14'h0101;
-localparam      TX_RBP_HDR         = 14'h0201;
-localparam      TX_STORE_RD        = 14'h0401;
-localparam      TX_WAIT            = 14'h0801;
-localparam      TX_CHECK_BPFIFO    = 14'h1001;
-localparam      TX_WAIT_ADPT_EMPTY = 14'h2001;  
+localparam     // synopsys enum tx_state_info
+     TX_IDLE            = 14'h0000, 
+     TX_CHECK_CMDFIFO   = 14'h0003,
+     TX_RD_HDR          = 14'h0005,
+     TX_WR_HDR          = 14'h0009,
+     TX_WR_DATA         = 14'h0011,
+     TX_CPL_HDR         = 14'h0021,
+     TX_CPL_DATA        = 14'h0041,
+     TX_MSI_REQ         = 14'h0081,
+     TX_POP_BPFIFO      = 14'h0101,
+     TX_RBP_HDR         = 14'h0201,
+     TX_STORE_RD        = 14'h0401,
+     TX_WAIT            = 14'h0801,
+     TX_CHECK_BPFIFO    = 14'h1001,
+     TX_WAIT_ADPT_EMPTY = 14'h2001;  
 
 localparam      TXRP_IDLE            = 4'h0; 
 localparam      TXRP_RD_FIFO         = 4'h3;
@@ -143,7 +144,8 @@ reg         rxcplbuff_free_reg;
 wire [63:0]  cmd_header1;     
 wire  [63:0]  cmd_header2;    
                                  
-reg [18:0]                         tx_state;
+reg [18:0]      // synopsys enum tx_state_info
+                                   tx_state;
 reg [18:0]                         tx_nxt_state;  
 reg [7:0]                          cpl_dat_cntr;    
 reg [7:0]                          tx_modlen_qdword;     
@@ -406,8 +408,8 @@ always @(posedge Clk_i or negedge Rstn_i)
   end
 
 
-assign hdr_3dw_offset_4 = (tx_address_lsb[3:0] == 4'h4) & tlp_3dw_header;
-assign hdr_3dw_offset_C = (tx_address_lsb[3:0] == 4'hC) & tlp_3dw_header;
+assign hdr_3dw_offset_4 = /*(tx_address_lsb[3:0] == 4'h4) & */tlp_3dw_header;
+assign hdr_3dw_offset_C = /*(tx_address_lsb[3:0] == 4'hC) & */tlp_3dw_header;
 
 
 
@@ -842,7 +844,7 @@ assign wrdat_fifo_eop = TxWrDat_i[128];
 assign tlp_dw2_sel = (is_wr_32 | is_rd_32);           
 assign tlp_dw2     = tlp_dw2_sel? adr_low : adr_hi;
 assign tlp_dw3_sel = (is_wr_32 | is_rd_32);           
-assign tlp_dw3     = (tlp_dw3_sel & tx_address_lsb[2])? tx_data[127:96] : adr_low[31:0];
+assign tlp_dw3     = (tlp_dw3_sel /*& tx_address_lsb[2]*/)? tx_data[127:96] : adr_low[31:0];
 
 
 assign req_header1 = {requestor_id[15:0], req_tag_reg[7:0], lbe_reg, fbe_reg, cmd_reg[7:0], 8'h0, 6'h0, dw_len_reg[9:0]};
@@ -967,13 +969,13 @@ assign tlp_data     = tlp_data_sel? {cmd_header2, cmd_header1} : tx_data;
 assign tlp_sop =   (sm_wr_hdr | sm_rd_hdr | sm_rbp_hdr | sm_cpl_hdr);
 
 assign tlp_eop = (sm_cpl_data & (cpl_dat_cntr == 1)) | (sm_wait & output_fifo_ok_reg &  (cpl_dat_cntr == 1)) |
-                 (sm_wr_hdr & dw_len_reg == 1 & tx_address_lsb[2] & is_wr_32) |
+                 (sm_wr_hdr & dw_len_reg == 1 /*& tx_address_lsb[2] */& is_wr_32) |
                  (sm_wr_data  & (wr_dat_eop_mux)) |
                  (sm_rd_hdr | sm_rbp_hdr) |
-                 (sm_cpl_hdr & ((dw_len == 1 & tx_address_lsb[2]) | is_abort_cpl));
+                 (sm_cpl_hdr & ((dw_len == 1 /*& tx_address_lsb[2]*/) | is_abort_cpl));
  
            
-assign tlp_emp_sel = {tlp_3dw_header, tx_address_lsb[2], dw_len_reg[1:0]};           
+assign tlp_emp_sel = {tlp_3dw_header, /*tx_address_lsb[2]*/1'b1, dw_len_reg[1:0]};           
                                                                                           
     always @ *
       begin
@@ -1201,4 +1203,27 @@ assign txrp_sop       =  ~txrp_sm_stream_reg & txrp_sm_stream;
 
 assign TxRpFifoRdReq_o = txrp_sm_rdfifo | (txrp_sop & rp_span_2cydle & ~txrp_eop);
    
+   /*AUTOASCIIENUM("tx_state", "tx_state_ascii", "TX_")*/
+   // Beginning of automatic ASCII enum decoding
+   reg [119:0]		tx_state_ascii;		// Decode of tx_state
+   always @(tx_state) begin
+      case ({tx_state})
+	TX_IDLE:            tx_state_ascii = "idle           ";
+	TX_CHECK_CMDFIFO:   tx_state_ascii = "check_cmdfifo  ";
+	TX_RD_HDR:          tx_state_ascii = "rd_hdr         ";
+	TX_WR_HDR:          tx_state_ascii = "wr_hdr         ";
+	TX_WR_DATA:         tx_state_ascii = "wr_data        ";
+	TX_CPL_HDR:         tx_state_ascii = "cpl_hdr        ";
+	TX_CPL_DATA:        tx_state_ascii = "cpl_data       ";
+	TX_MSI_REQ:         tx_state_ascii = "msi_req        ";
+	TX_POP_BPFIFO:      tx_state_ascii = "pop_bpfifo     ";
+	TX_RBP_HDR:         tx_state_ascii = "rbp_hdr        ";
+	TX_STORE_RD:        tx_state_ascii = "store_rd       ";
+	TX_WAIT:            tx_state_ascii = "wait           ";
+	TX_CHECK_BPFIFO:    tx_state_ascii = "check_bpfifo   ";
+	TX_WAIT_ADPT_EMPTY: tx_state_ascii = "wait_adpt_empty";
+	default:            tx_state_ascii = "%Error         ";
+      endcase
+   end
+   // End of automatics
 endmodule

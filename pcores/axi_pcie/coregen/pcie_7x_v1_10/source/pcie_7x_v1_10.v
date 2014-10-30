@@ -127,12 +127,12 @@ module pcie_7x_v1_10 # (
   parameter         LINK_CAP_ASPM_OPTIONALITY = "FALSE",
   parameter         LINK_CAP_DLL_LINK_ACTIVE_REPORTING_CAP = "FALSE",
   parameter         LINK_CAP_LINK_BANDWIDTH_NOTIFICATION_CAP = "FALSE",
-  parameter [3:0]   LINK_CAP_MAX_LINK_SPEED = 4'h2,
+  parameter [3:0]   LINK_CAP_MAX_LINK_SPEED = 4'h1,
   parameter [5:0]   LINK_CAP_MAX_LINK_WIDTH = 6'h08,
 
   parameter         LINK_CTRL2_DEEMPHASIS = "FALSE",
   parameter         LINK_CTRL2_HW_AUTONOMOUS_SPEED_DISABLE = "FALSE",
-  parameter [3:0]   LINK_CTRL2_TARGET_LINK_SPEED = 4'h2,
+  parameter [3:0]   LINK_CTRL2_TARGET_LINK_SPEED = 4'h1,
   parameter         LINK_STATUS_SLOT_CLOCK_CONFIG = "TRUE",
 
   parameter [14:0]  LL_ACK_TIMEOUT = 15'h0000,

@@ -371,8 +371,8 @@ module pcie_7x_v1_10_gt_top_pipe_mode #
    parameter                    BFM_LANES  = 8;		// 1=>x1, 4=x4 , 8=x8
    parameter                    BFM_WIDTH  = 16;	// 8=>8-bit 16=>16-bit 32=>32bit
    parameter                    IO_SIZE    = 16;
-   parameter                    MEM32_SIZE = 24;
-   parameter                    MEM64_SIZE = 24;
+   parameter                    MEM32_SIZE = 20;
+   parameter                    MEM64_SIZE = 20;
 
    wire [7:0] pipe_tx_elec_idle;
    wire [7:0] pipe_tx_compl;

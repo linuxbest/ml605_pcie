@@ -93,7 +93,7 @@ defparam board.EP.pcie_7x_v1_10_i.PIPE_SIM_MODE = "TRUE";
 
 xilinx_pcie_2_1_ep_7x # (
 
-  .PL_FAST_TRAIN("FALSE")
+  .PL_FAST_TRAIN("TRUE")
 
 )
 EP (

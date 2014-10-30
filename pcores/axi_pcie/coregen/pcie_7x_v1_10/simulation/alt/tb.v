@@ -335,8 +335,15 @@ module tb (/*AUTOARG*/
 
    assign TxAdapterFifoEmpty_i = 1'b0;
 
+   //When tx_st_eop<n> is asserted and tx_st_empty<n>
+   //has value 1, tx_st_data[63:0] holds valid data but
+   //tx_st_data[127:64] does not hold valid data.
+   //
+   //When tx_st_eop<n> is asserted and tx_st_empty<n>
+   //has value 0, tx_st_data[127:0] holds valid data.
+
    assign s_axis_tx_tdata   = TxStData_o;
-   assign s_axis_tx_tkeep   = 16'hFFFF;
+   assign s_axis_tx_tkeep   = TxStEop_o & TxStValid_o & TxStEmpty_o[0] ? 16'h00FF : 16'hFFFF;
    assign s_axis_tx_tvalid  = TxStValid_o;
    assign s_axis_tx_tlast   = TxStEop_o;
    assign tx_src_dsc        = 1'b0;

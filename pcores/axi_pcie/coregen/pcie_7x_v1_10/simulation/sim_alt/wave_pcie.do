@@ -144,6 +144,31 @@ eval add wave -noupdate $hexopt $pcie${ps}tx${ps}DevCsr_i
 eval add wave -noupdate $hexopt $pcie${ps}tx${ps}BusDev_i
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}CplPending_o
 
+eval add wave -noupdate -divider {"PCIE tx cntrl"}
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}Clk_i
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}Rstn_i
+
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}tlp_dw2_sel
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}tlp_dw3_sel
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}is_cpl
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}tlp_3dw_header
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}tlp_data_sel
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}tx_address_lsb
+
+eval add wave -noupdate $ascopt $pcie${ps}tx${ps}tx_cntrl${ps}tx_state_ascii
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}dw_len
+
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}tx_data
+
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}req_header2
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}req_header1
+
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}cpl_header2
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}cpl_header1
+
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}cmd_header2
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}cmd_header1
+
 eval add wave -noupdate -divider {"PCIE stream TXM"}
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}Clk_i
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}Rstn_i

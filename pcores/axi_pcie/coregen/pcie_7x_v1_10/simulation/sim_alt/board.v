@@ -56,10 +56,6 @@
 
 `timescale 1ns/1ns
 
-`include "board_common.v"
-
-`define SIMULATION
-
 module board;
 
 parameter          REF_CLK_FREQ       = 0;      // 0 - 100 MHz, 1 - 125 MHz,  2 - 250 MHz
@@ -90,11 +86,9 @@ wire  [7:0]  rp_pci_exp_txp;
 `ifdef ENABLE_GT
 parameter PIPE_SIM = "FALSE";
 defparam board.EP.pcie_7x_v1_10_i.PIPE_SIM_MODE = "FALSE";
-defparam board.RP.rport.PIPE_SIM_MODE = "FALSE";
 `else
 parameter PIPE_SIM = "TRUE";
 defparam board.EP.pcie_7x_v1_10_i.PIPE_SIM_MODE = "TRUE";
-defparam board.RP.rport.PIPE_SIM_MODE = "TRUE";
 `endif
 
 xilinx_pcie_2_1_ep_7x # (
@@ -126,45 +120,6 @@ EP (
 
 );
 
-//
-// PCI-Express Model Root Port Instance
-//
-
-xilinx_pcie_2_1_rport_7x # (
-
-  .REF_CLK_FREQ(0),
-  .PL_FAST_TRAIN("TRUE"),
-  .ALLOW_X8_GEN2("TRUE"),
-  .C_DATA_WIDTH(128),
-  .LINK_CAP_MAX_LINK_WIDTH(6'h08),
-  .DEVICE_ID(16'h7100),
-  .LINK_CAP_MAX_LINK_SPEED(4'h2),
-  .LINK_CTRL2_TARGET_LINK_SPEED(4'h2),
-  .DEV_CAP_MAX_PAYLOAD_SUPPORTED(2),
-  .TRN_DW("TRUE"),
-  .VC0_TX_LASTPACKET(29),
-  .VC0_RX_RAM_LIMIT(13'h7FF),
-  .VC0_CPL_INFINITE("TRUE"),
-  .VC0_TOTAL_CREDITS_PD(64),
-  .VC0_TOTAL_CREDITS_CD(850),
-  .USER_CLK_FREQ(4),
-  .USER_CLK2_DIV2("TRUE")
-)
-RP (
-
-  // SYS Inteface
-  .sys_clk(rp_sys_clk),
-  .sys_rst_n(sys_rst_n),
-
-  // PCI-Express Interface
-  .pci_exp_txn(rp_pci_exp_txn),
-  .pci_exp_txp(rp_pci_exp_txp),
-  .pci_exp_rxn(ep_pci_exp_txn),
-  .pci_exp_rxp(ep_pci_exp_txp)
-
-);
-
-
 sys_clk_gen  # (
 
   .halfcycle(REF_CLK_HALF_CYCLE),
@@ -193,18 +148,14 @@ CLK_GEN_EP (
 
 
 
-`include "pipe_interconnect.v"
-
 initial begin
 
   $display("[%t] : System Reset Asserted...", $realtime);
 
   sys_rst_n = 1'b0;
 
-  for (i = 0; i < 500; i = i + 1) begin
-
+  for (i = 0; i < 50; i = i + 1) begin
     @(posedge ep_sys_clk_p);
-
   end
 
   $display("[%t] : System Reset De-asserted...", $realtime);
@@ -212,5 +163,6 @@ initial begin
   sys_rst_n = 1'b1;
 
 end
+
 
 endmodule // BOARD
