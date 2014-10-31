@@ -248,7 +248,6 @@ module tb (/*AUTOARG*/
 
    /*AUTOREG*/
    // Beginning of automatic regs (for this module's undeclared outputs)
-   reg			RxStSop_i;
    reg			RxmReadDataValid_0_i;
    reg [CB_RXM_DATA_WIDTH-1:0] RxmReadData_0_i;
    reg [1:0]		current_speed;
@@ -326,6 +325,7 @@ module tb (/*AUTOARG*/
 
    assign RxStData_i        = m_axis_rx_tdata;
    assign RxStEop_i         = m_axis_rx_tuser[21];
+   assign RxStSop_i         = m_axis_rx_tuser[14];
    assign RxStValid_i       = m_axis_rx_tvalid;   
    //assign RxStSop_i         = 1'b0;
    assign RxStErr_i         = 1'b0;
@@ -365,15 +365,11 @@ module tb (/*AUTOARG*/
 
    always @(posedge user_clk)
      begin
-	if ((RxStValid_i && RxStReady_o && ~RxStSop_i && RxStEop_i) || user_reset)
+	if (RxStValid_i && RxStReady_o && m_axis_rx_tuser[14:10] == 5'b11000)
 	  begin
-	     RxStSop_i <= #1 1'b1;
+	     $stop;
 	  end
-	else if (RxStValid_i && RxStReady_o && RxStSop_i)
-	  begin
-	     RxStSop_i <= #1 1'b0;
-	  end
-     end // always @ (posedge user_clk)
+     end
 
 
    reg [CB_RXM_DATA_WIDTH-1:0] rxm_data [0:1023];

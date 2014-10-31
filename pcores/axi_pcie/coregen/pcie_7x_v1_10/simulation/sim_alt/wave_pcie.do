@@ -91,9 +91,16 @@ eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}over_rd_sreg
 eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}previous_bar_read
 eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}bar_hit_reg
 
-eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}tail_mask
-eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}input_fifo_be_out
-eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rx_tlp_be_reg
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rx_address_lsb_fifo
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}first_data_phase
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rx_dwlen_fifo
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}tail_mask
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}input_fifo_be_out
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rx_tlp_be_reg
+
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}first_data_phase
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}tlp_3dw_header
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_data_reg_clk_ena
 
 eval add wave -noupdate -divider {"RXM adapter"}
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}Clk_i
@@ -115,7 +122,10 @@ eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}alt
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}CoreRxmRead_i
 eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}CoreRxmBarHit_i
 eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}CoreRxmAddress_i
-eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}CoreRxmWriteData_i
+eval add wave -noupdate $hexopt \"$pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}CoreRxmWriteData_i(127 downto 96)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}CoreRxmWriteData_i(95 downto 64)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}CoreRxmWriteData_i(63 downto 32)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}CoreRxmWriteData_i(31 downto 0)\"
 eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}CoreRxmByteEnable_i
 eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}CoreRxmBurstCount_i
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}CoreRxmWaitRequest_o
@@ -124,7 +134,10 @@ eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}alt
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}FabricRxmRead_o
 eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}FabricRxmBarHit_o
 eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}FabricRxmAddress_o
-eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}FabricRxmWriteData_o
+eval add wave -noupdate $hexopt \"$pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}FabricRxmWriteData_o(127 downto 96)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}FabricRxmWriteData_o(95 downto 64)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}FabricRxmWriteData_o(63 downto 32)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}FabricRxmWriteData_o(31 downto 0)\"
 eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}FabricRxmByteEnable_o
 eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}FabricRxmBurstCount_o
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_adapter${ps}FabricRxmWaitRequest_i
