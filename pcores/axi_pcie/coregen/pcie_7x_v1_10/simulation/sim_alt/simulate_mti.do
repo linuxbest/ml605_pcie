@@ -20,7 +20,7 @@ vlog -incr -work work pcie_7x_v1_10_gt_top_pipe_mode.v {+incdir+../../../../../.
 vsim -voptargs="+acc" +notimingchecks +TESTNAME=pio_writeReadBack_test0 -L work -L secureip -L unisims_ver -L unimacro_ver \
      work.board glbl +dump_all
 
-#add log -r /*
+add log -r /*
 
 do wave.do
 

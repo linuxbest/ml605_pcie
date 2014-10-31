@@ -324,14 +324,26 @@ module tb (/*AUTOARG*/
    assign ko_cpl_spc_header = 0;
    assign pld_clk_inuse     = 0;
 
-   assign RxStBe_i          = m_axis_rx_tkeep;
    assign RxStData_i        = m_axis_rx_tdata;
    assign RxStEop_i         = m_axis_rx_tuser[21];
    assign RxStValid_i       = m_axis_rx_tvalid;   
    //assign RxStSop_i         = 1'b0;
    assign RxStErr_i         = 1'b0;
-   assign RxStEmpty_i       = 1'b0;
    assign m_axis_rx_tready  = RxStReady_o;
+
+   // xilinx axi
+   // m_axis_rx_tuser[21:17]
+   // 5'b10011 = EOF at AXI byte 3  (DWORD 0) m_axis_rx_tdata[31:24]
+   // 5'b10111 = EOF at AXI byte 7  (DWORD 1) m_axis_rx_tdata[63:56]
+   // 5'b11011 = EOF at AXI byte 11 (DWORD 2) m_axis_rx_tdata[95:88]
+   // 5'b11111 = EOF at AXI byte 15 (DWORD 3) m_axis_rx_tdata[127:120]
+   // 5'b00011 = No EOF present
+
+   // altera
+   // value 1, rx_st_data[63:0] holds valid data but
+   //          rx_st_data[127:64] does not hold valid data.
+   assign RxStEmpty_i       = m_axis_rx_tuser[21:17] == 5'b10011 || m_axis_rx_tuser[21:17] == 5'b10111;
+   assign RxStBe_i          = m_axis_rx_tuser[21:17] == 5'b10011 ? 16'h00_0F : 16'hFF_FF;
 
    assign TxAdapterFifoEmpty_i = 1'b0;
 
@@ -357,7 +369,7 @@ module tb (/*AUTOARG*/
 	  begin
 	     RxStSop_i <= #1 1'b1;
 	  end
-	else if (RxStValid_i && RxStReady_o && ~RxStReady_o)
+	else if (RxStValid_i && RxStReady_o && RxStSop_i)
 	  begin
 	     RxStSop_i <= #1 1'b0;
 	  end

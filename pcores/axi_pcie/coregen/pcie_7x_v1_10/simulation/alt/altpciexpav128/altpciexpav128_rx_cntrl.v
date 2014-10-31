@@ -607,18 +607,18 @@ always @(posedge Clk_i or negedge Rstn_i)
      begin
        if (tlp_3dw_header)     // 3DW header
            case (rx_address_lsb)
-               4'h0: rx_data_reg <= {fifo_mux_out[127:96], fifo_mux_out[95:64], fifo_mux_out[63:32], fifo_mux_out[31:0]}; // start addr is on 128-bit addr boundary
-               4'h4: rx_data_reg <= {fifo_mux_out[63:32], fifo_mux_out[31:0], rx_tlp_reg[127:96], rx_tlp_reg[95:64]};          // start addr is 1DW offset from 128-bit addr boundary  (first QW is saved from desc phase, and appended to next QW))
-               4'h8: rx_data_reg <= {fifo_mux_out[63:32], fifo_mux_out[31:0], rx_tlp_reg[127:96], rx_tlp_reg[95:64]};          // first QW is shifted left by a QW
-               4'hC: rx_data_reg <= {rx_tlp_reg[127:96], rx_tlp_reg[95:64], rx_tlp_reg[63:32], rx_tlp_reg[31:0]};  // start addr is 1DW + 1QW offset from 128-bit addr boundary  (first QW is saved from desc phase, and placed in high QW of next phase.  all other dataphases are delayed 1 clk.)
+               4'h0: rx_data_reg <= {fifo_mux_out[95:64], fifo_mux_out[63:32], fifo_mux_out[31:0], rx_tlp_reg[127:96]};
+               4'h4: rx_data_reg <= {fifo_mux_out[63:32], fifo_mux_out[31:0],  rx_tlp_reg[127:96], rx_tlp_reg[95:64]};
+               4'h8: rx_data_reg <= {fifo_mux_out[31:0],  rx_tlp_reg[127:96],  rx_tlp_reg[95:64],  rx_tlp_reg[63:32]};
+               4'hC: rx_data_reg <= {rx_tlp_reg[127:96],  rx_tlp_reg[95:64],   rx_tlp_reg[63:32],  rx_tlp_reg[31:0]};
            endcase
        else
            // for 4DW header pkts, only QW alignment adjustment is required
            case (rx_address_lsb)
                4'h0: rx_data_reg <= {fifo_mux_out[127:96], fifo_mux_out[95:64], fifo_mux_out[63:32], fifo_mux_out[31:0]}; 
                4'h4: rx_data_reg <= {fifo_mux_out[127:96], fifo_mux_out[95:64], fifo_mux_out[63:32], fifo_mux_out[31:0]};        
-               4'h8: rx_data_reg <= {fifo_mux_out[63:32], fifo_mux_out[31:0], rx_tlp_reg[127:96], rx_tlp_reg[95:64]};        
-               4'hC: rx_data_reg <= {fifo_mux_out[63:32], fifo_mux_out[31:0], rx_tlp_reg[127:96], rx_tlp_reg[95:64]}; 
+               4'h8: rx_data_reg <= {fifo_mux_out[63:32],  fifo_mux_out[31:0],  rx_tlp_reg[127:96],  rx_tlp_reg[95:64]};        
+               4'hC: rx_data_reg <= {fifo_mux_out[63:32],  fifo_mux_out[31:0],  rx_tlp_reg[127:96],  rx_tlp_reg[95:64]}; 
            endcase
       
      end
@@ -661,9 +661,9 @@ generate if(CB_PCIE_RX_LITE == 0)
                       if (first_data_phase & tlp_3dw_header & rxm_data_reg_clk_ena)     // 3DW header first data phase
                         begin
                           case (rx_address_lsb)
-                              4'h0: rx_wr_be_reg <= {input_fifo_be_out[15:12], input_fifo_be_out[11:8], input_fifo_be_out[7:4], input_fifo_be_out[3:0]} & tail_mask; 
+                              4'h0: rx_wr_be_reg <= {input_fifo_be_out[11:8], input_fifo_be_out[7:4], input_fifo_be_out[3:0], rx_tlp_be_reg[15:12]} & tail_mask; 
                               4'h4: rx_wr_be_reg <= {input_fifo_be_out[7:4], input_fifo_be_out[3:0], rx_tlp_be_reg[15:12], zeros_4} & tail_mask;        
-                              4'h8: rx_wr_be_reg <= {input_fifo_be_out[7:4], input_fifo_be_out[3:0], zeros_8} & tail_mask;   
+                              4'h8: rx_wr_be_reg <= {input_fifo_be_out[3:0], rx_tlp_be_reg[15:12], zeros_8} & tail_mask;   
                               4'hC: rx_wr_be_reg <= {rx_tlp_be_reg[15:12], zeros_4, zeros_8} & tail_mask; 
                           endcase
                         end
@@ -671,9 +671,9 @@ generate if(CB_PCIE_RX_LITE == 0)
                       else if (tlp_3dw_header & rxm_data_reg_clk_ena)  // subsequent data phases
                         begin
                           case (rx_address_lsb)
-                              4'h0: rx_wr_be_reg <= {input_fifo_be_out[15:12], input_fifo_be_out[11:8], input_fifo_be_out[7:4], input_fifo_be_out[3:0]} & tail_mask; 
+                              4'h0: rx_wr_be_reg <= {input_fifo_be_out[11:8], input_fifo_be_out[7:4], input_fifo_be_out[3:0], rx_tlp_be_reg[15:12]} & tail_mask; 
                               4'h4: rx_wr_be_reg <= {input_fifo_be_out[7:4], input_fifo_be_out[3:0], rx_tlp_be_reg[15:12], rx_tlp_be_reg[11:8]} & tail_mask;        
-                              4'h8: rx_wr_be_reg <= {input_fifo_be_out[7:4], input_fifo_be_out[3:0], rx_tlp_be_reg[15:12], rx_tlp_be_reg[11:8]} & tail_mask;   
+                              4'h8: rx_wr_be_reg <= {input_fifo_be_out[3:0], rx_tlp_be_reg[15:12], rx_tlp_be_reg[11:8], rx_tlp_be_reg[7:4]} & tail_mask;   
                               4'hC: rx_wr_be_reg <= {rx_tlp_be_reg[15:12], rx_tlp_be_reg[11:8], rx_tlp_be_reg[7:4], rx_tlp_be_reg[3:0]} & tail_mask; 
                           endcase
                        end

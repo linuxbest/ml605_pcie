@@ -13,6 +13,8 @@ eval add wave -noupdate $binopt $pcie${ps}m_axis_rx_tready
 eval add wave -noupdate $binopt $pcie${ps}m_axis_rx_tvalid
 eval add wave -noupdate $binopt $pcie${ps}m_axis_rx_tlast
 eval add wave -noupdate $binopt $pcie${ps}m_axis_rx_tuser
+eval add wave -noupdate $binopt \"$pcie${ps}m_axis_rx_tuser(14 downto 10)\"
+eval add wave -noupdate $binopt \"$pcie${ps}m_axis_rx_tuser(21 downto 17)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}m_axis_rx_tdata(127 downto 96)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}m_axis_rx_tdata(95 downto 64)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}m_axis_rx_tdata(64 downto 32)\"
