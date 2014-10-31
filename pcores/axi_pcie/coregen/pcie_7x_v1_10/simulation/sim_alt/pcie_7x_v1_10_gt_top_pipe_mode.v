@@ -600,17 +600,28 @@ module pcie_7x_v1_10_gt_top_pipe_mode #
 
 		`BFM.xbfm_dword (`XBFM_CFGRD0,32'h00000010,4'hF,32'h1110_0000);
 		`BFM.xbfm_wait;
+		
+		`BFM.xbfm_buffer_fill (4096, databuf);
 	
-		`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h0, 4'hF, 32'h1234_5678);
-		`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h4, 4'hF, 32'h1234_5678);
-		`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h8, 4'hF, 32'h1234_5678);
-		`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'hC, 4'hF, 32'h1234_5678);
+		`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h10, 4'hF, 32'h1234_5678);
+		`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h24, 4'hF, 32'h2234_5678);
+		`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h38, 4'hF, 32'h3234_5678);
+		`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h4C, 4'hF, 32'h4234_5678);
 
-		`BFM.xbfm_buffer_fill (4096,databuf);
-		`BFM.xbfm_burst (`XBFM_MWR, C_BAR0+8'h0, 64+32, databuf, 3'b000, 2'b00);
-		`BFM.xbfm_burst (`XBFM_MWR, C_BAR0+8'h4, 64+32, databuf, 3'b000, 2'b00);
-		`BFM.xbfm_burst (`XBFM_MWR, C_BAR0+8'h8, 64+32, databuf, 3'b000, 2'b00);
-		`BFM.xbfm_burst (`XBFM_MWR, C_BAR0+8'hC, 64+32, databuf, 3'b000, 2'b00);
+		`BFM.xbfm_dword (`XBFM_MRD, C_BAR0 + 8'h10, 4'hF, 32'h1234_5678);
+		`BFM.xbfm_dword (`XBFM_MRD, C_BAR0 + 8'h24, 4'hF, 32'h2234_5678);
+		`BFM.xbfm_dword (`XBFM_MRD, C_BAR0 + 8'h38, 4'hF, 32'h3234_5678);
+		`BFM.xbfm_dword (`XBFM_MRD, C_BAR0 + 8'h4C, 4'hF, 32'h4234_5678);
+
+		`BFM.xbfm_burst (`XBFM_MWR, C_BAR0+8'h100, 64+32, databuf, 3'b000, 2'b00);
+		`BFM.xbfm_burst (`XBFM_MWR, C_BAR0+8'h204, 64+32, databuf, 3'b000, 2'b00);
+		`BFM.xbfm_burst (`XBFM_MWR, C_BAR0+8'h308, 64+32, databuf, 3'b000, 2'b00);
+		`BFM.xbfm_burst (`XBFM_MWR, C_BAR0+8'h40C, 64+32, databuf, 3'b000, 2'b00);
+		
+		`BFM.xbfm_burst (`XBFM_MRD, C_BAR0+8'h100, 64+32, databuf, 3'b000, 2'b00);
+		`BFM.xbfm_burst (`XBFM_MRD, C_BAR0+8'h204, 64+32, databuf, 3'b000, 2'b00);
+		`BFM.xbfm_burst (`XBFM_MRD, C_BAR0+8'h308, 64+32, databuf, 3'b000, 2'b00);
+		`BFM.xbfm_burst (`XBFM_MRD, C_BAR0+8'h40C, 64+32, databuf, 3'b000, 2'b00);
 		
 
 		`BFM.xbfm_wait_event(`XBFM_INTAA_RCVD);
@@ -619,4 +630,3 @@ module pcie_7x_v1_10_gt_top_pipe_mode #
 		$stop;
      end
 endmodule
-

@@ -39,7 +39,10 @@ eval add wave -noupdate $hexopt $pcie${ps}RxmBurstCount_0_o
 eval add wave -noupdate $binopt $pcie${ps}RxmWaitRequest_0_i
 
 eval add wave -noupdate $binopt $pcie${ps}RxmReadDataValid_0_i
-eval add wave -noupdate $hexopt $pcie${ps}RxmReadData_0_i
+eval add wave -noupdate $hexopt \"$pcie${ps}RxmReadData_0_i(127 downto 96)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}RxmReadData_0_i(95 downto 64)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}RxmReadData_0_i(63 downto 32)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}RxmReadData_0_i(31 downto 0)\"
 
 eval add wave -noupdate -divider {"PCIE stream Rx Data"}
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}Clk_i
@@ -207,9 +210,9 @@ eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}TxWriteData_i(63 downto 32)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}TxWriteData_i(31 downto 0)\"
 
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}TxReadDataValid_i
-#eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}TxReadData_i(127 downto 96)\"
-#eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}TxReadData_i(95 downto 64)\"
-#eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}TxReadData_i(63 downto 32)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}TxReadData_i(127 downto 96)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}TxReadData_i(95 downto 64)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}TxReadData_i(63 downto 32)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}TxReadData_i(31 downto 0)\"
 
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}RxmIrq_i
