@@ -181,7 +181,20 @@ eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}tx_address_lsb
 eval add wave -noupdate $ascopt $pcie${ps}tx${ps}tx_cntrl${ps}tx_state_ascii
 eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}dw_len
 
-eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}tx_data
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}tx_cntrl${ps}tx_data(127 downto 96)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}tx_cntrl${ps}tx_data(95 downto 64)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}tx_cntrl${ps}tx_data(63 downto 32)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}tx_cntrl${ps}tx_data(31 downto 0)\"
+
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}tx_cntrl${ps}tlp_holding_reg(127 downto 96)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}tx_cntrl${ps}tlp_holding_reg(95 downto 64)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}tx_cntrl${ps}tlp_holding_reg(63 downto 32)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}tx_cntrl${ps}tlp_holding_reg(31 downto 0)\"
+
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}tx_cntrl${ps}tlp_buff_data(127 downto 96)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}tx_cntrl${ps}tlp_buff_data(95 downto 64)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}tx_cntrl${ps}tlp_buff_data(63 downto 32)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}tx_cntrl${ps}tlp_buff_data(31 downto 0)\"
 
 eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}req_header2
 eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}req_header1

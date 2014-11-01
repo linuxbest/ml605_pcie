@@ -402,24 +402,21 @@ module tb (/*AUTOARG*/
       TxsChipSelect_i       = 0;
       TxsWrite_i            = 0;
       TxsRead_i             = 0;
-      TxsWriteData_i[31:0]  = 0;
-      TxsWriteData_i[63:32] = 0;      
-      TxsWriteData_i[95:64] = 0;
-      TxsWriteData_i[127:96]= 0;
+      TxsWriteData_i        = 0;
       TxsByteEnable_i       = 0;
-      
+
       while (master_ready == 0)
 	@(posedge user_clk);
 
-      TxsAddress_i          = 32'h8000_0000;
+      TxsAddress_i          = 32'h8001_0000;
       TxsBurstCount_i       = 1;
       TxsChipSelect_i       = 1'b1;
       TxsWrite_i            = 1'b1;
       TxsRead_i             = 1'b0;
-      TxsWriteData_i[31:0]  = 32'h010203_04050607;
-      TxsWriteData_i[63:32] = 32'h080910_11121314;      
-      TxsWriteData_i[95:64] = 32'h151617_18192021;
-      TxsWriteData_i[127:96]= 32'h222324_25262728;
+      TxsWriteData_i[31:0]  = 32'h0001_0203;
+      TxsWriteData_i[63:32] = 32'h0405_0607;      
+      TxsWriteData_i[95:64] = 32'h0809_1011;
+      TxsWriteData_i[127:96]= 32'h1213_1415;
       TxsByteEnable_i       = 16'hFF_FF;
 
       while (TxsWaitRequest_o == 1)

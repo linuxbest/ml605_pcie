@@ -940,7 +940,7 @@ always @*
        end
        else if(tlp_3dw_header & is_wr_32) begin
             case (tx_address_lsb)
-               4'h0: tx_data = {tlp_holding_reg[127:96], tlp_holding_reg[95:64], tlp_holding_reg[63:32], tlp_holding_reg[31:0]}; // start addr is on 128-bit addr boundary
+               4'h0: tx_data = {tlp_buff_data[31:0], tlp_holding_reg[127:96], tlp_holding_reg[95:64], tlp_holding_reg[63:32]}; // start addr is on 128-bit addr boundary
                4'h4: tx_data = {tlp_buff_data[63:32],  tlp_buff_data[31:0],  tlp_holding_reg[127:96], tlp_holding_reg[95:64]};          // start addr is 1DW offset from 128-bit addr boundary  (first QW is saved from desc phase, and appended to next QW))
                4'h8: tx_data = {tlp_buff_data[63:32],  tlp_buff_data[31:0],  tlp_holding_reg[127:96], tlp_holding_reg[95:64]};          // first QW is shifted left by a QW
                4'hC: tx_data = {tlp_buff_data[127:96], tlp_buff_data[95:64], tlp_buff_data[63:32], tlp_buff_data[31:0]};  // start addr is 1DW + 1QW offset from 128-bit addr boundary  (first QW is saved from desc phase, and placed in high QW of next phase.  all other dataphases are delayed 1 clk.)
