@@ -576,7 +576,7 @@ module pcie_7x_v1_10_gt_top_pipe_mode #
 		//-----------------------------------------------------
 		// Initialise BFM
 		//-----------------------------------------------------
-	        #100_000_000;
+	        #1_000_000;
 	 	`BFM.xbfm_print_comment ("### Initialise BFM");
 		`BFM.xbfm_init (32'h00000000,32'h8000_0000,64'h0000_0000_0000_0000);
 		`BFM.xbfm_set_requesterid (16'h0008);
@@ -585,6 +585,8 @@ module pcie_7x_v1_10_gt_top_pipe_mode #
 		// Wait for link to get initialised then disable PIPE logging
 	  	`BFM.xbfm_wait_linkup;
 	  	`BFM.xbfm_configure_log(`XBFM_LOG_NOPIPE);
+	  	`BFM.xbfm_configure_log(`XBFM_LOG_CMD);
+	  	`BFM.xbfm_configure_log(`XBFM_LOG_DATA);
 
 		`BFM.xbfm_dword (`XBFM_CFGRD0,{24'h000000,PCIE_DEVCTRL_REG_ADDR},4'hF,{16'h0000,csr});
 
@@ -602,6 +604,8 @@ module pcie_7x_v1_10_gt_top_pipe_mode #
 		`BFM.xbfm_wait;
 		
 		`BFM.xbfm_buffer_fill (4096, databuf);
+		`BFM.xbfm_memory_write (`XBFM_MEM32, 32'h0000_0000, 4096, databuf);
+		`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h7C, 4'hF, 32'hAA55_55AA);
 	
 		`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h10, 4'hF, 32'h1234_5678);
 		`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h24, 4'hF, 32'h2234_5678);
@@ -622,9 +626,6 @@ module pcie_7x_v1_10_gt_top_pipe_mode #
 		`BFM.xbfm_burst (`XBFM_MRD, C_BAR0+8'h204, 64+32, databuf, 3'b000, 2'b00);
 		`BFM.xbfm_burst (`XBFM_MRD, C_BAR0+8'h308, 64+32, databuf, 3'b000, 2'b00);
 		`BFM.xbfm_burst (`XBFM_MRD, C_BAR0+8'h40C, 64+32, databuf, 3'b000, 2'b00);
-
-		`BFM.xbfm_memory_write (`XBFM_MEM32, 32'h0001_0000, 4096, databuf);
-		`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h7C, 4'hF, 32'hAA55_55AA);
 
 		`BFM.xbfm_wait_event(`XBFM_INTAA_RCVD);
 		#200;

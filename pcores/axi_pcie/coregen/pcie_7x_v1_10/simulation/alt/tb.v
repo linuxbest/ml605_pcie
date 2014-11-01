@@ -353,14 +353,18 @@ module tb (/*AUTOARG*/
    //When tx_st_eop<n> is asserted and tx_st_empty<n>
    //has value 0, tx_st_data[127:0] holds valid data.
 
+   wire dw3_mem_rd;
+   assign dw3_mem_rd        = TxStData_o[30:24] == 0;
+
    assign s_axis_tx_tdata   = TxStData_o;
-   assign s_axis_tx_tkeep   = TxStEop_o & TxStValid_o & TxStEmpty_o[0] ? 16'h00FF : 16'hFFFF;
+   assign s_axis_tx_tkeep   = TxStEop_o & TxStValid_o & TxStEmpty_o[0]         ? 16'h00_FF :
+                              TxStEop_o & TxStValid_o & TxStSop_o & dw3_mem_rd ? 16'h0F_FF : 16'hFF_FF;
    assign s_axis_tx_tvalid  = TxStValid_o;
    assign s_axis_tx_tlast   = TxStEop_o;
    assign tx_src_dsc        = 1'b0;
    assign TxStReady_i       = s_axis_tx_tready;
 
-   assign cfg_turnoff_ok    = 1'b1;
+   assign cfg_turnoff_ok    = 1'b0;
 
    always @(posedge user_clk)
      begin
@@ -408,7 +412,7 @@ module tb (/*AUTOARG*/
       while (master_ready == 0)
 	@(posedge user_clk);
 
-      TxsAddress_i          = 32'h8001_0000;
+      TxsAddress_i          = 32'h8000_0000;
       TxsBurstCount_i       = 1;
       TxsChipSelect_i       = 1'b1;
       TxsWrite_i            = 1'b1;
@@ -419,25 +423,23 @@ module tb (/*AUTOARG*/
       TxsWriteData_i[127:96]= 32'h1213_1415;
       TxsByteEnable_i       = 16'hFF_FF;
 
-      while (TxsWaitRequest_o == 1)
-	@(posedge user_clk);
+      //while (TxsWaitRequest_o == 1)
+      //  @(posedge user_clk);
 
       TxsRead_i             = 1'b0;      
       TxsWrite_i            = 1'b0;
-      TxsChipSelect_i       = 1'b0;
       @(posedge user_clk);
       @(posedge user_clk);
       @(posedge user_clk);
       
       TxsRead_i             = 1'b1;
-      TxsChipSelect_i       = 1'b1;
       TxsBurstCount_i       = 32+64;
+      TxsByteEnable_i       = 16'hFF_FF;
       while (TxsWaitRequest_o == 1)
 	@(posedge user_clk)
       
       TxsRead_i             = 1'b0;      
       TxsWrite_i            = 1'b0;
-      TxsChipSelect_i       = 1'b0;
       @(posedge user_clk);
 
    end

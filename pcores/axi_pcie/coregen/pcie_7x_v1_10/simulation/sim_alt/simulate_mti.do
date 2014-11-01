@@ -22,7 +22,7 @@ vsim -voptargs="+acc" +notimingchecks +TESTNAME=pio_writeReadBack_test0 -L work 
 
 add log -r /*
 
-do wave.do
+do wave_all.do
 
 #run -all
-run 200us
+run 150us
