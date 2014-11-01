@@ -239,7 +239,7 @@ module PIO #(
       parameter CB_PCIE_RX_LITE = 0;
       parameter CB_A2P_ADDR_MAP_IS_FIXED = 0;
       parameter CB_A2P_ADDR_MAP_NUM_ENTRIES = 2;
-      parameter CG_AVALON_S_ADDR_WIDTH = 24;
+      parameter CG_AVALON_S_ADDR_WIDTH = 32;
       parameter CG_IMPL_CRA_AV_SLAVE_PORT = 1;
       parameter a2p_pass_thru_bits = 24;
       parameter CB_P2A_AVALON_ADDR_B0               = 32'h00000000;
@@ -285,7 +285,7 @@ module PIO #(
       parameter avmm_width_hwtcl = 64;
       parameter avmm_burst_width_hwtcl = 7;
       parameter CB_RXM_DATA_WIDTH = 128;
-      parameter AVALON_ADDR_WIDTH = 32;
+      parameter AVALON_ADDR_WIDTH = 64;
       parameter BYPASSS_A2P_TRANSLATION = 0;
 
 // Exposed parameters
@@ -497,7 +497,7 @@ localparam CB_A2P_ADDR_MAP_FIXED_TABLE     = { CB_A2P_ADDR_MAP_FIXED_TABLE_15_HI
    parameter CB_P2A_PERF_PROFILE  = 3;
    parameter EXTERNAL_A2P_TRANS   = 0;
    parameter NUM_PREFETCH_MASTERS = 1;
-   parameter CB_A2P_ADDR_MAP_PASS_THRU_BITS = 20;
+   parameter CB_A2P_ADDR_MAP_PASS_THRU_BITS = 24;
 
    altpciexpav128_app #(/*AUTOINSTPARAM*/
 			// Parameters

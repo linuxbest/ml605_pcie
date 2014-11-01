@@ -237,3 +237,12 @@ eval add wave -noupdate $binopt $pcie${ps}tx${ps}txavl${ps}AvlClk_i
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}txavl${ps}Rstn_i
 
 eval add wave -noupdate $ascopt $pcie${ps}tx${ps}txavl${ps}txavl_state_ascii
+
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}txavl${ps}AvlAddrVld_o
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}txavl${ps}AvlAddr_o
+
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}txavl${ps}pci_exp_address(63 downto 32)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}txavl${ps}pci_exp_address(31 downto 0)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}txavl${ps}PCIeAddr_i(63 downto 32)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}txavl${ps}PCIeAddr_i(31 downto 0)\"
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}txavl${ps}AddrTransDone_i

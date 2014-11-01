@@ -34,3 +34,5 @@ eval add wave -noupdate $hexopt \"$pcie${ps}s_axis_tx_tdata(95 downto 64)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}s_axis_tx_tdata(63 downto 32)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}s_axis_tx_tdata(31 downto 0)\"
 eval add wave -noupdate $hexopt $pcie${ps}s_axis_tx_tkeep
+
+eval add wave -noupdate $hexopt $pcie${ps}cfg_completer_id
