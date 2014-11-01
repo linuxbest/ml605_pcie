@@ -24,4 +24,5 @@ add log -r /*
 
 do wave.do
 
-run -all
+#run -all
+run 200us

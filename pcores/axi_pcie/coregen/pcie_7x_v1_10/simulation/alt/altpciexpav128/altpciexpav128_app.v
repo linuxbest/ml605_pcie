@@ -630,7 +630,7 @@ rx
      .TxWaitRequest_o(TxsWaitRequest_o),
      .TxsReadDataValid_i(TxsReadDataValid_o),
      .RxmIrq_i(RxmIrq_i),     
-     .MasterEnable_i(cfg_prmcsr[2]),
+     .MasterEnable_i(/*cfg_prmcsr[2]*/1'b1),
      
      .TxStReady_i  (TxStReady_i),
      .TxStData_o   (TxStData_o),

@@ -250,13 +250,20 @@ module tb (/*AUTOARG*/
    // Beginning of automatic regs (for this module's undeclared outputs)
    reg			RxmReadDataValid_0_i;
    reg [CB_RXM_DATA_WIDTH-1:0] RxmReadData_0_i;
+   reg [CG_AVALON_S_ADDR_WIDTH-1:0] TxsAddress_i;
+   reg [5:0]		TxsBurstCount_i;
+   reg [15:0]		TxsByteEnable_i;
+   reg			TxsChipSelect_i;
+   reg			TxsRead_i;
+   reg [127:0]		TxsWriteData_i;
+   reg			TxsWrite_i;
    reg [1:0]		current_speed;
    reg [3:0]		lane_act;
    reg [4:0]		ltssm_state;
    // End of automatics
    
-   assign AvlClk_i  = user_clk;
-   assign Rstn_i    = ~user_reset;
+   assign AvlClk_i      = user_clk;
+   assign Rstn_i        = ~user_reset;
    assign RxStBarDec1_i = 8'b0000_0001;
    assign RxStBarDec2_i = 8'b0000_0000;
 
@@ -311,14 +318,6 @@ module tb (/*AUTOARG*/
    assign TxsClk_i        = user_clk;
    assign TxsRstn_i       = ~user_reset;
    
-   assign TxsAddress_i    = 0;
-   assign TxsBurstCount_i = 0;
-   assign TxsByteEnable_i = 0;
-   assign TxsChipSelect_i = 0;
-   assign TxsRead_i       = 0;
-   assign TxsWrite_i      = 0;
-   assign TxsWriteData_i  = 0;
-
    assign ko_cpl_spc_data   = 0;
    assign ko_cpl_spc_header = 0;
    assign pld_clk_inuse     = 0;
@@ -371,7 +370,6 @@ module tb (/*AUTOARG*/
 	  end
      end
 
-
    reg [CB_RXM_DATA_WIDTH-1:0] rxm_data [0:1023];
    wire [11:0] 		       rxm_addr;
    reg [11:0] 		       rxm_raddr;
@@ -386,6 +384,67 @@ module tb (/*AUTOARG*/
 	RxmReadDataValid_0_i <= RxmRead_0_o;
      end
    assign rxm_addr = RxmAddress_0_o;
+
+   reg master_ready;
+   always @(posedge user_clk)
+     begin
+	if (RxmWrite_0_o && RxmAddress_0_o[15:0] == 16'h70 && RxmWriteData_0_o[127:96] == 32'hAA55_55AA)
+	  begin
+	     master_ready <= #1 1'b1;
+	  end
+     end // always @ (posedge user_clk)
+
+   initial begin
+      master_ready = 1'b0;
+
+      TxsAddress_i          = 0;
+      TxsBurstCount_i       = 0;
+      TxsChipSelect_i       = 0;
+      TxsWrite_i            = 0;
+      TxsRead_i             = 0;
+      TxsWriteData_i[31:0]  = 0;
+      TxsWriteData_i[63:32] = 0;      
+      TxsWriteData_i[95:64] = 0;
+      TxsWriteData_i[127:96]= 0;
+      TxsByteEnable_i       = 0;
+      
+      while (master_ready == 0)
+	@(posedge user_clk);
+
+      TxsAddress_i          = 32'h8000_0000;
+      TxsBurstCount_i       = 1;
+      TxsChipSelect_i       = 1'b1;
+      TxsWrite_i            = 1'b1;
+      TxsRead_i             = 1'b0;
+      TxsWriteData_i[31:0]  = 32'h010203_04050607;
+      TxsWriteData_i[63:32] = 32'h080910_11121314;      
+      TxsWriteData_i[95:64] = 32'h151617_18192021;
+      TxsWriteData_i[127:96]= 32'h222324_25262728;
+      TxsByteEnable_i       = 16'hFF_FF;
+
+      while (TxsWaitRequest_o == 1)
+	@(posedge user_clk);
+
+      TxsRead_i             = 1'b0;      
+      TxsWrite_i            = 1'b0;
+      TxsChipSelect_i       = 1'b0;
+      @(posedge user_clk);
+      @(posedge user_clk);
+      @(posedge user_clk);
+      
+      TxsRead_i             = 1'b1;
+      TxsChipSelect_i       = 1'b1;
+      TxsBurstCount_i       = 32+64;
+      while (TxsWaitRequest_o == 1)
+	@(posedge user_clk)
+      
+      TxsRead_i             = 1'b0;      
+      TxsWrite_i            = 1'b0;
+      TxsChipSelect_i       = 1'b0;
+      @(posedge user_clk);
+
+   end
+   
 endmodule
 // 
 // tb.v ends here

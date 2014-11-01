@@ -200,6 +200,7 @@ eval add wave -noupdate $binopt $pcie${ps}tx${ps}TxsRstn_i
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}TxChipSelect_i
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}TxRead_i
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}TxWrite_i
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}TxWaitRequest_o
 eval add wave -noupdate $hexopt $pcie${ps}tx${ps}TxBurstCount_i
 eval add wave -noupdate $hexopt $pcie${ps}tx${ps}TxAddress_i
 
@@ -217,3 +218,9 @@ eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}TxReadData_i(31 downto 0)\"
 
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}RxmIrq_i
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}MasterEnable_i
+
+eval add wave -noupdate -divider {"PCIE txavl cntrl "}
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}txavl${ps}AvlClk_i
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}txavl${ps}Rstn_i
+
+eval add wave -noupdate $ascopt $pcie${ps}tx${ps}txavl${ps}txavl_state_ascii

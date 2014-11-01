@@ -76,7 +76,7 @@ module PIO #(
       parameter use_aer_hwtcl                                     = 0;
       parameter low_priority_vc_hwtcl                             = "single_vc";
       parameter disable_snoop_packet_hwtcl                        = "false";
-      parameter max_payload_size_hwtcl                            = 256;
+      parameter max_payload_size_hwtcl                            = 128;
       parameter surprise_down_error_support_hwtcl                 = 0;
       parameter dll_active_report_support_hwtcl                   = 0;
       parameter extend_tag_field_hwtcl                            = "false";

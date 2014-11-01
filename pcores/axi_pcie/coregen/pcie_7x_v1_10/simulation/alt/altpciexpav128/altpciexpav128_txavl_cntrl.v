@@ -75,16 +75,17 @@ module altpciexpav128_txavl_cntrl
   input     [CG_RXM_IRQ_NUM-1 : 0]     RxmIrq_i
 );
 
-localparam      TXAVL_IDLE          = 10'h000;
-localparam      TXAVL_WAIT_WRADDR   = 10'h003;
-localparam      TXAVL_BURST_DATA    = 10'h005;
-localparam      TXAVL_WRHEADER      = 10'h009;
-localparam      TXAVL_WR_HOLD       = 10'h011;
-localparam      TXAVL_WAIT_RDADDR   = 10'h021;
-localparam      TXAVL_RDHEADER      = 10'h041;
-localparam      TXAVL_RDPIPE        = 10'h081;
-localparam      TXAVL_WRPIPE        = 10'h101;
-localparam      TXAVL_MSI           = 10'h201;
+localparam [9:0]    // synopsys enum txavl_state_info 
+  TXAVL_IDLE          = 10'h000,
+  TXAVL_WAIT_WRADDR   = 10'h003,
+  TXAVL_BURST_DATA    = 10'h005,
+  TXAVL_WRHEADER      = 10'h009,
+  TXAVL_WR_HOLD       = 10'h011,
+  TXAVL_WAIT_RDADDR   = 10'h021,
+  TXAVL_RDHEADER      = 10'h041,
+  TXAVL_RDPIPE        = 10'h081,
+  TXAVL_WRPIPE        = 10'h101,
+  TXAVL_MSI           = 10'h201;
 
 
 localparam      TX_PNDGRD_IDLE     = 3'h0;
@@ -136,7 +137,8 @@ reg [3:0] lbe;
 wire       addr_bit2;
 wire [CG_RXM_IRQ_NUM-1:0]  generate_irq;
 
-reg [9:0]                         txavl_state;
+reg [9:0] // synopsys enum txavl_state_info
+         txavl_state;
 reg [9:0]                         txavl_nxt_state;
 reg [9:0]                         burst_counter;
 reg [CG_AVALON_S_ADDR_WIDTH-1:0]  wr_addr_reg;
@@ -1038,6 +1040,25 @@ always @(posedge AvlClk_i or negedge Rstn_i)
        rxm_irq_sreg <= 1'b0;
   end
 
+  /*AUTOASCIIENUM("txavl_state", "txavl_state_ascii", "TXAVL_")*/
+  // Beginning of automatic ASCII enum decoding
+  reg [87:0]		txavl_state_ascii;	// Decode of txavl_state
+  always @(txavl_state) begin
+     case ({txavl_state})
+       TXAVL_IDLE:        txavl_state_ascii = "idle       ";
+       TXAVL_WAIT_WRADDR: txavl_state_ascii = "wait_wraddr";
+       TXAVL_BURST_DATA:  txavl_state_ascii = "burst_data ";
+       TXAVL_WRHEADER:    txavl_state_ascii = "wrheader   ";
+       TXAVL_WR_HOLD:     txavl_state_ascii = "wr_hold    ";
+       TXAVL_WAIT_RDADDR: txavl_state_ascii = "wait_rdaddr";
+       TXAVL_RDHEADER:    txavl_state_ascii = "rdheader   ";
+       TXAVL_RDPIPE:      txavl_state_ascii = "rdpipe     ";
+       TXAVL_WRPIPE:      txavl_state_ascii = "wrpipe     ";
+       TXAVL_MSI:         txavl_state_ascii = "msi        ";
+       default:           txavl_state_ascii = "%Error     ";
+     endcase
+  end
+  // End of automatics
 
 endmodule
 
