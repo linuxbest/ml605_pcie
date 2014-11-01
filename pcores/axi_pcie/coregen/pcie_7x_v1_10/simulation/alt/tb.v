@@ -423,8 +423,8 @@ module tb (/*AUTOARG*/
       TxsWriteData_i[127:96]= 32'h1213_1415;
       TxsByteEnable_i       = 16'hFF_FF;
 
-      //while (TxsWaitRequest_o == 1)
-      //  @(posedge user_clk);
+      while (TxsWaitRequest_o == 1)
+        @(posedge user_clk);
 
       TxsRead_i             = 1'b0;      
       TxsWrite_i            = 1'b0;
