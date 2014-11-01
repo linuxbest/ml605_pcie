@@ -25,4 +25,4 @@ add log -r /*
 do wave_all.do
 
 #run -all
-run 150us
+run 80us
