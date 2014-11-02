@@ -36,3 +36,17 @@ eval add wave -noupdate $hexopt \"$pcie${ps}s_axis_tx_tdata(31 downto 0)\"
 eval add wave -noupdate $hexopt $pcie${ps}s_axis_tx_tkeep
 
 eval add wave -noupdate $hexopt $pcie${ps}cfg_completer_id
+
+eval add wave -noupdate -divider {"Slave"}
+eval add wave -noupdate $binopt $pcie${ps}user_clk
+eval add wave -noupdate $binopt $pcie${ps}user_reset
+set prefix s_
+set path ${pcie}
+do wave_ibus.do
+
+eval add wave -noupdate -divider {"Master"}
+eval add wave -noupdate $binopt $pcie${ps}user_clk
+eval add wave -noupdate $binopt $pcie${ps}user_reset
+set prefix m_
+set path ${pcie}
+do wave_ibus.do
