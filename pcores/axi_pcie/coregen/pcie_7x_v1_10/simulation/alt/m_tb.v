@@ -86,7 +86,6 @@ module m_tb (/*AUTOARG*/
    reg [127:0]		m_WriteData;
    reg [127:0]		s_ReadData;
    reg			s_ReadDataValid;
-   reg			s_WaitRequest;
    // End of automatics
    
    reg [127:0] rxm_data [0:1023];
@@ -102,7 +101,8 @@ module m_tb (/*AUTOARG*/
 	s_ReadData      <= rxm_data[rxm_raddr];
 	s_ReadDataValid <= s_Read;
      end
-   assign rxm_addr = s_Address;
+   assign rxm_addr      = s_Address;
+   assign s_WaitRequest = 1'b0;
 
    reg master_ready;
    always @(posedge user_clk)

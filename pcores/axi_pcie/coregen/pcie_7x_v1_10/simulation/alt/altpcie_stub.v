@@ -380,7 +380,7 @@ module altpcie_stub (/*AUTOARG*/
    assign RxmWaitRequest_0_i   = s_WaitRequest;
    assign RxmReadData_0_i      = s_ReadData;
    assign RxmReadDataValid_0_i = s_ReadDataValid;
-   assign s_Read               = RxmReadData_0_i;
+   assign s_Read               = RxmRead_0_o;
    assign s_Write              = RxmWrite_0_o;
    assign s_BurstCount         = RxmBurstCount_0_o;
    assign s_ByteEnable         = RxmByteEnable_0_o;
