@@ -86,6 +86,32 @@ module altpcie_avl (/*AUTOARG*/
    
    input [15:0] 		 cfg_completer_id;
    
+   /*AUTOINPUT*/
+   // Beginning of automatic inputs (from unused autoinst inputs)
+   input [63:0]		m_Address;		// To altpcie_stub of altpcie_stub.v
+   input [5:0]		m_BurstCount;		// To altpcie_stub of altpcie_stub.v
+   input [15:0]		m_ByteEnable;		// To altpcie_stub of altpcie_stub.v
+   input		m_ChipSelect;		// To altpcie_stub of altpcie_stub.v
+   input		m_Read;			// To altpcie_stub of altpcie_stub.v
+   input		m_Write;		// To altpcie_stub of altpcie_stub.v
+   input [127:0]	m_WriteData;		// To altpcie_stub of altpcie_stub.v
+   input [127:0]	s_ReadData;		// To altpcie_stub of altpcie_stub.v
+   input		s_ReadDataValid;	// To altpcie_stub of altpcie_stub.v
+   input		s_WaitRequest;		// To altpcie_stub of altpcie_stub.v
+   // End of automatics
+   /*AUTOOUTPUT*/
+   // Beginning of automatic outputs (from unused autoinst outputs)
+   output [127:0]	m_ReadData;		// From altpcie_stub of altpcie_stub.v
+   output		m_ReadDataValid;	// From altpcie_stub of altpcie_stub.v
+   output		m_WaitRequest;		// From altpcie_stub of altpcie_stub.v
+   output [31:0]	s_Address;		// From altpcie_stub of altpcie_stub.v
+   output [5:0]		s_BurstCount;		// From altpcie_stub of altpcie_stub.v
+   output [15:0]	s_ByteEnable;		// From altpcie_stub of altpcie_stub.v
+   output		s_Read;			// From altpcie_stub of altpcie_stub.v
+   output		s_Write;		// From altpcie_stub of altpcie_stub.v
+   output [127:0]	s_WriteData;		// From altpcie_stub of altpcie_stub.v
+   // End of automatics
+ 
    localparam pll_refclk_freq_hwtcl                             = "100 MHz";
    localparam enable_slot_register_hwtcl                        = 0;
    localparam port_type_hwtcl                                   = "Native endpoint";
@@ -410,33 +436,7 @@ localparam CB_A2P_ADDR_MAP_FIXED_TABLE     = { CB_A2P_ADDR_MAP_FIXED_TABLE_15_HI
                                                CB_A2P_ADDR_MAP_FIXED_TABLE_0_HIGH,
                                                CB_A2P_ADDR_MAP_FIXED_TABLE_0_LOW
                                               };
-
-   /*AUTOINPUT*/
-   // Beginning of automatic inputs (from unused autoinst inputs)
-   input [63:0]		m_Address;		// To altpcie_stub of altpcie_stub.v
-   input [5:0]		m_BurstCount;		// To altpcie_stub of altpcie_stub.v
-   input [15:0]		m_ByteEnable;		// To altpcie_stub of altpcie_stub.v
-   input		m_ChipSelect;		// To altpcie_stub of altpcie_stub.v
-   input		m_Read;			// To altpcie_stub of altpcie_stub.v
-   input		m_Write;		// To altpcie_stub of altpcie_stub.v
-   input [127:0]	m_WriteData;		// To altpcie_stub of altpcie_stub.v
-   input [127:0]	s_ReadData;		// To altpcie_stub of altpcie_stub.v
-   input		s_ReadDataValid;	// To altpcie_stub of altpcie_stub.v
-   input		s_WaitRequest;		// To altpcie_stub of altpcie_stub.v
-   // End of automatics
-   /*AUTOOUTPUT*/
-   // Beginning of automatic outputs (from unused autoinst outputs)
-   output [127:0]	m_ReadData;		// From altpcie_stub of altpcie_stub.v
-   output		m_ReadDataValid;	// From altpcie_stub of altpcie_stub.v
-   output		m_WaitRequest;		// From altpcie_stub of altpcie_stub.v
-   output [31:0]	s_Address;		// From altpcie_stub of altpcie_stub.v
-   output [5:0]		s_BurstCount;		// From altpcie_stub of altpcie_stub.v
-   output [15:0]	s_ByteEnable;		// From altpcie_stub of altpcie_stub.v
-   output		s_Read;			// From altpcie_stub of altpcie_stub.v
-   output		s_Write;		// From altpcie_stub of altpcie_stub.v
-   output [127:0]	s_WriteData;		// From altpcie_stub of altpcie_stub.v
-   // End of automatics
-   
+  
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire			AvlClk_i;		// From altpcie_stub of altpcie_stub.v
