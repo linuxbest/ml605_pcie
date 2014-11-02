@@ -295,36 +295,39 @@ rx_pcie_cntrl
 
 
 generate if (CB_PCIE_RX_LITE == 0)
-  begin  
+  begin: pndgtxrd_fifo  
   	
   	assign rx_read_in_progress = 1'b0;
-      scfifo	pndgtxrd_fifo (
-      				.rdreq (RxPndgRdFifoRdReq_i),
-      				.clock (Clk_i),
-      				.wrreq (rxpndgrd_fifo_wrreq),
-      				.data (rxpndgrd_fifo_datain),
-      				.usedw (rxpndgrd_fifo_usedw),
-      				.empty (RxPndgRdFifoEmpty_o),
-      				.q (RxPndgRdFifoDat_o),
-      				.full () ,
-      				.aclr (~Rstn_i),
-      				.almost_empty (),
-      				.almost_full (),
-      				.sclr ()
-      				);
-      	defparam
-      		pndgtxrd_fifo.add_ram_output_register = "ON",
-      		pndgtxrd_fifo.intended_device_family = "Stratix IV",
-      		pndgtxrd_fifo.lpm_numwords = 16,
-      		pndgtxrd_fifo.lpm_showahead = "OFF",
-      		pndgtxrd_fifo.lpm_type = "scfifo",
-      		pndgtxrd_fifo.lpm_width = 57,
-      		pndgtxrd_fifo.lpm_widthu = 4,
-      		pndgtxrd_fifo.overflow_checking = "ON",
-      		pndgtxrd_fifo.underflow_checking = "ON",
-      		pndgtxrd_fifo.use_eab = "ON";
-      		
-      		
+
+     sync_fifo #(
+		 // Parameters
+		 .WIDTH			(57),
+		 .DEPTH			(16),
+		 .STYLE			("BRAM"),
+		 .AFASSERT		(15),
+		 .AEASSERT		(1),
+		 .FWFT			(0),
+		 .SUP_REWIND		(0),
+		 .INIT_OUTREG		(0),
+		 .ADDRW			(4))
+     pndgtxrd_sc_fifo (
+		       // Outputs
+		       .dout		(RxPndgRdFifoDat_o),
+		       .full		(),
+		       .afull		(),
+		       .empty		(),
+		       .aempty		(),
+		       .data_count	(rxpndgrd_fifo_usedw),
+		       // Inputs
+		       .clk		(Clk_i),
+		       .rst_n		(Rstn_i),
+		       .din		(rxpndgrd_fifo_datain),
+		       .wr_en		(rxpndgrd_fifo_wrreq),
+		       .rd_en		(RxPndgRdFifoRdReq_i),
+		       .mark_addr	(0),
+		       .clear_addr	(0),
+		       .rewind		(0));
+
   end
    
 else // generate
@@ -399,52 +402,32 @@ rxavl_resp
   
   //// instantiate the Rx Completion data ram
 generate if(CB_PCIE_MODE == 0)
-begin
-altsyncram	
-#(     
-        .intended_device_family("Stratix"),              
-        .operation_mode("DUAL_PORT"),                    
-        .width_a(130),                                    
-        .widthad_a(RX_CPL_BUFF_ADDR_WIDTH),                                  
-        .numwords_a(CB_RX_CPL_BUFFER_DEPTH),                               
-        .width_b(130),                                    
-        .widthad_b(RX_CPL_BUFF_ADDR_WIDTH),                                  
-        .numwords_b(CB_RX_CPL_BUFFER_DEPTH),                               
-        .lpm_type("altsyncram"),                         
-        .width_byteena_a(1),                             
-        .outdata_reg_b("UNREGISTERED"),                        
-        .indata_aclr_a("NONE"),                          
-        .wrcontrol_aclr_a("NONE"),                       
-        .address_aclr_a("NONE"),                         
-        .address_reg_b("CLOCK0"),                        
-        .address_aclr_b("NONE"),                         
-        .outdata_aclr_b("NONE"),                         
-        .read_during_write_mode_mixed_ports("DONT_CARE"),
-        .power_up_uninitialized("FALSE")                
-) 
-  
-  
-cpl_ram (
-				.wren_a (cplram_wr_ena),
-				.clock0 (Clk_i),
-				.address_a (cplram_wraddr),
-				.address_b (cplram_rdaddr),
-				.data_a (cplram_wrdat),
-				.q_b (cplram_data_out),
-				.aclr0 (),
-				.aclr1 (),
-				.addressstall_a (),
-				.addressstall_b (),
-				.byteena_a (),
-				.byteena_b (),
-				.clock1 (),
-				.clocken0 (),
-				.clocken1 (),
-				.data_b (),
-				.q_a (),
-				.rden_b (),
-				.wren_b ()
-				);
+begin : cpl_ram
+   generic_tpram   #(
+		     // Parameters
+		     .aw		(RX_CPL_BUFF_ADDR_WIDTH),
+		     .dw		(130))
+   cpl_tpram        (
+		     // Outputs
+		     .do_a		(),
+		     .do_b		(cplram_data_out),
+		     // Inputs
+		     .clk_a		(Clk_i),
+		     .rst_a		(0),
+		     .ce_a		(1),
+		     .we_a		(cplram_wr_ena),
+		     .oe_a		(0),
+		     .addr_a		(cplram_wraddr),
+		     .di_a		(cplram_wrdat),
+
+		     .clk_b		(Clk_i),
+		     .rst_b		(0),
+		     .ce_b		(1),
+		     .we_b		(0),
+		     .oe_b		(1),
+		     .addr_b		(cplram_rdaddr),
+		     .di_b		(0));
+ 
 assign TxReadData_o = cplram_data_out[127:0];
 assign cpl_eop = cplram_data_out[129];
 				

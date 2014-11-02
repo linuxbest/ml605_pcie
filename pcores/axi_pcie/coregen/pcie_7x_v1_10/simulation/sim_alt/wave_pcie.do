@@ -269,3 +269,20 @@ eval add wave -noupdate $hexopt \"$pcie${ps}TxsReadData_o(127 downto 96)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}TxsReadData_o(95 downto 64)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}TxsReadData_o(63 downto 32)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}TxsReadData_o(31 downto 0)\"
+
+
+#eval add wave -noupdate -divider {"PCIE pndgtxrd_fifo"}
+#set scfifo $pcie${ps}rx${ps}pndgtxrd_fifo${ps}pndgtxrd_fifo
+#do wave_scfifo.do
+
+eval add wave -noupdate -divider {"PCIE pndgtxrd_fifo"}
+set scfifo $pcie${ps}rx${ps}pndgtxrd_fifo${ps}pndgtxrd_sc_fifo
+do wave_sc_fifo.do
+
+#eval add wave -noupdate -divider {"PCIE cpl ram"}
+#set scfifo $pcie${ps}rx${ps}cpl_ram${ps}cpl_ram
+#do wave_asyncram.do
+
+eval add wave -noupdate -divider {"PCIE cpl tpram"}
+set scfifo $pcie${ps}rx${ps}cpl_ram${ps}cpl_tpram
+do wave_tpram.do

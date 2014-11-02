@@ -15,6 +15,8 @@ vlog -work work -f ../alt/alt_vmm.f
 
 vlog -incr -work work ../../../../../../pciebfm_lib/*.v {+incdir+../../../../../../pciebfm_lib/}
 vlog -incr -work work pcie_7x_v1_10_gt_top_pipe_mode.v {+incdir+../../../../../../pciebfm_lib/}
+vlog -incr -work work sync_fifo.v
+vlog -incr -work work generic_tpram.v
 
 # Load and run simulation
 vsim -voptargs="+acc" +notimingchecks +TESTNAME=pio_writeReadBack_test0 -L work -L secureip -L unisims_ver -L unimacro_ver \
