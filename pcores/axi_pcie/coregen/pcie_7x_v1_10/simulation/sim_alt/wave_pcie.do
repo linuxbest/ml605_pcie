@@ -1,6 +1,6 @@
 if { [info exists PathSeparator] } { set ps $PathSeparator } else { set ps "/" }
 
-set pcie "/board/EP/app/PIO/altpciexpav128_app"
+set pcie "/board/EP/app/PIO/altpcie_avl/altpciexpav128_app"
 
 set binopt {-logic}
 set hexopt {-literal -hex}

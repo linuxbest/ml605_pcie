@@ -105,8 +105,6 @@ module PIO #(
    m_tb #(/*AUTOINSTPARAM*/)
    m_tb  (/*AUTOINST*/
 	  // Outputs
-	  .user_clk			(user_clk),
-	  .user_reset			(user_reset),
 	  .m_Address			(m_Address[63:0]),
 	  .m_BurstCount			(m_BurstCount[5:0]),
 	  .m_ByteEnable			(m_ByteEnable[15:0]),
@@ -118,6 +116,8 @@ module PIO #(
 	  .s_ReadDataValid		(s_ReadDataValid),
 	  .s_WaitRequest		(s_WaitRequest),
 	  // Inputs
+	  .user_clk			(user_clk),
+	  .user_reset			(user_reset),
 	  .m_ReadData			(m_ReadData[127:0]),
 	  .m_ReadDataValid		(m_ReadDataValid),
 	  .m_WaitRequest		(m_WaitRequest),

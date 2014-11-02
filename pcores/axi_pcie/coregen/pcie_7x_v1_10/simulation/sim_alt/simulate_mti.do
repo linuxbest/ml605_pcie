@@ -10,7 +10,6 @@ vlog -work work +incdir+../.+../../example_design \
 	$env(XILINX)/verilog/src/glbl.v \
       -f board.f
 
-vlog -work work -f ../alt/alt.f
 vlog -work work -f ../alt/alt_vmm.f
 
 vlog -incr -work work ../../../../../../pciebfm_lib/*.v {+incdir+../../../../../../pciebfm_lib/}

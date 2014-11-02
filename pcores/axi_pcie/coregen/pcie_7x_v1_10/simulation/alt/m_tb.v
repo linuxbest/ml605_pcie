@@ -45,15 +45,15 @@
 // Code:
 module m_tb (/*AUTOARG*/
    // Outputs
-   user_clk, user_reset, m_Address, m_BurstCount, m_ByteEnable,
-   m_ChipSelect, m_Read, m_Write, m_WriteData, s_ReadData,
-   s_ReadDataValid, s_WaitRequest,
+   m_Address, m_BurstCount, m_ByteEnable, m_ChipSelect, m_Read,
+   m_Write, m_WriteData, s_ReadData, s_ReadDataValid, s_WaitRequest,
    // Inputs
-   m_ReadData, m_ReadDataValid, m_WaitRequest, s_Address,
-   s_BurstCount, s_ByteEnable, s_Read, s_Write, s_WriteData
+   user_clk, user_reset, m_ReadData, m_ReadDataValid, m_WaitRequest,
+   s_Address, s_BurstCount, s_ByteEnable, s_Read, s_Write,
+   s_WriteData
    );
-   output user_clk;
-   output user_reset;
+   input user_clk;
+   input user_reset;
 
    output [63:0] m_Address;		// To altpcie_stub of altpcie_stub.v
    output [5:0]  m_BurstCount;		// To altpcie_stub of altpcie_stub.v
@@ -87,8 +87,6 @@ module m_tb (/*AUTOARG*/
    reg [127:0]		s_ReadData;
    reg			s_ReadDataValid;
    reg			s_WaitRequest;
-   reg			user_clk;
-   reg			user_reset;
    // End of automatics
    
    reg [127:0] rxm_data [0:1023];

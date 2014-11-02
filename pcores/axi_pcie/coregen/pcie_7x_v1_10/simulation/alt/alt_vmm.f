@@ -1,3 +1,6 @@
+../alt/PIO.v
+../alt/altpcie_avl.v
+../alt/altpcie_stub.v
 ../alt/altpciexpav128/altpciexpav128_a2p_addrtrans.v
 ../alt/altpciexpav128/altpciexpav128_a2p_fixtrans.v
 ../alt/altpciexpav128/altpciexpav128_a2p_vartrans.v
@@ -22,5 +25,5 @@
 ../alt/altpciexpav128/altpciexpav128_underflow_adapter.v
 ../alt/altpciexpav128/generic_tpram.v
 ../alt/altpciexpav128/sync_fifo.v
-../alt/altpcie_avl.v
-../alt/altpcie_stub.v
+../alt/m_tb.v
+../alt/tb.v
