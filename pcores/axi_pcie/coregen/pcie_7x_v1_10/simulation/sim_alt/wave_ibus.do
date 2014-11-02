@@ -13,8 +13,8 @@ eval add wave -noupdate $hexopt \"$path${ps}${prefix}WriteData(95 downto 64)\"
 eval add wave -noupdate $hexopt \"$path${ps}${prefix}WriteData(63 downto 32)\"
 eval add wave -noupdate $hexopt \"$path${ps}${prefix}WriteData(31 downto 0)\"
 
-eval add wave -noupdate $binopt \"$path${ps}${prefix}ReadData(127 downto 96)\"
-eval add wave -noupdate $binopt \"$path${ps}${prefix}ReadData(95 downto 64)\"
-eval add wave -noupdate $binopt \"$path${ps}${prefix}ReadData(63 downto 32)\"
-eval add wave -noupdate $binopt \"$path${ps}${prefix}ReadData(31 downto 0)\"
 eval add wave -noupdate $binopt $path${ps}${prefix}ReadDataValid
+eval add wave -noupdate $hexopt \"$path${ps}${prefix}ReadData(127 downto 96)\"
+eval add wave -noupdate $hexopt \"$path${ps}${prefix}ReadData(95 downto 64)\"
+eval add wave -noupdate $hexopt \"$path${ps}${prefix}ReadData(63 downto 32)\"
+eval add wave -noupdate $hexopt \"$path${ps}${prefix}ReadData(31 downto 0)\"
