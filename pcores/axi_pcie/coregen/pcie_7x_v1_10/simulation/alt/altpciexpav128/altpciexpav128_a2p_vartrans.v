@@ -234,7 +234,7 @@ module altpciexpav128_a2p_vartrans
                AdTrReadData_o = table_read_data[63:32] ;
           end
      end
-
+`ifdef DISABLE
    // The actual translation table 
    altsyncram 
      #(
@@ -289,6 +289,6 @@ module altpciexpav128_a2p_vartrans
       .addressstall_b ()
       // synopsys translate_on
       );
-
+`endif
 endmodule // altpa_a2p_vartrans
 

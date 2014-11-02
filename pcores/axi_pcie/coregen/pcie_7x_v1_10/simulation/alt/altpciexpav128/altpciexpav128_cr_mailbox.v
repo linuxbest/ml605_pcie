@@ -197,7 +197,7 @@ module altpciexpav128_cr_mailbox
                 else
                      mailbox1_reg <= 32'h00000000 ;
              end
-             
+`ifdef DISABLE 
            altsyncram 
              #(
                .intended_device_family(INTENDED_DEVICE_FAMILY),
@@ -241,6 +241,7 @@ module altpciexpav128_cr_mailbox
 	                                    .addressstall_b ()
                                         // synopsys translate_on
                                         );
+`endif
         end // else: !if(CG_NUM_MAILBOX == 1)
    endgenerate
    
