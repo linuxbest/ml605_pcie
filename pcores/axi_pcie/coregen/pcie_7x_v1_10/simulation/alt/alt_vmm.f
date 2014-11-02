@@ -20,3 +20,5 @@
 ../alt/altpciexpav128/altpciexpav128_txavl_cntrl.v
 ../alt/altpciexpav128/altpciexpav128_txresp_cntrl.v
 ../alt/altpciexpav128/altpciexpav128_underflow_adapter.v
+../alt/altpciexpav128/generic_tpram.v
+../alt/altpciexpav128/sync_fifo.v
