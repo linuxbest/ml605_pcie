@@ -275,14 +275,46 @@ eval add wave -noupdate $hexopt \"$pcie${ps}TxsReadData_o(31 downto 0)\"
 #set scfifo $pcie${ps}rx${ps}pndgtxrd_fifo${ps}pndgtxrd_fifo
 #do wave_scfifo.do
 
-eval add wave -noupdate -divider {"PCIE pndgtxrd_fifo"}
-set scfifo $pcie${ps}rx${ps}pndgtxrd_fifo${ps}pndgtxrd_sc_fifo
-do wave_sc_fifo.do
+#eval add wave -noupdate -divider {"PCIE pndgtxrd_fifo"}
+#set scfifo $pcie${ps}rx${ps}pndgtxrd_fifo${ps}pndgtxrd_sc_fifo
+#do wave_sc_fifo.do
 
 #eval add wave -noupdate -divider {"PCIE cpl ram"}
 #set scfifo $pcie${ps}rx${ps}cpl_ram${ps}cpl_ram
 #do wave_asyncram.do
 
-eval add wave -noupdate -divider {"PCIE cpl tpram"}
-set scfifo $pcie${ps}rx${ps}cpl_ram${ps}cpl_tpram
-do wave_tpram.do
+#eval add wave -noupdate -divider {"PCIE cpl tpram"}
+#set scfifo $pcie${ps}rx${ps}cpl_ram${ps}cpl_tpram
+#do wave_tpram.do
+
+#eval add wave -noupdate -divider {"PCIE txcmd_fifo"}
+#set scfifo $pcie${ps}tx${ps}txcmd_fifo
+#do wave_scfifo.do
+
+#eval add wave -noupdate -divider {"PCIE txcmd_sc_fifo"}
+#set scfifo $pcie${ps}tx${ps}txcmd_sc_fifo
+#do wave_sc_fifo.do
+
+#eval add wave -noupdate -divider {"PCIE wrdat_fifo"}
+#set scfifo $pcie${ps}tx${ps}wrdat_fifo${ps}wrdat_fifo
+#do wave_scfifo.do
+
+#eval add wave -noupdate -divider {"PCIE wrdat_sc_fifo"}
+#set scfifo $pcie${ps}tx${ps}wrdat_fifo${ps}wrdat_sc_fifo
+#do wave_sc_fifo.do
+
+#eval add wave -noupdate -divider {"PCIE rd_bypass_fifo"}
+#set scfifo $pcie${ps}tx${ps}rd_bypass_fifo${ps}rd_bypass_fifo
+#do wave_scfifo.do
+
+#eval add wave -noupdate -divider {"PCIE rd_bypass_sc_fifo"}
+#set scfifo $pcie${ps}tx${ps}rd_bypass_fifo${ps}rd_bypass_sc_fifo
+#do wave_sc_fifo.do
+
+#eval add wave -noupdate -divider {"PCIE cpl ram"}
+#set scfifo $pcie${ps}tx${ps}tx_cpl_buff${ps}tx_cpl_buff
+#do wave_asyncram.do
+
+#eval add wave -noupdate -divider {"PCIE cpl tpram"}
+#set scfifo $pcie${ps}tx${ps}tx_cpl_buff${ps}tx_cpl_tpram
+#do wave_tpram.do

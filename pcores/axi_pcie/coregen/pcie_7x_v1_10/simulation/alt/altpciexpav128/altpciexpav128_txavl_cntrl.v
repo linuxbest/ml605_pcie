@@ -924,31 +924,35 @@ assign pendingrd_fifo_rdreq = (!pendingrd_state[0] & !pendingrd_fifo_rdempty) | 
 assign pendingrd_check_state = pendingrd_state[2];
 assign pendingrd_fifo_latch  = pendingrd_state[1];
 
-	scfifo	pendingrd_fifo (                                          
-				.rdreq (pendingrd_fifo_rdreq),               
-				.clock (AvlClk_i),                          
-				.wrreq (pendingrd_fifo_wrreq),               
-				.data ({4'b0000, TxBurstCount_i[5:0]}),               
-				.usedw (),             
-				.empty (pendingrd_fifo_rdempty),             
-				.q (pendingrd_fifo_q),                 
-				.full ()   ,                              
-				.aclr (~Rstn_i),                         
-				.almost_empty (),                        
-				.almost_full (),                         
-				.sclr ()                                 
-				);                                       
-	defparam                                                         
-		pendingrd_fifo.add_ram_output_register = "ON",            
-		pendingrd_fifo.intended_device_family = "Stratix IV",     
-		pendingrd_fifo.lpm_numwords = 16,                         
-		pendingrd_fifo.lpm_showahead = "OFF",                     
-		pendingrd_fifo.lpm_type = "scfifo",                       
-		pendingrd_fifo.lpm_width = 10,                            
-		pendingrd_fifo.lpm_widthu = 4,                            
-		pendingrd_fifo.overflow_checking = "ON",                  
-		pendingrd_fifo.underflow_checking = "ON",                 
-		pendingrd_fifo.use_eab = "ON";         
+     sync_fifo #(
+		 // Parameters
+		 .WIDTH			(10),
+		 .DEPTH			(16),
+		 .STYLE			("BRAM"),
+		 .AFASSERT		(15),
+		 .AEASSERT		(1),
+		 .FWFT			(0),
+		 .SUP_REWIND		(0),
+		 .INIT_OUTREG		(0),
+		 .ADDRW			(4))
+     pndgtxrd_sc_fifo (
+		       // Outputs
+		       .dout		(pendingrd_fifo_q),
+		       .full		(),
+		       .afull		(),
+		       .empty		(pendingrd_fifo_rdempty),
+		       .aempty		(),
+		       .data_count	(),
+		       // Inputs
+		       .clk		(AvlClk_i),
+		       .rst_n		(Rstn_i),
+		       .din		({4'b0000, TxBurstCount_i[5:0]}),
+		       .wr_en		(pendingrd_fifo_wrreq),
+		       .rd_en		(pendingrd_fifo_rdreq),
+		       .mark_addr	(0),
+		       .clear_addr	(0),
+		       .rewind		(0));
+
 
 always @(posedge AvlClk_i or negedge Rstn_i)
   begin

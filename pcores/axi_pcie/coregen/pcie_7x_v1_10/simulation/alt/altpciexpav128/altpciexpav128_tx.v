@@ -309,34 +309,34 @@ txresp
        .BusDev_i(BusDev_i),
        .TxRespIdle_o(TxRespIdle_o)
 );
-
-
-	scfifo	txcmd_fifo (
-				.rdreq (cmdfifo_rdreq),
-				.clock (Clk_i),
-				.wrreq (cmdfifo_wrreq_reg),
-				.data (cmdfifo_datain_reg),
-				.usedw (cmd_fifo_usedw),
-				.empty (cmd_fifo_empty),
-				.q (cmdfifo_dato),
-				.full (cmd_fifo_full) ,
-				.aclr (~Rstn_i),
-				.almost_empty (),
-				.almost_full (),
-				.sclr ()
-				);
-	defparam
-		txcmd_fifo.add_ram_output_register = "ON",
-		txcmd_fifo.intended_device_family = "Stratix IV",
-		txcmd_fifo.lpm_numwords = 16,
-		txcmd_fifo.lpm_showahead = "OFF",
-		txcmd_fifo.lpm_type = "scfifo",
-		txcmd_fifo.lpm_width = 99,
-		txcmd_fifo.lpm_widthu = 4,
-		txcmd_fifo.overflow_checking = "ON",
-		txcmd_fifo.underflow_checking = "ON",
-		txcmd_fifo.use_eab = "ON";
-
+     sync_fifo #(
+		 // Parameters
+		 .WIDTH			(99),
+		 .DEPTH			(16),
+		 .STYLE			("BRAM"),
+		 .AFASSERT		(15),
+		 .AEASSERT		(1),
+		 .FWFT			(0),
+		 .SUP_REWIND		(0),
+		 .INIT_OUTREG		(0),
+		 .ADDRW			(4))
+     txcmd_sc_fifo (
+		       // Outputs
+		       .dout		(cmdfifo_dato),
+		       .full		(cmd_fifo_full),
+		       .afull		(),
+		       .empty		(cmd_fifo_empty),
+		       .aempty		(),
+		       .data_count	(cmd_fifo_usedw),
+		       // Inputs
+		       .clk		(Clk_i),
+		       .rst_n		(Rstn_i),
+		       .din		(cmdfifo_datain_reg),
+		       .wr_en		(cmdfifo_wrreq_reg),
+		       .rd_en		(cmdfifo_rdreq),
+		       .mark_addr	(0),
+		       .clear_addr	(0),
+		       .rewind		(0));
 
 // mux to select between wr/read and completion header
 assign cmdfifo_datain =  cpl_header_wrreq? cpl_header : rd_wr_header;
@@ -370,34 +370,36 @@ always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
 //// Write Data FIFO to hold the write data
 
 generate if(CB_PCIE_MODE == 0)
-begin
-     
-	scfifo	wrdat_fifo (
-				.rdreq (wrdat_fifo_rdreq),
-				.clock (Clk_i),
-				.wrreq (wrdat_fifo_wrreq),
-				.data ({wrdat_fifo_eop,TxWriteData_i}),
-				.usedw (wrdat_fifo_usedw),
-				.empty (),
-				.q (wr_datout),
-				.full () ,
-				.aclr (~Rstn_i),
-				.almost_empty (),
-				.almost_full (),
-				.sclr ()
-				);
-	defparam
-		wrdat_fifo.add_ram_output_register = "ON",
-		wrdat_fifo.intended_device_family = "Stratix IV",
-		wrdat_fifo.lpm_numwords = 64,
-		wrdat_fifo.lpm_showahead = "OFF",
-		wrdat_fifo.lpm_type = "scfifo",
-		wrdat_fifo.lpm_width = 129,
-		wrdat_fifo.lpm_widthu = 6,
-		wrdat_fifo.overflow_checking = "ON",
-		wrdat_fifo.underflow_checking = "ON",
-		wrdat_fifo.use_eab = "ON";
+begin: wrdat_fifo
 
+     sync_fifo #(
+		 // Parameters
+		 .WIDTH			(129),
+		 .DEPTH			(64),
+		 .STYLE			("BRAM"),
+		 .AFASSERT		(63),
+		 .AEASSERT		(1),
+		 .FWFT			(0),
+		 .SUP_REWIND		(0),
+		 .INIT_OUTREG		(0),
+		 .ADDRW			(6))
+     wrdat_sc_fifo (
+		       // Outputs
+		       .dout		(wr_datout),
+		       .full		(),
+		       .afull		(),
+		       .empty		(),
+		       .aempty		(),
+		       .data_count	(wrdat_fifo_usedw),
+		       // Inputs
+		       .clk		(Clk_i),
+		       .rst_n		(Rstn_i),
+		       .din		({wrdat_fifo_eop,TxWriteData_i}),
+		       .wr_en		(wrdat_fifo_wrreq),
+		       .rd_en		(wrdat_fifo_rdreq),
+		       .mark_addr	(0),
+		       .clear_addr	(0),
+		       .rewind		(0));
 end
 else
   begin
@@ -413,32 +415,36 @@ assign wrdat_fifo_full = (wrdat_fifo_usedw >= (CB_TX_WR_BUFFER_DEPTH - 2));
 
 generate if(CB_PCIE_MODE == 0)
 
-begin
-	scfifo	rd_bypass_fifo (
-				.rdreq (rd_bpfifo_rdreq),
-				.clock (Clk_i),
-				.wrreq (rd_bpfifo_wrreq),
-				.data (cmdfifo_dato),
-				.usedw (rd_bpfifo_usedw),
-				.empty (rd_bpfifo_empty),
-				.q (rd_bpfifo_dat),
-				.full (rd_bpfifo_full) ,
-				.aclr (~Rstn_i),
-				.almost_empty (),
-				.almost_full (),
-				.sclr ()
-				);
-	defparam
-		rd_bypass_fifo.add_ram_output_register = "ON",
-		rd_bypass_fifo.intended_device_family = "Stratix IV",
-		rd_bypass_fifo.lpm_numwords = 64,
-		rd_bypass_fifo.lpm_showahead = "OFF",
-		rd_bypass_fifo.lpm_type = "scfifo",
-		rd_bypass_fifo.lpm_width = 99,
-		rd_bypass_fifo.lpm_widthu = 6,
-		rd_bypass_fifo.overflow_checking = "ON",
-		rd_bypass_fifo.underflow_checking = "ON",
-		rd_bypass_fifo.use_eab = "ON";
+begin: rd_bypass_fifo
+
+     sync_fifo #(
+		 // Parameters
+		 .WIDTH			(99),
+		 .DEPTH			(64),
+		 .STYLE			("BRAM"),
+		 .AFASSERT		(63),
+		 .AEASSERT		(1),
+		 .FWFT			(0),
+		 .SUP_REWIND		(0),
+		 .INIT_OUTREG		(0),
+		 .ADDRW			(6))
+     rd_bypass_sc_fifo (
+		       // Outputs
+		       .dout		(rd_bpfifo_dat),
+		       .full		(rd_bpfifo_full),
+		       .afull		(),
+		       .empty		(rd_bpfifo_empty),
+		       .aempty		(),
+		       .data_count	(rd_bpfifo_usedw),
+		       // Inputs
+		       .clk		(Clk_i),
+		       .rst_n		(Rstn_i),
+		       .din		(cmdfifo_dato),
+		       .wr_en		(rd_bpfifo_wrreq),
+		       .rd_en		(rd_bpfifo_rdreq),
+		       .mark_addr	(0),
+		       .clear_addr	(0),
+		       .rewind		(0));
 
 end
 
@@ -454,51 +460,31 @@ endgenerate
 
 
 generate if (CB_PCIE_RX_LITE == 0)
-    begin
-     altsyncram	
-         #(     
-                 .intended_device_family(INTENDED_DEVICE_FAMILY),
-         		.operation_mode("DUAL_PORT"),
-         		.width_a(128),
-         		.widthad_a(TXCPL_BUFF_ADDR_WIDTH),
-         		.numwords_a(CB_TX_CPL_BUFFER_DEPTH),
-         		.width_b(128),
-         		.widthad_b(TXCPL_BUFF_ADDR_WIDTH),
-         		.numwords_b(CB_TX_CPL_BUFFER_DEPTH),
-         		.lpm_type("altsyncram"),
-         		.width_byteena_a(1),
-         		.outdata_reg_b("UNREGISTERED"),
-         		.indata_aclr_a("NONE"),
-         		.wrcontrol_aclr_a("NONE"),
-         		.address_aclr_a("NONE"),
-         		.address_reg_b("CLOCK1"),
-         		.address_aclr_b("NONE"),
-         		.outdata_aclr_b("NONE"),
-         		.power_up_uninitialized("FALSE")
-         ) 
-           
-           
-         tx_cpl_buff (
-         				.wren_a (TxReadDataValid_i),
-         				.clocken1 (),
-         				.clock0 (Clk_i),
-         				.clock1 (Clk_i),
-         				.address_a (cplbuff_wraddr),
-         				.address_b (cplbuff_rdaddr),
-         				.data_a (TxReadData_i),
-         				.q_b (cpl_datout),
-         				.aclr0 (),
-         				.aclr1 (),
-         				.addressstall_a (),
-         				.addressstall_b (),
-         				.byteena_a (),
-         				.byteena_b (),
-         				.clocken0 (),
-         				.data_b (),
-         				.q_a (),
-         				.rden_b (),
-         				.wren_b ()
-                         );
+    begin : tx_cpl_buff
+   generic_tpram   #(
+		     // Parameters
+		     .aw		(TXCPL_BUFF_ADDR_WIDTH),
+		     .dw		(128))
+   tx_cpl_tpram (
+		     // Outputs
+		     .do_a		(),
+		     .do_b		(cpl_datout),
+		     // Inputs
+		     .clk_a		(Clk_i),
+		     .rst_a		(0),
+		     .ce_a		(1),
+		     .we_a		(TxReadDataValid_i),
+		     .oe_a		(0),
+		     .addr_a		(cplbuff_wraddr),
+		     .di_a		(TxReadData_i),
+
+		     .clk_b		(Clk_i),
+		     .rst_b		(0),
+		     .ce_b		(1),
+		     .we_b		(0),
+		     .oe_b		(1),
+		     .addr_b		(cplbuff_rdaddr),
+		     .di_b		(0));
     end         
 else // generate
     begin

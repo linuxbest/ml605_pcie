@@ -355,36 +355,34 @@ always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
  
  // Instantiation of the input FIFO
  // This fifo holds the Rx data stream comming out of the HIP
- 
-	scfifo	# (
-	             .add_ram_output_register("ON"),
-		     .intended_device_family("Stratix IV"),
-		     .lpm_numwords(64),
-		     .lpm_showahead("OFF"),
-		     .lpm_type("scfifo"),
-		     .lpm_width(155),
-		     .lpm_widthu(6),
-		     .overflow_checking("ON"),
-		     .underflow_checking("ON"),
-		     .use_eab("ON")
-		  ) 
-	          
-       rx_input_fifo (
-                     .rdreq (input_fifo_rdreq),
-                     .clock (Clk_i),
-                     .wrreq (input_fifo_wrreq_reg),
-                     .data (input_fifo_datain_reg),
-                     .usedw (input_fifo_wrusedw),
-                     .empty (input_fifo_rdempty),
-                     .q (input_fifo_dataout),
-                     .full (),
-                     .aclr (~Rstn_i),
-                     .almost_empty (),
-                     .almost_full (),
-                     .sclr ()
-);
-                                   
-                                   
+    sync_fifo #(
+		 // Parameters
+		 .WIDTH			(155),
+		 .DEPTH			(64),
+		 .STYLE			("BRAM"),
+		 .AFASSERT		(63),
+		 .AEASSERT		(1),
+		 .FWFT			(0),
+		 .SUP_REWIND		(0),
+		 .INIT_OUTREG		(0),
+		 .ADDRW			(6))
+     rx_input_fifo (
+		       // Outputs
+		       .dout		(input_fifo_dataout),
+		       .full		(),
+		       .afull		(),
+		       .empty		(input_fifo_rdempty),
+		       .aempty		(),
+		       .data_count	(input_fifo_wrusedw),
+		       // Inputs
+		       .clk		(Clk_i),
+		       .rst_n		(Rstn_i),
+		       .din		(input_fifo_datain_reg),
+		       .wr_en		(input_fifo_wrreq_reg),
+		       .rd_en		(input_fifo_rdreq),
+		       .mark_addr	(0),
+		       .clear_addr	(0),
+		       .rewind		(0));
 
 /// Pipe-line stage 1
 always @(posedge Clk_i or negedge Rstn_i)  // state machine registers

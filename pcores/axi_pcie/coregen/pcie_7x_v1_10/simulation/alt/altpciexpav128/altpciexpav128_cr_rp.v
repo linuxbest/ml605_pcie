@@ -153,65 +153,62 @@ localparam      RXCPL_WAIT1      = 7'h41;
       end    
       
 // Tx FIFO
-
-	scfifo	# (
-	       .add_ram_output_register("ON"),
-		     .intended_device_family("Stratix V"),
-		     .lpm_numwords(16),
-		     .lpm_showahead("OFF"),
-		     .lpm_type("scfifo"),
-		     .lpm_width(64),
-		     .lpm_widthu(4),
-		     .overflow_checking("ON"),
-		     .underflow_checking("ON"),
-		     .use_eab("ON")
-		  ) 
-	          
-       txrp_low64_fifo (
-                     .rdreq (TxRpFifoRdReq_i),
-                     .clock (CraClk_i),
-                     .wrreq (tx_low64_fifo_wrreq),
-                     .data (tx_low64_fifo_data_in),
-                     .usedw (tx_low64_fifo_wrusedw),
-                     .empty (tx_low64_fifo_rdempty),
-                     .q (tx_low64_fifo_dataout),
-                     .full (),
-                     .aclr (~CraRstn_i),
-                     .almost_empty (),
-                     .almost_full (),
-                     .sclr ()
-);
-
-
-	scfifo	# (
-	       .add_ram_output_register("ON"),
-		     .intended_device_family("Stratix V"),
-		     .lpm_numwords(16),
-		     .lpm_showahead("OFF"),
-		     .lpm_type("scfifo"),
-		     .lpm_width(67),
-		     .lpm_widthu(4),
-		     .overflow_checking("ON"),
-		     .underflow_checking("ON"),
-		     .use_eab("ON")
-		  ) 
-	          
-       txrp_hi64_fifo (
-                     .rdreq (TxRpFifoRdReq_i),
-                     .clock (CraClk_i),
-                     .wrreq (tx_hi64_fifo_wrreq),
-                     .data (tx_hi64_fifo_data_in),
-                     .usedw (tx_hi64_fifo_wrusedw),
-                     .empty (tx_hi64_fifo_rdempty),
-                     .q (tx_hi64_fifo_dataout),
-                     .full (),
-                     .aclr (~CraRstn_i),
-                     .almost_empty (),
-                     .almost_full (),
-                     .sclr ()
-);
-
-
+     sync_fifo #(
+		 // Parameters
+		 .WIDTH			(64),
+		 .DEPTH			(16),
+		 .STYLE			("BRAM"),
+		 .AFASSERT		(15),
+		 .AEASSERT		(1),
+		 .FWFT			(0),
+		 .SUP_REWIND		(0),
+		 .INIT_OUTREG		(0),
+		 .ADDRW			(4))
+     txrp_low64_fifo (
+		       // Outputs
+		       .dout		(tx_low64_fifo_dataout),
+		       .full		(),
+		       .afull		(),
+		       .empty		(tx_low64_fifo_rdempty),
+		       .aempty		(),
+		       .data_count	(tx_low64_fifo_wrusedw),
+		       // Inputs
+		       .clk		(CraClk_i),
+		       .rst_n		(CraRstn_i),
+		       .din		(tx_low64_fifo_data_in),
+		       .wr_en		(tx_low64_fifo_wrreq),
+		       .rd_en		(TxRpFifoRdReq_i),
+		       .mark_addr	(0),
+		       .clear_addr	(0),
+		       .rewind		(0));
+     sync_fifo #(
+		 // Parameters
+		 .WIDTH			(67),
+		 .DEPTH			(16),
+		 .STYLE			("BRAM"),
+		 .AFASSERT		(15),
+		 .AEASSERT		(1),
+		 .FWFT			(0),
+		 .SUP_REWIND		(0),
+		 .INIT_OUTREG		(0),
+		 .ADDRW			(4))
+     txrp_hi64_fifo (
+		       // Outputs
+		       .dout		(tx_hi64_fifo_dataout),
+		       .full		(),
+		       .afull		(),
+		       .empty		(tx_hi64_fifo_rdempty),
+		       .aempty		(),
+		       .data_count	(tx_hi64_fifo_wrusedw),
+		       // Inputs
+		       .clk		(CraClk_i),
+		       .rst_n		(CraRstn_i),
+		       .din		(tx_hi64_fifo_data_in),
+		       .wr_en		(tx_hi64_fifo_wrreq),
+		       .rd_en		(TxRpFifoRdReq_i),
+		       .mark_addr	(0),
+		       .clear_addr	(0),
+		       .rewind		(0));
 
 /// fifo control
    always @(posedge CraClk_i or negedge CraRstn_i)
@@ -248,34 +245,36 @@ assign tx_hi64_fifo_data_in = {tx_rp_empty, tx_rp_eop, tx_rp_sop, tx_data_hi_reg
  assign RpTLPReady_o   = (tx_control_reg[1] & ~tx_hi64_fifo_rdempty) | (tx_hi64_fifo_wrusedw >= 2);
  
 /// The RP Completion Data
+     sync_fifo #(
+		 // Parameters
+		 .WIDTH			(131),
+		 .DEPTH			(16),
+		 .STYLE			("BRAM"),
+		 .AFASSERT		(15),
+		 .AEASSERT		(1),
+		 .FWFT			(0),
+		 .SUP_REWIND		(0),
+		 .INIT_OUTREG		(0),
+		 .ADDRW			(4))
+     rxrp_fifo (
+		       // Outputs
+		       .dout		(rxrp_fifo_dataout),
+		       .full		(),
+		       .afull		(),
+		       .empty		(rxrp_fifo_empty),
+		       .aempty		(),
+		       .data_count	(rxrp_fifo_usedw),
+		       // Inputs
+		       .clk		(CraClk_i),
+		       .rst_n		(CraRstn_i),
+		       .din		(RxRpFifoWrData_i),
+		       .wr_en		(RxRpFifoWrReq_i),
+		       .rd_en		(rxrp_fifo_rdreq),
+		       .mark_addr	(0),
+		       .clear_addr	(0),
+		       .rewind		(0));
 
-	scfifo	# (
-	       .add_ram_output_register("ON"),
-		     .intended_device_family("Stratix V"),
-		     .lpm_numwords(16),
-		     .lpm_showahead("OFF"),
-		     .lpm_type("scfifo"),
-		     .lpm_width(131),
-		     .lpm_widthu(4),
-		     .overflow_checking("ON"),
-		     .underflow_checking("ON"),
-		     .use_eab("ON")
-		  ) 
-	          
-       rxrp_fifo (
-                     .rdreq (rxrp_fifo_rdreq),
-                     .clock (CraClk_i),
-                     .wrreq (RxRpFifoWrReq_i),
-                     .data (RxRpFifoWrData_i),
-                     .usedw (rxrp_fifo_usedw),
-                     .empty (rxrp_fifo_empty),
-                     .q (rxrp_fifo_dataout),
-                     .full (),
-                     .aclr (~CraRstn_i),
-                     .almost_empty (),
-                     .almost_full (),
-                     .sclr ()
-);
+
 assign rxcpl_sop =   rxrp_fifo_dataout[128];
 assign rxcpl_eop =   rxrp_fifo_dataout[129];
 assign rxcpl_empty =   rxrp_fifo_dataout[130];

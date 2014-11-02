@@ -1030,34 +1030,34 @@ always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
   end
                                              
 /// Output FIFO
-
-	scfifo	tx_output_fifo (
-				.rdreq (output_fifo_rdreq),
-				.clock (Clk_i),
-				.wrreq (output_fifo_wrreq_reg),
-				.data (output_fifo_data_in_reg),
-				.usedw (output_fifo_wrusedw),
-				.empty (output_fifo_rdempty),
-				.q (output_fifo_data_out),
-				.full (),
-				.aclr (~Rstn_i),
-				.almost_empty (),
-				.almost_full (),
-				.sclr ()
-				);
-	defparam
-		tx_output_fifo.add_ram_output_register = "ON",
-		tx_output_fifo.intended_device_family = "Stratix IV",
-		tx_output_fifo.lpm_numwords = 16,
-		tx_output_fifo.lpm_showahead = "OFF",
-		tx_output_fifo.lpm_type = "scfifo",
-		tx_output_fifo.lpm_width = 131,
-		tx_output_fifo.lpm_widthu = 4,
-		tx_output_fifo.overflow_checking = "ON",
-		tx_output_fifo.underflow_checking = "ON",
-		tx_output_fifo.use_eab = "ON";
-
-
+    sync_fifo #(
+		 // Parameters
+		 .WIDTH			(131),
+		 .DEPTH			(16),
+		 .STYLE			("BRAM"),
+		 .AFASSERT		(15),
+		 .AEASSERT		(1),
+		 .FWFT			(0),
+		 .SUP_REWIND		(0),
+		 .INIT_OUTREG		(0),
+		 .ADDRW			(4))
+    tx_output_fifo (
+		       // Outputs
+		       .dout		(output_fifo_data_out),
+		       .full		(),
+		       .afull		(),
+		       .empty		(output_fifo_rdempty),
+		       .aempty		(),
+		       .data_count	(output_fifo_wrusedw),
+		       // Inputs
+		       .clk		(Clk_i),
+		       .rst_n		(Rstn_i),
+		       .din		(output_fifo_data_in_reg),
+		       .wr_en		(output_fifo_wrreq_reg),
+		       .rd_en		(output_fifo_rdreq),
+		       .mark_addr	(0),
+		       .clear_addr	(0),
+		       .rewind		(0));
 /// Streaming interface to the HIP
 
 // output registers
