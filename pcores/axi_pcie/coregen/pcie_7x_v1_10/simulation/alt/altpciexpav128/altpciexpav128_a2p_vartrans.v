@@ -236,58 +236,29 @@ module altpciexpav128_a2p_vartrans
      end
 
    // The actual translation table 
-   altsyncram 
-     #(
-       .intended_device_family(INTENDED_DEVICE_FAMILY),
-       .operation_mode("BIDIR_DUAL_PORT"),
-       .width_a(64),
-       .widthad_a(TABLE_ADDR_WIDTH),
-       .numwords_a(CB_A2P_ADDR_MAP_NUM_ENTRIES),
-       .width_b(64),
-       .widthad_b(TABLE_ADDR_WIDTH),
-       .numwords_b(CB_A2P_ADDR_MAP_NUM_ENTRIES),
-       .lpm_type("altsyncram"),
-       .width_byteena_a(1),
-       .width_byteena_b(8),
-       .byte_size(8),
-       .indata_aclr_a("CLEAR0"),
-       .wrcontrol_aclr_a("CLEAR0"),
-       .address_aclr_a("CLEAR0"),
-       .indata_reg_b("CLOCK1"),
-       .address_reg_b("CLOCK1"),
-       .wrcontrol_wraddress_reg_b("CLOCK1"),
-       .indata_aclr_b("CLEAR1"),
-       .wrcontrol_aclr_b("CLEAR1"),
-       .address_aclr_b("CLEAR1"),
-       .byteena_reg_b("CLOCK1"),
-       .byteena_aclr_b("CLEAR1"),
-       .outdata_reg_a(OUTREG_A_CLK),
-//       .outdata_aclr_a("CLEAR0"),
-       .outdata_reg_b(OUTREG_B_CLK)
-//       .outdata_aclr_b("CLEAR1")
-       )
-     altsyncram_component 
-     (
-      .wren_a (1'b0),
-      .clock0 (PbaClk_i),
-      .wren_b (AdTrWriteVld_i),
-      .clock1 (CraClk_i),
-      .byteena_b (table_write_byteena),
-      .address_a (table_trans_index),
-      .address_b (table_cra_addr),
-      .data_a (64'h0000000000000000),
-      .data_b (table_write_data),
-      .q_a (table_trans_data),
-      .q_b (table_read_data)
-      // synopsys translate_off
-      ,
-      .byteena_a (),
-      .rden_b (),
-      .clocken0 (),
-      .clocken1 (),
-      .addressstall_a (),
-      .addressstall_b ()
-      // synopsys translate_on
-      );
+   generic_tpram   #(
+		     // Parameters
+		     .aw		(TABLE_ADDR_WIDTH),
+		     .dw		(64))
+   cpl_tpram        (
+		     // Outputs
+		     .do_a		(table_trans_data),
+		     .do_b		(table_read_data),
+		     // Inputs
+		     .clk_a		(PbaClk_i),
+		     .rst_a		(0),
+		     .ce_a		(1),
+		     .we_a		(0),
+		     .oe_a		(1),
+		     .addr_a		(table_trans_index),
+		     .di_a		(0),
+
+		     .clk_b		(CraClk_i),
+		     .rst_b		(0),
+		     .ce_b		(1),
+		     .we_b		(AdTrWriteVld_i),
+		     .oe_b		(1),
+		     .addr_b		(table_cra_addr),
+		     .di_b		(0));
 endmodule // altpa_a2p_vartrans
 
