@@ -1,5 +1,5 @@
 ../alt/PIO.v
-../alt/tb.v
+../alt/m_tb.v
 /opt/altera/14.0/quartus/eda/sim_lib/altera_mf.v
 ../../../../alt/avalon_mm_128/altpciexpav128_a2p_addrtrans.v
 ../../../../alt/avalon_mm_128/altpciexpav128_a2p_fixtrans.v
