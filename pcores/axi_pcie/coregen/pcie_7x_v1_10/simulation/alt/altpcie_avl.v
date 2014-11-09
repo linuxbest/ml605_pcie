@@ -46,20 +46,31 @@
 module altpcie_avl (/*AUTOARG*/
    // Outputs
    s_WriteData, s_Write, s_Read, s_ByteEnable, s_BurstCount,
-   s_Address, m_WaitRequest, m_ReadDataValid, m_ReadData,
-   s_axis_tx_tdata, s_axis_tx_tkeep, s_axis_tx_tlast,
-   s_axis_tx_tvalid, tx_src_dsc, m_axis_rx_tready, cfg_turnoff_ok,
+   s_Address, m_WaitRequest, m_ReadDataValid, m_ReadData, M_WVALID,
+   M_WUSER, M_WSTRB, M_WLAST, M_WDATA, M_RREADY, M_BREADY, M_AWVALID,
+   M_AWUSER, M_AWSIZE, M_AWREGION, M_AWQOS, M_AWPROT, M_AWLOCK,
+   M_AWLEN, M_AWID, M_AWCACHE, M_AWBURST, M_AWADDR, M_ARVALID,
+   M_ARUSER, M_ARSIZE, M_ARREGION, M_ARQOS, M_ARPROT, M_ARLOCK,
+   M_ARLEN, M_ARID, M_ARCACHE, M_ARBURST, M_ARADDR, s_axis_tx_tdata,
+   s_axis_tx_tkeep, s_axis_tx_tlast, s_axis_tx_tvalid, tx_src_dsc,
+   m_axis_rx_tready, cfg_turnoff_ok,
    // Inputs
    s_WaitRequest, s_ReadDataValid, s_ReadData, m_WriteData, m_Write,
    m_Read, m_ChipSelect, m_ByteEnable, m_BurstCount, m_Address,
-   user_clk, user_reset, user_lnk_up, s_axis_tx_tready,
-   m_axis_rx_tdata, m_axis_rx_tkeep, m_axis_rx_tlast,
-   m_axis_rx_tvalid, m_axis_rx_tuser, cfg_to_turnoff,
-   cfg_completer_id
+   M_WREADY, M_RVALID, M_RUSER, M_RRESP, M_RLAST, M_RID, M_RDATA,
+   M_BVALID, M_BUSER, M_BRESP, M_BID, M_AWREADY, M_ARREADY, user_clk,
+   user_reset, user_lnk_up, s_axis_tx_tready, m_axis_rx_tdata,
+   m_axis_rx_tkeep, m_axis_rx_tlast, m_axis_rx_tvalid,
+   m_axis_rx_tuser, cfg_to_turnoff, cfg_completer_id
    );
 
    parameter C_DATA_WIDTH = 128;
    parameter KEEP_WIDTH   = 16;
+
+   parameter C_M_AXI_ADDR_WIDTH      = 64;
+   parameter C_M_AXI_DATA_WIDTH      = 128;
+   parameter C_M_AXI_THREAD_ID_WIDTH = 3;
+   parameter C_M_AXI_USER_WIDTH      = 3;   
    
    input                         user_clk;
    input                         user_reset;
@@ -88,6 +99,19 @@ module altpcie_avl (/*AUTOARG*/
    
    /*AUTOINPUT*/
    // Beginning of automatic inputs (from unused autoinst inputs)
+   input		M_ARREADY;		// To altpciexpav128_app of altpciexpav128_app.v
+   input		M_AWREADY;		// To altpciexpav128_app of altpciexpav128_app.v
+   input [((C_M_AXI_THREAD_ID_WIDTH)-1):0] M_BID;// To altpciexpav128_app of altpciexpav128_app.v
+   input [1:0]		M_BRESP;		// To altpciexpav128_app of altpciexpav128_app.v
+   input [((C_M_AXI_USER_WIDTH)-1):0] M_BUSER;	// To altpciexpav128_app of altpciexpav128_app.v
+   input		M_BVALID;		// To altpciexpav128_app of altpciexpav128_app.v
+   input [((C_M_AXI_DATA_WIDTH)-1):0] M_RDATA;	// To altpciexpav128_app of altpciexpav128_app.v
+   input [((C_M_AXI_THREAD_ID_WIDTH)-1):0] M_RID;// To altpciexpav128_app of altpciexpav128_app.v
+   input		M_RLAST;		// To altpciexpav128_app of altpciexpav128_app.v
+   input [1:0]		M_RRESP;		// To altpciexpav128_app of altpciexpav128_app.v
+   input [((C_M_AXI_USER_WIDTH)-1):0] M_RUSER;	// To altpciexpav128_app of altpciexpav128_app.v
+   input		M_RVALID;		// To altpciexpav128_app of altpciexpav128_app.v
+   input		M_WREADY;		// To altpciexpav128_app of altpciexpav128_app.v
    input [63:0]		m_Address;		// To altpcie_stub of altpcie_stub.v
    input [5:0]		m_BurstCount;		// To altpcie_stub of altpcie_stub.v
    input [15:0]		m_ByteEnable;		// To altpcie_stub of altpcie_stub.v
@@ -101,6 +125,37 @@ module altpcie_avl (/*AUTOARG*/
    // End of automatics
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
+   output [((C_M_AXI_ADDR_WIDTH)-1):0] M_ARADDR;// From altpciexpav128_app of altpciexpav128_app.v
+   output [1:0]		M_ARBURST;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [3:0]		M_ARCACHE;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [((C_M_AXI_THREAD_ID_WIDTH)-1):0] M_ARID;// From altpciexpav128_app of altpciexpav128_app.v
+   output [7:0]		M_ARLEN;		// From altpciexpav128_app of altpciexpav128_app.v
+   output		M_ARLOCK;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [2:0]		M_ARPROT;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [3:0]		M_ARQOS;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [3:0]		M_ARREGION;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [2:0]		M_ARSIZE;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [((C_M_AXI_USER_WIDTH)-1):0] M_ARUSER;// From altpciexpav128_app of altpciexpav128_app.v
+   output		M_ARVALID;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [((C_M_AXI_ADDR_WIDTH)-1):0] M_AWADDR;// From altpciexpav128_app of altpciexpav128_app.v
+   output [1:0]		M_AWBURST;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [3:0]		M_AWCACHE;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [((C_M_AXI_THREAD_ID_WIDTH)-1):0] M_AWID;// From altpciexpav128_app of altpciexpav128_app.v
+   output [7:0]		M_AWLEN;		// From altpciexpav128_app of altpciexpav128_app.v
+   output		M_AWLOCK;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [2:0]		M_AWPROT;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [3:0]		M_AWQOS;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [3:0]		M_AWREGION;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [2:0]		M_AWSIZE;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [((C_M_AXI_USER_WIDTH)-1):0] M_AWUSER;// From altpciexpav128_app of altpciexpav128_app.v
+   output		M_AWVALID;		// From altpciexpav128_app of altpciexpav128_app.v
+   output		M_BREADY;		// From altpciexpav128_app of altpciexpav128_app.v
+   output		M_RREADY;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [((C_M_AXI_DATA_WIDTH)-1):0] M_WDATA;	// From altpciexpav128_app of altpciexpav128_app.v
+   output		M_WLAST;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [(((C_M_AXI_DATA_WIDTH/8))-1):0] M_WSTRB;// From altpciexpav128_app of altpciexpav128_app.v
+   output [((C_M_AXI_USER_WIDTH)-1):0] M_WUSER;	// From altpciexpav128_app of altpciexpav128_app.v
+   output		M_WVALID;		// From altpciexpav128_app of altpciexpav128_app.v
    output [127:0]	m_ReadData;		// From altpcie_stub of altpcie_stub.v
    output		m_ReadDataValid;	// From altpcie_stub of altpcie_stub.v
    output		m_WaitRequest;		// From altpcie_stub of altpcie_stub.v
@@ -631,7 +686,11 @@ localparam CB_A2P_ADDR_MAP_FIXED_TABLE     = { CB_A2P_ADDR_MAP_FIXED_TABLE_15_HI
 			.CB_RXM_DATA_WIDTH(CB_RXM_DATA_WIDTH),
 			.port_type_hwtcl(port_type_hwtcl),
 			.AVALON_ADDR_WIDTH(AVALON_ADDR_WIDTH),
-			.BYPASSS_A2P_TRANSLATION(BYPASSS_A2P_TRANSLATION))
+			.BYPASSS_A2P_TRANSLATION(BYPASSS_A2P_TRANSLATION),
+			.C_M_AXI_ADDR_WIDTH(C_M_AXI_ADDR_WIDTH),
+			.C_M_AXI_DATA_WIDTH(C_M_AXI_DATA_WIDTH),
+			.C_M_AXI_THREAD_ID_WIDTH(C_M_AXI_THREAD_ID_WIDTH),
+			.C_M_AXI_USER_WIDTH(C_M_AXI_USER_WIDTH))
    altpciexpav128_app  (/*AUTOINST*/
 			// Outputs
 			.RxStReady_o	(RxStReady_o),
@@ -692,6 +751,37 @@ localparam CB_A2P_ADDR_MAP_FIXED_TABLE     = { CB_A2P_ADDR_MAP_FIXED_TABLE_15_HI
 			.MsiControl_o	(MsiControl_o[15:0]),
 			.MsixIntfc_o	(MsixIntfc_o[15:0]),
 			.tx_cons_cred_sel(tx_cons_cred_sel),
+			.M_AWVALID	(M_AWVALID),
+			.M_AWADDR	(M_AWADDR[((C_M_AXI_ADDR_WIDTH)-1):0]),
+			.M_AWPROT	(M_AWPROT[2:0]),
+			.M_AWREGION	(M_AWREGION[3:0]),
+			.M_AWLEN	(M_AWLEN[7:0]),
+			.M_AWSIZE	(M_AWSIZE[2:0]),
+			.M_AWBURST	(M_AWBURST[1:0]),
+			.M_AWLOCK	(M_AWLOCK),
+			.M_AWCACHE	(M_AWCACHE[3:0]),
+			.M_AWQOS	(M_AWQOS[3:0]),
+			.M_AWID		(M_AWID[((C_M_AXI_THREAD_ID_WIDTH)-1):0]),
+			.M_AWUSER	(M_AWUSER[((C_M_AXI_USER_WIDTH)-1):0]),
+			.M_WVALID	(M_WVALID),
+			.M_WDATA	(M_WDATA[((C_M_AXI_DATA_WIDTH)-1):0]),
+			.M_WSTRB	(M_WSTRB[(((C_M_AXI_DATA_WIDTH/8))-1):0]),
+			.M_WLAST	(M_WLAST),
+			.M_WUSER	(M_WUSER[((C_M_AXI_USER_WIDTH)-1):0]),
+			.M_BREADY	(M_BREADY),
+			.M_ARVALID	(M_ARVALID),
+			.M_ARADDR	(M_ARADDR[((C_M_AXI_ADDR_WIDTH)-1):0]),
+			.M_ARPROT	(M_ARPROT[2:0]),
+			.M_ARREGION	(M_ARREGION[3:0]),
+			.M_ARLEN	(M_ARLEN[7:0]),
+			.M_ARSIZE	(M_ARSIZE[2:0]),
+			.M_ARBURST	(M_ARBURST[1:0]),
+			.M_ARLOCK	(M_ARLOCK),
+			.M_ARCACHE	(M_ARCACHE[3:0]),
+			.M_ARQOS	(M_ARQOS[3:0]),
+			.M_ARID		(M_ARID[((C_M_AXI_THREAD_ID_WIDTH)-1):0]),
+			.M_ARUSER	(M_ARUSER[((C_M_AXI_USER_WIDTH)-1):0]),
+			.M_RREADY	(M_RREADY),
 			// Inputs
 			.AvlClk_i	(AvlClk_i),
 			.Rstn_i		(Rstn_i),
@@ -761,7 +851,20 @@ localparam CB_A2P_ADDR_MAP_FIXED_TABLE     = { CB_A2P_ADDR_MAP_FIXED_TABLE_15_HI
 			.pld_clk_inuse	(pld_clk_inuse),
 			.ltssm_state	(ltssm_state[4:0]),
 			.current_speed	(current_speed[1:0]),
-			.lane_act	(lane_act[3:0]));
+			.lane_act	(lane_act[3:0]),
+			.M_AWREADY	(M_AWREADY),
+			.M_WREADY	(M_WREADY),
+			.M_BVALID	(M_BVALID),
+			.M_BRESP	(M_BRESP[1:0]),
+			.M_BID		(M_BID[((C_M_AXI_THREAD_ID_WIDTH)-1):0]),
+			.M_BUSER	(M_BUSER[((C_M_AXI_USER_WIDTH)-1):0]),
+			.M_ARREADY	(M_ARREADY),
+			.M_RVALID	(M_RVALID),
+			.M_RDATA	(M_RDATA[((C_M_AXI_DATA_WIDTH)-1):0]),
+			.M_RRESP	(M_RRESP[1:0]),
+			.M_RLAST	(M_RLAST),
+			.M_RID		(M_RID[((C_M_AXI_THREAD_ID_WIDTH)-1):0]),
+			.M_RUSER	(M_RUSER[((C_M_AXI_USER_WIDTH)-1):0]));
 
    altpcie_stub #(/*AUTOINSTPARAM*/
 		  // Parameters
@@ -938,5 +1041,10 @@ localparam CB_A2P_ADDR_MAP_FIXED_TABLE     = { CB_A2P_ADDR_MAP_FIXED_TABLE_15_HI
 		  .s_ReadDataValid	(s_ReadDataValid));
    
 endmodule
+// Local Variables:
+// verilog-library-directories:("altpciexpav128" ".")
+// verilog-library-files:(".""sata_phy")
+// verilog-library-extensions:(".v" ".h")
+// End:
 // 
 // altpcie_avl.v ends here

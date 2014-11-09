@@ -110,10 +110,14 @@ eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}alt
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}Rstn_i
 
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}state
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}rxm_sop
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}rxm_eop
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}rxm_write
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}rxm_read
 
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}fifo_wrreq
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}fifo_rdreq
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}fifo_rdreq_int
 eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}fifo_wr_data
 eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}fifo_data_out
 eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}fifo_count
@@ -147,8 +151,6 @@ eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}alt
 set axi_bus $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}
 set title "RXM AXI"
 set name M
-eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}Clk_i
-eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}Rstn_i
 do wave_AXI.do
 
 ################################

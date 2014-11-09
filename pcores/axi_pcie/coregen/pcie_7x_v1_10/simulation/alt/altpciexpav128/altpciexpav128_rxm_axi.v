@@ -151,12 +151,12 @@ module altpciexpav128_rxm_axi (/*AUTOARG*/
 	     .q         (fifo_data_out),
 	     .fifo_count(fifo_count));
 
-   wire 				       rxm_sof;
+   wire 				       rxm_sop;
    wire 				       rxm_eop;
    wire 				       rxm_read;
    wire 				       rxm_write;
-   assign rxm_sof   = fifo_data_out[144];
-   assign rxm_eof   = fifo_data_out[145];
+   assign rxm_sop   = fifo_data_out[144];
+   assign rxm_eop   = fifo_data_out[145];
    assign rxm_write = fifo_data_out[146];
    assign rxm_read  = fifo_data_out[147];
 
@@ -202,8 +202,11 @@ module altpciexpav128_rxm_axi (/*AUTOARG*/
 	      end
 	endcase
      end // always @ (*)
-   assign fifo_rdreq = state == S_ADDR && ((rxm_eop && rxm_read && M_ARREADY)  ||
-					   (rxm_write && M_AWREADY && M_AWREADY));
+   wire [2:0] fifo_rdreq_int;
+   assign fifo_rdreq_int[0] = state == S_ADDR && (rxm_eop && rxm_read && M_ARREADY);
+   assign fifo_rdreq_int[1] = state == S_ADDR && (rxm_write && M_ARREADY);
+   assign fifo_rdreq_int[2] = state == S_DATA && M_WREADY;
+   assign fifo_rdreq        = |fifo_rdreq_int;
 
    wire [31:0] req_addr;
    wire [15:0] req_len;

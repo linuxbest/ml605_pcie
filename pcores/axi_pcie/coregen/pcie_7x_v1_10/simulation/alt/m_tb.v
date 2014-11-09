@@ -45,13 +45,24 @@
 // Code:
 module m_tb (/*AUTOARG*/
    // Outputs
-   m_Address, m_BurstCount, m_ByteEnable, m_ChipSelect, m_Read,
-   m_Write, m_WriteData, s_ReadData, s_ReadDataValid, s_WaitRequest,
+   M_AWREADY, M_WREADY, M_BVALID, M_BRESP, M_BID, M_BUSER, M_ARREADY,
+   M_RVALID, M_RDATA, M_RRESP, M_RLAST, M_RID, M_RUSER, m_Address,
+   m_BurstCount, m_ByteEnable, m_ChipSelect, m_Read, m_Write,
+   m_WriteData, s_ReadData, s_ReadDataValid, s_WaitRequest,
    // Inputs
-   user_clk, user_reset, m_ReadData, m_ReadDataValid, m_WaitRequest,
-   s_Address, s_BurstCount, s_ByteEnable, s_Read, s_Write,
-   s_WriteData
+   M_AWVALID, M_AWADDR, M_AWPROT, M_AWREGION, M_AWLEN, M_AWSIZE,
+   M_AWBURST, M_AWLOCK, M_AWCACHE, M_AWQOS, M_AWID, M_AWUSER,
+   M_WVALID, M_WDATA, M_WSTRB, M_WLAST, M_WUSER, M_BREADY, M_ARVALID,
+   M_ARADDR, M_ARPROT, M_ARREGION, M_ARLEN, M_ARSIZE, M_ARBURST,
+   M_ARLOCK, M_ARCACHE, M_ARQOS, M_ARID, M_ARUSER, M_RREADY, user_clk,
+   user_reset, m_ReadData, m_ReadDataValid, m_WaitRequest, s_Address,
+   s_BurstCount, s_ByteEnable, s_Read, s_Write, s_WriteData
    );
+   parameter C_M_AXI_ADDR_WIDTH      = 64;
+   parameter C_M_AXI_DATA_WIDTH      = 128;
+   parameter C_M_AXI_THREAD_ID_WIDTH = 3;
+   parameter C_M_AXI_USER_WIDTH      = 3;
+   
    input user_clk;
    input user_reset;
 
@@ -74,9 +85,61 @@ module m_tb (/*AUTOARG*/
    input 	  s_Read;			// From altpcie_stub of altpcie_stub.v
    input 	  s_Write;		// From altpcie_stub of altpcie_stub.v
    input [127:0]  s_WriteData;		// From altpcie_stub of altpcie_stub.v
+
+   /*AUTOINOUTCOMP("altpciexpav128_app", "^M_")*/
+   // Beginning of automatic in/out/inouts (from specific module)
+   output		M_AWREADY;
+   output		M_WREADY;
+   output		M_BVALID;
+   output [1:0]		M_BRESP;
+   output [((C_M_AXI_THREAD_ID_WIDTH)-1):0] M_BID;
+   output [((C_M_AXI_USER_WIDTH)-1):0] M_BUSER;
+   output		M_ARREADY;
+   output		M_RVALID;
+   output [((C_M_AXI_DATA_WIDTH)-1):0] M_RDATA;
+   output [1:0]		M_RRESP;
+   output		M_RLAST;
+   output [((C_M_AXI_THREAD_ID_WIDTH)-1):0] M_RID;
+   output [((C_M_AXI_USER_WIDTH)-1):0] M_RUSER;
+   input		M_AWVALID;
+   input [((C_M_AXI_ADDR_WIDTH)-1):0] M_AWADDR;
+   input [2:0]		M_AWPROT;
+   input [3:0]		M_AWREGION;
+   input [7:0]		M_AWLEN;
+   input [2:0]		M_AWSIZE;
+   input [1:0]		M_AWBURST;
+   input		M_AWLOCK;
+   input [3:0]		M_AWCACHE;
+   input [3:0]		M_AWQOS;
+   input [((C_M_AXI_THREAD_ID_WIDTH)-1):0] M_AWID;
+   input [((C_M_AXI_USER_WIDTH)-1):0] M_AWUSER;
+   input		M_WVALID;
+   input [((C_M_AXI_DATA_WIDTH)-1):0] M_WDATA;
+   input [(((C_M_AXI_DATA_WIDTH/8))-1):0] M_WSTRB;
+   input		M_WLAST;
+   input [((C_M_AXI_USER_WIDTH)-1):0] M_WUSER;
+   input		M_BREADY;
+   input		M_ARVALID;
+   input [((C_M_AXI_ADDR_WIDTH)-1):0] M_ARADDR;
+   input [2:0]		M_ARPROT;
+   input [3:0]		M_ARREGION;
+   input [7:0]		M_ARLEN;
+   input [2:0]		M_ARSIZE;
+   input [1:0]		M_ARBURST;
+   input		M_ARLOCK;
+   input [3:0]		M_ARCACHE;
+   input [3:0]		M_ARQOS;
+   input [((C_M_AXI_THREAD_ID_WIDTH)-1):0] M_ARID;
+   input [((C_M_AXI_USER_WIDTH)-1):0] M_ARUSER;
+   input		M_RREADY;
+   // End of automatics
    
    /*AUTOREG*/
    // Beginning of automatic regs (for this module's undeclared outputs)
+   reg			M_BVALID;
+   reg [((C_M_AXI_DATA_WIDTH)-1):0] M_RDATA;
+   reg			M_RLAST;
+   reg			M_RVALID;
    reg [63:0]		m_Address;
    reg [5:0]		m_BurstCount;
    reg [15:0]		m_ByteEnable;
@@ -86,34 +149,41 @@ module m_tb (/*AUTOARG*/
    reg [127:0]		m_WriteData;
    reg [127:0]		s_ReadData;
    reg			s_ReadDataValid;
+   reg			s_WaitRequest;
    // End of automatics
-   
-   reg [127:0] rxm_data [0:1023];
-   wire [11:0] 		       rxm_addr;
-   reg [11:0] 		       rxm_raddr;
+
+   // SLAVE 
+   reg [127:0] 		rxm_data [0:1023];
+   wire [11:0] 		rxm_addr;
+   reg [11:0] 		rxm_raddr;
+   reg 			master_ready = 1'b0;   
    always @(posedge user_clk)
      begin
-	if (s_Write)
+	if (M_WVALID)
 	  begin
-	     rxm_data[rxm_addr] <= s_WriteData;
+	     rxm_data[rxm_addr] <= M_WDATA;
+	     master_ready       <= M_AWADDR[15:0] == 16'h70 && M_WDATA[127:96] == 32'hAA55_55AA;
 	  end
-	rxm_raddr       <= rxm_addr;
-	s_ReadData      <= rxm_data[rxm_raddr];
-	s_ReadDataValid <= s_Read;
+	rxm_raddr    <= M_ARADDR;
+	M_RDATA      <= rxm_data[rxm_raddr];
+	M_RVALID     <= s_Read;
+	M_RLAST      <= s_Read;
      end
-   assign rxm_addr      = s_Address;
-   assign s_WaitRequest = 1'b0;
-
+   assign rxm_addr      = M_AWADDR;
+   
+   assign M_ARREADY     = 1'b1;
+   assign M_AWREADY     = 1'b1;
+   assign M_WREADY      = 1'b1;
+   
+   assign M_BID         = 0;
+   assign M_BRESP       = 0;
+   assign M_BUSER       = 0;
+   assign M_RID         = 0;
+   assign M_RRESP       = 0;
+   assign M_RUSER       = 0;
+   
+   // MASTER
    integer i, j, cnt = 65536;
-   reg master_ready;
-   always @(posedge user_clk)
-     begin
-	if (s_Write && s_Address[15:0] == 16'h70 && s_WriteData[127:96] == 32'hAA55_55AA)
-	  begin
-	     master_ready <= #1 1'b1;
-	  end
-     end // always @ (posedge user_clk)
-
    initial begin
       master_ready = 1'b0;
 
@@ -168,5 +238,10 @@ module m_tb (/*AUTOARG*/
    end
    
 endmodule
+// Local Variables:
+// verilog-library-directories:("altpciexpav128")
+// verilog-library-files:(".""sata_phy")
+// verilog-library-extensions:(".v" ".h")
+// End:
 // 
 // tb.v ends here
