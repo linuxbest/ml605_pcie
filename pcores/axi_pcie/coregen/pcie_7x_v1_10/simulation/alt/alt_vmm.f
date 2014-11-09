@@ -18,6 +18,7 @@
 ../alt/altpciexpav128/altpciexpav128_rx_cntrl.v
 ../alt/altpciexpav128/altpciexpav128_rx_resp.v
 ../alt/altpciexpav128/altpciexpav128_rxm_adapter.v
+../alt/altpciexpav128/altpciexpav128_rxm_axi.v
 ../alt/altpciexpav128/altpciexpav128_tx.v
 ../alt/altpciexpav128/altpciexpav128_tx_cntrl.v
 ../alt/altpciexpav128/altpciexpav128_txavl_cntrl.v

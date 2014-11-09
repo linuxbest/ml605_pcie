@@ -72,7 +72,12 @@ module altpciexpav128_app
      parameter              CB_RXM_DATA_WIDTH = 128,
      parameter              port_type_hwtcl   = "Native endpoint",
      parameter 							AVALON_ADDR_WIDTH = 32,
-     parameter 							BYPASSS_A2P_TRANSLATION = 0
+     parameter 							BYPASSS_A2P_TRANSLATION = 0,
+
+   parameter C_M_AXI_ADDR_WIDTH      = 64,
+   parameter C_M_AXI_DATA_WIDTH      = 128,
+   parameter C_M_AXI_THREAD_ID_WIDTH = 3,
+   parameter C_M_AXI_USER_WIDTH      = 3
      
   )  
      
@@ -238,8 +243,53 @@ output                                 tx_cons_cred_sel,
 
 input   [4:0]                          ltssm_state,
 input   [1:0]                          current_speed,
-input   [3:0]                          lane_act
+input   [3:0]                          lane_act,
 
+    output 					M_AWVALID,
+    output [((C_M_AXI_ADDR_WIDTH) - 1):0] 	M_AWADDR,
+    output [2:0] 				M_AWPROT,
+    output [3:0] 				M_AWREGION,
+    output [7:0] 				M_AWLEN,
+    output [2:0] 				M_AWSIZE,
+    output [1:0] 				M_AWBURST,
+    output 					M_AWLOCK,
+    output [3:0] 				M_AWCACHE,
+    output [3:0] 				M_AWQOS,
+    output [((C_M_AXI_THREAD_ID_WIDTH) - 1):0] 	M_AWID,
+    output [((C_M_AXI_USER_WIDTH) - 1):0] 	M_AWUSER,
+    input 					M_AWREADY,
+    output 					M_WVALID,
+    output [((C_M_AXI_DATA_WIDTH) - 1):0] 	M_WDATA,
+    output [(((C_M_AXI_DATA_WIDTH / 8)) - 1):0] M_WSTRB,
+    output 					M_WLAST,
+    output [((C_M_AXI_USER_WIDTH) - 1):0] 	M_WUSER,
+    input 					M_WREADY,
+    input 					M_BVALID,
+    input [1:0] 				M_BRESP,
+    input [((C_M_AXI_THREAD_ID_WIDTH) - 1):0] 	M_BID,
+    input [((C_M_AXI_USER_WIDTH) - 1):0] 	M_BUSER,
+    output 					M_BREADY,
+   
+    output 					M_ARVALID,
+    output [((C_M_AXI_ADDR_WIDTH) - 1):0] 	M_ARADDR,
+    output [2:0] 				M_ARPROT,
+    output [3:0] 				M_ARREGION,
+    output [7:0] 				M_ARLEN,
+    output [2:0] 				M_ARSIZE,
+    output [1:0] 				M_ARBURST,
+    output 					M_ARLOCK,
+    output [3:0] 				M_ARCACHE,
+    output [3:0] 				M_ARQOS,
+    output [((C_M_AXI_THREAD_ID_WIDTH) - 1):0] 	M_ARID,
+    output [((C_M_AXI_USER_WIDTH) - 1):0] 	M_ARUSER,
+    input 					M_ARREADY,
+    input 					M_RVALID,
+    input [((C_M_AXI_DATA_WIDTH) - 1):0] 	M_RDATA,
+    input [1:0] 				M_RRESP,
+    input 					M_RLAST,
+    input [((C_M_AXI_THREAD_ID_WIDTH) - 1):0] 	M_RID,
+    input [((C_M_AXI_USER_WIDTH) - 1):0] 	M_RUSER,
+    output 					M_RREADY
 
 /// Parmeter signals
 
@@ -298,7 +348,7 @@ wire                                   rstn_reg;
 reg                                    rstn_rr;
 reg                                    rstn_r;
 wire                                   rxm_read_data_valid;
-reg  [127:0]                           rxm_read_data;
+wire  [127:0]                          rxm_read_data;
 wire  [5:0]                            read_valid_vector;
 wire                                   rxm_read_data_valid_0;
 wire                                   rxm_wait_request_0;
@@ -415,25 +465,6 @@ else
   end
 endgenerate
 
-assign rxm_read_data_valid =  rxm_read_data_valid_0 | rxm_read_data_valid_1 | rxm_read_data_valid_2 | rxm_read_data_valid_3 |
-                              rxm_read_data_valid_4 | rxm_read_data_valid_5;
-                              
-assign read_valid_vector  = {rxm_read_data_valid_5, rxm_read_data_valid_4, rxm_read_data_valid_3, rxm_read_data_valid_2, rxm_read_data_valid_1, rxm_read_data_valid_0};
-
-always @*
-  begin
-    case (read_valid_vector)
-        6'b000001 : rxm_read_data = rxm_read_data_0[127:0];
-        6'b000010 : rxm_read_data = rxm_read_data_1[127:0];
-        6'b000100 : rxm_read_data = rxm_read_data_2[127:0];
-        6'b001000 : rxm_read_data = rxm_read_data_3[127:0];
-        6'b010000 : rxm_read_data = rxm_read_data_4[127:0];
-        6'b100000 : rxm_read_data = rxm_read_data_5[127:0];
-        default   : rxm_read_data = 64'h0;
-  endcase
-end
-
- 
 always @(posedge AvlClk_i or negedge rstn_reg)
   begin
     if(~rstn_reg)
@@ -494,8 +525,14 @@ altpciexpav128_rx
      .CB_RXM_DATA_WIDTH(CB_RXM_DATA_WIDTH),
      .CB_PCIE_RX_LITE(CB_PCIE_RX_LITE),
      .port_type_hwtcl(port_type_hwtcl),
-     .AVALON_ADDR_WIDTH (AVALON_ADDR_WIDTH)
-)
+     .AVALON_ADDR_WIDTH (AVALON_ADDR_WIDTH),
+
+     /*AUTOINSTPARAM*/
+   // Parameters
+   .C_M_AXI_ADDR_WIDTH			(C_M_AXI_ADDR_WIDTH),
+   .C_M_AXI_DATA_WIDTH			(C_M_AXI_DATA_WIDTH),
+   .C_M_AXI_THREAD_ID_WIDTH		(C_M_AXI_THREAD_ID_WIDTH),
+   .C_M_AXI_USER_WIDTH			(C_M_AXI_USER_WIDTH))
 rx
 
   ( .Clk_i(AvlClk_i),
@@ -584,8 +621,58 @@ rx
    .cb_p2a_avalon_addr_b4_i(CB_P2A_AVALON_ADDR_B4),
    .cb_p2a_avalon_addr_b5_i(CB_P2A_AVALON_ADDR_B5),
    .cb_p2a_avalon_addr_b6_i(CB_P2A_AVALON_ADDR_B6),
-   .k_bar_i(k_bar)
-  );		
+   .k_bar_i(k_bar),
+
+   /*AUTOINST*/
+   // Outputs
+   .rxm_read_data			(rxm_read_data[127:0]),
+   .rxm_read_data_valid			(rxm_read_data_valid),
+   .M_AWVALID				(M_AWVALID),
+   .M_AWADDR				(M_AWADDR[((C_M_AXI_ADDR_WIDTH)-1):0]),
+   .M_AWPROT				(M_AWPROT[2:0]),
+   .M_AWREGION				(M_AWREGION[3:0]),
+   .M_AWLEN				(M_AWLEN[7:0]),
+   .M_AWSIZE				(M_AWSIZE[2:0]),
+   .M_AWBURST				(M_AWBURST[1:0]),
+   .M_AWLOCK				(M_AWLOCK),
+   .M_AWCACHE				(M_AWCACHE[3:0]),
+   .M_AWQOS				(M_AWQOS[3:0]),
+   .M_AWID				(M_AWID[((C_M_AXI_THREAD_ID_WIDTH)-1):0]),
+   .M_AWUSER				(M_AWUSER[((C_M_AXI_USER_WIDTH)-1):0]),
+   .M_WVALID				(M_WVALID),
+   .M_WDATA				(M_WDATA[((C_M_AXI_DATA_WIDTH)-1):0]),
+   .M_WSTRB				(M_WSTRB[(((C_M_AXI_DATA_WIDTH/8))-1):0]),
+   .M_WLAST				(M_WLAST),
+   .M_WUSER				(M_WUSER[((C_M_AXI_USER_WIDTH)-1):0]),
+   .M_BREADY				(M_BREADY),
+   .M_ARVALID				(M_ARVALID),
+   .M_ARADDR				(M_ARADDR[((C_M_AXI_ADDR_WIDTH)-1):0]),
+   .M_ARPROT				(M_ARPROT[2:0]),
+   .M_ARREGION				(M_ARREGION[3:0]),
+   .M_ARLEN				(M_ARLEN[7:0]),
+   .M_ARSIZE				(M_ARSIZE[2:0]),
+   .M_ARBURST				(M_ARBURST[1:0]),
+   .M_ARLOCK				(M_ARLOCK),
+   .M_ARCACHE				(M_ARCACHE[3:0]),
+   .M_ARQOS				(M_ARQOS[3:0]),
+   .M_ARID				(M_ARID[((C_M_AXI_THREAD_ID_WIDTH)-1):0]),
+   .M_ARUSER				(M_ARUSER[((C_M_AXI_USER_WIDTH)-1):0]),
+   .M_RREADY				(M_RREADY),
+   // Inputs
+   .RxmRstn_i				(RxmRstn_i),
+   .M_AWREADY				(M_AWREADY),
+   .M_WREADY				(M_WREADY),
+   .M_BVALID				(M_BVALID),
+   .M_BRESP				(M_BRESP[1:0]),
+   .M_BID				(M_BID[((C_M_AXI_THREAD_ID_WIDTH)-1):0]),
+   .M_BUSER				(M_BUSER[((C_M_AXI_USER_WIDTH)-1):0]),
+   .M_ARREADY				(M_ARREADY),
+   .M_RVALID				(M_RVALID),
+   .M_RDATA				(M_RDATA[((C_M_AXI_DATA_WIDTH)-1):0]),
+   .M_RRESP				(M_RRESP[1:0]),
+   .M_RLAST				(M_RLAST),
+   .M_RID				(M_RID[((C_M_AXI_THREAD_ID_WIDTH)-1):0]),
+   .M_RUSER				(M_RUSER[((C_M_AXI_USER_WIDTH)-1):0]));		
 
 
 /// instantiate the Tx module
