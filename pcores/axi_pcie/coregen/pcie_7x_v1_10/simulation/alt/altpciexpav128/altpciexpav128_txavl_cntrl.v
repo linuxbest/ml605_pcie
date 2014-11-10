@@ -419,8 +419,8 @@ assign WrDatFifoEop_o   = sm_burst_data & ( (pcie_boundary == 1 | burst_counter 
 assign txready = sm_burst_data | (sm_idle & S_ARVALID & reads_cntr < 8 & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready) ; // do not assert ready when IRQ pending
 
 /* Write Address & Read Address */
-assign S_AWREADY = (sm_idle & S_AWVALID & wr_fifos_ok & ~rx_only     & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready & write_gnt);
-assign S_ARREADY = (sm_idle & S_ARVALID & ~rx_only & reads_cntr < 8  & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready & ~write_gnt);
+assign S_AWREADY = (sm_idle & txavl_nxt_state == TXAVL_WAIT_WRADDR);
+assign S_ARREADY = (sm_idle & txavl_nxt_state == TXAVL_WAIT_RDADDR);
 
    /* Write Data */
    assign S_WREADY  = sm_burst_data;
@@ -1013,7 +1013,7 @@ always @ *
 
 
 
-assign pendingrd_fifo_wrreq = (sm_idle & S_ARVALID & ~TxWaitRequest_o & reads_cntr < 8 & ~rxm_irq_sreg & ~trans_ready & ~write_gnt); // no read accepted when IRQ pending
+assign pendingrd_fifo_wrreq = (sm_idle & txavl_nxt_state == TXAVL_WAIT_RDADDR); // no read accepted when IRQ pending
 assign pendingrd_fifo_rdreq = (!pendingrd_state[0] & !pendingrd_fifo_rdempty) | (pendingrd_check_state & ~pendingrd_fifo_rdempty & (read_valid_counter == pendingrd_fifo_q_reg));
 assign pendingrd_check_state = pendingrd_state[2];
 assign pendingrd_fifo_latch  = pendingrd_state[1];
@@ -1067,7 +1067,7 @@ always @(posedge AvlClk_i or negedge Rstn_i)
       pendingrd_fifo_q_reg <= pendingrd_fifo_q;
   end
 
-assign reads_up       = (sm_idle & S_ARVALID &  ~TxWaitRequest_o & reads_cntr < 8 & ~rxm_irq_sreg & ~trans_ready & ~write_gnt); // no read accepted when IRQ pending
+assign reads_up       = (sm_idle & txavl_nxt_state == TXAVL_WAIT_RDADDR); // no read accepted when IRQ pending
 assign terminal_count = (read_valid_counter == pendingrd_fifo_q_reg);
 
 always @(posedge AvlClk_i or negedge Rstn_i)

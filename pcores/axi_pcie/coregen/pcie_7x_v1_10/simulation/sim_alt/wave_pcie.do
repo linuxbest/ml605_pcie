@@ -267,29 +267,29 @@ eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}txavl${ps}PCIeAddr_i(63 downt
 eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}txavl${ps}PCIeAddr_i(31 downto 0)\"
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}txavl${ps}AddrTransDone_i
 
-eval add wave -noupdate -divider {"Avalon Master"}
-eval add wave -noupdate $binopt $pcie${ps}TxsClk_i
-eval add wave -noupdate $binopt $pcie${ps}TxsRstn_i
-
-eval add wave -noupdate $binopt $pcie${ps}TxsChipSelect_i
-eval add wave -noupdate $binopt $pcie${ps}TxsRead_i
-eval add wave -noupdate $binopt $pcie${ps}TxsWrite_i
-eval add wave -noupdate $binopt $pcie${ps}TxsWaitRequest_o
-eval add wave -noupdate $hexopt $pcie${ps}TxsBurstCount_i
-eval add wave -noupdate $hexopt $pcie${ps}TxsAddress_i
-
-eval add wave -noupdate $hexopt $pcie${ps}TxsByteEnable_i
-eval add wave -noupdate $hexopt \"$pcie${ps}TxsWriteData_i(127 downto 96)\"
-eval add wave -noupdate $hexopt \"$pcie${ps}TxsWriteData_i(95 downto 64)\"
-eval add wave -noupdate $hexopt \"$pcie${ps}TxsWriteData_i(63 downto 32)\"
-eval add wave -noupdate $hexopt \"$pcie${ps}TxsWriteData_i(31 downto 0)\"
-
-eval add wave -noupdate $binopt $pcie${ps}TxsReadDataValid_o
-eval add wave -noupdate $hexopt \"$pcie${ps}TxsReadData_o(127 downto 96)\"
-eval add wave -noupdate $hexopt \"$pcie${ps}TxsReadData_o(95 downto 64)\"
-eval add wave -noupdate $hexopt \"$pcie${ps}TxsReadData_o(63 downto 32)\"
-eval add wave -noupdate $hexopt \"$pcie${ps}TxsReadData_o(31 downto 0)\"
-
+#eval add wave -noupdate -divider {"Avalon Master"}
+#eval add wave -noupdate $binopt $pcie${ps}TxsClk_i
+#eval add wave -noupdate $binopt $pcie${ps}TxsRstn_i
+#
+#eval add wave -noupdate $binopt $pcie${ps}TxsChipSelect_i
+#eval add wave -noupdate $binopt $pcie${ps}TxsRead_i
+#eval add wave -noupdate $binopt $pcie${ps}TxsWrite_i
+#eval add wave -noupdate $binopt $pcie${ps}TxsWaitRequest_o
+#eval add wave -noupdate $hexopt $pcie${ps}TxsBurstCount_i
+#eval add wave -noupdate $hexopt $pcie${ps}TxsAddress_i
+#
+#eval add wave -noupdate $hexopt $pcie${ps}TxsByteEnable_i
+#eval add wave -noupdate $hexopt \"$pcie${ps}TxsWriteData_i(127 downto 96)\"
+#eval add wave -noupdate $hexopt \"$pcie${ps}TxsWriteData_i(95 downto 64)\"
+#eval add wave -noupdate $hexopt \"$pcie${ps}TxsWriteData_i(63 downto 32)\"
+#eval add wave -noupdate $hexopt \"$pcie${ps}TxsWriteData_i(31 downto 0)\"
+#
+#eval add wave -noupdate $binopt $pcie${ps}TxsReadDataValid_o
+#eval add wave -noupdate $hexopt \"$pcie${ps}TxsReadData_o(127 downto 96)\"
+#eval add wave -noupdate $hexopt \"$pcie${ps}TxsReadData_o(95 downto 64)\"
+#eval add wave -noupdate $hexopt \"$pcie${ps}TxsReadData_o(63 downto 32)\"
+#eval add wave -noupdate $hexopt \"$pcie${ps}TxsReadData_o(31 downto 0)\"
+#
 set axi_bus $pcie${ps}
 set title "AXI Slave "
 set name S

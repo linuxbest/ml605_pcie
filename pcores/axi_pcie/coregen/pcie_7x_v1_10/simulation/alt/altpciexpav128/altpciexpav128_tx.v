@@ -495,7 +495,7 @@ begin: wrdat_fifo
 		       // Inputs
 		       .clk		(Clk_i),
 		       .rst_n		(Rstn_i),
-		       .din		({wrdat_fifo_eop,TxWriteData_i}),
+		       .din		({wrdat_fifo_eop,S_WDATA}),
 		       .wr_en		(wrdat_fifo_wrreq),
 		       .rd_en		(wrdat_fifo_rdreq),
 		       .mark_addr	(0),

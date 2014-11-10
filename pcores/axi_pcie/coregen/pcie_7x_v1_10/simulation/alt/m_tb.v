@@ -291,7 +291,7 @@ module m_tb (/*AUTOARG*/
 
       S_RREADY           = 1;
       
-      while (master_ready == 0 || 1)
+      while (master_ready == 0)
 	@(posedge user_clk);
 
       for (j = 0; j < cnt; j = j + 1) begin    
@@ -345,8 +345,21 @@ module m_tb (/*AUTOARG*/
 	 @(posedge user_clk);
 	 while (S_AWREADY == 0)
 	   @(posedge user_clk);
-
 	 S_AWVALID = 0;
+	 
+	 for (i = 0; i < S_AWLEN + 1; i = i + 1) begin
+	    S_WDATA[31:0]  = (i*4)+0;
+	    S_WDATA[63:32] = (i*4)+1;      
+	    S_WDATA[95:64] = (i*4)+2;
+	    S_WDATA[127:96]= (i*4)+3;
+	    S_WSTRB        = 16'hFF_FF;
+	    S_WVALID       = 1'b1;
+	    @(posedge user_clk);	    	    
+	    while (S_WREADY == 0)
+	      @(posedge user_clk);	    
+	 end
+	 S_WVALID  = 0;
+
 	 @(posedge user_clk);
 	 @(posedge user_clk);
 	 @(posedge user_clk);
