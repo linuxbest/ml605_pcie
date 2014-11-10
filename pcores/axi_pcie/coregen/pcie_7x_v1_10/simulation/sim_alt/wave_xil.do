@@ -37,6 +37,14 @@ eval add wave -noupdate $hexopt $pcie${ps}s_axis_tx_tkeep
 
 eval add wave -noupdate $hexopt $pcie${ps}cfg_completer_id
 
+eval add wave -noupdate $hexopt $pcie${ps}fc_cpld
+eval add wave -noupdate $hexopt $pcie${ps}fc_cplh
+eval add wave -noupdate $hexopt $pcie${ps}fc_npd
+eval add wave -noupdate $hexopt $pcie${ps}fc_nph
+eval add wave -noupdate $hexopt $pcie${ps}fc_pd
+eval add wave -noupdate $hexopt $pcie${ps}fc_ph
+eval add wave -noupdate $hexopt $pcie${ps}fc_sel
+
 eval add wave -noupdate -divider {"Slave"}
 eval add wave -noupdate $binopt $pcie${ps}user_clk
 eval add wave -noupdate $binopt $pcie${ps}user_reset

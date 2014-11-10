@@ -46,29 +46,30 @@
 module altpcie_avl (/*AUTOARG*/
    // Outputs
    s_WriteData, s_Write, s_Read, s_ByteEnable, s_BurstCount,
-   s_Address, m_WaitRequest, m_ReadDataValid, m_ReadData, S_WREADY,
-   S_RVALID, S_RUSER, S_RRESP, S_RLAST, S_RID, S_RDATA, S_BVALID,
-   S_BUSER, S_BRESP, S_BID, S_AWREADY, S_ARREADY, M_WVALID, M_WUSER,
-   M_WSTRB, M_WLAST, M_WDATA, M_RREADY, M_BREADY, M_AWVALID, M_AWUSER,
-   M_AWSIZE, M_AWREGION, M_AWQOS, M_AWPROT, M_AWLOCK, M_AWLEN, M_AWID,
-   M_AWCACHE, M_AWBURST, M_AWADDR, M_ARVALID, M_ARUSER, M_ARSIZE,
-   M_ARREGION, M_ARQOS, M_ARPROT, M_ARLOCK, M_ARLEN, M_ARID,
-   M_ARCACHE, M_ARBURST, M_ARADDR, s_axis_tx_tdata, s_axis_tx_tkeep,
-   s_axis_tx_tlast, s_axis_tx_tvalid, tx_src_dsc, m_axis_rx_tready,
-   cfg_turnoff_ok,
+   s_Address, m_WaitRequest, m_ReadDataValid, m_ReadData, fc_sel,
+   S_WREADY, S_RVALID, S_RUSER, S_RRESP, S_RLAST, S_RID, S_RDATA,
+   S_BVALID, S_BUSER, S_BRESP, S_BID, S_AWREADY, S_ARREADY, M_WVALID,
+   M_WUSER, M_WSTRB, M_WLAST, M_WDATA, M_RREADY, M_BREADY, M_AWVALID,
+   M_AWUSER, M_AWSIZE, M_AWREGION, M_AWQOS, M_AWPROT, M_AWLOCK,
+   M_AWLEN, M_AWID, M_AWCACHE, M_AWBURST, M_AWADDR, M_ARVALID,
+   M_ARUSER, M_ARSIZE, M_ARREGION, M_ARQOS, M_ARPROT, M_ARLOCK,
+   M_ARLEN, M_ARID, M_ARCACHE, M_ARBURST, M_ARADDR, s_axis_tx_tdata,
+   s_axis_tx_tkeep, s_axis_tx_tlast, s_axis_tx_tvalid, tx_src_dsc,
+   m_axis_rx_tready, cfg_turnoff_ok,
    // Inputs
    s_WaitRequest, s_ReadDataValid, s_ReadData, m_WriteData, m_Write,
-   m_Read, m_ChipSelect, m_ByteEnable, m_BurstCount, m_Address,
-   S_WVALID, S_WUSER, S_WSTRB, S_WLAST, S_WDATA, S_RREADY, S_BREADY,
-   S_AWVALID, S_AWUSER, S_AWSIZE, S_AWREGION, S_AWQOS, S_AWPROT,
-   S_AWLOCK, S_AWLEN, S_AWID, S_AWCACHE, S_AWBURST, S_AWADDR,
-   S_ARVALID, S_ARUSER, S_ARSIZE, S_ARREGION, S_ARQOS, S_ARPROT,
-   S_ARLOCK, S_ARLEN, S_ARID, S_ARCACHE, S_ARBURST, S_ARADDR,
-   M_WREADY, M_RVALID, M_RUSER, M_RRESP, M_RLAST, M_RID, M_RDATA,
-   M_BVALID, M_BUSER, M_BRESP, M_BID, M_AWREADY, M_ARREADY, user_clk,
-   user_reset, user_lnk_up, s_axis_tx_tready, m_axis_rx_tdata,
-   m_axis_rx_tkeep, m_axis_rx_tlast, m_axis_rx_tvalid,
-   m_axis_rx_tuser, cfg_to_turnoff, cfg_completer_id
+   m_Read, m_ChipSelect, m_ByteEnable, m_BurstCount, m_Address, fc_ph,
+   fc_pd, fc_nph, fc_npd, fc_cplh, fc_cpld, S_WVALID, S_WUSER,
+   S_WSTRB, S_WLAST, S_WDATA, S_RREADY, S_BREADY, S_AWVALID, S_AWUSER,
+   S_AWSIZE, S_AWREGION, S_AWQOS, S_AWPROT, S_AWLOCK, S_AWLEN, S_AWID,
+   S_AWCACHE, S_AWBURST, S_AWADDR, S_ARVALID, S_ARUSER, S_ARSIZE,
+   S_ARREGION, S_ARQOS, S_ARPROT, S_ARLOCK, S_ARLEN, S_ARID,
+   S_ARCACHE, S_ARBURST, S_ARADDR, M_WREADY, M_RVALID, M_RUSER,
+   M_RRESP, M_RLAST, M_RID, M_RDATA, M_BVALID, M_BUSER, M_BRESP,
+   M_BID, M_AWREADY, M_ARREADY, user_clk, user_reset, user_lnk_up,
+   s_axis_tx_tready, m_axis_rx_tdata, m_axis_rx_tkeep,
+   m_axis_rx_tlast, m_axis_rx_tvalid, m_axis_rx_tuser, cfg_to_turnoff,
+   cfg_completer_id
    );
 
    parameter C_DATA_WIDTH = 128;
@@ -155,6 +156,12 @@ module altpcie_avl (/*AUTOARG*/
    input [(((C_S_AXI_DATA_WIDTH/8))-1):0] S_WSTRB;// To altpciexpav128_app of altpciexpav128_app.v
    input [((C_S_AXI_USER_WIDTH)-1):0] S_WUSER;	// To altpciexpav128_app of altpciexpav128_app.v
    input		S_WVALID;		// To altpciexpav128_app of altpciexpav128_app.v
+   input [11:0]		fc_cpld;		// To altpcie_stub of altpcie_stub.v
+   input [7:0]		fc_cplh;		// To altpcie_stub of altpcie_stub.v
+   input [11:0]		fc_npd;			// To altpcie_stub of altpcie_stub.v
+   input [7:0]		fc_nph;			// To altpcie_stub of altpcie_stub.v
+   input [11:0]		fc_pd;			// To altpcie_stub of altpcie_stub.v
+   input [7:0]		fc_ph;			// To altpcie_stub of altpcie_stub.v
    input [63:0]		m_Address;		// To altpcie_stub of altpcie_stub.v
    input [5:0]		m_BurstCount;		// To altpcie_stub of altpcie_stub.v
    input [15:0]		m_ByteEnable;		// To altpcie_stub of altpcie_stub.v
@@ -212,6 +219,7 @@ module altpcie_avl (/*AUTOARG*/
    output [((C_S_AXI_USER_WIDTH)-1):0] S_RUSER;	// From altpciexpav128_app of altpciexpav128_app.v
    output		S_RVALID;		// From altpciexpav128_app of altpciexpav128_app.v
    output		S_WREADY;		// From altpciexpav128_app of altpciexpav128_app.v
+   output [2:0]		fc_sel;			// From altpcie_stub of altpcie_stub.v
    output [127:0]	m_ReadData;		// From altpcie_stub of altpcie_stub.v
    output		m_ReadDataValid;	// From altpcie_stub of altpcie_stub.v
    output		m_WaitRequest;		// From altpcie_stub of altpcie_stub.v
@@ -1049,6 +1057,7 @@ localparam CB_A2P_ADDR_MAP_FIXED_TABLE     = { CB_A2P_ADDR_MAP_FIXED_TABLE_15_HI
 		  .ltssm_state		(ltssm_state[4:0]),
 		  .pld_clk_inuse	(pld_clk_inuse),
 		  .TxAdapterFifoEmpty_i	(TxAdapterFifoEmpty_i),
+		  .fc_sel		(fc_sel[2:0]),
 		  .s_axis_tx_tdata	(s_axis_tx_tdata[C_DATA_WIDTH-1:0]),
 		  .s_axis_tx_tkeep	(s_axis_tx_tkeep[KEEP_WIDTH-1:0]),
 		  .s_axis_tx_tlast	(s_axis_tx_tlast),
@@ -1127,6 +1136,12 @@ localparam CB_A2P_ADDR_MAP_FIXED_TABLE     = { CB_A2P_ADDR_MAP_FIXED_TABLE_15_HI
 		  .user_clk		(user_clk),
 		  .user_reset		(user_reset),
 		  .user_lnk_up		(user_lnk_up),
+		  .fc_cpld		(fc_cpld[11:0]),
+		  .fc_cplh		(fc_cplh[7:0]),
+		  .fc_npd		(fc_npd[11:0]),
+		  .fc_nph		(fc_nph[7:0]),
+		  .fc_pd		(fc_pd[11:0]),
+		  .fc_ph		(fc_ph[7:0]),
 		  .s_axis_tx_tready	(s_axis_tx_tready),
 		  .m_axis_rx_tdata	(m_axis_rx_tdata[C_DATA_WIDTH-1:0]),
 		  .m_axis_rx_tkeep	(m_axis_rx_tkeep[KEEP_WIDTH-1:0]),

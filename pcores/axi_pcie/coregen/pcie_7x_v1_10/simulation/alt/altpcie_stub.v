@@ -62,7 +62,7 @@ module altpcie_stub (/*AUTOARG*/
    RxStEmpty_i, RxStErr_i, RxStSop_i, RxStEop_i, RxStValid_i,
    RxStBarDec1_i, RxStBarDec2_i, AvlClk_i, Rstn_i, IntxAck_i,
    RxIntStatus_i, current_speed, ko_cpl_spc_data, ko_cpl_spc_header,
-   lane_act, ltssm_state, pld_clk_inuse, TxAdapterFifoEmpty_i,
+   lane_act, ltssm_state, pld_clk_inuse, TxAdapterFifoEmpty_i, fc_sel,
    s_axis_tx_tdata, s_axis_tx_tkeep, s_axis_tx_tlast,
    s_axis_tx_tvalid, tx_src_dsc, cfg_turnoff_ok, m_axis_rx_tready,
    m_WaitRequest, m_ReadData, m_ReadDataValid, s_Read, s_Write,
@@ -83,7 +83,8 @@ module altpcie_stub (/*AUTOARG*/
    CraWaitRequest_o, CraIrq_o, MsiReq_o, MsiTc_o, MsiNum_o,
    MsiIntfc_o, MsiControl_o, MsixIntfc_o, RxStReady_o, RxStMask_o,
    IntxReq_o, tx_cons_cred_sel, CplPending_o, user_clk, user_reset,
-   user_lnk_up, s_axis_tx_tready, m_axis_rx_tdata, m_axis_rx_tkeep,
+   user_lnk_up, fc_cpld, fc_cplh, fc_npd, fc_nph, fc_pd, fc_ph,
+   s_axis_tx_tready, m_axis_rx_tdata, m_axis_rx_tkeep,
    m_axis_rx_tlast, m_axis_rx_tvalid, m_axis_rx_tuser, m_ChipSelect,
    m_Read, m_Write, m_BurstCount, m_ByteEnable, m_Address,
    m_WriteData, s_WaitRequest, s_ReadData, s_ReadDataValid
@@ -281,6 +282,15 @@ module altpcie_stub (/*AUTOARG*/
    
    assign TxAdapterFifoEmpty_i = 0;
 
+   input [11:0] 	fc_cpld;
+   input [7:0] 		fc_cplh;
+   input [11:0] 	fc_npd;
+   input [7:0] 		fc_nph;
+   input [11:0] 	fc_pd;
+   input [7:0] 		fc_ph;
+   output [2:0] 	fc_sel;
+   assign fc_sel = 3'b001;
+   
    assign TxCredCplDataLimit_i = ~0;
    assign TxCredCplHdrLimit_i  = ~0;
    assign TxCredHipCons_i      = ~0;
@@ -402,6 +412,11 @@ module altpcie_stub (/*AUTOARG*/
    assign RxmWaitRequest_3_i   = 0;
    assign RxmWaitRequest_4_i   = 0;
    assign RxmWaitRequest_5_i   = 0;
-endmodule
+endmodule // altpcie_stub
+// Local Variables:
+// verilog-library-directories:("altpciexpav128")
+// verilog-library-files:(".""sata_phy")
+// verilog-library-extensions:(".v" ".h")
+// End:
 // 
 // altpcie_stub.v ends here

@@ -30,8 +30,15 @@ module PIO #(
   input                         cfg_to_turnoff,
   output                        cfg_turnoff_ok,
 
-  input [15:0]                  cfg_completer_id
+  input [15:0]                  cfg_completer_id,
 
+  input  [11:0]                 fc_cpld,
+  input  [7:0]                  fc_cplh,
+  input  [11:0]                 fc_npd,
+  input  [7:0]                  fc_nph,
+  input  [11:0]                 fc_pd,
+  input  [7:0]                  fc_ph,
+  output [2:0]                  fc_sel
 );
    
    localparam C_M_AXI_ADDR_WIDTH      = 64;
@@ -219,6 +226,7 @@ module PIO #(
 		 .S_RUSER		(S_RUSER[((C_S_AXI_USER_WIDTH)-1):0]),
 		 .S_RVALID		(S_RVALID),
 		 .S_WREADY		(S_WREADY),
+		 .fc_sel		(fc_sel[2:0]),
 		 .m_ReadData		(m_ReadData[127:0]),
 		 .m_ReadDataValid	(m_ReadDataValid),
 		 .m_WaitRequest		(m_WaitRequest),
@@ -284,6 +292,12 @@ module PIO #(
 		 .S_WSTRB		(S_WSTRB[(((C_S_AXI_DATA_WIDTH/8))-1):0]),
 		 .S_WUSER		(S_WUSER[((C_S_AXI_USER_WIDTH)-1):0]),
 		 .S_WVALID		(S_WVALID),
+		 .fc_cpld		(fc_cpld[11:0]),
+		 .fc_cplh		(fc_cplh[7:0]),
+		 .fc_npd		(fc_npd[11:0]),
+		 .fc_nph		(fc_nph[7:0]),
+		 .fc_pd			(fc_pd[11:0]),
+		 .fc_ph			(fc_ph[7:0]),
 		 .m_Address		(m_Address[63:0]),
 		 .m_BurstCount		(m_BurstCount[5:0]),
 		 .m_ByteEnable		(m_ByteEnable[15:0]),
