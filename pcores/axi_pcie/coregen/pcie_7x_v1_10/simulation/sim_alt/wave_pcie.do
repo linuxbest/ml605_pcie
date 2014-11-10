@@ -285,6 +285,10 @@ eval add wave -noupdate $hexopt \"$pcie${ps}TxsReadData_o(95 downto 64)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}TxsReadData_o(63 downto 32)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}TxsReadData_o(31 downto 0)\"
 
+set axi_bus $pcie${ps}
+set title "AXI Slave "
+set name S
+do wave_AXI.do
 
 #eval add wave -noupdate -divider {"PCIE pndgtxrd_fifo"}
 #set scfifo $pcie${ps}rx${ps}pndgtxrd_fifo${ps}pndgtxrd_fifo

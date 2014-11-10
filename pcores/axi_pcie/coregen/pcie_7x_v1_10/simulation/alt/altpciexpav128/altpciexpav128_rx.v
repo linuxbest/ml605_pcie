@@ -29,7 +29,12 @@ module altpciexpav128_rx
    parameter C_M_AXI_ADDR_WIDTH      = 64,
    parameter C_M_AXI_DATA_WIDTH      = 128,
    parameter C_M_AXI_THREAD_ID_WIDTH = 3,
-   parameter C_M_AXI_USER_WIDTH      = 3
+   parameter C_M_AXI_USER_WIDTH      = 3,
+   
+   parameter C_S_AXI_ADDR_WIDTH      = 64,
+   parameter C_S_AXI_DATA_WIDTH      = 128,
+   parameter C_S_AXI_THREAD_ID_WIDTH = 3,
+   parameter C_S_AXI_USER_WIDTH      = 3
 
 
 )
@@ -175,7 +180,15 @@ module altpciexpav128_rx
     input 					M_RLAST,
     input [((C_M_AXI_THREAD_ID_WIDTH) - 1):0] 	M_RID,
     input [((C_M_AXI_USER_WIDTH) - 1):0] 	M_RUSER,
-    output 					M_RREADY
+    output 					M_RREADY,
+
+    output 				       S_RVALID,
+    output [((C_S_AXI_DATA_WIDTH) - 1):0]      S_RDATA,
+    output [1:0] 			       S_RRESP,
+    output 				       S_RLAST,
+    output [((C_S_AXI_THREAD_ID_WIDTH) - 1):0] S_RID,
+    output [((C_S_AXI_USER_WIDTH) - 1):0]      S_RUSER,
+    input 				       S_RREADY
   );
 //define the clogb2 constant function
    function integer clogb2;
@@ -537,7 +550,7 @@ begin : cpl_ram
  
 assign TxReadData_o = cplram_data_out[127:0];
 assign cpl_eop = cplram_data_out[129];
-				
+
 end
   else
     begin
@@ -547,4 +560,43 @@ end
     
 endgenerate
 
+assign S_RLAST = cpl_eop;
+assign S_RDATA = TxReadData_o;
+assign S_RVALID= TxReadDataValid_o;
+
+wire rdata_empty;
+//assign S_RVALID = ~rdata_empty;
+
+assign S_RID    = 0;
+assign S_RUSER  = 0;
+assign S_RRESP  = 0;
+
+     sync_fifo #(
+		 // Parameters
+		 .WIDTH			(139),
+		 .DEPTH			(64),
+		 .STYLE			("BRAM"),
+		 .AFASSERT		(63),
+		 .AEASSERT		(1),
+		 .FWFT			(0),
+		 .SUP_REWIND		(0),
+		 .INIT_OUTREG		(0),
+		 .ADDRW			(6))
+     rddata_fifo (
+		       // Outputs
+		       //.dout		({S_RLAST, S_RDATA}),
+		       .full		(),
+		       .afull		(),
+		       .empty		(rdata_empty),
+		       .aempty		(),
+		       .data_count	(),
+		       // Inputs
+		       .clk		(Clk_i),
+		       .rst_n		(Rstn_i),
+		       .din		({cpl_eop, TxReadData_o}),
+		       .wr_en		(TxReadDataValid_o),
+		       .rd_en		(S_RREADY & ~rddata_empty),
+		       .mark_addr	(0),
+		       .clear_addr	(0),
+		       .rewind		(0));
 endmodule

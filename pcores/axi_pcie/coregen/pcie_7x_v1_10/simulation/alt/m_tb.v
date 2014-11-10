@@ -45,23 +45,34 @@
 // Code:
 module m_tb (/*AUTOARG*/
    // Outputs
+   S_AWVALID, S_AWADDR, S_AWPROT, S_AWREGION, S_AWLEN, S_AWSIZE,
+   S_AWBURST, S_AWLOCK, S_AWCACHE, S_AWQOS, S_AWID, S_AWUSER,
+   S_WVALID, S_WDATA, S_WSTRB, S_WLAST, S_WUSER, S_BREADY, S_ARVALID,
+   S_ARADDR, S_ARPROT, S_ARREGION, S_ARLEN, S_ARSIZE, S_ARBURST,
+   S_ARLOCK, S_ARCACHE, S_ARQOS, S_ARID, S_ARUSER, S_RREADY,
    M_AWREADY, M_WREADY, M_BVALID, M_BRESP, M_BID, M_BUSER, M_ARREADY,
    M_RVALID, M_RDATA, M_RRESP, M_RLAST, M_RID, M_RUSER, m_Address,
    m_BurstCount, m_ByteEnable, m_ChipSelect, m_Read, m_Write,
    m_WriteData, s_ReadData, s_ReadDataValid, s_WaitRequest,
    // Inputs
-   M_AWVALID, M_AWADDR, M_AWPROT, M_AWREGION, M_AWLEN, M_AWSIZE,
-   M_AWBURST, M_AWLOCK, M_AWCACHE, M_AWQOS, M_AWID, M_AWUSER,
-   M_WVALID, M_WDATA, M_WSTRB, M_WLAST, M_WUSER, M_BREADY, M_ARVALID,
-   M_ARADDR, M_ARPROT, M_ARREGION, M_ARLEN, M_ARSIZE, M_ARBURST,
-   M_ARLOCK, M_ARCACHE, M_ARQOS, M_ARID, M_ARUSER, M_RREADY, user_clk,
-   user_reset, m_ReadData, m_ReadDataValid, m_WaitRequest, s_Address,
+   S_AWREADY, S_WREADY, S_BVALID, S_BRESP, S_BID, S_BUSER, S_ARREADY,
+   S_RVALID, S_RDATA, S_RRESP, S_RLAST, S_RID, S_RUSER, M_AWVALID,
+   M_AWADDR, M_AWPROT, M_AWREGION, M_AWLEN, M_AWSIZE, M_AWBURST,
+   M_AWLOCK, M_AWCACHE, M_AWQOS, M_AWID, M_AWUSER, M_WVALID, M_WDATA,
+   M_WSTRB, M_WLAST, M_WUSER, M_BREADY, M_ARVALID, M_ARADDR, M_ARPROT,
+   M_ARREGION, M_ARLEN, M_ARSIZE, M_ARBURST, M_ARLOCK, M_ARCACHE,
+   M_ARQOS, M_ARID, M_ARUSER, M_RREADY, user_clk, user_reset,
+   m_ReadData, m_ReadDataValid, m_WaitRequest, s_Address,
    s_BurstCount, s_ByteEnable, s_Read, s_Write, s_WriteData
    );
    parameter C_M_AXI_ADDR_WIDTH      = 64;
    parameter C_M_AXI_DATA_WIDTH      = 128;
    parameter C_M_AXI_THREAD_ID_WIDTH = 3;
    parameter C_M_AXI_USER_WIDTH      = 3;
+   parameter C_S_AXI_ADDR_WIDTH      = 64;
+   parameter C_S_AXI_DATA_WIDTH      = 128;
+   parameter C_S_AXI_THREAD_ID_WIDTH = 3;
+   parameter C_S_AXI_USER_WIDTH      = 3;
    
    input user_clk;
    input user_reset;
@@ -133,6 +144,54 @@ module m_tb (/*AUTOARG*/
    input [((C_M_AXI_USER_WIDTH)-1):0] M_ARUSER;
    input		M_RREADY;
    // End of automatics
+
+   /*AUTOINOUTCOMP("altpciexpav128_app", "^S_")*/
+   // Beginning of automatic in/out/inouts (from specific module)
+   output		S_AWVALID;
+   output [((C_S_AXI_ADDR_WIDTH)-1):0] S_AWADDR;
+   output [2:0]		S_AWPROT;
+   output [3:0]		S_AWREGION;
+   output [7:0]		S_AWLEN;
+   output [2:0]		S_AWSIZE;
+   output [1:0]		S_AWBURST;
+   output		S_AWLOCK;
+   output [3:0]		S_AWCACHE;
+   output [3:0]		S_AWQOS;
+   output [((C_S_AXI_THREAD_ID_WIDTH)-1):0] S_AWID;
+   output [((C_S_AXI_USER_WIDTH)-1):0] S_AWUSER;
+   output		S_WVALID;
+   output [((C_S_AXI_DATA_WIDTH)-1):0] S_WDATA;
+   output [(((C_S_AXI_DATA_WIDTH/8))-1):0] S_WSTRB;
+   output		S_WLAST;
+   output [((C_S_AXI_USER_WIDTH)-1):0] S_WUSER;
+   output		S_BREADY;
+   output		S_ARVALID;
+   output [((C_S_AXI_ADDR_WIDTH)-1):0] S_ARADDR;
+   output [2:0]		S_ARPROT;
+   output [3:0]		S_ARREGION;
+   output [7:0]		S_ARLEN;
+   output [2:0]		S_ARSIZE;
+   output [1:0]		S_ARBURST;
+   output		S_ARLOCK;
+   output [3:0]		S_ARCACHE;
+   output [3:0]		S_ARQOS;
+   output [((C_S_AXI_THREAD_ID_WIDTH)-1):0] S_ARID;
+   output [((C_S_AXI_USER_WIDTH)-1):0] S_ARUSER;
+   output		S_RREADY;
+   input		S_AWREADY;
+   input		S_WREADY;
+   input		S_BVALID;
+   input [1:0]		S_BRESP;
+   input [((C_S_AXI_THREAD_ID_WIDTH)-1):0] S_BID;
+   input [((C_S_AXI_USER_WIDTH)-1):0] S_BUSER;
+   input		S_ARREADY;
+   input		S_RVALID;
+   input [((C_S_AXI_DATA_WIDTH)-1):0] S_RDATA;
+   input [1:0]		S_RRESP;
+   input		S_RLAST;
+   input [((C_S_AXI_THREAD_ID_WIDTH)-1):0] S_RID;
+   input [((C_S_AXI_USER_WIDTH)-1):0] S_RUSER;
+   // End of automatics
    
    /*AUTOREG*/
    // Beginning of automatic regs (for this module's undeclared outputs)
@@ -140,6 +199,37 @@ module m_tb (/*AUTOARG*/
    reg [((C_M_AXI_DATA_WIDTH)-1):0] M_RDATA;
    reg			M_RLAST;
    reg			M_RVALID;
+   reg [((C_S_AXI_ADDR_WIDTH)-1):0] S_ARADDR;
+   reg [1:0]		S_ARBURST;
+   reg [3:0]		S_ARCACHE;
+   reg [((C_S_AXI_THREAD_ID_WIDTH)-1):0] S_ARID;
+   reg [7:0]		S_ARLEN;
+   reg			S_ARLOCK;
+   reg [2:0]		S_ARPROT;
+   reg [3:0]		S_ARQOS;
+   reg [3:0]		S_ARREGION;
+   reg [2:0]		S_ARSIZE;
+   reg [((C_S_AXI_USER_WIDTH)-1):0] S_ARUSER;
+   reg			S_ARVALID;
+   reg [((C_S_AXI_ADDR_WIDTH)-1):0] S_AWADDR;
+   reg [1:0]		S_AWBURST;
+   reg [3:0]		S_AWCACHE;
+   reg [((C_S_AXI_THREAD_ID_WIDTH)-1):0] S_AWID;
+   reg [7:0]		S_AWLEN;
+   reg			S_AWLOCK;
+   reg [2:0]		S_AWPROT;
+   reg [3:0]		S_AWQOS;
+   reg [3:0]		S_AWREGION;
+   reg [2:0]		S_AWSIZE;
+   reg [((C_S_AXI_USER_WIDTH)-1):0] S_AWUSER;
+   reg			S_AWVALID;
+   reg			S_BREADY;
+   reg			S_RREADY;
+   reg [((C_S_AXI_DATA_WIDTH)-1):0] S_WDATA;
+   reg			S_WLAST;
+   reg [(((C_S_AXI_DATA_WIDTH/8))-1):0] S_WSTRB;
+   reg [((C_S_AXI_USER_WIDTH)-1):0] S_WUSER;
+   reg			S_WVALID;
    reg [63:0]		m_Address;
    reg [5:0]		m_BurstCount;
    reg [15:0]		m_ByteEnable;
@@ -183,60 +273,80 @@ module m_tb (/*AUTOARG*/
    assign M_RUSER       = 0;
    
    // MASTER
-   integer i, j, cnt = 65536;
+   integer i, j, m, cnt = 65536;
    initial begin
-      master_ready = 1'b0;
+      S_ARVALID          = 0;
+      S_ARADDR           = 0;
+      S_ARLEN            = 0;
+      S_ARSIZE           = 3'b100;
+      
+      S_ARPROT           = 0;
+      S_ARREGION         = 0;
+      S_ARBURST          = 2'b10;
+      S_ARLOCK           = 0;
+      S_ARCACHE          = 0;
+      S_ARQOS            = 0;
+      S_ARID             = 0;
+      S_ARUSER           = 0;
 
-      m_Address          = 0;
-      m_BurstCount       = 0;
-      m_ChipSelect       = 0;
-      m_Write            = 0;
-      m_Read             = 0;
-      m_WriteData        = 0;
-      m_ByteEnable       = 0;
-
-      m_Read             = 1'b0;
-      m_Write            = 1'b0;
+      S_RREADY           = 1;
       
       while (master_ready == 0)
 	@(posedge user_clk);
-	for (j = 0; j < cnt; j = j + 1) begin    
-      m_Address          = 32'h8000_0000;
-      m_ByteEnable       = 16'hFF_FF;
-      m_BurstCount       = 32;
-      m_Read             = 1'b1;
-      m_ChipSelect       = 1'b1;
-      while (m_WaitRequest == 1)
-	@(posedge user_clk)
 
-      m_Read             = 1'b0;      
-      m_Write            = 1'b0;
+      for (j = 0; j < cnt; j = j + 1) begin    
+	 S_ARADDR      = 32'h8000_0000;
+	 S_ARLEN       = 31;
+	 S_ARVALID     = 1;
+	 while (S_ARREADY == 0)
+	   @(posedge user_clk)
+
+	 S_ARVALID = 0;
+	 @(posedge user_clk);
+	 @(posedge user_clk);
+	 @(posedge user_clk);
+      end
+   end // initial begin
+
+   initial begin
+      S_AWVALID          = 0;
+      S_AWADDR           = 0;
+      S_AWLEN            = 0;
+      S_AWSIZE           = 3'b100;
       
-      @(posedge user_clk);
-      @(posedge user_clk);
-      @(posedge user_clk);
- 
-      m_Write            = 1'b1;
-      m_Read             = 1'b0;
+      S_AWPROT           = 0;
+      S_AWREGION         = 0;
+      S_AWBURST          = 2'b10;
+      S_AWLOCK           = 0;
+      S_AWCACHE          = 0;
+      S_AWQOS            = 0;
+      S_AWID             = 0;
+      S_AWUSER           = 0;
+      
+      S_BREADY           = 1;
 
-      for (i = 0; i < m_BurstCount; ) begin
-	 m_WriteData[31:0]   = (i*4)+0;
-	 m_WriteData[63:32]  = (i*4)+1;
-	 m_WriteData[95:64]  = (i*4)+2;
-	 m_WriteData[127:96] = (i*4)+3;
-	 m_ByteEnable        = 16'hFF_FF;
-	 if (m_WaitRequest == 0) begin
-	    i = i + 1;
-	 end
-         @(posedge user_clk);
-      end // for (i = 0; i < 64; i = i + 1)
+      S_WVALID           = 0;
+      S_WDATA            = 0;
+      S_WSTRB            = 0;
+      S_WLAST            = 0;
+      S_WUSER            = 0;
+      
+      while (master_ready == 0 || 1)
+	@(posedge user_clk);
 
-      m_Write            = 1'b0;
-      @(posedge user_clk);
+      for (m = 0; m < cnt; m = m + 1) begin    
+	 S_AWADDR      = 32'h8000_0000;
+	 S_AWLEN       = 31;
+	 S_AWVALID     = 1;
+	 while (S_AWREADY == 0)
+	   @(posedge user_clk)
 
+	 S_AWVALID = 0;
+	 @(posedge user_clk);
+	 @(posedge user_clk);
+	 @(posedge user_clk);
       end
    end
-   
 endmodule
 // Local Variables:
 // verilog-library-directories:("altpciexpav128")

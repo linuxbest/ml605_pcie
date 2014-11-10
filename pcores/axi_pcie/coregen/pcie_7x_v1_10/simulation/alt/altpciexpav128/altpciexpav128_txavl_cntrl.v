@@ -23,56 +23,109 @@ module altpciexpav128_txavl_cntrl
     parameter CB_A2P_ADDR_MAP_PASS_THRU_BITS = 24,
     parameter CB_PCIE_RX_LITE = 0,
     parameter BYPASSS_A2P_TRANSLATION = 0,
-    parameter AVALON_ADDR_WIDTH = 32
+    parameter AVALON_ADDR_WIDTH = 32,
 
+   parameter C_S_AXI_ADDR_WIDTH       = 64,
+   parameter C_S_AXI_DATA_WIDTH       = 128,
+   parameter C_S_AXI_THREAD_ID_WIDTH  = 3,
+   parameter C_S_AXI_USER_WIDTH       = 3
+ 
    )
-    
-( input                                AvlClk_i,     // Avalon clock
-  input                                Rstn_i,    // Avalon reset
+   (input 					AvlClk_i, // Avalon clock
+    input 				       Rstn_i, // Avalon reset
                                        
   // Avalon master port                
-  input                                TxChipSelect_i,  // avalon chip sel
-  input                                TxRead_i,        // avalon read
-  input                                TxWrite_i,       // avalon write
-  input  [5:0]                         TxBurstCount_i,    // busrt count
-  input  [CG_AVALON_S_ADDR_WIDTH-1:0]  TxAddress_i, // word address
-  input  [15:0] TxByteEnable_i,    // read enable
-  output                               TxWaitRequest_o,
+    input 				       TxChipSelect_i, // avalon chip sel
+    input 				       TxRead_i, // avalon read
+    input 				       TxWrite_i, // avalon write
+    input [5:0] 			       TxBurstCount_i, // busrt count
+    input [CG_AVALON_S_ADDR_WIDTH-1:0] 	       TxAddress_i, // word address
+    input [15:0] 			       TxByteEnable_i, // read enable
+    output 				       TxWaitRequest_o,
   
   
   // Address translation interface
-  output                               AvlAddrVld_o,
-  output [CG_AVALON_S_ADDR_WIDTH-1:0]  AvlAddr_o, // byte address 
-  input                                AddrTransDone_i,     
-  input  [63:0]                        PCIeAddr_i,
-  input  [1:0]                         PCIeAddrSpace_i,
+    output 				       AvlAddrVld_o,
+    output [CG_AVALON_S_ADDR_WIDTH-1:0]        AvlAddr_o, // byte address 
+    input 				       AddrTransDone_i, 
+    input [63:0] 			       PCIeAddr_i,
+    input [1:0] 			       PCIeAddrSpace_i,
   
   // Command/Data buffer interface
-  output                               CmdFifoWrReq_o,
-  output      [98:0]                   TxReqHeader_o,
-  input       [3:0]                    CmdFifoUsedW_i,
+    output 				       CmdFifoWrReq_o,
+    output [98:0] 			       TxReqHeader_o,
+    input [3:0] 			       CmdFifoUsedW_i,
   
   // Tx Resp interface
-  output                               CmdFifoBusy_o,
+    output 				       CmdFifoBusy_o,
   
-  input        [5:0]                   WrDatFifoUsedW_i,
-  output                               WrDatFifoWrReq_o,
-  output                               WrDatFifoEop_o,
+    input [5:0] 			       WrDatFifoUsedW_i,
+    output 				       WrDatFifoWrReq_o,
+    output 				       WrDatFifoEop_o,
   
   // cfg signals
-  input      [31:0]                    DevCsr_i,             
-  input      [12:0]                    BusDev_i,    
-  input                                MasterEnable_i,
-  input      [15:0]                    MsiCsr_i,
-  input      [63:0]                    MsiAddr_i,
-  input      [15:0]                    MsiData_i,
-  input      [31:0]                    PCIeIrqEna_i,
-  input      [11:0]                    A2PMbWrAddr_i,
-  input                                A2PMbWrReq_i,
+    input [31:0] 			       DevCsr_i, 
+    input [12:0] 			       BusDev_i, 
+    input 				       MasterEnable_i,
+    input [15:0] 			       MsiCsr_i,
+    input [63:0] 			       MsiAddr_i,
+    input [15:0] 			       MsiData_i,
+    input [31:0] 			       PCIeIrqEna_i,
+    input [11:0] 			       A2PMbWrAddr_i,
+    input 				       A2PMbWrReq_i,
   
-  input                                TxsReadDataValid_i,
+    input 				       TxsReadDataValid_i,
   
-  input     [CG_RXM_IRQ_NUM-1 : 0]     RxmIrq_i
+    input [CG_RXM_IRQ_NUM-1 : 0] 	       RxmIrq_i,
+
+
+    ////////////// axi slave  ///////////////
+    input 				       S_AWVALID,
+    input [((C_S_AXI_ADDR_WIDTH) - 1):0]       S_AWADDR,
+    input [2:0] 			       S_AWPROT,
+    input [3:0] 			       S_AWREGION,
+    input [7:0] 			       S_AWLEN,
+    input [2:0] 			       S_AWSIZE,
+    input [1:0] 			       S_AWBURST,
+    input 				       S_AWLOCK,
+    input [3:0] 			       S_AWCACHE,
+    input [3:0] 			       S_AWQOS,
+    input [((C_S_AXI_THREAD_ID_WIDTH) - 1):0]  S_AWID,
+    input [((C_S_AXI_USER_WIDTH) - 1):0]       S_AWUSER,
+    output 				       S_AWREADY,
+   
+    input 				       S_WVALID,
+    input [((C_S_AXI_DATA_WIDTH) - 1):0]       S_WDATA,
+    input [(((C_S_AXI_DATA_WIDTH / 8)) - 1):0] S_WSTRB,
+    input 				       S_WLAST,
+    input [((C_S_AXI_USER_WIDTH) - 1):0]       S_WUSER,
+    output 				       S_WREADY,
+    output 				       S_BVALID,
+    output [1:0] 			       S_BRESP,
+    output [((C_S_AXI_THREAD_ID_WIDTH) - 1):0] S_BID,
+    output [((C_S_AXI_USER_WIDTH) - 1):0]      S_BUSER,
+    input 				       S_BREADY,
+   
+    input 				       S_ARVALID,
+    input [((C_S_AXI_ADDR_WIDTH) - 1):0]       S_ARADDR,
+    input [2:0] 			       S_ARPROT,
+    input [3:0] 			       S_ARREGION,
+    input [7:0] 			       S_ARLEN,
+    input [2:0] 			       S_ARSIZE,
+    input [1:0] 			       S_ARBURST,
+    input 				       S_ARLOCK,
+    input [3:0] 			       S_ARCACHE,
+    input [3:0] 			       S_ARQOS,
+    input [((C_S_AXI_THREAD_ID_WIDTH) - 1):0]  S_ARID,
+    input [((C_S_AXI_USER_WIDTH) - 1):0]       S_ARUSER,
+    output 				       S_ARREADY/*,
+    output 				       S_RVALID,
+    output [((C_S_AXI_DATA_WIDTH) - 1):0]      S_RDATA,
+    output [1:0] 			       S_RRESP,
+    output 				       S_RLAST,
+    output [((C_S_AXI_THREAD_ID_WIDTH) - 1):0] S_RID,
+    output [((C_S_AXI_USER_WIDTH) - 1):0]      S_RUSER,
+    input 				       S_RREADY*/
 );
 
 localparam [9:0]    // synopsys enum txavl_state_info 
@@ -240,6 +293,18 @@ assign trans_ready   = AddrTransDone_i;
 assign wrdat_fifo_ok = (WrDatFifoUsedW_i <= 32);
 assign cmd_fifo_ok = (CmdFifoUsedW_i <= 8);
 
+   reg write_gnt; 
+   always @(posedge AvlClk_i)
+     begin
+	if (~Rstn_i)
+	  begin
+	     write_gnt <= #1 1'b1;
+	  end
+	else
+	  begin
+	     write_gnt <= #1 ~write_gnt;
+	  end
+     end // always @ (posedge AvlClk_i)
 
 /// Tx control state machine
 
@@ -253,28 +318,27 @@ always @(posedge AvlClk_i or negedge Rstn_i)  // state machine registers
 
 // state machine next state gen
 
-
 always @*  
   begin
     case(txavl_state)
       TXAVL_IDLE :
         if(rxm_irq_sreg & cmd_fifo_ok & MasterEnable_i)
           txavl_nxt_state <= TXAVL_MSI;
-       else if((TxChipSelect_i & TxWrite_i & wr_fifos_ok & ~rx_only  & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready))        // write cycle detected and fifo ok (cmd and wr_dat fifo)
+       else if(S_AWVALID & wr_fifos_ok & ~rx_only & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready & write_gnt)        // write cycle detected and fifo ok (cmd and wr_dat fifo)
           txavl_nxt_state <= TXAVL_WAIT_WRADDR;       
-        else if(TxChipSelect_i & TxRead_i & ~rx_only & reads_cntr < 8  & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready)   // read cycle
+        else if(S_ARVALID & ~rx_only & reads_cntr < 8  & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready & ~write_gnt)   // read cycle
           txavl_nxt_state <= TXAVL_WAIT_RDADDR;            
         else
           txavl_nxt_state <= TXAVL_IDLE;
         
       TXAVL_WAIT_WRADDR :   // wait for address translation done 
-        if(trans_ready & wrdat_fifo_ok  & TxWrite_i & TxChipSelect_i) // address translation done signaled
+        if(trans_ready & wrdat_fifo_ok) // address translation done signaled
           txavl_nxt_state <= TXAVL_BURST_DATA;
         else
           txavl_nxt_state <= TXAVL_WAIT_WRADDR;
           
       TXAVL_BURST_DATA:  // burst data to the FIFO untill fifo is full or done
-        if( (pcie_boundary == 1 | burst_counter == 1 | maxpayload_reached) & TxChipSelect_i & TxWrite_i) // at the end of 4-KB boundary or the last data
+        if( (pcie_boundary == 1 | burst_counter == 1 | maxpayload_reached) & S_WVALID) // at the end of 4-KB boundary or the last data
           txavl_nxt_state <= TXAVL_WRPIPE;
         else if(~wrdat_fifo_ok)
           txavl_nxt_state <= TXAVL_WR_HOLD;  // hold off busrting
@@ -347,13 +411,25 @@ assign  sm_msi          = txavl_state[9];
 
 assign last_sub_read = sm_rdheader & last_rd_segment;
 
-assign WrDatFifoWrReq_o = sm_burst_data & TxWrite_i & TxChipSelect_i;
-assign WrDatFifoEop_o   = sm_burst_data & ( (pcie_boundary == 1 | burst_counter == 1 | maxpayload_reached) & TxChipSelect_i & TxWrite_i);
+assign WrDatFifoWrReq_o = sm_burst_data & S_WVALID;
+assign WrDatFifoEop_o   = sm_burst_data & ( (pcie_boundary == 1 | burst_counter == 1 | maxpayload_reached) & S_WVALID);
 /// //////////////////state machine supporting signals //////////////////
 
 
-assign txready = sm_burst_data | (sm_idle & TxChipSelect_i & TxRead_i & reads_cntr < 8 & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready) ; // do not assert ready when IRQ pending
-                          
+assign txready = sm_burst_data | (sm_idle & S_ARVALID & reads_cntr < 8 & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready) ; // do not assert ready when IRQ pending
+
+/* Write Address & Read Address */
+assign S_AWREADY = (sm_idle & S_AWVALID & wr_fifos_ok & ~rx_only     & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready & write_gnt);
+assign S_ARREADY = (sm_idle & S_ARVALID & ~rx_only & reads_cntr < 8  & ~rxm_irq_sreg & MasterEnable_i & ~trans_ready & ~write_gnt);
+
+   /* Write Data */
+   assign S_WREADY  = sm_burst_data;
+   assign S_BUSER   = 0;
+   assign S_BID     = 0;
+
+   assign S_BVALID  = sm_wrheader && burst_counter == 0;
+   assign S_BRESP   = 2'b00;
+           
 assign TxWaitRequest_o  = ~txready;                     
 // write fifo ok
 assign wr_fifos_ok = cmd_fifo_ok & wrdat_fifo_ok;
@@ -366,7 +442,7 @@ assign wr_fifos_ok = cmd_fifo_ok & wrdat_fifo_ok;
       wr_addr_counter <= 0;
     else if(addr_trans_done_rise)
       wr_addr_counter <= {pci_exp_address[CB_A2P_ADDR_MAP_PASS_THRU_BITS-1:4], 4'b0000};
-    else if(sm_burst_data &  TxWrite_i & TxChipSelect_i)
+    else if(sm_burst_data &  S_WVALID)
       wr_addr_counter <= wr_addr_counter + 16;
   end
   
@@ -375,8 +451,8 @@ assign wr_fifos_ok = cmd_fifo_ok & wrdat_fifo_ok;
     if(~Rstn_i)
       avl_wr_addr_cntr <= 0;
     else if(sm_idle)
-      avl_wr_addr_cntr <= tx_byte_address;
-    else if(sm_burst_data &  TxWrite_i & TxChipSelect_i)
+      avl_wr_addr_cntr <= S_AWADDR;
+    else if(sm_burst_data &  S_WVALID)
       avl_wr_addr_cntr <= avl_wr_addr_cntr + 16;
   end
   // hold the address for address translation
@@ -399,7 +475,7 @@ assign wr_fifos_ok = cmd_fifo_ok & wrdat_fifo_ok;
      end
     else if(sm_idle)
      begin
-      tx_single_qw_reg <= (TxBurstCount_i == 1);
+      tx_single_qw_reg <= (S_AWLEN == 0);
      end
   end
  
@@ -418,7 +494,7 @@ assign wr_fifos_ok = cmd_fifo_ok & wrdat_fifo_ok;
     if(~Rstn_i)
       wr_addr_reg <= 0;
     else if(sm_idle)
-      wr_addr_reg <= tx_byte_address;
+      wr_addr_reg <= S_AWADDR;
     else if(sm_wrheader)
        wr_addr_reg <= avl_wr_addr_cntr;
   end
@@ -448,8 +524,8 @@ assign wr_fifos_ok = cmd_fifo_ok & wrdat_fifo_ok;
     if(~Rstn_i)
       burst_counter <= 10'h0;
     else if(sm_idle)
-      burst_counter <= {4'b0000, TxBurstCount_i[5:0]};
-    else if(sm_burst_data &  TxWrite_i & TxChipSelect_i)
+      burst_counter <= {4'b0000, S_AWLEN[5:0]};
+    else if(sm_burst_data &  S_WVALID)
       burst_counter <= burst_counter - 1'b1;
   end
   
@@ -460,11 +536,11 @@ always @(posedge AvlClk_i or negedge Rstn_i)
       payload_byte_cntr <= 13'h000; // in byte
     else if(sm_wrheader)
       payload_byte_cntr <= 13'h000;
-    else if(sm_burst_data & TxWrite_i & TxChipSelect_i)
+    else if(sm_burst_data & S_WVALID)
       payload_byte_cntr <= payload_byte_cntr + 16;
   end
 
-assign maxpayload_reached = (payload_byte_cntr == (max_payload_size-16)) & TxChipSelect_i & TxWrite_i;
+assign maxpayload_reached = (payload_byte_cntr == (max_payload_size-16)) & S_WVALID;
 
 // decode the max payload size
 
@@ -505,7 +581,7 @@ always @(posedge AvlClk_i or negedge Rstn_i)
     if(~Rstn_i)
       rd_addr_reg <= 0;
     else if(sm_idle)
-      rd_addr_reg <= tx_byte_address;
+      rd_addr_reg <= S_ARADDR;
     else if(sm_rdheader)
       rd_addr_reg <= rd_addr_reg + rd_size;
   end
@@ -519,8 +595,8 @@ always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
       tx_burst_cnt_reg <= 6'h0;
-    else if(TxChipSelect_i & ~TxWaitRequest_o) 
-      tx_burst_cnt_reg <= TxBurstCount_i;
+    else if(~TxWaitRequest_o) 
+      tx_burst_cnt_reg <= S_AWLEN + 1;
   end  
   
 // Since the read with burst count > 1 must have all byte enable asserted
@@ -727,6 +803,24 @@ always @(posedge AvlClk_i or negedge Rstn_i)
       adjusted_dw_reg <= adjusted_dw_burst;
   end 
 
+wire [15:0] TxByteEnable;
+assign TxByteEnable = S_AWADDR[3:0] == 4'h0 ? 16'b1111_1111_1111_1111 :
+                      S_AWADDR[3:0] == 4'h1 ? 16'b1111_1111_1111_1110 :
+                      S_AWADDR[3:0] == 4'h2 ? 16'b1111_1111_1111_1100 :
+                      S_AWADDR[3:0] == 4'h3 ? 16'b1111_1111_1111_1000 :
+                      S_AWADDR[3:0] == 4'h4 ? 16'b1111_1111_1110_0000 :
+                      S_AWADDR[3:0] == 4'h5 ? 16'b1111_1111_1100_0000 :
+                      S_AWADDR[3:0] == 4'h6 ? 16'b1111_1111_1000_0000 :
+                      S_AWADDR[3:0] == 4'h7 ? 16'b1111_1111_0000_0000 :
+                      S_AWADDR[3:0] == 4'h8 ? 16'b1111_1111_0000_0000 :
+                      S_AWADDR[3:0] == 4'h9 ? 16'b1111_1110_0000_0000 :
+                      S_AWADDR[3:0] == 4'ha ? 16'b1111_1100_0000_0000 :
+                      S_AWADDR[3:0] == 4'hb ? 16'b1111_1000_0000_0000 :
+                      S_AWADDR[3:0] == 4'hc ? 16'b1111_0000_0000_0000 :
+                      S_AWADDR[3:0] == 4'hd ? 16'b1110_0000_0000_0000 :
+                      S_AWADDR[3:0] == 4'he ? 16'b1100_0000_0000_0000 :
+                      S_AWADDR[3:0] == 4'hf ? 16'b1000_0000_0000_0000 :
+		      16'hFF_FF;
   
 always @(posedge AvlClk_i or negedge Rstn_i)
   begin
@@ -734,16 +828,16 @@ always @(posedge AvlClk_i or negedge Rstn_i)
       first_avlbe_reg <= 16'h0;                  
     else if(sm_wrheader)       // after crossing MAX payload or 4KB
       first_avlbe_reg <= 16'hFFFF;
-    else if(sm_idle | (TxChipSelect_i & TxRead_i & sm_idle))  // latch byte enable when transfering the first data word
-      first_avlbe_reg <= TxByteEnable_i[15:0];
+    else if(sm_idle | (S_ARVALID & sm_idle))  // latch byte enable when transfering the first data word
+      first_avlbe_reg <= TxByteEnable[15:0];
   end 
   
 always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
       last_avlbe_reg <= 8'hFF;
-    else if(sm_burst_data | TxChipSelect_i & TxRead_i & sm_idle)  /// keep latching last byte enable until the last data transfer of a segment 
-      last_avlbe_reg <= TxByteEnable_i[15:0];
+    else if(sm_burst_data & S_WVALID)  /// keep latching last byte enable until the last data transfer of a segment 
+      last_avlbe_reg <= S_WSTRB[15:0];
   end   
   
 
@@ -919,7 +1013,7 @@ always @ *
 
 
 
-assign pendingrd_fifo_wrreq = (sm_idle & TxChipSelect_i & TxRead_i & ~TxWaitRequest_o & reads_cntr < 8 & ~rxm_irq_sreg & ~trans_ready); // no read accepted when IRQ pending
+assign pendingrd_fifo_wrreq = (sm_idle & S_ARVALID & ~TxWaitRequest_o & reads_cntr < 8 & ~rxm_irq_sreg & ~trans_ready & ~write_gnt); // no read accepted when IRQ pending
 assign pendingrd_fifo_rdreq = (!pendingrd_state[0] & !pendingrd_fifo_rdempty) | (pendingrd_check_state & ~pendingrd_fifo_rdempty & (read_valid_counter == pendingrd_fifo_q_reg));
 assign pendingrd_check_state = pendingrd_state[2];
 assign pendingrd_fifo_latch  = pendingrd_state[1];
@@ -946,7 +1040,7 @@ assign pendingrd_fifo_latch  = pendingrd_state[1];
 		       // Inputs
 		       .clk		(AvlClk_i),
 		       .rst_n		(Rstn_i),
-		       .din		({4'b0000, TxBurstCount_i[5:0]}),
+		       .din		({4'b0000, S_ARLEN[5:0]+1}),
 		       .wr_en		(pendingrd_fifo_wrreq),
 		       .rd_en		(pendingrd_fifo_rdreq),
 		       .mark_addr	(0),
@@ -973,7 +1067,7 @@ always @(posedge AvlClk_i or negedge Rstn_i)
       pendingrd_fifo_q_reg <= pendingrd_fifo_q;
   end
 
-assign reads_up       = (sm_idle & TxChipSelect_i & TxRead_i &  ~TxWaitRequest_o & reads_cntr < 8 & ~rxm_irq_sreg & ~trans_ready); // no read accepted when IRQ pending
+assign reads_up       = (sm_idle & S_ARVALID &  ~TxWaitRequest_o & reads_cntr < 8 & ~rxm_irq_sreg & ~trans_ready & ~write_gnt); // no read accepted when IRQ pending
 assign terminal_count = (read_valid_counter == pendingrd_fifo_q_reg);
 
 always @(posedge AvlClk_i or negedge Rstn_i)

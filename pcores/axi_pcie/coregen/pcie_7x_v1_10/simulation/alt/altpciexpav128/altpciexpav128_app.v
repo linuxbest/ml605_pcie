@@ -77,7 +77,12 @@ module altpciexpav128_app
    parameter C_M_AXI_ADDR_WIDTH      = 64,
    parameter C_M_AXI_DATA_WIDTH      = 128,
    parameter C_M_AXI_THREAD_ID_WIDTH = 3,
-   parameter C_M_AXI_USER_WIDTH      = 3
+   parameter C_M_AXI_USER_WIDTH      = 3,
+
+   parameter C_S_AXI_ADDR_WIDTH      = 64,
+   parameter C_S_AXI_DATA_WIDTH      = 128,
+   parameter C_S_AXI_THREAD_ID_WIDTH = 3,
+   parameter C_S_AXI_USER_WIDTH      = 3
      
   )  
      
@@ -85,211 +90,259 @@ module altpciexpav128_app
  (   
      
 // system iinputs
-input                        AvlClk_i,
-input                        Rstn_i,
+ input 					     AvlClk_i,
+ input 					     Rstn_i,
      
 // rx application interface
    // Rx port interface to PCI Exp HIP
-output                       RxStReady_o,
-output                       RxStMask_o,
-input   [127:0]              RxStData_i,
-input   [15:0]               RxStBe_i,
-input   [1:0]                RxStEmpty_i,
-input                        RxStErr_i,
-input                        RxStSop_i,
-input                        RxStEop_i,
-input                        RxStValid_i,
-input   [7:0]                RxStBarDec1_i,
-input   [7:0]                RxStBarDec2_i,
+ output 				     RxStReady_o,
+ output 				     RxStMask_o,
+ input [127:0] 				     RxStData_i,
+ input [15:0] 				     RxStBe_i,
+ input [1:0] 				     RxStEmpty_i,
+ input 					     RxStErr_i,
+ input 					     RxStSop_i,
+ input 					     RxStEop_i,
+ input 					     RxStValid_i,
+ input [7:0] 				     RxStBarDec1_i,
+ input [7:0] 				     RxStBarDec2_i,
 // Tx application interface
-input                        TxStReady_i  ,
-output   [127:0]             TxStData_o   ,
-output                       TxStSop_o    ,
-output                       TxStEop_o    ,
-output   [1:0]               TxStEmpty_o  ,
-output                       TxStValid_o  ,
-input                        TxAdapterFifoEmpty_i,
-output                       CplPending_o,
+ input 					     TxStReady_i ,
+ output [127:0] 			     TxStData_o ,
+ output 				     TxStSop_o ,
+ output 				     TxStEop_o ,
+ output [1:0] 				     TxStEmpty_o ,
+ output 				     TxStValid_o ,
+ input 					     TxAdapterFifoEmpty_i,
+ output 				     CplPending_o,
 /// Tx Credit interface
-input   [11 : 0]             TxCredPDataLimit_i, 
-input   [11 : 0]             TxCredNpDataLimit_i,
-input   [11 : 0]             TxCredCplDataLimit_i,
-input   [5 : 0]              TxCredHipCons_i,
-input   [5 : 0]              TxCredInfinit_i,
-input   [7 : 0]              TxCredPHdrLimit_i,
-input   [7 : 0]              TxCredNpHdrLimit_i,
-input   [7 : 0]              TxCredCplHdrLimit_i,
-input   [7:0]                ko_cpl_spc_header,
-input   [11:0]               ko_cpl_spc_data,
+ input [11 : 0] 			     TxCredPDataLimit_i, 
+ input [11 : 0] 			     TxCredNpDataLimit_i,
+ input [11 : 0] 			     TxCredCplDataLimit_i,
+ input [5 : 0] 				     TxCredHipCons_i,
+ input [5 : 0] 				     TxCredInfinit_i,
+ input [7 : 0] 				     TxCredPHdrLimit_i,
+ input [7 : 0] 				     TxCredNpHdrLimit_i,
+ input [7 : 0] 				     TxCredCplHdrLimit_i,
+ input [7:0] 				     ko_cpl_spc_header,
+ input [11:0] 				     ko_cpl_spc_data,
 
 
 // Config interface          
-input                        CfgCtlWr_i,  
-input [3:0]                  CfgAddr_i, 
-input [31:0]                 CfgCtl_i,  
+ input 					     CfgCtlWr_i, 
+ input [3:0] 				     CfgAddr_i, 
+ input [31:0] 				     CfgCtl_i, 
 
 
 
 // MSI and Interrupt interface
-output                        MsiReq_o,
-input                         MsiAck_i,
-output          [2:0]         MsiTc_o,
-output          [4:0]         MsiNum_o,    
+ output 				     MsiReq_o,
+ input 					     MsiAck_i,
+ output [2:0] 				     MsiTc_o,
+ output [4:0] 				     MsiNum_o, 
 
-output                        IntxReq_o,
-input                         IntxAck_i,                             
+ output 				     IntxReq_o,
+ input 					     IntxAck_i, 
 
 
 // Avalon Tx Slave interface
-input                               TxsClk_i,
-input                               TxsRstn_i,
-input                               TxsChipSelect_i,
-input                               TxsRead_i,
-input                               TxsWrite_i,
-input  [127:0]                      TxsWriteData_i,
-input  [5:0]                        TxsBurstCount_i,
-input  [CG_AVALON_S_ADDR_WIDTH-1:0] TxsAddress_i,
-input  [15:0]                       TxsByteEnable_i,
-output                              TxsReadDataValid_o, // This comes from Rx Completion to be returned to Avalon master
-output  [127:0]                     TxsReadData_o,      // This comes from Rx Completion to be returned to Avalon master
-output                              TxsWaitRequest_o,
+ input 					     TxsClk_i,
+ input 					     TxsRstn_i,
+ input 					     TxsChipSelect_i,
+ input 					     TxsRead_i,
+ input 					     TxsWrite_i,
+ input [127:0] 				     TxsWriteData_i,
+ input [5:0] 				     TxsBurstCount_i,
+ input [CG_AVALON_S_ADDR_WIDTH-1:0] 	     TxsAddress_i,
+ input [15:0] 				     TxsByteEnable_i,
+ output 				     TxsReadDataValid_o, // This comes from Rx Completion to be returned to Avalon master
+output [127:0] 				     TxsReadData_o, // This comes from Rx Completion to be returned to Avalon master
+output 					     TxsWaitRequest_o,
 
 // Avalon Rx Master interface                                       
     
-output                                 RxmWrite_0_o,
-output [AVALON_ADDR_WIDTH-1:0]         RxmAddress_0_o,
-output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_0_o,
-output  [(CB_RXM_DATA_WIDTH/8)-1:0]                           RxmByteEnable_0_o,
-output [6:0]                           RxmBurstCount_0_o, 
-input                                  RxmWaitRequest_0_i,
-output                                 RxmRead_0_o,
-input  [CB_RXM_DATA_WIDTH-1:0]         RxmReadData_0_i,         // this comes from Avalon Slave to be routed to Tx completion
-input                                  RxmReadDataValid_0_i,     // this comes from Avalon Slave to be routed to Tx completion
+ output 				     RxmWrite_0_o,
+ output [AVALON_ADDR_WIDTH-1:0] 	     RxmAddress_0_o,
+ output [CB_RXM_DATA_WIDTH-1:0] 	     RxmWriteData_0_o,
+ output [(CB_RXM_DATA_WIDTH/8)-1:0] 	     RxmByteEnable_0_o,
+ output [6:0] 				     RxmBurstCount_0_o, 
+ input 					     RxmWaitRequest_0_i,
+ output 				     RxmRead_0_o,
+ input [CB_RXM_DATA_WIDTH-1:0] 		     RxmReadData_0_i, // this comes from Avalon Slave to be routed to Tx completion
+input 					     RxmReadDataValid_0_i, // this comes from Avalon Slave to be routed to Tx completion
 
-output                                 RxmWrite_1_o,
-output [AVALON_ADDR_WIDTH-1:0]         RxmAddress_1_o,
-output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_1_o,
-output  [(CB_RXM_DATA_WIDTH/8)-1:0]                           RxmByteEnable_1_o,
-output [6:0]                           RxmBurstCount_1_o, 
-input                                  RxmWaitRequest_1_i,
-output                                 RxmRead_1_o,
-input  [CB_RXM_DATA_WIDTH-1:0]         RxmReadData_1_i,         // this comes from Avalon Slave to be routed to Tx completion
-input                                  RxmReadDataValid_1_i,     // this comes from Avalon Slave to be routed to Tx completion
-
-
-output                                 RxmWrite_2_o,
-output [AVALON_ADDR_WIDTH-1:0]         RxmAddress_2_o,
-output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_2_o,
-output  [(CB_RXM_DATA_WIDTH/8)-1:0]                           RxmByteEnable_2_o,
-output [6:0]                           RxmBurstCount_2_o, 
-input                                  RxmWaitRequest_2_i,
-output                                 RxmRead_2_o,
-input [CB_RXM_DATA_WIDTH-1:0]          RxmReadData_2_i,         // this comes from Avalon Slave to be routed to Tx completion
-input                                  RxmReadDataValid_2_i,     // this comes from Avalon Slave to be routed to Tx completion
-
-output                                 RxmWrite_3_o,
-output [AVALON_ADDR_WIDTH-1:0]         RxmAddress_3_o,
-output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_3_o,
-output  [(CB_RXM_DATA_WIDTH/8)-1:0]                           RxmByteEnable_3_o,
-output [6:0]                           RxmBurstCount_3_o, 
-input                                  RxmWaitRequest_3_i,
-output                                 RxmRead_3_o,
-input  [CB_RXM_DATA_WIDTH-1:0]         RxmReadData_3_i,         // this comes from Avalon Slave to be routed to Tx completion
-input                                  RxmReadDataValid_3_i,     // this comes from Avalon Slave to be routed to Tx completion
-
-output                                 RxmWrite_4_o,
-output [AVALON_ADDR_WIDTH-1:0]        RxmAddress_4_o,
-output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_4_o,
-output  [(CB_RXM_DATA_WIDTH/8)-1:0]                           RxmByteEnable_4_o,
-output [6:0]                           RxmBurstCount_4_o, 
-input                                  RxmWaitRequest_4_i,
-output                                 RxmRead_4_o,
-input [CB_RXM_DATA_WIDTH-1:0]          RxmReadData_4_i,         // this comes from Avalon Slave to be routed to Tx completion
-input                                  RxmReadDataValid_4_i,     // this comes from Avalon Slave to be routed to Tx completion
-
-output                                 RxmWrite_5_o,
-output [AVALON_ADDR_WIDTH-1:0]         RxmAddress_5_o,
-output [CB_RXM_DATA_WIDTH-1:0]         RxmWriteData_5_o,
-output  [(CB_RXM_DATA_WIDTH/8)-1:0]                           RxmByteEnable_5_o,
-output [6:0]                           RxmBurstCount_5_o, 
-input                                  RxmWaitRequest_5_i,
-output                                 RxmRead_5_o,
-input  [CB_RXM_DATA_WIDTH-1:0]         RxmReadData_5_i,         // this comes from Avalon Slave to be routed to Tx completion
-input                                  RxmReadDataValid_5_i,     // this comes from Avalon Slave to be routed to Tx completion
+ output 				     RxmWrite_1_o,
+ output [AVALON_ADDR_WIDTH-1:0] 	     RxmAddress_1_o,
+ output [CB_RXM_DATA_WIDTH-1:0] 	     RxmWriteData_1_o,
+ output [(CB_RXM_DATA_WIDTH/8)-1:0] 	     RxmByteEnable_1_o,
+ output [6:0] 				     RxmBurstCount_1_o, 
+ input 					     RxmWaitRequest_1_i,
+ output 				     RxmRead_1_o,
+ input [CB_RXM_DATA_WIDTH-1:0] 		     RxmReadData_1_i, // this comes from Avalon Slave to be routed to Tx completion
+input 					     RxmReadDataValid_1_i, // this comes from Avalon Slave to be routed to Tx completion
 
 
-input  [CG_RXM_IRQ_NUM-1 : 0]          RxmIrq_i,
+ output 				     RxmWrite_2_o,
+ output [AVALON_ADDR_WIDTH-1:0] 	     RxmAddress_2_o,
+ output [CB_RXM_DATA_WIDTH-1:0] 	     RxmWriteData_2_o,
+ output [(CB_RXM_DATA_WIDTH/8)-1:0] 	     RxmByteEnable_2_o,
+ output [6:0] 				     RxmBurstCount_2_o, 
+ input 					     RxmWaitRequest_2_i,
+ output 				     RxmRead_2_o,
+ input [CB_RXM_DATA_WIDTH-1:0] 		     RxmReadData_2_i, // this comes from Avalon Slave to be routed to Tx completion
+input 					     RxmReadDataValid_2_i, // this comes from Avalon Slave to be routed to Tx completion
+
+ output 				     RxmWrite_3_o,
+ output [AVALON_ADDR_WIDTH-1:0] 	     RxmAddress_3_o,
+ output [CB_RXM_DATA_WIDTH-1:0] 	     RxmWriteData_3_o,
+ output [(CB_RXM_DATA_WIDTH/8)-1:0] 	     RxmByteEnable_3_o,
+ output [6:0] 				     RxmBurstCount_3_o, 
+ input 					     RxmWaitRequest_3_i,
+ output 				     RxmRead_3_o,
+ input [CB_RXM_DATA_WIDTH-1:0] 		     RxmReadData_3_i, // this comes from Avalon Slave to be routed to Tx completion
+input 					     RxmReadDataValid_3_i, // this comes from Avalon Slave to be routed to Tx completion
+
+ output 				     RxmWrite_4_o,
+ output [AVALON_ADDR_WIDTH-1:0] 	     RxmAddress_4_o,
+ output [CB_RXM_DATA_WIDTH-1:0] 	     RxmWriteData_4_o,
+ output [(CB_RXM_DATA_WIDTH/8)-1:0] 	     RxmByteEnable_4_o,
+ output [6:0] 				     RxmBurstCount_4_o, 
+ input 					     RxmWaitRequest_4_i,
+ output 				     RxmRead_4_o,
+ input [CB_RXM_DATA_WIDTH-1:0] 		     RxmReadData_4_i, // this comes from Avalon Slave to be routed to Tx completion
+input 					     RxmReadDataValid_4_i, // this comes from Avalon Slave to be routed to Tx completion
+
+ output 				     RxmWrite_5_o,
+ output [AVALON_ADDR_WIDTH-1:0] 	     RxmAddress_5_o,
+ output [CB_RXM_DATA_WIDTH-1:0] 	     RxmWriteData_5_o,
+ output [(CB_RXM_DATA_WIDTH/8)-1:0] 	     RxmByteEnable_5_o,
+ output [6:0] 				     RxmBurstCount_5_o, 
+ input 					     RxmWaitRequest_5_i,
+ output 				     RxmRead_5_o,
+ input [CB_RXM_DATA_WIDTH-1:0] 		     RxmReadData_5_i, // this comes from Avalon Slave to be routed to Tx completion
+input 					     RxmReadDataValid_5_i, // this comes from Avalon Slave to be routed to Tx completion
+
+
+ input [CG_RXM_IRQ_NUM-1 : 0] 		     RxmIrq_i,
 
 // Avalon Contol Register Access (CRA) Slave (This is 32-bit interface)
-input                                  CraClk_i,
-input                                  CraRstn_i,
-input                                  CraChipSelect_i,
-input                                  CraRead,
-input                                  CraWrite,
-input  [31:0]                          CraWriteData_i,
-input  [13:2]                          CraAddress_i,
-input  [3:0]                           CraByteEnable_i,
-output [31:0]                          CraReadData_o,      // This comes from Rx Completion to be returned to Avalon master
-output                                 CraWaitRequest_o,
-output                                 CraIrq_o,
+ input 					     CraClk_i,
+ input 					     CraRstn_i,
+ input 					     CraChipSelect_i,
+ input 					     CraRead,
+ input 					     CraWrite,
+ input [31:0] 				     CraWriteData_i,
+ input [13:2] 				     CraAddress_i,
+ input [3:0] 				     CraByteEnable_i,
+ output [31:0] 				     CraReadData_o, // This comes from Rx Completion to be returned to Avalon master
+output 					     CraWaitRequest_o,
+ output 				     CraIrq_o,
   /// MSI/MSI-X supported signals
-output  [81:0]                         MsiIntfc_o,
-output  [15:0]                         MsiControl_o,
-output  [15:0]                         MsixIntfc_o,
+ output [81:0] 				     MsiIntfc_o,
+ output [15:0] 				     MsiControl_o,
+ output [15:0] 				     MsixIntfc_o,
 
-input   [3:0]                          RxIntStatus_i,
-input                                  pld_clk_inuse,
-output                                 tx_cons_cred_sel,
+ input [3:0] 				     RxIntStatus_i,
+ input 					     pld_clk_inuse,
+ output 				     tx_cons_cred_sel,
 
-input   [4:0]                          ltssm_state,
-input   [1:0]                          current_speed,
-input   [3:0]                          lane_act,
+ input [4:0] 				     ltssm_state,
+ input [1:0] 				     current_speed,
+ input [3:0] 				     lane_act,
 
-    output 					M_AWVALID,
-    output [((C_M_AXI_ADDR_WIDTH) - 1):0] 	M_AWADDR,
-    output [2:0] 				M_AWPROT,
-    output [3:0] 				M_AWREGION,
-    output [7:0] 				M_AWLEN,
-    output [2:0] 				M_AWSIZE,
-    output [1:0] 				M_AWBURST,
-    output 					M_AWLOCK,
-    output [3:0] 				M_AWCACHE,
-    output [3:0] 				M_AWQOS,
-    output [((C_M_AXI_THREAD_ID_WIDTH) - 1):0] 	M_AWID,
-    output [((C_M_AXI_USER_WIDTH) - 1):0] 	M_AWUSER,
-    input 					M_AWREADY,
-    output 					M_WVALID,
-    output [((C_M_AXI_DATA_WIDTH) - 1):0] 	M_WDATA,
-    output [(((C_M_AXI_DATA_WIDTH / 8)) - 1):0] M_WSTRB,
-    output 					M_WLAST,
-    output [((C_M_AXI_USER_WIDTH) - 1):0] 	M_WUSER,
-    input 					M_WREADY,
-    input 					M_BVALID,
-    input [1:0] 				M_BRESP,
-    input [((C_M_AXI_THREAD_ID_WIDTH) - 1):0] 	M_BID,
-    input [((C_M_AXI_USER_WIDTH) - 1):0] 	M_BUSER,
-    output 					M_BREADY,
+ output 				     M_AWVALID,
+ output [((C_M_AXI_ADDR_WIDTH) - 1):0] 	     M_AWADDR,
+ output [2:0] 				     M_AWPROT,
+ output [3:0] 				     M_AWREGION,
+ output [7:0] 				     M_AWLEN,
+ output [2:0] 				     M_AWSIZE,
+ output [1:0] 				     M_AWBURST,
+ output 				     M_AWLOCK,
+ output [3:0] 				     M_AWCACHE,
+ output [3:0] 				     M_AWQOS,
+ output [((C_M_AXI_THREAD_ID_WIDTH) - 1):0]  M_AWID,
+ output [((C_M_AXI_USER_WIDTH) - 1):0] 	     M_AWUSER,
+ input 					     M_AWREADY,
+ output 				     M_WVALID,
+ output [((C_M_AXI_DATA_WIDTH) - 1):0] 	     M_WDATA,
+ output [(((C_M_AXI_DATA_WIDTH / 8)) - 1):0] M_WSTRB,
+ output 				     M_WLAST,
+ output [((C_M_AXI_USER_WIDTH) - 1):0] 	     M_WUSER,
+ input 					     M_WREADY,
+ input 					     M_BVALID,
+ input [1:0] 				     M_BRESP,
+ input [((C_M_AXI_THREAD_ID_WIDTH) - 1):0]   M_BID,
+ input [((C_M_AXI_USER_WIDTH) - 1):0] 	     M_BUSER,
+ output 				     M_BREADY,
    
-    output 					M_ARVALID,
-    output [((C_M_AXI_ADDR_WIDTH) - 1):0] 	M_ARADDR,
-    output [2:0] 				M_ARPROT,
-    output [3:0] 				M_ARREGION,
-    output [7:0] 				M_ARLEN,
-    output [2:0] 				M_ARSIZE,
-    output [1:0] 				M_ARBURST,
-    output 					M_ARLOCK,
-    output [3:0] 				M_ARCACHE,
-    output [3:0] 				M_ARQOS,
-    output [((C_M_AXI_THREAD_ID_WIDTH) - 1):0] 	M_ARID,
-    output [((C_M_AXI_USER_WIDTH) - 1):0] 	M_ARUSER,
-    input 					M_ARREADY,
-    input 					M_RVALID,
-    input [((C_M_AXI_DATA_WIDTH) - 1):0] 	M_RDATA,
-    input [1:0] 				M_RRESP,
-    input 					M_RLAST,
-    input [((C_M_AXI_THREAD_ID_WIDTH) - 1):0] 	M_RID,
-    input [((C_M_AXI_USER_WIDTH) - 1):0] 	M_RUSER,
-    output 					M_RREADY
+ output 				     M_ARVALID,
+ output [((C_M_AXI_ADDR_WIDTH) - 1):0] 	     M_ARADDR,
+ output [2:0] 				     M_ARPROT,
+ output [3:0] 				     M_ARREGION,
+ output [7:0] 				     M_ARLEN,
+ output [2:0] 				     M_ARSIZE,
+ output [1:0] 				     M_ARBURST,
+ output 				     M_ARLOCK,
+ output [3:0] 				     M_ARCACHE,
+ output [3:0] 				     M_ARQOS,
+ output [((C_M_AXI_THREAD_ID_WIDTH) - 1):0]  M_ARID,
+ output [((C_M_AXI_USER_WIDTH) - 1):0] 	     M_ARUSER,
+ input 					     M_ARREADY,
+ input 					     M_RVALID,
+ input [((C_M_AXI_DATA_WIDTH) - 1):0] 	     M_RDATA,
+ input [1:0] 				     M_RRESP,
+ input 					     M_RLAST,
+ input [((C_M_AXI_THREAD_ID_WIDTH) - 1):0]   M_RID,
+ input [((C_M_AXI_USER_WIDTH) - 1):0] 	     M_RUSER,
+ output 				     M_RREADY,
+
+ input 					     S_AWVALID,
+ input [((C_S_AXI_ADDR_WIDTH) - 1):0] 	     S_AWADDR,
+ input [2:0] 				     S_AWPROT,
+ input [3:0] 				     S_AWREGION,
+ input [7:0] 				     S_AWLEN,
+ input [2:0] 				     S_AWSIZE,
+ input [1:0] 				     S_AWBURST,
+ input 					     S_AWLOCK,
+ input [3:0] 				     S_AWCACHE,
+ input [3:0] 				     S_AWQOS,
+ input [((C_S_AXI_THREAD_ID_WIDTH) - 1):0]   S_AWID,
+ input [((C_S_AXI_USER_WIDTH) - 1):0] 	     S_AWUSER,
+ output 				     S_AWREADY,
+   
+ input 					     S_WVALID,
+ input [((C_S_AXI_DATA_WIDTH) - 1):0] 	     S_WDATA,
+ input [(((C_S_AXI_DATA_WIDTH / 8)) - 1):0]  S_WSTRB,
+ input 					     S_WLAST,
+ input [((C_S_AXI_USER_WIDTH) - 1):0] 	     S_WUSER,
+ output 				     S_WREADY,
+ output 				     S_BVALID,
+ output [1:0] 				     S_BRESP,
+ output [((C_S_AXI_THREAD_ID_WIDTH) - 1):0]  S_BID,
+ output [((C_S_AXI_USER_WIDTH) - 1):0] 	     S_BUSER,
+ input 					     S_BREADY,
+   
+ input 					     S_ARVALID,
+ input [((C_S_AXI_ADDR_WIDTH) - 1):0] 	     S_ARADDR,
+ input [2:0] 				     S_ARPROT,
+ input [3:0] 				     S_ARREGION,
+ input [7:0] 				     S_ARLEN,
+ input [2:0] 				     S_ARSIZE,
+ input [1:0] 				     S_ARBURST,
+ input 					     S_ARLOCK,
+ input [3:0] 				     S_ARCACHE,
+ input [3:0] 				     S_ARQOS,
+ input [((C_S_AXI_THREAD_ID_WIDTH) - 1):0]   S_ARID,
+ input [((C_S_AXI_USER_WIDTH) - 1):0] 	     S_ARUSER,
+   
+ output 				     S_ARREADY,
+ output 				     S_RVALID,
+ output [((C_S_AXI_DATA_WIDTH) - 1):0] 	     S_RDATA,
+ output [1:0] 				     S_RRESP,
+ output 				     S_RLAST,
+ output [((C_S_AXI_THREAD_ID_WIDTH) - 1):0]  S_RID,
+ output [((C_S_AXI_USER_WIDTH) - 1):0] 	     S_RUSER,
+ input 					     S_RREADY
 
 /// Parmeter signals
 
@@ -532,7 +585,11 @@ altpciexpav128_rx
    .C_M_AXI_ADDR_WIDTH			(C_M_AXI_ADDR_WIDTH),
    .C_M_AXI_DATA_WIDTH			(C_M_AXI_DATA_WIDTH),
    .C_M_AXI_THREAD_ID_WIDTH		(C_M_AXI_THREAD_ID_WIDTH),
-   .C_M_AXI_USER_WIDTH			(C_M_AXI_USER_WIDTH))
+   .C_M_AXI_USER_WIDTH			(C_M_AXI_USER_WIDTH),
+   .C_S_AXI_ADDR_WIDTH			(C_S_AXI_ADDR_WIDTH),
+   .C_S_AXI_DATA_WIDTH			(C_S_AXI_DATA_WIDTH),
+   .C_S_AXI_THREAD_ID_WIDTH		(C_S_AXI_THREAD_ID_WIDTH),
+   .C_S_AXI_USER_WIDTH			(C_S_AXI_USER_WIDTH))
 rx
 
   ( .Clk_i(AvlClk_i),
@@ -658,6 +715,12 @@ rx
    .M_ARID				(M_ARID[((C_M_AXI_THREAD_ID_WIDTH)-1):0]),
    .M_ARUSER				(M_ARUSER[((C_M_AXI_USER_WIDTH)-1):0]),
    .M_RREADY				(M_RREADY),
+   .S_RVALID				(S_RVALID),
+   .S_RDATA				(S_RDATA[((C_S_AXI_DATA_WIDTH)-1):0]),
+   .S_RRESP				(S_RRESP[1:0]),
+   .S_RLAST				(S_RLAST),
+   .S_RID				(S_RID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
+   .S_RUSER				(S_RUSER[((C_S_AXI_USER_WIDTH)-1):0]),
    // Inputs
    .RxmRstn_i				(RxmRstn_i),
    .M_AWREADY				(M_AWREADY),
@@ -672,7 +735,8 @@ rx
    .M_RRESP				(M_RRESP[1:0]),
    .M_RLAST				(M_RLAST),
    .M_RID				(M_RID[((C_M_AXI_THREAD_ID_WIDTH)-1):0]),
-   .M_RUSER				(M_RUSER[((C_M_AXI_USER_WIDTH)-1):0]));		
+   .M_RUSER				(M_RUSER[((C_M_AXI_USER_WIDTH)-1):0]),
+   .S_RREADY				(S_RREADY));		
 
 
 /// instantiate the Tx module
@@ -694,8 +758,14 @@ rx
     .CB_RXM_DATA_WIDTH(CB_RXM_DATA_WIDTH),
     .CB_PCIE_RX_LITE(CB_PCIE_RX_LITE),
     .BYPASSS_A2P_TRANSLATION(BYPASSS_A2P_TRANSLATION),
-    .AVALON_ADDR_WIDTH(AVALON_ADDR_WIDTH)   
-  )
+    .AVALON_ADDR_WIDTH(AVALON_ADDR_WIDTH),
+
+    /*AUTOINSTPARAM*/
+   // Parameters
+   .C_S_AXI_ADDR_WIDTH			(C_S_AXI_ADDR_WIDTH),
+   .C_S_AXI_DATA_WIDTH			(C_S_AXI_DATA_WIDTH),
+   .C_S_AXI_THREAD_ID_WIDTH		(C_S_AXI_THREAD_ID_WIDTH),
+   .C_S_AXI_USER_WIDTH			(C_S_AXI_USER_WIDTH))
  
  
  tx
@@ -770,9 +840,48 @@ rx
       .RpTLPReady_i(txrp_tlp_ready),
       .pld_clk_inuse(pld_clk_inuse),
       .tx_cons_cred_sel(tx_cons_cred_sel),
-      .TxBufferEmpty_o(tx_cmd_empty)  
-     
-  );
+      .TxBufferEmpty_o(tx_cmd_empty),
+
+      /*AUTOINST*/
+   // Outputs
+   .S_AWREADY				(S_AWREADY),
+   .S_WREADY				(S_WREADY),
+   .S_BVALID				(S_BVALID),
+   .S_BRESP				(S_BRESP[1:0]),
+   .S_BID				(S_BID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
+   .S_BUSER				(S_BUSER[((C_S_AXI_USER_WIDTH)-1):0]),
+   .S_ARREADY				(S_ARREADY),
+   // Inputs
+   .S_AWVALID				(S_AWVALID),
+   .S_AWADDR				(S_AWADDR[((C_S_AXI_ADDR_WIDTH)-1):0]),
+   .S_AWPROT				(S_AWPROT[2:0]),
+   .S_AWREGION				(S_AWREGION[3:0]),
+   .S_AWLEN				(S_AWLEN[7:0]),
+   .S_AWSIZE				(S_AWSIZE[2:0]),
+   .S_AWBURST				(S_AWBURST[1:0]),
+   .S_AWLOCK				(S_AWLOCK),
+   .S_AWCACHE				(S_AWCACHE[3:0]),
+   .S_AWQOS				(S_AWQOS[3:0]),
+   .S_AWID				(S_AWID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
+   .S_AWUSER				(S_AWUSER[((C_S_AXI_USER_WIDTH)-1):0]),
+   .S_WVALID				(S_WVALID),
+   .S_WDATA				(S_WDATA[((C_S_AXI_DATA_WIDTH)-1):0]),
+   .S_WSTRB				(S_WSTRB[(((C_S_AXI_DATA_WIDTH/8))-1):0]),
+   .S_WLAST				(S_WLAST),
+   .S_WUSER				(S_WUSER[((C_S_AXI_USER_WIDTH)-1):0]),
+   .S_BREADY				(S_BREADY),
+   .S_ARVALID				(S_ARVALID),
+   .S_ARADDR				(S_ARADDR[((C_S_AXI_ADDR_WIDTH)-1):0]),
+   .S_ARPROT				(S_ARPROT[2:0]),
+   .S_ARREGION				(S_ARREGION[3:0]),
+   .S_ARLEN				(S_ARLEN[7:0]),
+   .S_ARSIZE				(S_ARSIZE[2:0]),
+   .S_ARBURST				(S_ARBURST[1:0]),
+   .S_ARLOCK				(S_ARLOCK),
+   .S_ARCACHE				(S_ARCACHE[3:0]),
+   .S_ARQOS				(S_ARQOS[3:0]),
+   .S_ARID				(S_ARID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
+   .S_ARUSER				(S_ARUSER[((C_S_AXI_USER_WIDTH)-1):0]));
 
 /// instantiate the control register module
 

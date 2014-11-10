@@ -38,6 +38,10 @@ module PIO #(
    localparam C_M_AXI_DATA_WIDTH      = 128;
    localparam C_M_AXI_THREAD_ID_WIDTH = 3;
    localparam C_M_AXI_USER_WIDTH      = 3;
+   localparam C_S_AXI_ADDR_WIDTH      = 64;
+   localparam C_S_AXI_DATA_WIDTH      = 128;
+   localparam C_S_AXI_THREAD_ID_WIDTH = 3;
+   localparam C_S_AXI_USER_WIDTH      = 3;
    
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
@@ -85,6 +89,50 @@ module PIO #(
    wire [(((C_M_AXI_DATA_WIDTH/8))-1):0] M_WSTRB;// From altpcie_avl of altpcie_avl.v
    wire [((C_M_AXI_USER_WIDTH)-1):0] M_WUSER;	// From altpcie_avl of altpcie_avl.v
    wire			M_WVALID;		// From altpcie_avl of altpcie_avl.v
+   wire [((C_S_AXI_ADDR_WIDTH)-1):0] S_ARADDR;	// From m_tb of m_tb.v
+   wire [1:0]		S_ARBURST;		// From m_tb of m_tb.v
+   wire [3:0]		S_ARCACHE;		// From m_tb of m_tb.v
+   wire [((C_S_AXI_THREAD_ID_WIDTH)-1):0] S_ARID;// From m_tb of m_tb.v
+   wire [7:0]		S_ARLEN;		// From m_tb of m_tb.v
+   wire			S_ARLOCK;		// From m_tb of m_tb.v
+   wire [2:0]		S_ARPROT;		// From m_tb of m_tb.v
+   wire [3:0]		S_ARQOS;		// From m_tb of m_tb.v
+   wire			S_ARREADY;		// From altpcie_avl of altpcie_avl.v
+   wire [3:0]		S_ARREGION;		// From m_tb of m_tb.v
+   wire [2:0]		S_ARSIZE;		// From m_tb of m_tb.v
+   wire [((C_S_AXI_USER_WIDTH)-1):0] S_ARUSER;	// From m_tb of m_tb.v
+   wire			S_ARVALID;		// From m_tb of m_tb.v
+   wire [((C_S_AXI_ADDR_WIDTH)-1):0] S_AWADDR;	// From m_tb of m_tb.v
+   wire [1:0]		S_AWBURST;		// From m_tb of m_tb.v
+   wire [3:0]		S_AWCACHE;		// From m_tb of m_tb.v
+   wire [((C_S_AXI_THREAD_ID_WIDTH)-1):0] S_AWID;// From m_tb of m_tb.v
+   wire [7:0]		S_AWLEN;		// From m_tb of m_tb.v
+   wire			S_AWLOCK;		// From m_tb of m_tb.v
+   wire [2:0]		S_AWPROT;		// From m_tb of m_tb.v
+   wire [3:0]		S_AWQOS;		// From m_tb of m_tb.v
+   wire			S_AWREADY;		// From altpcie_avl of altpcie_avl.v
+   wire [3:0]		S_AWREGION;		// From m_tb of m_tb.v
+   wire [2:0]		S_AWSIZE;		// From m_tb of m_tb.v
+   wire [((C_S_AXI_USER_WIDTH)-1):0] S_AWUSER;	// From m_tb of m_tb.v
+   wire			S_AWVALID;		// From m_tb of m_tb.v
+   wire [((C_S_AXI_THREAD_ID_WIDTH)-1):0] S_BID;// From altpcie_avl of altpcie_avl.v
+   wire			S_BREADY;		// From m_tb of m_tb.v
+   wire [1:0]		S_BRESP;		// From altpcie_avl of altpcie_avl.v
+   wire [((C_S_AXI_USER_WIDTH)-1):0] S_BUSER;	// From altpcie_avl of altpcie_avl.v
+   wire			S_BVALID;		// From altpcie_avl of altpcie_avl.v
+   wire [((C_S_AXI_DATA_WIDTH)-1):0] S_RDATA;	// From altpcie_avl of altpcie_avl.v
+   wire [((C_S_AXI_THREAD_ID_WIDTH)-1):0] S_RID;// From altpcie_avl of altpcie_avl.v
+   wire			S_RLAST;		// From altpcie_avl of altpcie_avl.v
+   wire			S_RREADY;		// From m_tb of m_tb.v
+   wire [1:0]		S_RRESP;		// From altpcie_avl of altpcie_avl.v
+   wire [((C_S_AXI_USER_WIDTH)-1):0] S_RUSER;	// From altpcie_avl of altpcie_avl.v
+   wire			S_RVALID;		// From altpcie_avl of altpcie_avl.v
+   wire [((C_S_AXI_DATA_WIDTH)-1):0] S_WDATA;	// From m_tb of m_tb.v
+   wire			S_WLAST;		// From m_tb of m_tb.v
+   wire			S_WREADY;		// From altpcie_avl of altpcie_avl.v
+   wire [(((C_S_AXI_DATA_WIDTH/8))-1):0] S_WSTRB;// From m_tb of m_tb.v
+   wire [((C_S_AXI_USER_WIDTH)-1):0] S_WUSER;	// From m_tb of m_tb.v
+   wire			S_WVALID;		// From m_tb of m_tb.v
    wire [63:0]		m_Address;		// From m_tb of m_tb.v
    wire [5:0]		m_BurstCount;		// From m_tb of m_tb.v
    wire [15:0]		m_ByteEnable;		// From m_tb of m_tb.v
@@ -113,7 +161,11 @@ module PIO #(
 		 .C_M_AXI_ADDR_WIDTH	(C_M_AXI_ADDR_WIDTH),
 		 .C_M_AXI_DATA_WIDTH	(C_M_AXI_DATA_WIDTH),
 		 .C_M_AXI_THREAD_ID_WIDTH(C_M_AXI_THREAD_ID_WIDTH),
-		 .C_M_AXI_USER_WIDTH	(C_M_AXI_USER_WIDTH))
+		 .C_M_AXI_USER_WIDTH	(C_M_AXI_USER_WIDTH),
+		 .C_S_AXI_ADDR_WIDTH	(C_S_AXI_ADDR_WIDTH),
+		 .C_S_AXI_DATA_WIDTH	(C_S_AXI_DATA_WIDTH),
+		 .C_S_AXI_THREAD_ID_WIDTH(C_S_AXI_THREAD_ID_WIDTH),
+		 .C_S_AXI_USER_WIDTH	(C_S_AXI_USER_WIDTH))
    altpcie_avl  (/*AUTOINST*/
 		 // Outputs
 		 .s_axis_tx_tdata	(s_axis_tx_tdata[C_DATA_WIDTH-1:0]),
@@ -154,6 +206,19 @@ module PIO #(
 		 .M_WSTRB		(M_WSTRB[(((C_M_AXI_DATA_WIDTH/8))-1):0]),
 		 .M_WUSER		(M_WUSER[((C_M_AXI_USER_WIDTH)-1):0]),
 		 .M_WVALID		(M_WVALID),
+		 .S_ARREADY		(S_ARREADY),
+		 .S_AWREADY		(S_AWREADY),
+		 .S_BID			(S_BID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
+		 .S_BRESP		(S_BRESP[1:0]),
+		 .S_BUSER		(S_BUSER[((C_S_AXI_USER_WIDTH)-1):0]),
+		 .S_BVALID		(S_BVALID),
+		 .S_RDATA		(S_RDATA[((C_S_AXI_DATA_WIDTH)-1):0]),
+		 .S_RID			(S_RID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
+		 .S_RLAST		(S_RLAST),
+		 .S_RRESP		(S_RRESP[1:0]),
+		 .S_RUSER		(S_RUSER[((C_S_AXI_USER_WIDTH)-1):0]),
+		 .S_RVALID		(S_RVALID),
+		 .S_WREADY		(S_WREADY),
 		 .m_ReadData		(m_ReadData[127:0]),
 		 .m_ReadDataValid	(m_ReadDataValid),
 		 .m_WaitRequest		(m_WaitRequest),
@@ -188,6 +253,37 @@ module PIO #(
 		 .M_RUSER		(M_RUSER[((C_M_AXI_USER_WIDTH)-1):0]),
 		 .M_RVALID		(M_RVALID),
 		 .M_WREADY		(M_WREADY),
+		 .S_ARADDR		(S_ARADDR[((C_S_AXI_ADDR_WIDTH)-1):0]),
+		 .S_ARBURST		(S_ARBURST[1:0]),
+		 .S_ARCACHE		(S_ARCACHE[3:0]),
+		 .S_ARID		(S_ARID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
+		 .S_ARLEN		(S_ARLEN[7:0]),
+		 .S_ARLOCK		(S_ARLOCK),
+		 .S_ARPROT		(S_ARPROT[2:0]),
+		 .S_ARQOS		(S_ARQOS[3:0]),
+		 .S_ARREGION		(S_ARREGION[3:0]),
+		 .S_ARSIZE		(S_ARSIZE[2:0]),
+		 .S_ARUSER		(S_ARUSER[((C_S_AXI_USER_WIDTH)-1):0]),
+		 .S_ARVALID		(S_ARVALID),
+		 .S_AWADDR		(S_AWADDR[((C_S_AXI_ADDR_WIDTH)-1):0]),
+		 .S_AWBURST		(S_AWBURST[1:0]),
+		 .S_AWCACHE		(S_AWCACHE[3:0]),
+		 .S_AWID		(S_AWID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
+		 .S_AWLEN		(S_AWLEN[7:0]),
+		 .S_AWLOCK		(S_AWLOCK),
+		 .S_AWPROT		(S_AWPROT[2:0]),
+		 .S_AWQOS		(S_AWQOS[3:0]),
+		 .S_AWREGION		(S_AWREGION[3:0]),
+		 .S_AWSIZE		(S_AWSIZE[2:0]),
+		 .S_AWUSER		(S_AWUSER[((C_S_AXI_USER_WIDTH)-1):0]),
+		 .S_AWVALID		(S_AWVALID),
+		 .S_BREADY		(S_BREADY),
+		 .S_RREADY		(S_RREADY),
+		 .S_WDATA		(S_WDATA[((C_S_AXI_DATA_WIDTH)-1):0]),
+		 .S_WLAST		(S_WLAST),
+		 .S_WSTRB		(S_WSTRB[(((C_S_AXI_DATA_WIDTH/8))-1):0]),
+		 .S_WUSER		(S_WUSER[((C_S_AXI_USER_WIDTH)-1):0]),
+		 .S_WVALID		(S_WVALID),
 		 .m_Address		(m_Address[63:0]),
 		 .m_BurstCount		(m_BurstCount[5:0]),
 		 .m_ByteEnable		(m_ByteEnable[15:0]),
@@ -204,7 +300,11 @@ module PIO #(
 	  .C_M_AXI_ADDR_WIDTH		(C_M_AXI_ADDR_WIDTH),
 	  .C_M_AXI_DATA_WIDTH		(C_M_AXI_DATA_WIDTH),
 	  .C_M_AXI_THREAD_ID_WIDTH	(C_M_AXI_THREAD_ID_WIDTH),
-	  .C_M_AXI_USER_WIDTH		(C_M_AXI_USER_WIDTH))
+	  .C_M_AXI_USER_WIDTH		(C_M_AXI_USER_WIDTH),
+	  .C_S_AXI_ADDR_WIDTH		(C_S_AXI_ADDR_WIDTH),
+	  .C_S_AXI_DATA_WIDTH		(C_S_AXI_DATA_WIDTH),
+	  .C_S_AXI_THREAD_ID_WIDTH	(C_S_AXI_THREAD_ID_WIDTH),
+	  .C_S_AXI_USER_WIDTH		(C_S_AXI_USER_WIDTH))
    m_tb  (/*AUTOINST*/
 	  // Outputs
 	  .m_Address			(m_Address[63:0]),
@@ -230,6 +330,37 @@ module PIO #(
 	  .M_RLAST			(M_RLAST),
 	  .M_RID			(M_RID[((C_M_AXI_THREAD_ID_WIDTH)-1):0]),
 	  .M_RUSER			(M_RUSER[((C_M_AXI_USER_WIDTH)-1):0]),
+	  .S_AWVALID			(S_AWVALID),
+	  .S_AWADDR			(S_AWADDR[((C_S_AXI_ADDR_WIDTH)-1):0]),
+	  .S_AWPROT			(S_AWPROT[2:0]),
+	  .S_AWREGION			(S_AWREGION[3:0]),
+	  .S_AWLEN			(S_AWLEN[7:0]),
+	  .S_AWSIZE			(S_AWSIZE[2:0]),
+	  .S_AWBURST			(S_AWBURST[1:0]),
+	  .S_AWLOCK			(S_AWLOCK),
+	  .S_AWCACHE			(S_AWCACHE[3:0]),
+	  .S_AWQOS			(S_AWQOS[3:0]),
+	  .S_AWID			(S_AWID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
+	  .S_AWUSER			(S_AWUSER[((C_S_AXI_USER_WIDTH)-1):0]),
+	  .S_WVALID			(S_WVALID),
+	  .S_WDATA			(S_WDATA[((C_S_AXI_DATA_WIDTH)-1):0]),
+	  .S_WSTRB			(S_WSTRB[(((C_S_AXI_DATA_WIDTH/8))-1):0]),
+	  .S_WLAST			(S_WLAST),
+	  .S_WUSER			(S_WUSER[((C_S_AXI_USER_WIDTH)-1):0]),
+	  .S_BREADY			(S_BREADY),
+	  .S_ARVALID			(S_ARVALID),
+	  .S_ARADDR			(S_ARADDR[((C_S_AXI_ADDR_WIDTH)-1):0]),
+	  .S_ARPROT			(S_ARPROT[2:0]),
+	  .S_ARREGION			(S_ARREGION[3:0]),
+	  .S_ARLEN			(S_ARLEN[7:0]),
+	  .S_ARSIZE			(S_ARSIZE[2:0]),
+	  .S_ARBURST			(S_ARBURST[1:0]),
+	  .S_ARLOCK			(S_ARLOCK),
+	  .S_ARCACHE			(S_ARCACHE[3:0]),
+	  .S_ARQOS			(S_ARQOS[3:0]),
+	  .S_ARID			(S_ARID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
+	  .S_ARUSER			(S_ARUSER[((C_S_AXI_USER_WIDTH)-1):0]),
+	  .S_RREADY			(S_RREADY),
 	  // Inputs
 	  .user_clk			(user_clk),
 	  .user_reset			(user_reset),
@@ -272,6 +403,19 @@ module PIO #(
 	  .M_ARQOS			(M_ARQOS[3:0]),
 	  .M_ARID			(M_ARID[((C_M_AXI_THREAD_ID_WIDTH)-1):0]),
 	  .M_ARUSER			(M_ARUSER[((C_M_AXI_USER_WIDTH)-1):0]),
-	  .M_RREADY			(M_RREADY));
+	  .M_RREADY			(M_RREADY),
+	  .S_AWREADY			(S_AWREADY),
+	  .S_WREADY			(S_WREADY),
+	  .S_BVALID			(S_BVALID),
+	  .S_BRESP			(S_BRESP[1:0]),
+	  .S_BID			(S_BID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
+	  .S_BUSER			(S_BUSER[((C_S_AXI_USER_WIDTH)-1):0]),
+	  .S_ARREADY			(S_ARREADY),
+	  .S_RVALID			(S_RVALID),
+	  .S_RDATA			(S_RDATA[((C_S_AXI_DATA_WIDTH)-1):0]),
+	  .S_RRESP			(S_RRESP[1:0]),
+	  .S_RLAST			(S_RLAST),
+	  .S_RID			(S_RID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
+	  .S_RUSER			(S_RUSER[((C_S_AXI_USER_WIDTH)-1):0]));
    
 endmodule // PIO

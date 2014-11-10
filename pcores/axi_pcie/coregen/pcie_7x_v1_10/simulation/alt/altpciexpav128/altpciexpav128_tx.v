@@ -31,88 +31,143 @@ module altpciexpav128_tx
      parameter              CB_PCIE_RX_LITE = 0,
      parameter              CB_RXM_DATA_WIDTH = 128,
      parameter              BYPASSS_A2P_TRANSLATION = 0,
-     parameter              AVALON_ADDR_WIDTH = 32
+     parameter              AVALON_ADDR_WIDTH = 32,
+     
+   parameter C_S_AXI_ADDR_WIDTH       = 64,
+   parameter C_S_AXI_DATA_WIDTH       = 128,
+   parameter C_S_AXI_THREAD_ID_WIDTH  = 3,
+   parameter C_S_AXI_USER_WIDTH       = 3
+ 
   )
 
   ( 
-    input                                  Clk_i,
-    input                                  Rstn_i,
+    input 				       Clk_i,
+    input 				       Rstn_i,
     /// Avalon interface                   
-    input                                  TxsRstn_i,
-    input                                  TxChipSelect_i,
-    input                                  TxRead_i,
-    input                                  TxWrite_i,
-    input   [127:0]                        TxWriteData_i,
-    input   [5:0]                          TxBurstCount_i,
-    input   [CG_AVALON_S_ADDR_WIDTH-1:0]   TxAddress_i,
-    input   [15:0]                          TxByteEnable_i,
-    input                                  TxReadDataValid_i,
-    input   [CB_RXM_DATA_WIDTH-1:0]        TxReadData_i,
-    output                                 TxWaitRequest_o,            
-    input  [CG_RXM_IRQ_NUM-1 : 0]          RxmIrq_i,  
-    input                                  MasterEnable_i,
+    input 				       TxsRstn_i,
+    input 				       TxChipSelect_i,
+    input 				       TxRead_i,
+    input 				       TxWrite_i,
+    input [127:0] 			       TxWriteData_i,
+    input [5:0] 			       TxBurstCount_i,
+    input [CG_AVALON_S_ADDR_WIDTH-1:0] 	       TxAddress_i,
+    input [15:0] 			       TxByteEnable_i,
+    input 				       TxReadDataValid_i,
+    input [CB_RXM_DATA_WIDTH-1:0] 	       TxReadData_i,
+    output 				       TxWaitRequest_o, 
+    input [CG_RXM_IRQ_NUM-1 : 0] 	       RxmIrq_i, 
+    input 				       MasterEnable_i,
                                            
     /// PCIe Core interface                
-     input                                 TxStReady_i  ,
-     output   [127:0]                      TxStData_o   ,
-     output   [31:0]                       TxStParity_o ,
-     output                                TxStErr_o    ,
-     output                                TxStSop_o    ,
-     output                                TxStEop_o    ,
-     output   [1:0]                        TxStEmpty_o  ,
-     output                                TxStValid_o  ,
-     input                                 TxAdapterFifoEmpty_i,
-     input  [31:0]                         DevCsr_i, 
-     input  [12:0]                         BusDev_i, 
-     output                                CplPending_o,
+    input 				       TxStReady_i ,
+    output [127:0] 			       TxStData_o ,
+    output [31:0] 			       TxStParity_o ,
+    output 				       TxStErr_o ,
+    output 				       TxStSop_o ,
+    output 				       TxStEop_o ,
+    output [1:0] 			       TxStEmpty_o ,
+    output 				       TxStValid_o ,
+    input 				       TxAdapterFifoEmpty_i,
+    input [31:0] 			       DevCsr_i, 
+    input [12:0] 			       BusDev_i, 
+    output 				       CplPending_o,
           
        
      /// Tx Credit interface
-     input   [5 : 0]                      TxCredHipCons_i,
-     input   [5 : 0]                      TxCredInfinit_i,
-     input   [7 : 0]                      TxCredNpHdrLimit_i,
-     input   [7:0]                        ko_cpl_spc_header,
-     input   [11:0]                       ko_cpl_spc_data,
+    input [5 : 0] 			       TxCredHipCons_i,
+    input [5 : 0] 			       TxCredInfinit_i,
+    input [7 : 0] 			       TxCredNpHdrLimit_i,
+    input [7:0] 			       ko_cpl_spc_header,
+    input [11:0] 			       ko_cpl_spc_data,
                                            
     // Rx Control interface                
-     input                                 RxPndgRdFifoEmpty_i,
-     input  [56:0]                         RxPndgRdFifoDato_i,
+    input 				       RxPndgRdFifoEmpty_i,
+    input [56:0] 			       RxPndgRdFifoDato_i,
                                            
                                            
-     output                                RxPndgRdFifoRdReq_o,
+    output 				       RxPndgRdFifoRdReq_o,
                                            
-     output                                TxCplSent_o,
-     output [4:0]                          TxCplLineSent_o,
-     output                                TxRespIdle_o,
-     input                                 CplTagRelease_i,
+    output 				       TxCplSent_o,
+    output [4:0] 			       TxCplLineSent_o,
+    output 				       TxRespIdle_o,
+    input 				       CplTagRelease_i,
     
     // Control reg interface for address translation table read and write
-    input   [11:2]                         AdTrAddress_i,    /// Trans table address
-    input   [3:0]                          AdTrByteEnable_i, // write byte enable
-    input                                  AdTrWriteVld_i,  // write enable
-    input   [31:0]                         AdTrWriteData_i, // write data
-    input                                  AdTrReadVld_i,   // read request qualifies the AdTrAddress_i
-    output  [31:0]                         AdTrReadData_o,  // read data
-    output                                 AdTrReadVld_o,    // read data valid
-   output                                 MsiReq_o,  
-  input                                  MsiAck_i,  
-  output                               IntxReq_o,
-  input                                IntxAck_i,
+    input [11:2] 			       AdTrAddress_i, /// Trans table address
+    input [3:0] 			       AdTrByteEnable_i, // write byte enable
+    input 				       AdTrWriteVld_i, // write enable
+    input [31:0] 			       AdTrWriteData_i, // write data
+    input 				       AdTrReadVld_i, // read request qualifies the AdTrAddress_i
+    output [31:0] 			       AdTrReadData_o, // read data
+    output 				       AdTrReadVld_o, // read data valid
+    output 				       MsiReq_o, 
+    input 				       MsiAck_i, 
+    output 				       IntxReq_o,
+    input 				       IntxAck_i,
   
-  input      [15:0]                    MsiCsr_i,
-  input      [63:0]                    MsiAddr_i,
-  input      [15:0]                    MsiData_i,
-  input      [31:0]                    PCIeIrqEna_i,
-  input      [11:0]                    A2PMbWrAddr_i,
-  input                                A2PMbWrReq_i,
-  input                                TxsReadDataValid_i,
+    input [15:0] 			       MsiCsr_i,
+    input [63:0] 			       MsiAddr_i,
+    input [15:0] 			       MsiData_i,
+    input [31:0] 			       PCIeIrqEna_i,
+    input [11:0] 			       A2PMbWrAddr_i,
+    input 				       A2PMbWrReq_i,
+    input 				       TxsReadDataValid_i,
   
-  output                               TxRpFifoRdReq_o,
-  input      [130:0]                   TxRpFifoData_i,  
-  input                                RpTLPReady_i,
-  input                                pld_clk_inuse,
-  output                               tx_cons_cred_sel,
-  output                               TxBufferEmpty_o 
+    output 				       TxRpFifoRdReq_o,
+    input [130:0] 			       TxRpFifoData_i, 
+    input 				       RpTLPReady_i,
+    input 				       pld_clk_inuse,
+    output 				       tx_cons_cred_sel,
+    output 				       TxBufferEmpty_o,
+
+   ////////////// axi slave  ///////////////
+    input 				       S_AWVALID,
+    input [((C_S_AXI_ADDR_WIDTH) - 1):0]       S_AWADDR,
+    input [2:0] 			       S_AWPROT,
+    input [3:0] 			       S_AWREGION,
+    input [7:0] 			       S_AWLEN,
+    input [2:0] 			       S_AWSIZE,
+    input [1:0] 			       S_AWBURST,
+    input 				       S_AWLOCK,
+    input [3:0] 			       S_AWCACHE,
+    input [3:0] 			       S_AWQOS,
+    input [((C_S_AXI_THREAD_ID_WIDTH) - 1):0]  S_AWID,
+    input [((C_S_AXI_USER_WIDTH) - 1):0]       S_AWUSER,
+    output 				       S_AWREADY,
+   
+    input 				       S_WVALID,
+    input [((C_S_AXI_DATA_WIDTH) - 1):0]       S_WDATA,
+    input [(((C_S_AXI_DATA_WIDTH / 8)) - 1):0] S_WSTRB,
+    input 				       S_WLAST,
+    input [((C_S_AXI_USER_WIDTH) - 1):0]       S_WUSER,
+    output 				       S_WREADY,
+    output 				       S_BVALID,
+    output [1:0] 			       S_BRESP,
+    output [((C_S_AXI_THREAD_ID_WIDTH) - 1):0] S_BID,
+    output [((C_S_AXI_USER_WIDTH) - 1):0]      S_BUSER,
+    input 				       S_BREADY,
+   
+    input 				       S_ARVALID,
+    input [((C_S_AXI_ADDR_WIDTH) - 1):0]       S_ARADDR,
+    input [2:0] 			       S_ARPROT,
+    input [3:0] 			       S_ARREGION,
+    input [7:0] 			       S_ARLEN,
+    input [2:0] 			       S_ARSIZE,
+    input [1:0] 			       S_ARBURST,
+    input 				       S_ARLOCK,
+    input [3:0] 			       S_ARCACHE,
+    input [3:0] 			       S_ARQOS,
+    input [((C_S_AXI_THREAD_ID_WIDTH) - 1):0]  S_ARID,
+    input [((C_S_AXI_USER_WIDTH) - 1):0]       S_ARUSER,
+    output 				       S_ARREADY/*,
+
+    output 				       S_RVALID,
+    output [((C_S_AXI_DATA_WIDTH) - 1):0]      S_RDATA,
+    output [1:0] 			       S_RRESP,
+    output 				       S_RLAST,
+    output [((C_S_AXI_THREAD_ID_WIDTH) - 1):0] S_RID,
+    output [((C_S_AXI_USER_WIDTH) - 1):0]      S_RUSER,
+    input 				       S_RREADY*/
     
   );
   
@@ -212,9 +267,16 @@ altpciexpav128_txavl_cntrl
    .CB_PCIE_MODE(CB_PCIE_MODE),
    .CG_RXM_IRQ_NUM(CG_RXM_IRQ_NUM),
    .CB_PCIE_RX_LITE(CB_PCIE_RX_LITE),
-   .AVALON_ADDR_WIDTH(AVALON_ADDR_WIDTH)
-  
-   )
+   .AVALON_ADDR_WIDTH(AVALON_ADDR_WIDTH),
+
+   /*AUTOINSTPARAM*/
+   // Parameters
+   .CB_A2P_ADDR_MAP_PASS_THRU_BITS	(CB_A2P_ADDR_MAP_PASS_THRU_BITS),
+   .BYPASSS_A2P_TRANSLATION		(BYPASSS_A2P_TRANSLATION),
+   .C_S_AXI_ADDR_WIDTH			(C_S_AXI_ADDR_WIDTH),
+   .C_S_AXI_DATA_WIDTH			(C_S_AXI_DATA_WIDTH),
+   .C_S_AXI_THREAD_ID_WIDTH		(C_S_AXI_THREAD_ID_WIDTH),
+   .C_S_AXI_USER_WIDTH			(C_S_AXI_USER_WIDTH))
    
 txavl
     
@@ -249,9 +311,48 @@ txavl
        .PCIeIrqEna_i(PCIeIrqEna_i),   
        .A2PMbWrAddr_i(A2PMbWrAddr_i),  
        .A2PMbWrReq_i(A2PMbWrReq_i),
-       .TxsReadDataValid_i(TxsReadDataValid_i)
+       .TxsReadDataValid_i(TxsReadDataValid_i),
 
-);     
+       /*AUTOINST*/
+ // Outputs
+ .S_AWREADY				(S_AWREADY),
+ .S_WREADY				(S_WREADY),
+ .S_BVALID				(S_BVALID),
+ .S_BRESP				(S_BRESP[1:0]),
+ .S_BID					(S_BID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
+ .S_BUSER				(S_BUSER[((C_S_AXI_USER_WIDTH)-1):0]),
+ .S_ARREADY				(S_ARREADY),
+ // Inputs
+ .S_AWVALID				(S_AWVALID),
+ .S_AWADDR				(S_AWADDR[((C_S_AXI_ADDR_WIDTH)-1):0]),
+ .S_AWPROT				(S_AWPROT[2:0]),
+ .S_AWREGION				(S_AWREGION[3:0]),
+ .S_AWLEN				(S_AWLEN[7:0]),
+ .S_AWSIZE				(S_AWSIZE[2:0]),
+ .S_AWBURST				(S_AWBURST[1:0]),
+ .S_AWLOCK				(S_AWLOCK),
+ .S_AWCACHE				(S_AWCACHE[3:0]),
+ .S_AWQOS				(S_AWQOS[3:0]),
+ .S_AWID				(S_AWID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
+ .S_AWUSER				(S_AWUSER[((C_S_AXI_USER_WIDTH)-1):0]),
+ .S_WVALID				(S_WVALID),
+ .S_WDATA				(S_WDATA[((C_S_AXI_DATA_WIDTH)-1):0]),
+ .S_WSTRB				(S_WSTRB[(((C_S_AXI_DATA_WIDTH/8))-1):0]),
+ .S_WLAST				(S_WLAST),
+ .S_WUSER				(S_WUSER[((C_S_AXI_USER_WIDTH)-1):0]),
+ .S_BREADY				(S_BREADY),
+ .S_ARVALID				(S_ARVALID),
+ .S_ARADDR				(S_ARADDR[((C_S_AXI_ADDR_WIDTH)-1):0]),
+ .S_ARPROT				(S_ARPROT[2:0]),
+ .S_ARREGION				(S_ARREGION[3:0]),
+ .S_ARLEN				(S_ARLEN[7:0]),
+ .S_ARSIZE				(S_ARSIZE[2:0]),
+ .S_ARBURST				(S_ARBURST[1:0]),
+ .S_ARLOCK				(S_ARLOCK),
+ .S_ARCACHE				(S_ARCACHE[3:0]),
+ .S_ARQOS				(S_ARQOS[3:0]),
+ .S_ARID				(S_ARID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
+ .S_ARUSER				(S_ARUSER[((C_S_AXI_USER_WIDTH)-1):0]));     
        
 //// Address translation (A2P)
 //// instantiation of the address translation module
@@ -568,5 +669,4 @@ tx_cntrl
   .tx_cons_cred_sel(tx_cons_cred_sel)
   
 );
-
 endmodule
