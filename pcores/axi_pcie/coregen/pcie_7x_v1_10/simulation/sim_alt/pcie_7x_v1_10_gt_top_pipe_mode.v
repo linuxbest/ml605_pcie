@@ -607,25 +607,25 @@ module pcie_7x_v1_10_gt_top_pipe_mode #
 		`BFM.xbfm_memory_write (`XBFM_MEM32, 32'h0000_0000, 4096, databuf);
 		`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h7C, 4'hF, 32'hAA55_55AA);
 	
-		`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h10, 4'hF, 32'h1234_5678);
-		`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h24, 4'hF, 32'h2234_5678);
-		`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h38, 4'hF, 32'h3234_5678);
-		`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h4C, 4'hF, 32'h4234_5678);
+		//`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h10, 4'hF, 32'h1234_5678);
+		//`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h24, 4'hF, 32'h2234_5678);
+		//`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h38, 4'hF, 32'h3234_5678);
+		//`BFM.xbfm_dword (`XBFM_MWR, C_BAR0 + 8'h4C, 4'hF, 32'h4234_5678);
 
-		`BFM.xbfm_dword (`XBFM_MRD, C_BAR0 + 8'h10, 4'hF, 32'h1234_5678);
-		`BFM.xbfm_dword (`XBFM_MRD, C_BAR0 + 8'h24, 4'hF, 32'h2234_5678);
-		`BFM.xbfm_dword (`XBFM_MRD, C_BAR0 + 8'h38, 4'hF, 32'h3234_5678);
-		`BFM.xbfm_dword (`XBFM_MRD, C_BAR0 + 8'h4C, 4'hF, 32'h4234_5678);
+		//`BFM.xbfm_dword (`XBFM_MRD, C_BAR0 + 8'h10, 4'hF, 32'h1234_5678);
+		//`BFM.xbfm_dword (`XBFM_MRD, C_BAR0 + 8'h24, 4'hF, 32'h2234_5678);
+		//`BFM.xbfm_dword (`XBFM_MRD, C_BAR0 + 8'h38, 4'hF, 32'h3234_5678);
+		//`BFM.xbfm_dword (`XBFM_MRD, C_BAR0 + 8'h4C, 4'hF, 32'h4234_5678);
 
-		`BFM.xbfm_burst (`XBFM_MWR, C_BAR0+8'h100, 64+32, databuf, 3'b000, 2'b00);
-		`BFM.xbfm_burst (`XBFM_MWR, C_BAR0+8'h204, 64+32, databuf, 3'b000, 2'b00);
-		`BFM.xbfm_burst (`XBFM_MWR, C_BAR0+8'h308, 64+32, databuf, 3'b000, 2'b00);
-		`BFM.xbfm_burst (`XBFM_MWR, C_BAR0+8'h40C, 64+32, databuf, 3'b000, 2'b00);
-		
-		`BFM.xbfm_burst (`XBFM_MRD, C_BAR0+8'h100, 64+32, databuf, 3'b000, 2'b00);
-		`BFM.xbfm_burst (`XBFM_MRD, C_BAR0+8'h204, 64+32, databuf, 3'b000, 2'b00);
-		`BFM.xbfm_burst (`XBFM_MRD, C_BAR0+8'h308, 64+32, databuf, 3'b000, 2'b00);
-		`BFM.xbfm_burst (`XBFM_MRD, C_BAR0+8'h40C, 64+32, databuf, 3'b000, 2'b00);
+		//`BFM.xbfm_burst (`XBFM_MWR, C_BAR0+8'h100, 64+32, databuf, 3'b000, 2'b00);
+		//`BFM.xbfm_burst (`XBFM_MWR, C_BAR0+8'h204, 64+32, databuf, 3'b000, 2'b00);
+		//`BFM.xbfm_burst (`XBFM_MWR, C_BAR0+8'h308, 64+32, databuf, 3'b000, 2'b00);
+		//`BFM.xbfm_burst (`XBFM_MWR, C_BAR0+8'h40C, 64+32, databuf, 3'b000, 2'b00);
+		//
+		//`BFM.xbfm_burst (`XBFM_MRD, C_BAR0+8'h100, 64+32, databuf, 3'b000, 2'b00);
+		//`BFM.xbfm_burst (`XBFM_MRD, C_BAR0+8'h204, 64+32, databuf, 3'b000, 2'b00);
+		//`BFM.xbfm_burst (`XBFM_MRD, C_BAR0+8'h308, 64+32, databuf, 3'b000, 2'b00);
+		//`BFM.xbfm_burst (`XBFM_MRD, C_BAR0+8'h40C, 64+32, databuf, 3'b000, 2'b00);
 
 		`BFM.xbfm_wait_event(`XBFM_INTAA_RCVD);
 		#200;

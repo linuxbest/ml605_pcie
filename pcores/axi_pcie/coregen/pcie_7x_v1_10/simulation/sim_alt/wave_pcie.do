@@ -256,6 +256,11 @@ eval add wave -noupdate $ascopt $pcie${ps}tx${ps}txavl${ps}txavl_state_ascii
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}txavl${ps}AvlAddrVld_o
 eval add wave -noupdate $hexopt $pcie${ps}tx${ps}txavl${ps}AvlAddr_o
 
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}txavl${ps}TxByteEnable
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}txavl${ps}first_avlbe_reg
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}txavl${ps}last_avlbe_reg
+
+
 eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}txavl${ps}pci_exp_address(63 downto 32)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}txavl${ps}pci_exp_address(31 downto 0)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}txavl${ps}PCIeAddr_i(63 downto 32)\"
@@ -294,9 +299,9 @@ do wave_AXI.do
 #set scfifo $pcie${ps}rx${ps}pndgtxrd_fifo${ps}pndgtxrd_fifo
 #do wave_scfifo.do
 
-#eval add wave -noupdate -divider {"PCIE pndgtxrd_fifo"}
-#set scfifo $pcie${ps}rx${ps}pndgtxrd_fifo${ps}pndgtxrd_sc_fifo
-#do wave_sc_fifo.do
+eval add wave -noupdate -divider {"PCIE pndgtxrd_fifo"}
+set scfifo $pcie${ps}rx${ps}pndgtxrd_fifo${ps}pndgtxrd_sc_fifo
+do wave_sc_fifo.do
 
 #eval add wave -noupdate -divider {"PCIE cpl ram"}
 #set scfifo $pcie${ps}rx${ps}cpl_ram${ps}cpl_ram
@@ -318,17 +323,17 @@ do wave_sc_fifo.do
 #set scfifo $pcie${ps}tx${ps}wrdat_fifo${ps}wrdat_fifo
 #do wave_scfifo.do
 
-#eval add wave -noupdate -divider {"PCIE wrdat_sc_fifo"}
-#set scfifo $pcie${ps}tx${ps}wrdat_fifo${ps}wrdat_sc_fifo
-#do wave_sc_fifo.do
+eval add wave -noupdate -divider {"PCIE wrdat_sc_fifo"}
+set scfifo $pcie${ps}tx${ps}wrdat_fifo${ps}wrdat_sc_fifo
+do wave_sc_fifo.do
 
 #eval add wave -noupdate -divider {"PCIE rd_bypass_fifo"}
 #set scfifo $pcie${ps}tx${ps}rd_bypass_fifo${ps}rd_bypass_fifo
 #do wave_scfifo.do
 
-#eval add wave -noupdate -divider {"PCIE rd_bypass_sc_fifo"}
-#set scfifo $pcie${ps}tx${ps}rd_bypass_fifo${ps}rd_bypass_sc_fifo
-#do wave_sc_fifo.do
+eval add wave -noupdate -divider {"PCIE rd_bypass_sc_fifo"}
+set scfifo $pcie${ps}tx${ps}rd_bypass_fifo${ps}rd_bypass_sc_fifo
+do wave_sc_fifo.do
 
 #eval add wave -noupdate -divider {"PCIE cpl ram"}
 #set scfifo $pcie${ps}tx${ps}tx_cpl_buff${ps}tx_cpl_buff
@@ -340,4 +345,8 @@ do wave_sc_fifo.do
 
 eval add wave -noupdate -divider {"PCIE tx_output_fifo"}
 set scfifo $pcie${ps}tx${ps}tx_cntrl${ps}tx_output_fifo
+do wave_sc_fifo.do
+
+eval add wave -noupdate -divider {"PCIE pendingrd_fifo"}
+set scfifo $pcie${ps}tx${ps}txavl${ps}pendingrd_fifo
 do wave_sc_fifo.do

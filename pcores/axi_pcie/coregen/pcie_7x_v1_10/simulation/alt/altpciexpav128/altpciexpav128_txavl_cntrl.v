@@ -475,7 +475,7 @@ assign wr_fifos_ok = cmd_fifo_ok & wrdat_fifo_ok;
      end
     else if(sm_idle)
      begin
-      tx_single_qw_reg <= (S_AWLEN == 0);
+      tx_single_qw_reg <= write_gnt ? (S_AWLEN == 0) : (S_ARLEN == 0);
      end
   end
  
@@ -524,7 +524,7 @@ assign wr_fifos_ok = cmd_fifo_ok & wrdat_fifo_ok;
     if(~Rstn_i)
       burst_counter <= 10'h0;
     else if(sm_idle)
-      burst_counter <= {4'b0000, S_AWLEN[5:0]};
+      burst_counter <= write_gnt ? {4'b0000, S_AWLEN[5:0]+1} : {4'b0000, S_ARLEN[5:0]+1};
     else if(sm_burst_data &  S_WVALID)
       burst_counter <= burst_counter - 1'b1;
   end
@@ -596,7 +596,7 @@ always @(posedge AvlClk_i or negedge Rstn_i)
     if(~Rstn_i)
       tx_burst_cnt_reg <= 6'h0;
     else if(~TxWaitRequest_o) 
-      tx_burst_cnt_reg <= S_AWLEN + 1;
+      tx_burst_cnt_reg <= write_gnt ? S_AWLEN + 1 : S_ARLEN + 1;
   end  
   
 // Since the read with burst count > 1 must have all byte enable asserted
@@ -1029,7 +1029,7 @@ assign pendingrd_fifo_latch  = pendingrd_state[1];
 		 .SUP_REWIND		(0),
 		 .INIT_OUTREG		(0),
 		 .ADDRW			(4))
-     pndgtxrd_sc_fifo (
+     pendingrd_fifo (
 		       // Outputs
 		       .dout		(pendingrd_fifo_q),
 		       .full		(),
