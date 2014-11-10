@@ -291,17 +291,18 @@ module m_tb (/*AUTOARG*/
 
       S_RREADY           = 1;
       
-      while (master_ready == 0)
+      while (master_ready == 0 || 1)
 	@(posedge user_clk);
 
       for (j = 0; j < cnt; j = j + 1) begin    
 	 S_ARADDR      = 32'h8000_0000;
 	 S_ARLEN       = 31;
 	 S_ARVALID     = 1;
+         S_ARID        = j;
 	 
 	 @(posedge user_clk);
 	 while (S_ARREADY == 0)
-	   @(posedge user_clk)
+	   @(posedge user_clk);
 
 	 S_ARVALID = 0;
 	 @(posedge user_clk);
@@ -334,7 +335,7 @@ module m_tb (/*AUTOARG*/
       S_WLAST            = 0;
       S_WUSER            = 0;
       
-      while (master_ready == 0 || 1)
+      while (master_ready == 0)
 	@(posedge user_clk);
 
       for (m = 0; m < cnt; m = m + 1) begin    
@@ -343,7 +344,7 @@ module m_tb (/*AUTOARG*/
 	 S_AWVALID     = 1;
 	 @(posedge user_clk);
 	 while (S_AWREADY == 0)
-	   @(posedge user_clk)
+	   @(posedge user_clk);
 
 	 S_AWVALID = 0;
 	 @(posedge user_clk);
