@@ -256,8 +256,8 @@ module m_tb (/*AUTOARG*/
 	  end
 	rxm_raddr    <= M_ARADDR;
 	M_RDATA      <= rxm_data[rxm_raddr];
-	M_RVALID     <= s_Read;
-	M_RLAST      <= s_Read;
+	M_RVALID     <= M_ARVALID;
+	M_RLAST      <= M_ARVALID;
      end
    assign rxm_addr      = M_AWADDR;
    
@@ -273,7 +273,7 @@ module m_tb (/*AUTOARG*/
    assign M_RUSER       = 0;
    
    // MASTER
-   integer i, j, m, cnt = 65536;
+   integer i, j, m, cnt = 128;
    initial begin
       S_ARVALID          = 0;
       S_ARADDR           = 0;
@@ -298,6 +298,8 @@ module m_tb (/*AUTOARG*/
 	 S_ARADDR      = 32'h8000_0000;
 	 S_ARLEN       = 31;
 	 S_ARVALID     = 1;
+	 
+	 @(posedge user_clk);
 	 while (S_ARREADY == 0)
 	   @(posedge user_clk)
 
@@ -306,6 +308,7 @@ module m_tb (/*AUTOARG*/
 	 @(posedge user_clk);
 	 @(posedge user_clk);
       end
+      $stop;
    end // initial begin
 
    initial begin
@@ -338,6 +341,7 @@ module m_tb (/*AUTOARG*/
 	 S_AWADDR      = 32'h8000_0000;
 	 S_AWLEN       = 31;
 	 S_AWVALID     = 1;
+	 @(posedge user_clk);
 	 while (S_AWREADY == 0)
 	   @(posedge user_clk)
 
