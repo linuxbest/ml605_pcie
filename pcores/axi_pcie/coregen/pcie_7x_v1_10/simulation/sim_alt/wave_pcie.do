@@ -220,6 +220,14 @@ eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}output_fifo_ok_reg
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}is_wr
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}is_cpl
 
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}TxCredHipCons_i
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}TxCredInfinit_i
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}TxCredNpHdrLimit_i
+
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}np_header_avail
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}nph_cred_cons_reg
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}nph_cred_limit_reg
+
 eval add wave -noupdate -divider {"PCIE stream TXM"}
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}Clk_i
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}Rstn_i

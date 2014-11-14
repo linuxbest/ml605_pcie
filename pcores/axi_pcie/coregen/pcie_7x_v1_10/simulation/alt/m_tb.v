@@ -273,7 +273,7 @@ module m_tb (/*AUTOARG*/
    assign M_RUSER       = 0;
    
    // MASTER
-   integer i, j, m, cnt = 128;
+   integer i, j, m, ir, iw, cnt = 128;
    initial begin
       S_ARVALID          = 0;
       S_ARADDR           = 0;
@@ -305,9 +305,9 @@ module m_tb (/*AUTOARG*/
 	   @(posedge user_clk);
 
 	 S_ARVALID = 0;
-	 @(posedge user_clk);
-	 @(posedge user_clk);
-	 @(posedge user_clk);
+	 for (ir = 0; ir < 100; ir = ir + 1) begin
+	     @(posedge user_clk);
+         end
       end
       $stop;
    end // initial begin
@@ -360,9 +360,9 @@ module m_tb (/*AUTOARG*/
 	 end
 	 S_WVALID  = 0;
 
-	 @(posedge user_clk);
-	 @(posedge user_clk);
-	 @(posedge user_clk);
+	 for (iw = 0; iw < 100; iw = iw + 1) begin
+	     @(posedge user_clk);
+         end
       end
    end
 endmodule

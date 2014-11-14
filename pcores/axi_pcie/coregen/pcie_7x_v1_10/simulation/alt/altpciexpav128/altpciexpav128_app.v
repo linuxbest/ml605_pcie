@@ -116,16 +116,16 @@ module altpciexpav128_app
  input 					     TxAdapterFifoEmpty_i,
  output 				     CplPending_o,
 /// Tx Credit interface
- input [11 : 0] 			     TxCredPDataLimit_i, 
- input [11 : 0] 			     TxCredNpDataLimit_i,
- input [11 : 0] 			     TxCredCplDataLimit_i,
+ input [11 : 0] 			     TxCredPDataLimit_i,  /* unused */
+ input [11 : 0] 			     TxCredNpDataLimit_i, /* unused */
+ input [11 : 0] 			     TxCredCplDataLimit_i,/* unused */
  input [5 : 0] 				     TxCredHipCons_i,
  input [5 : 0] 				     TxCredInfinit_i,
- input [7 : 0] 				     TxCredPHdrLimit_i,
+ input [7 : 0] 				     TxCredPHdrLimit_i,   /* unused */
  input [7 : 0] 				     TxCredNpHdrLimit_i,
- input [7 : 0] 				     TxCredCplHdrLimit_i,
- input [7:0] 				     ko_cpl_spc_header,
- input [11:0] 				     ko_cpl_spc_data,
+ input [7 : 0] 				     TxCredCplHdrLimit_i, /* unused */
+ input [7:0] 				     ko_cpl_spc_header,   /* unused */
+ input [11:0] 				     ko_cpl_spc_data,     /* unused */
 
 
 // Config interface          
