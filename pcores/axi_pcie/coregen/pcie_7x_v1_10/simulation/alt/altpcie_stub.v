@@ -445,11 +445,25 @@ module altpcie_stub (/*AUTOARG*/
    wire         txfifo_rd;
    wire 	txfifo_empty;
    wire [3:0] 	txfifo_count;
+   reg 		txfifo_ready;
    assign s_axis_tx_tdata = txfifo_rdata[127:0];
    assign s_axis_tx_tkeep = txfifo_rdata[143:128];
    assign s_axis_tx_tlast = txfifo_rdata[144];
-   assign s_axis_tx_tvalid= ~txfifo_empty;
+   assign s_axis_tx_tvalid= ~txfifo_empty && txfifo_ready;
    assign txfifo_rd       = s_axis_tx_tvalid & s_axis_tx_tready;
+
+   always @(posedge user_clk)
+     begin
+	if ((txfifo_rdata[144] && s_axis_tx_tready && txfifo_ready) ||
+	    tx_buf_av[5:4] == 2'b00)
+	  begin
+	     txfifo_ready <= #1 1'b0;
+	  end
+	else
+	  begin
+	     txfifo_ready <= #1 1'b1;
+	  end
+     end // always @ (posedge user_clk)
    
    reg [144:0]  txfifo_wdata;
    reg          txfifo_we;

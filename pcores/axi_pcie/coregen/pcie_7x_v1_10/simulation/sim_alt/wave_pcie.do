@@ -160,6 +160,7 @@ eval add wave -noupdate $binopt $pcie${ps}tx${ps}Rstn_i
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}TxsRstn_i
 
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}TxStReady_i
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}TxStValid_o
 #eval add wave -noupdate $binopt $pcie${ps}tx${ps}TxStErr_o
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}TxStSop_o
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}TxStEop_o
