@@ -38,7 +38,8 @@ module PIO #(
   input  [7:0]                  fc_nph,
   input  [11:0]                 fc_pd,
   input  [7:0]                  fc_ph,
-  output [2:0]                  fc_sel
+  output [2:0]                  fc_sel,
+  input [5:0]                   tx_buf_av
 );
    
    localparam C_M_AXI_ADDR_WIDTH      = 64;
@@ -307,7 +308,8 @@ module PIO #(
 		 .m_WriteData		(m_WriteData[127:0]),
 		 .s_ReadData		(s_ReadData[127:0]),
 		 .s_ReadDataValid	(s_ReadDataValid),
-		 .s_WaitRequest		(s_WaitRequest));
+		 .s_WaitRequest		(s_WaitRequest),
+		 .tx_buf_av		(tx_buf_av[5:0]));
 
    m_tb #(/*AUTOINSTPARAM*/
 	  // Parameters

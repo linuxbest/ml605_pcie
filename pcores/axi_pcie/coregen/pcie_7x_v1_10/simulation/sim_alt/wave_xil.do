@@ -4,6 +4,7 @@ set pcie "/board/EP/app/PIO"
 set binopt {-logic}
 set hexopt {-literal -hex}
 set ascopt {-literal -ascii}
+set intopt {-literal -signed}
 
 eval add wave -noupdate -divider {"PCIE stream RX"}
 eval add wave -noupdate $binopt $pcie${ps}user_clk
@@ -44,48 +45,7 @@ eval add wave -noupdate $hexopt $pcie${ps}fc_nph
 eval add wave -noupdate $hexopt $pcie${ps}fc_pd
 eval add wave -noupdate $hexopt $pcie${ps}fc_ph
 eval add wave -noupdate $hexopt $pcie${ps}fc_sel
-
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_cpld_ava
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_cplh_ava
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_npd_ava
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_nph_ava
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_pd_ava
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_ph_ava
-
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_cpld_lmt
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_cplh_lmt
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_npd_lmt
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_nph_lmt
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_pd_lmt
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_ph_lmt
-
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_cpld_con
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_cplh_con
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_npd_con
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_nph_con
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_pd_con
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}rx_fc_ph_con
-
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_cpld_ava
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_cplh_ava
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_npd_ava
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_nph_ava
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_pd_ava
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_ph_ava
-
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_cpld_lmt
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_cplh_lmt
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_npd_lmt
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_nph_lmt
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_pd_lmt
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_ph_lmt
-
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_cpld_con
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_cplh_con
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_npd_con
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_nph_con
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_pd_con
-eval add wave -noupdate $hexopt $pcie${ps}altpcie_avl${ps}altpcie_stub${ps}tx_fc_ph_con
+eval add wave -noupdate $hexopt $pcie${ps}tx_buf_av
 
 eval add wave -noupdate -divider {"Slave"}
 eval add wave -noupdate $binopt $pcie${ps}user_clk

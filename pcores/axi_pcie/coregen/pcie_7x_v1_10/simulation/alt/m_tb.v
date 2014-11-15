@@ -273,6 +273,8 @@ module m_tb (/*AUTOARG*/
    assign M_RUSER       = 0;
    
    // MASTER
+   integer ir_delay = 3;
+   integer iw_delay = 3;
    integer i, j, m, ir, iw, cnt = 128;
    initial begin
       S_ARVALID          = 0;
@@ -305,7 +307,7 @@ module m_tb (/*AUTOARG*/
 	   @(posedge user_clk);
 
 	 S_ARVALID = 0;
-	 for (ir = 0; ir < 100; ir = ir + 1) begin
+	 for (ir = 0; ir < ir_delay; ir = ir + 1) begin
 	     @(posedge user_clk);
          end
       end
@@ -360,7 +362,7 @@ module m_tb (/*AUTOARG*/
 	 end
 	 S_WVALID  = 0;
 
-	 for (iw = 0; iw < 100; iw = iw + 1) begin
+	 for (iw = 0; iw < iw_delay; iw = iw + 1) begin
 	     @(posedge user_clk);
          end
       end

@@ -57,19 +57,19 @@ module altpcie_avl (/*AUTOARG*/
    s_axis_tx_tkeep, s_axis_tx_tlast, s_axis_tx_tvalid, tx_src_dsc,
    m_axis_rx_tready, cfg_turnoff_ok,
    // Inputs
-   s_WaitRequest, s_ReadDataValid, s_ReadData, m_WriteData, m_Write,
-   m_Read, m_ChipSelect, m_ByteEnable, m_BurstCount, m_Address, fc_ph,
-   fc_pd, fc_nph, fc_npd, fc_cplh, fc_cpld, S_WVALID, S_WUSER,
-   S_WSTRB, S_WLAST, S_WDATA, S_RREADY, S_BREADY, S_AWVALID, S_AWUSER,
-   S_AWSIZE, S_AWREGION, S_AWQOS, S_AWPROT, S_AWLOCK, S_AWLEN, S_AWID,
-   S_AWCACHE, S_AWBURST, S_AWADDR, S_ARVALID, S_ARUSER, S_ARSIZE,
-   S_ARREGION, S_ARQOS, S_ARPROT, S_ARLOCK, S_ARLEN, S_ARID,
-   S_ARCACHE, S_ARBURST, S_ARADDR, M_WREADY, M_RVALID, M_RUSER,
-   M_RRESP, M_RLAST, M_RID, M_RDATA, M_BVALID, M_BUSER, M_BRESP,
-   M_BID, M_AWREADY, M_ARREADY, user_clk, user_reset, user_lnk_up,
-   s_axis_tx_tready, m_axis_rx_tdata, m_axis_rx_tkeep,
-   m_axis_rx_tlast, m_axis_rx_tvalid, m_axis_rx_tuser, cfg_to_turnoff,
-   cfg_completer_id
+   tx_buf_av, s_WaitRequest, s_ReadDataValid, s_ReadData, m_WriteData,
+   m_Write, m_Read, m_ChipSelect, m_ByteEnable, m_BurstCount,
+   m_Address, fc_ph, fc_pd, fc_nph, fc_npd, fc_cplh, fc_cpld,
+   S_WVALID, S_WUSER, S_WSTRB, S_WLAST, S_WDATA, S_RREADY, S_BREADY,
+   S_AWVALID, S_AWUSER, S_AWSIZE, S_AWREGION, S_AWQOS, S_AWPROT,
+   S_AWLOCK, S_AWLEN, S_AWID, S_AWCACHE, S_AWBURST, S_AWADDR,
+   S_ARVALID, S_ARUSER, S_ARSIZE, S_ARREGION, S_ARQOS, S_ARPROT,
+   S_ARLOCK, S_ARLEN, S_ARID, S_ARCACHE, S_ARBURST, S_ARADDR,
+   M_WREADY, M_RVALID, M_RUSER, M_RRESP, M_RLAST, M_RID, M_RDATA,
+   M_BVALID, M_BUSER, M_BRESP, M_BID, M_AWREADY, M_ARREADY, user_clk,
+   user_reset, user_lnk_up, s_axis_tx_tready, m_axis_rx_tdata,
+   m_axis_rx_tkeep, m_axis_rx_tlast, m_axis_rx_tvalid,
+   m_axis_rx_tuser, cfg_to_turnoff, cfg_completer_id
    );
 
    parameter C_DATA_WIDTH = 128;
@@ -172,6 +172,7 @@ module altpcie_avl (/*AUTOARG*/
    input [127:0]	s_ReadData;		// To altpcie_stub of altpcie_stub.v
    input		s_ReadDataValid;	// To altpcie_stub of altpcie_stub.v
    input		s_WaitRequest;		// To altpcie_stub of altpcie_stub.v
+   input [5:0]		tx_buf_av;		// To altpcie_stub of altpcie_stub.v
    // End of automatics
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
@@ -1142,6 +1143,7 @@ localparam CB_A2P_ADDR_MAP_FIXED_TABLE     = { CB_A2P_ADDR_MAP_FIXED_TABLE_15_HI
 		  .fc_nph		(fc_nph[7:0]),
 		  .fc_pd		(fc_pd[11:0]),
 		  .fc_ph		(fc_ph[7:0]),
+		  .tx_buf_av		(tx_buf_av[5:0]),
 		  .s_axis_tx_tready	(s_axis_tx_tready),
 		  .m_axis_rx_tdata	(m_axis_rx_tdata[C_DATA_WIDTH-1:0]),
 		  .m_axis_rx_tkeep	(m_axis_rx_tkeep[KEEP_WIDTH-1:0]),

@@ -84,7 +84,7 @@ module altpcie_stub (/*AUTOARG*/
    MsiIntfc_o, MsiControl_o, MsixIntfc_o, RxStReady_o, RxStMask_o,
    IntxReq_o, tx_cons_cred_sel, CplPending_o, user_clk, user_reset,
    user_lnk_up, fc_cpld, fc_cplh, fc_npd, fc_nph, fc_pd, fc_ph,
-   s_axis_tx_tready, m_axis_rx_tdata, m_axis_rx_tkeep,
+   tx_buf_av, s_axis_tx_tready, m_axis_rx_tdata, m_axis_rx_tkeep,
    m_axis_rx_tlast, m_axis_rx_tvalid, m_axis_rx_tuser, m_ChipSelect,
    m_Read, m_Write, m_BurstCount, m_ByteEnable, m_Address,
    m_WriteData, s_WaitRequest, s_ReadData, s_ReadDataValid
@@ -288,6 +288,7 @@ module altpcie_stub (/*AUTOARG*/
    input [7:0] 		fc_nph;
    input [11:0] 	fc_pd;
    input [7:0] 		fc_ph;
+   input [5:0]          tx_buf_av;
    output [2:0] 	fc_sel;
    reg [2:0] 		fc_sel;
    reg [2:0] 		fc_sel1;   
@@ -296,16 +297,15 @@ module altpcie_stub (/*AUTOARG*/
      begin
 	if (user_reset)
 	  begin
-	     fc_sel <= #1 3'h0;
+	     fc_sel <= #1 3'b100;
 	  end
 	else
 	  begin
-	     fc_sel <= #1 fc_sel == 3'b000 ? 3'b001 : 
+	     /*fc_sel <= #1 fc_sel == 3'b000 ? 3'b001 : 
 	                  fc_sel == 3'b001 ? 3'b010 :
-			  fc_sel == 3'b010 ? 3'b011 :
-			  fc_sel == 3'b011 ? 3'b100 : 
+			  fc_sel == 3'b010 ? 3'b100 : 
 			  fc_sel == 3'b100 ? 3'b101 : 
-			  fc_sel == 3'b101 ? 3'b110 : 3'b000;
+			  fc_sel == 3'b101 ? 3'b110 : 3'b000;*/
 	     fc_sel1<= #1 fc_sel;
 	     fc_sel2<= #1 fc_sel1;
 	  end
@@ -355,7 +355,7 @@ module altpcie_stub (/*AUTOARG*/
 
    always @(posedge user_clk)
      begin
-	case (fc_sel1)
+	case (fc_sel2)
 	  3'b000: begin 
 	     rx_fc_cpld_ava <= #1 fc_cpld;
 	     rx_fc_cplh_ava <= #1 fc_cplh;
@@ -439,14 +439,61 @@ module altpcie_stub (/*AUTOARG*/
    output                        tx_src_dsc;
    output 			 cfg_turnoff_ok;
    
-   assign s_axis_tx_tdata = TxStData_o;
-   assign s_axis_tx_tkeep =  TxStEop_o & TxStValid_o & TxStEmpty_o[0] ? 16'h00_FF :
-			      TxStEop_o & TxStValid_o & TxStSop_o & TxStData_o[30:24] == 0 ? 16'h0F_FF : 
-			      16'hFF_FF;
-   assign s_axis_tx_tvalid  = TxStValid_o;
-   assign s_axis_tx_tlast   = TxStEop_o;
    assign tx_src_dsc        = 1'b0;
-   assign TxStReady_i       = s_axis_tx_tready;
+
+   wire [144:0] txfifo_rdata;
+   wire         txfifo_rd;
+   wire 	txfifo_empty;
+   wire [3:0] 	txfifo_count;
+   assign s_axis_tx_tdata = txfifo_rdata[127:0];
+   assign s_axis_tx_tkeep = txfifo_rdata[143:128];
+   assign s_axis_tx_tlast = txfifo_rdata[144];
+   assign s_axis_tx_tvalid= ~txfifo_empty;
+   assign txfifo_rd       = s_axis_tx_tvalid & s_axis_tx_tready;
+   
+   reg [144:0]  txfifo_wdata;
+   reg          txfifo_we;
+   reg 		TxStReady_i;
+   always @(posedge user_clk)
+     begin
+	txfifo_wdata[127:0]   <= #1 TxStData_o;
+	txfifo_wdata[143:128] <= #1 TxStEop_o & TxStValid_o & TxStEmpty_o[0] ? 16'h00_FF :
+				 TxStEop_o & TxStValid_o & TxStSop_o & TxStData_o[30:24] == 0 ? 16'h0F_FF : 
+				 16'hFF_FF;
+	txfifo_wdata[144]     <= #1 TxStEop_o;
+	txfifo_we             <= #1 TxStValid_o;
+	TxStReady_i           <= #1 ~txfifo_count[3];
+     end
+   
+   sync_fifo #(
+	       // Parameters
+	       .WIDTH			(145),
+	       .DEPTH			(16),
+	       .STYLE			("SRL"),
+	       .AFASSERT		(15),
+	       .AEASSERT		(1),
+	       .FWFT			(1),
+	       .SUP_REWIND		(0),
+	       .INIT_OUTREG		(0),
+	       .ADDRW			(4))
+   tx_fifo (
+	    // Outputs
+	    .dout		(txfifo_rdata),
+	    .full		(),
+	    .afull		(),
+	    .empty		(txfifo_empty),
+	    .aempty		(),
+	    .data_count	        (txfifo_count),
+	    // Inputs
+	    .clk		(user_clk),
+	    .rst_n		(~user_reset),
+	    .din		(txfifo_wdata),
+	    .wr_en		(txfifo_we),
+	    .rd_en		(txfifo_rd),
+	    .mark_addr	        (0),
+	    .clear_addr	        (0),
+	    .rewind		(0));
+   
    assign cfg_turnoff_ok    = 1'b0;
    
    /* PCIE RX */

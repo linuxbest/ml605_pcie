@@ -358,3 +358,7 @@ do wave_sc_fifo.do
 eval add wave -noupdate -divider {"PCIE pendingrd_fifo"}
 set scfifo $pcie${ps}tx${ps}txavl${ps}pendingrd_fifo
 do wave_sc_fifo.do
+
+eval add wave -noupdate -divider {"PCIE tx_fifo"}
+set scfifo "/board/EP/app/PIO/altpcie_avl/altpcie_stub/tx_fifo"
+do wave_sc_fifo.do
