@@ -79,13 +79,13 @@ module axi_tlp (/*AUTOARG*/
    parameter C_DATA_WIDTH = 128;
    parameter KEEP_WIDTH   = 16;
 
-   parameter C_M_AXI_ADDR_WIDTH      = 64;
-   parameter C_M_AXI_DATA_WIDTH      = 128;
+   //parameter C_M_AXI_ADDR_WIDTH      = 64;
+   //parameter C_M_AXI_DATA_WIDTH      = 128;
    parameter C_M_AXI_THREAD_ID_WIDTH = 3;
    parameter C_M_AXI_USER_WIDTH      = 3;   
 
-   parameter C_S_AXI_ADDR_WIDTH      = 64;
-   parameter C_S_AXI_DATA_WIDTH      = 128;
+   //parameter C_S_AXI_ADDR_WIDTH      = 64;
+   //parameter C_S_AXI_DATA_WIDTH      = 128;
    parameter C_S_AXI_THREAD_ID_WIDTH = 3;
    parameter C_S_AXI_USER_WIDTH      = 3;   
    
@@ -234,7 +234,7 @@ module axi_tlp (/*AUTOARG*/
    wire [127:0]		s_WriteData;		// From altpcie_avl of altpcie_avl.v
    // End of automatics
 
-   altpcie_avl_stub #(/*AUTOINSTPARAM*/)
+   altpcie_avl_stub
    altpcie_avl_stub  (/*AUTOINST*/
 		      // Outputs
 		      .m_ChipSelect	(m_ChipSelect),
