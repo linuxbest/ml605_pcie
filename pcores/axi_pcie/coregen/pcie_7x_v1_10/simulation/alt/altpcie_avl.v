@@ -45,17 +45,17 @@
 // Code:
 module altpcie_avl (/*AUTOARG*/
    // Outputs
-   s_WriteData, s_Write, s_Read, s_ByteEnable, s_BurstCount,
-   s_Address, m_WaitRequest, m_ReadDataValid, m_ReadData, fc_sel,
-   S_WREADY, S_RVALID, S_RUSER, S_RRESP, S_RLAST, S_RID, S_RDATA,
-   S_BVALID, S_BUSER, S_BRESP, S_BID, S_AWREADY, S_ARREADY, M_WVALID,
-   M_WUSER, M_WSTRB, M_WLAST, M_WDATA, M_RREADY, M_BREADY, M_AWVALID,
-   M_AWUSER, M_AWSIZE, M_AWREGION, M_AWQOS, M_AWPROT, M_AWLOCK,
-   M_AWLEN, M_AWID, M_AWCACHE, M_AWBURST, M_AWADDR, M_ARVALID,
-   M_ARUSER, M_ARSIZE, M_ARREGION, M_ARQOS, M_ARPROT, M_ARLOCK,
-   M_ARLEN, M_ARID, M_ARCACHE, M_ARBURST, M_ARADDR, s_axis_tx_tdata,
-   s_axis_tx_tkeep, s_axis_tx_tlast, s_axis_tx_tvalid, tx_src_dsc,
-   m_axis_rx_tready, cfg_turnoff_ok,
+   s_axis_tx_tuser, s_WriteData, s_Write, s_Read, s_ByteEnable,
+   s_BurstCount, s_Address, m_WaitRequest, m_ReadDataValid,
+   m_ReadData, fc_sel, S_WREADY, S_RVALID, S_RUSER, S_RRESP, S_RLAST,
+   S_RID, S_RDATA, S_BVALID, S_BUSER, S_BRESP, S_BID, S_AWREADY,
+   S_ARREADY, M_WVALID, M_WUSER, M_WSTRB, M_WLAST, M_WDATA, M_RREADY,
+   M_BREADY, M_AWVALID, M_AWUSER, M_AWSIZE, M_AWREGION, M_AWQOS,
+   M_AWPROT, M_AWLOCK, M_AWLEN, M_AWID, M_AWCACHE, M_AWBURST,
+   M_AWADDR, M_ARVALID, M_ARUSER, M_ARSIZE, M_ARREGION, M_ARQOS,
+   M_ARPROT, M_ARLOCK, M_ARLEN, M_ARID, M_ARCACHE, M_ARBURST,
+   M_ARADDR, s_axis_tx_tdata, s_axis_tx_tkeep, s_axis_tx_tlast,
+   s_axis_tx_tvalid, tx_src_dsc, m_axis_rx_tready, cfg_turnoff_ok,
    // Inputs
    tx_buf_av, s_WaitRequest, s_ReadDataValid, s_ReadData, m_WriteData,
    m_Write, m_Read, m_ChipSelect, m_ByteEnable, m_BurstCount,
@@ -230,6 +230,7 @@ module altpcie_avl (/*AUTOARG*/
    output		s_Read;			// From altpcie_stub of altpcie_stub.v
    output		s_Write;		// From altpcie_stub of altpcie_stub.v
    output [127:0]	s_WriteData;		// From altpcie_stub of altpcie_stub.v
+   output [3:0]		s_axis_tx_tuser;	// From altpcie_stub of altpcie_stub.v
    // End of automatics
  
    localparam pll_refclk_freq_hwtcl                             = "100 MHz";
@@ -1063,7 +1064,7 @@ localparam CB_A2P_ADDR_MAP_FIXED_TABLE     = { CB_A2P_ADDR_MAP_FIXED_TABLE_15_HI
 		  .s_axis_tx_tkeep	(s_axis_tx_tkeep[KEEP_WIDTH-1:0]),
 		  .s_axis_tx_tlast	(s_axis_tx_tlast),
 		  .s_axis_tx_tvalid	(s_axis_tx_tvalid),
-		  .tx_src_dsc		(tx_src_dsc),
+		  .s_axis_tx_tuser	(s_axis_tx_tuser[3:0]),
 		  .cfg_turnoff_ok	(cfg_turnoff_ok),
 		  .m_axis_rx_tready	(m_axis_rx_tready),
 		  .m_WaitRequest	(m_WaitRequest),

@@ -64,9 +64,10 @@ module altpcie_stub (/*AUTOARG*/
    RxIntStatus_i, current_speed, ko_cpl_spc_data, ko_cpl_spc_header,
    lane_act, ltssm_state, pld_clk_inuse, TxAdapterFifoEmpty_i, fc_sel,
    s_axis_tx_tdata, s_axis_tx_tkeep, s_axis_tx_tlast,
-   s_axis_tx_tvalid, tx_src_dsc, cfg_turnoff_ok, m_axis_rx_tready,
-   m_WaitRequest, m_ReadData, m_ReadDataValid, s_Read, s_Write,
-   s_BurstCount, s_ByteEnable, s_Address, s_WriteData,
+   s_axis_tx_tvalid, s_axis_tx_tuser, cfg_turnoff_ok,
+   m_axis_rx_tready, m_WaitRequest, m_ReadData, m_ReadDataValid,
+   s_Read, s_Write, s_BurstCount, s_ByteEnable, s_Address,
+   s_WriteData,
    // Inputs
    TxStData_o, TxStSop_o, TxStEop_o, TxStEmpty_o, TxStValid_o,
    TxsReadDataValid_o, TxsReadData_o, TxsWaitRequest_o, RxmWrite_0_o,
@@ -436,10 +437,9 @@ module altpcie_stub (/*AUTOARG*/
    output [KEEP_WIDTH-1:0] 	 s_axis_tx_tkeep;
    output                        s_axis_tx_tlast;
    output                        s_axis_tx_tvalid;
-   output                        tx_src_dsc;
+   output [3:0] 		 s_axis_tx_tuser;
    output 			 cfg_turnoff_ok;
-   
-   assign tx_src_dsc        = 1'b0;
+   assign s_axis_tx_tuser = 0;
 
    wire [144:0] txfifo_rdata;
    wire         txfifo_rd;

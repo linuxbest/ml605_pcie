@@ -273,8 +273,8 @@ module m_tb (/*AUTOARG*/
    assign M_RUSER       = 0;
    
    // MASTER
-   integer ir_delay = 3;
-   integer iw_delay = 3;
+   integer ir_delay = 32;
+   integer iw_delay = 32;
    integer i, j, m, ir, iw, cnt = 128;
    initial begin
       S_ARVALID          = 0;
