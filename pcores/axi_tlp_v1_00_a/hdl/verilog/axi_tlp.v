@@ -46,14 +46,15 @@
 module axi_tlp (/*AUTOARG*/
    // Outputs
    tx_src_dsc, s_axis_tx_tvalid, s_axis_tx_tuser, s_axis_tx_tlast,
-   s_axis_tx_tkeep, s_axis_tx_tdata, fc_sel, cfg_turnoff_ok, S_WREADY,
-   S_RVALID, S_RUSER, S_RRESP, S_RLAST, S_RID, S_RDATA, S_BVALID,
-   S_BUSER, S_BRESP, S_BID, S_AWREADY, S_ARREADY, M_WVALID, M_WUSER,
-   M_WSTRB, M_WLAST, M_WDATA, M_RREADY, M_BREADY, M_AWVALID, M_AWUSER,
-   M_AWSIZE, M_AWREGION, M_AWQOS, M_AWPROT, M_AWLOCK, M_AWLEN, M_AWID,
-   M_AWCACHE, M_AWBURST, M_AWADDR, M_ARVALID, M_ARUSER, M_ARSIZE,
-   M_ARREGION, M_ARQOS, M_ARPROT, M_ARLOCK, M_ARLEN, M_ARID,
-   M_ARCACHE, M_ARBURST, M_ARADDR,
+   s_axis_tx_tkeep, s_axis_tx_tdata, m_axis_rx_tready, fc_sel,
+   cfg_turnoff_ok, S_WREADY, S_RVALID, S_RUSER, S_RRESP, S_RLAST,
+   S_RID, S_RDATA, S_BVALID, S_BUSER, S_BRESP, S_BID, S_AWREADY,
+   S_ARREADY, M_WVALID, M_WUSER, M_WSTRB, M_WLAST, M_WDATA, M_RREADY,
+   M_BREADY, M_AWVALID, M_AWUSER, M_AWSIZE, M_AWREGION, M_AWQOS,
+   M_AWPROT, M_AWLOCK, M_AWLEN, M_AWID, M_AWCACHE, M_AWBURST,
+   M_AWADDR, M_ARVALID, M_ARUSER, M_ARSIZE, M_ARREGION, M_ARQOS,
+   M_ARPROT, M_ARLOCK, M_ARLEN, M_ARID, M_ARCACHE, M_ARBURST,
+   M_ARADDR,
    // Inputs
    user_reset, user_lnk_up, user_clk, tx_buf_av, s_axis_tx_tready,
    m_axis_rx_tvalid, m_axis_rx_tuser, m_axis_rx_tlast,
@@ -202,6 +203,7 @@ module axi_tlp (/*AUTOARG*/
    output		S_WREADY;		// From altpcie_avl of altpcie_avl.v
    output		cfg_turnoff_ok;		// From altpcie_avl of altpcie_avl.v
    output [2:0]		fc_sel;			// From altpcie_avl of altpcie_avl.v
+   output		m_axis_rx_tready;	// From altpcie_avl of altpcie_avl.v
    output [C_DATA_WIDTH-1:0] s_axis_tx_tdata;	// From altpcie_avl of altpcie_avl.v
    output [KEEP_WIDTH-1:0] s_axis_tx_tkeep;	// From altpcie_avl of altpcie_avl.v
    output		s_axis_tx_tlast;	// From altpcie_avl of altpcie_avl.v
@@ -222,7 +224,6 @@ module axi_tlp (/*AUTOARG*/
    wire			m_WaitRequest;		// From altpcie_avl of altpcie_avl.v
    wire			m_Write;		// From altpcie_avl_stub of altpcie_avl_stub.v
    wire [127:0]		m_WriteData;		// From altpcie_avl_stub of altpcie_avl_stub.v
-   wire			m_axis_rx_tready;	// From altpcie_avl of altpcie_avl.v
    wire [31:0]		s_Address;		// From altpcie_avl of altpcie_avl.v
    wire [5:0]		s_BurstCount;		// From altpcie_avl of altpcie_avl.v
    wire [15:0]		s_ByteEnable;		// From altpcie_avl of altpcie_avl.v
@@ -248,7 +249,6 @@ module axi_tlp (/*AUTOARG*/
 		      .s_ReadData	(s_ReadData[127:0]),
 		      .s_ReadDataValid	(s_ReadDataValid),
 		      // Inputs
-		      .m_axis_rx_tready	(m_axis_rx_tready),
 		      .m_WaitRequest	(m_WaitRequest),
 		      .m_ReadData	(m_ReadData[127:0]),
 		      .m_ReadDataValid	(m_ReadDataValid),

@@ -288,7 +288,7 @@ PORT fc_npd           = fc_npd,            DIR = O, BUS = S_TLP, VEC = [11:0]
 PORT fc_nph           = fc_nph,            DIR = O, BUS = S_TLP, VEC = [7:0]
 PORT fc_pd            = fc_pd,             DIR = O, BUS = S_TLP, VEC = [11:0]
 PORT fc_ph            = fc_ph,             DIR = O, BUS = S_TLP, VEC = [7:0]
-PORT fc_sel           = fc_sel,            DIR = I, BUS = S_TLP, VEC = [1:0]
+PORT fc_sel           = fc_sel,            DIR = I, BUS = S_TLP, VEC = [2:0]
 PORT tx_buf_av        = tx_buf_av,         DIR = O, BUS = S_TLP, VEC = [5:0]
 
 END

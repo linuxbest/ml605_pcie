@@ -48,9 +48,8 @@ module altpcie_avl_stub (/*AUTOARG*/
    m_ChipSelect, m_Read, m_Write, m_BurstCount, m_ByteEnable,
    m_Address, m_WriteData, s_WaitRequest, s_ReadData, s_ReadDataValid,
    // Inputs
-   m_axis_rx_tready, m_WaitRequest, m_ReadData, m_ReadDataValid,
-   s_Read, s_Write, s_BurstCount, s_ByteEnable, s_Address,
-   s_WriteData
+   m_WaitRequest, m_ReadData, m_ReadDataValid, s_Read, s_Write,
+   s_BurstCount, s_ByteEnable, s_Address, s_WriteData
    );
    
    output		m_ChipSelect;
@@ -60,7 +59,6 @@ module altpcie_avl_stub (/*AUTOARG*/
    output [15:0]	m_ByteEnable;
    output [63:0]	m_Address;
    output [127:0]	m_WriteData;
-   input		m_axis_rx_tready;
    input		m_WaitRequest;
    input [127:0]	m_ReadData;
    input		m_ReadDataValid;
