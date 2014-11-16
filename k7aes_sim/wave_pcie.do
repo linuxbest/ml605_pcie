@@ -110,6 +110,8 @@ eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}first_data_ph
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}tlp_3dw_header
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_data_reg_clk_ena
 
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxsm_rdena_0
+
 eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}cb_p2a_avalon_addr_b0_i
 eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}cb_p2a_avalon_addr_b1_i
 eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}cb_p2a_avalon_addr_b2_i
