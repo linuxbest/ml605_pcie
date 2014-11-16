@@ -70,7 +70,7 @@ module axi_tlp (/*AUTOARG*/
    );
    parameter C_INSTANCE         = "axi_tlp_0" ;
    parameter C_FAMILY           = "kintex7" ;
-   parameter C_S_AXI_ID_WIDTH   = 2 ;
+   parameter C_S_AXI_ID_WIDTH   = 2;
    parameter C_S_AXI_DATA_WIDTH = 128 ;
    parameter C_S_AXI_ADDR_WIDTH = 32 ;
    parameter C_M_AXI_DATA_WIDTH = 128 ;
@@ -87,7 +87,7 @@ module axi_tlp (/*AUTOARG*/
 
    //parameter C_S_AXI_ADDR_WIDTH      = 64;
    //parameter C_S_AXI_DATA_WIDTH      = 128;
-   parameter C_S_AXI_THREAD_ID_WIDTH = 3;
+   parameter C_S_AXI_THREAD_ID_WIDTH = C_S_AXI_ID_WIDTH;
    parameter C_S_AXI_USER_WIDTH      = 3;   
    
    /*AUTOINPUT*/
