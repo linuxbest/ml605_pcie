@@ -38,6 +38,11 @@ eval add wave -noupdate $hexopt $pcie${ps}RxmByteEnable_0_o
 eval add wave -noupdate $hexopt $pcie${ps}RxmBurstCount_0_o
 eval add wave -noupdate $binopt $pcie${ps}RxmWaitRequest_0_i
 
+eval add wave -noupdate $ascopt $pcie${ps}bar0_64bit_mem_space
+eval add wave -noupdate $ascopt $pcie${ps}bar0_io_space
+eval add wave -noupdate $ascopt $pcie${ps}bar0_prefetchable
+eval add wave -noupdate $hexopt $pcie${ps}bar0_size_mask
+
 eval add wave -noupdate $binopt $pcie${ps}RxmReadDataValid_0_i
 eval add wave -noupdate $hexopt \"$pcie${ps}RxmReadData_0_i(127 downto 96)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}RxmReadData_0_i(95 downto 64)\"
@@ -104,6 +109,27 @@ eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rx_tlp_be_reg
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}first_data_phase
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}tlp_3dw_header
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_data_reg_clk_ena
+
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}cb_p2a_avalon_addr_b0_i
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}cb_p2a_avalon_addr_b1_i
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}cb_p2a_avalon_addr_b2_i
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}cb_p2a_avalon_addr_b3_i
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}cb_p2a_avalon_addr_b4_i
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}cb_p2a_avalon_addr_b5_i
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}cb_p2a_avalon_addr_b6_i
+
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}bar0
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}bar1
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}bar2
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}bar3
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}bar4
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}bar5
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}exp_rom_bar
+
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}AvlAddr_o
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}PCIeAddr_i
+
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}BarHit_i
 
 eval add wave -noupdate -divider {"RXM adapter"}
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}Clk_i
