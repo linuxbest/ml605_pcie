@@ -43,6 +43,7 @@
 // 	device pins                        : "*_pin"
 // 	ports                              : - Names begin with Uppercase
 // Code:
+`timescale 1ps/1ps
 module altpcie_avl_stub (/*AUTOARG*/
    // Outputs
    m_ChipSelect, m_Read, m_Write, m_BurstCount, m_ByteEnable,

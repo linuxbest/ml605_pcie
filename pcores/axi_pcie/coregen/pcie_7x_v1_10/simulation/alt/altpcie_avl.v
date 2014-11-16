@@ -43,6 +43,7 @@
 // 	device pins                        : "*_pin"
 // 	ports                              : - Names begin with Uppercase
 // Code:
+`timescale 1ps/1ps
 module altpcie_avl (/*AUTOARG*/
    // Outputs
    s_axis_tx_tuser, s_WriteData, s_Write, s_Read, s_ByteEnable,
@@ -55,7 +56,7 @@ module altpcie_avl (/*AUTOARG*/
    M_AWADDR, M_ARVALID, M_ARUSER, M_ARSIZE, M_ARREGION, M_ARQOS,
    M_ARPROT, M_ARLOCK, M_ARLEN, M_ARID, M_ARCACHE, M_ARBURST,
    M_ARADDR, s_axis_tx_tdata, s_axis_tx_tkeep, s_axis_tx_tlast,
-   s_axis_tx_tvalid, tx_src_dsc, m_axis_rx_tready, cfg_turnoff_ok,
+   s_axis_tx_tvalid, m_axis_rx_tready, cfg_turnoff_ok,
    // Inputs
    tx_buf_av, s_WaitRequest, s_ReadDataValid, s_ReadData, m_WriteData,
    m_Write, m_Read, m_ChipSelect, m_ByteEnable, m_BurstCount,
@@ -95,7 +96,6 @@ module altpcie_avl (/*AUTOARG*/
    output [KEEP_WIDTH-1:0] 	 s_axis_tx_tkeep;
    output                        s_axis_tx_tlast;
    output                        s_axis_tx_tvalid;
-   output                        tx_src_dsc;
    
    
    input [C_DATA_WIDTH-1:0] 	 m_axis_rx_tdata;

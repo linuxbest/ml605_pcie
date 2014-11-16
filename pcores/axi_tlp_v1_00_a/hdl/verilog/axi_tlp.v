@@ -45,7 +45,7 @@
 // Code:
 module axi_tlp (/*AUTOARG*/
    // Outputs
-   tx_src_dsc, s_axis_tx_tvalid, s_axis_tx_tuser, s_axis_tx_tlast,
+   s_axis_tx_tvalid, s_axis_tx_tuser, s_axis_tx_tlast,
    s_axis_tx_tkeep, s_axis_tx_tdata, m_axis_rx_tready, fc_sel,
    cfg_turnoff_ok, S_WREADY, S_RVALID, S_RUSER, S_RRESP, S_RLAST,
    S_RID, S_RDATA, S_BVALID, S_BUSER, S_BRESP, S_BID, S_AWREADY,
@@ -209,7 +209,6 @@ module axi_tlp (/*AUTOARG*/
    output		s_axis_tx_tlast;	// From altpcie_avl of altpcie_avl.v
    output [3:0]		s_axis_tx_tuser;	// From altpcie_avl of altpcie_avl.v
    output		s_axis_tx_tvalid;	// From altpcie_avl of altpcie_avl.v
-   output		tx_src_dsc;		// From altpcie_avl of altpcie_avl.v
    // End of automatics
 
    /*AUTOWIRE*/
@@ -277,7 +276,6 @@ module axi_tlp (/*AUTOARG*/
 		 .s_axis_tx_tkeep	(s_axis_tx_tkeep[KEEP_WIDTH-1:0]),
 		 .s_axis_tx_tlast	(s_axis_tx_tlast),
 		 .s_axis_tx_tvalid	(s_axis_tx_tvalid),
-		 .tx_src_dsc		(tx_src_dsc),
 		 .m_axis_rx_tready	(m_axis_rx_tready),
 		 .cfg_turnoff_ok	(cfg_turnoff_ok),
 		 .M_ARADDR		(M_ARADDR[((C_M_AXI_ADDR_WIDTH)-1):0]),

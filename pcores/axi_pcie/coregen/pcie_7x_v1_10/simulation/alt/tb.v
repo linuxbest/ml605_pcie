@@ -43,6 +43,7 @@
 // 	device pins                        : "*_pin"
 // 	ports                              : - Names begin with Uppercase
 // Code:
+`timescale 1ps/1ps
 module tb (/*AUTOARG*/
    // Outputs
    AvlClk_i, Rstn_i, RxStData_i, RxStBe_i, RxStEmpty_i, RxStErr_i,

@@ -43,6 +43,7 @@
 // 	device pins                        : "*_pin"
 // 	ports                              : - Names begin with Uppercase
 // Code:
+`timescale 1ps/1ps
 module altpcie_stub (/*AUTOARG*/
    // Outputs
    TxStReady_i, TxsClk_i, TxsRstn_i, TxsChipSelect_i, TxsRead_i,

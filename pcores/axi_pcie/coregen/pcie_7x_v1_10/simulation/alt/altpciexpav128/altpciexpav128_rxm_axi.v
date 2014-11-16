@@ -43,6 +43,7 @@
 // 	device pins                        : "*_pin"
 // 	ports                              : - Names begin with Uppercase
 // Code:
+`timescale 1ns / 1ps
 module altpciexpav128_rxm_axi (/*AUTOARG*/
    // Outputs
    CoreRxmWaitRequest_o, M_AWVALID, M_AWADDR, M_AWPROT, M_AWREGION,

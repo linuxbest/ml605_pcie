@@ -43,6 +43,7 @@
 // 	device pins                        : "*_pin"
 // 	ports                              : - Names begin with Uppercase
 // Code:
+`timescale 1ps/1ps
 module m_tb (/*AUTOARG*/
    // Outputs
    S_AWVALID, S_AWADDR, S_AWPROT, S_AWREGION, S_AWLEN, S_AWSIZE,

@@ -27,6 +27,7 @@ module k7_tlp (/*AUTOARG*/
    parameter PCI_EXP_EP_DSN_1  = 32'h12345678;
    parameter PCI_EXP_EP_DSN_2  = 32'h87654321;
 
+   parameter PIPE_SIM_MODE     = "TRUE";
    parameter PL_FAST_TRAIN     = "FALSE"; // Simulation Speedup
    parameter PCIE_EXT_CLK      = "TRUE";  // Use External Clocking Module
    parameter C_DATA_WIDTH      = 128; // RX/TX interface data width
@@ -251,7 +252,8 @@ module k7_tlp (/*AUTOARG*/
  
 pcie_7x_v1_10 #(
   .PL_FAST_TRAIN      ( PL_FAST_TRAIN ),
-  .PCIE_EXT_CLK       ( PCIE_EXT_CLK )
+  .PCIE_EXT_CLK       ( PCIE_EXT_CLK ),
+  .PIPE_SIM_MODE      ( PIPE_SIM_MODE )
 ) pcie_7x_v1_10_i
  (
 
