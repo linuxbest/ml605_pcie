@@ -28,7 +28,7 @@ module k7_tlp (/*AUTOARG*/
    parameter PCI_EXP_EP_DSN_2  = 32'h87654321;
 
    parameter PIPE_SIM_MODE     = "TRUE";
-   parameter PL_FAST_TRAIN     = "FALSE"; // Simulation Speedup
+   parameter PL_FAST_TRAIN     = "TRUE"; // Simulation Speedup
    parameter PCIE_EXT_CLK      = "TRUE";  // Use External Clocking Module
    parameter C_DATA_WIDTH      = 128; // RX/TX interface data width
    parameter KEEP_WIDTH        = C_DATA_WIDTH / 8;// TSTRB width
@@ -162,7 +162,7 @@ module k7_tlp (/*AUTOARG*/
   wire                                        PIPE_USERCLK1_IN;
   wire                                        PIPE_USERCLK2_IN;
   wire                                        PIPE_MMCM_LOCK_IN;
-  assign mmcm_lock = PIPE_MMCM_LOCK_IN;
+  assign mmcm_lock = 1'b1; /* TODO */
 
   wire                                        PIPE_TXOUTCLK_OUT;
   wire [7:0]     PIPE_RXOUTCLK_OUT;
@@ -298,7 +298,7 @@ pcie_7x_v1_10 #(
 
   // TX
 
-  .tx_buf_av                                  ( ),
+  .tx_buf_av                                  ( tx_buf_av ),
   .tx_err_drop                                ( ),
   .tx_cfg_req                                 ( ),
   .s_axis_tx_tready                           ( s_axis_tx_tready ),
@@ -321,12 +321,12 @@ pcie_7x_v1_10 #(
   .rx_np_req                                  ( rx_np_req ),
 
   // Flow Control
-  .fc_cpld                                    ( ),
-  .fc_cplh                                    ( ),
-  .fc_npd                                     ( ),
-  .fc_nph                                     ( ),
-  .fc_pd                                      ( ),
-  .fc_ph                                      ( ),
+  .fc_cpld                                    ( fc_cpld ),
+  .fc_cplh                                    ( fc_cplh ),
+  .fc_npd                                     ( fc_npd ),
+  .fc_nph                                     ( fc_nph ),
+  .fc_pd                                      ( fc_pd ),
+  .fc_ph                                      ( fc_ph ),
   .fc_sel                                     ( fc_sel ),
 
 

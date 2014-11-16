@@ -108,7 +108,7 @@ module altpcie_avl (/*AUTOARG*/
    input                         cfg_to_turnoff;
    output                        cfg_turnoff_ok;
    
-   input [15:0] 		 cfg_completer_id;
+   input [11:0] 		 cfg_completer_id;
    
    /*AUTOINPUT*/
    // Beginning of automatic inputs (from unused autoinst inputs)
