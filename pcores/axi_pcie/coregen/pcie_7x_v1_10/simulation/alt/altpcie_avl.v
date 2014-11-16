@@ -492,9 +492,9 @@ module altpcie_avl (/*AUTOARG*/
 localparam ast_width                                     = (ast_width_hwtcl=="Avalon-ST 256-bit")?"rx_tx_256":(ast_width_hwtcl=="Avalon-ST 128-bit")?"rx_tx_128":"rx_tx_64";// String  : "rx_tx_64";
 
 localparam bar0_io_space                                 = "false";
-localparam bar0_64bit_mem_space                          = "false";
+localparam bar0_64bit_mem_space                          = "true";
 localparam bar0_prefetchable                             = "false";
-localparam bar0_size_mask                                = 19;
+localparam bar0_size_mask                                = 20;
 localparam bar1_io_space                                 = "false"; 
 localparam bar1_64bit_mem_space                          = "false"; 
 localparam bar1_prefetchable                             = "false"; 

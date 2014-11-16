@@ -16,7 +16,7 @@ module PIO #(
   output  [KEEP_WIDTH-1:0]      s_axis_tx_tkeep,
   output                        s_axis_tx_tlast,
   output                        s_axis_tx_tvalid,
-  output                        tx_src_dsc,
+  output  [3:0]                 s_axis_tx_tuser,
 
 
   input  [C_DATA_WIDTH-1:0]     m_axis_rx_tdata,
@@ -180,7 +180,6 @@ module PIO #(
 		 .s_axis_tx_tkeep	(s_axis_tx_tkeep[KEEP_WIDTH-1:0]),
 		 .s_axis_tx_tlast	(s_axis_tx_tlast),
 		 .s_axis_tx_tvalid	(s_axis_tx_tvalid),
-		 .tx_src_dsc		(tx_src_dsc),
 		 .m_axis_rx_tready	(m_axis_rx_tready),
 		 .cfg_turnoff_ok	(cfg_turnoff_ok),
 		 .M_ARADDR		(M_ARADDR[((C_M_AXI_ADDR_WIDTH)-1):0]),
@@ -237,6 +236,7 @@ module PIO #(
 		 .s_Read		(s_Read),
 		 .s_Write		(s_Write),
 		 .s_WriteData		(s_WriteData[127:0]),
+		 .s_axis_tx_tuser	(s_axis_tx_tuser[3:0]),
 		 // Inputs
 		 .user_clk		(user_clk),
 		 .user_reset		(user_reset),
@@ -248,7 +248,7 @@ module PIO #(
 		 .m_axis_rx_tvalid	(m_axis_rx_tvalid),
 		 .m_axis_rx_tuser	(m_axis_rx_tuser[21:0]),
 		 .cfg_to_turnoff	(cfg_to_turnoff),
-		 .cfg_completer_id	(cfg_completer_id[15:0]),
+		 .cfg_completer_id	(cfg_completer_id[11:0]),
 		 .M_ARREADY		(M_ARREADY),
 		 .M_AWREADY		(M_AWREADY),
 		 .M_BID			(M_BID[((C_M_AXI_THREAD_ID_WIDTH)-1):0]),

@@ -29,7 +29,7 @@ eval add wave -noupdate $binopt $pcie${ps}user_reset
 eval add wave -noupdate $binopt $pcie${ps}s_axis_tx_tready
 eval add wave -noupdate $binopt $pcie${ps}s_axis_tx_tvalid
 eval add wave -noupdate $binopt $pcie${ps}s_axis_tx_tlast
-eval add wave -noupdate $binopt $pcie${ps}tx_src_dsc
+eval add wave -noupdate $binopt $pcie${ps}s_axis_tx_tuser
 eval add wave -noupdate $hexopt \"$pcie${ps}s_axis_tx_tdata(127 downto 96)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}s_axis_tx_tdata(95 downto 64)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}s_axis_tx_tdata(63 downto 32)\"

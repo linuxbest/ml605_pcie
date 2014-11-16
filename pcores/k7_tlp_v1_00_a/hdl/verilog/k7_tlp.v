@@ -106,7 +106,7 @@ module k7_tlp (/*AUTOARG*/
   wire                                        cfg_interrupt_stat;
   wire   [4:0]                                cfg_pciecap_interrupt_msgnum;
 //  wire                                        cfg_turnoff_ok;
-  wire                                        cfg_to_turnoff;
+//  wire                                        cfg_to_turnoff;
   wire                                        cfg_trn_pending;
   wire                                        cfg_pm_halt_aspm_l0s;
   wire                                        cfg_pm_halt_aspm_l1;
@@ -253,7 +253,8 @@ module k7_tlp (/*AUTOARG*/
 pcie_7x_v1_10 #(
   .PL_FAST_TRAIN      ( PL_FAST_TRAIN ),
   .PCIE_EXT_CLK       ( PCIE_EXT_CLK ),
-  .PIPE_SIM_MODE      ( PIPE_SIM_MODE )
+  .PIPE_SIM_MODE      ( PIPE_SIM_MODE ),
+  .BAR0               ( 32'hFF0_0000 )
 ) pcie_7x_v1_10_i
  (
 
