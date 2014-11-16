@@ -719,7 +719,6 @@ rx
    .S_RDATA				(S_RDATA[((C_S_AXI_DATA_WIDTH)-1):0]),
    .S_RRESP				(S_RRESP[1:0]),
    .S_RLAST				(S_RLAST),
-   .S_RID				(S_RID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
    .S_RUSER				(S_RUSER[((C_S_AXI_USER_WIDTH)-1):0]),
    // Inputs
    .RxmRstn_i				(RxmRstn_i),
@@ -851,6 +850,7 @@ rx
    .S_BID				(S_BID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
    .S_BUSER				(S_BUSER[((C_S_AXI_USER_WIDTH)-1):0]),
    .S_ARREADY				(S_ARREADY),
+   .S_RID				(S_RID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
    // Inputs
    .S_AWVALID				(S_AWVALID),
    .S_AWADDR				(S_AWADDR[((C_S_AXI_ADDR_WIDTH)-1):0]),

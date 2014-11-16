@@ -159,13 +159,13 @@ module altpciexpav128_tx
     input [3:0] 			       S_ARQOS,
     input [((C_S_AXI_THREAD_ID_WIDTH) - 1):0]  S_ARID,
     input [((C_S_AXI_USER_WIDTH) - 1):0]       S_ARUSER,
-    output 				       S_ARREADY/*,
+    output 				       S_ARREADY,
 
-    output 				       S_RVALID,
+    /*output 				       S_RVALID,
     output [((C_S_AXI_DATA_WIDTH) - 1):0]      S_RDATA,
     output [1:0] 			       S_RRESP,
-    output 				       S_RLAST,
-    output [((C_S_AXI_THREAD_ID_WIDTH) - 1):0] S_RID,
+    output 				       S_RLAST,*/
+    output [((C_S_AXI_THREAD_ID_WIDTH) - 1):0] S_RID/*,
     output [((C_S_AXI_USER_WIDTH) - 1):0]      S_RUSER,
     input 				       S_RREADY*/
     
@@ -322,6 +322,7 @@ txavl
  .S_BID					(S_BID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
  .S_BUSER				(S_BUSER[((C_S_AXI_USER_WIDTH)-1):0]),
  .S_ARREADY				(S_ARREADY),
+ .S_RID					(S_RID[((C_S_AXI_THREAD_ID_WIDTH)-1):0]),
  // Inputs
  .S_AWVALID				(S_AWVALID),
  .S_AWADDR				(S_AWADDR[((C_S_AXI_ADDR_WIDTH)-1):0]),

@@ -118,12 +118,12 @@ module altpciexpav128_txavl_cntrl
     input [3:0] 			       S_ARQOS,
     input [((C_S_AXI_THREAD_ID_WIDTH) - 1):0]  S_ARID,
     input [((C_S_AXI_USER_WIDTH) - 1):0]       S_ARUSER,
-    output 				       S_ARREADY/*,
-    output 				       S_RVALID,
+    output 				       S_ARREADY,
+    /*output 				       S_RVALID,
     output [((C_S_AXI_DATA_WIDTH) - 1):0]      S_RDATA,
     output [1:0] 			       S_RRESP,
-    output 				       S_RLAST,
-    output [((C_S_AXI_THREAD_ID_WIDTH) - 1):0] S_RID,
+    output 				       S_RLAST,*/
+    output [((C_S_AXI_THREAD_ID_WIDTH) - 1):0] S_RID/*,
     output [((C_S_AXI_USER_WIDTH) - 1):0]      S_RUSER,
     input 				       S_RREADY*/
 );
@@ -1018,6 +1018,12 @@ assign pendingrd_fifo_rdreq = (!pendingrd_state[0] & !pendingrd_fifo_rdempty) | 
 assign pendingrd_check_state = pendingrd_state[2];
 assign pendingrd_fifo_latch  = pendingrd_state[1];
 
+wire [9:0] pendingrd_fifo_wdata;
+assign pendingrd_fifo_wdata[5:0] = S_ARLEN + 1'b1;
+assign pendingrd_fifo_wdata[9:6] = S_ARID;
+
+assign S_RID = pendingrd_fifo_q[9:6];
+
      sync_fifo #(
 		 // Parameters
 		 .WIDTH			(10),
@@ -1040,7 +1046,7 @@ assign pendingrd_fifo_latch  = pendingrd_state[1];
 		       // Inputs
 		       .clk		(AvlClk_i),
 		       .rst_n		(Rstn_i),
-		       .din		({4'b0000, S_ARLEN[5:0]+1}),
+		       .din		(pendingrd_fifo_wdata),
 		       .wr_en		(pendingrd_fifo_wrreq),
 		       .rd_en		(pendingrd_fifo_rdreq),
 		       .mark_addr	(0),
@@ -1064,7 +1070,7 @@ always @(posedge AvlClk_i or negedge Rstn_i)
     if(~Rstn_i)
       pendingrd_fifo_q_reg <= 10'h3FF;
     else if(pendingrd_fifo_latch)
-      pendingrd_fifo_q_reg <= pendingrd_fifo_q;
+      pendingrd_fifo_q_reg <= pendingrd_fifo_q[5:0];
   end
 
 assign reads_up       = (sm_idle & txavl_nxt_state == TXAVL_WAIT_RDADDR); // no read accepted when IRQ pending

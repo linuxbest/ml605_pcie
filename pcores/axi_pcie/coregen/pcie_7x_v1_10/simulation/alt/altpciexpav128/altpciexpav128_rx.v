@@ -186,7 +186,7 @@ module altpciexpav128_rx
     output [((C_S_AXI_DATA_WIDTH) - 1):0]      S_RDATA,
     output [1:0] 			       S_RRESP,
     output 				       S_RLAST,
-    output [((C_S_AXI_THREAD_ID_WIDTH) - 1):0] S_RID,
+    /*output [((C_S_AXI_THREAD_ID_WIDTH) - 1):0] S_RID,*/
     output [((C_S_AXI_USER_WIDTH) - 1):0]      S_RUSER,
     input 				       S_RREADY
   );
@@ -576,7 +576,7 @@ endgenerate
 wire rdata_empty;
 //assign S_RVALID = ~rdata_empty;
 
-assign S_RID    = 0;
+/*assign S_RID    = 0;*/
 assign S_RUSER  = 0;
 assign S_RRESP  = 0;
 
