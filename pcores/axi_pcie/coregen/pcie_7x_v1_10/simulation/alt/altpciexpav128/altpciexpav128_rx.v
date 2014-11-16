@@ -561,8 +561,17 @@ end
 endgenerate
 
 assign S_RLAST = cpl_eop;
-assign S_RDATA = TxReadData_o;
 assign S_RVALID= TxReadDataValid_o;
+
+genvar      i;
+generate
+for (i = 0; i < 4; i = i + 1) begin: rdfifo_swap
+	assign S_RDATA[(i*32)+ 7:(i*32)+ 0] = TxReadData_o[(i*32)+31:(i*32)+24];
+	assign S_RDATA[(i*32)+15:(i*32)+ 8] = TxReadData_o[(i*32)+23:(i*32)+16];
+	assign S_RDATA[(i*32)+23:(i*32)+16] = TxReadData_o[(i*32)+15:(i*32)+ 8];
+	assign S_RDATA[(i*32)+31:(i*32)+24] = TxReadData_o[(i*32)+ 7:(i*32)+ 0];
+end
+endgenerate
 
 wire rdata_empty;
 //assign S_RVALID = ~rdata_empty;
