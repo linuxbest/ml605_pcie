@@ -325,6 +325,7 @@ module altpcie_stub (/*AUTOARG*/
    output                        s_axis_tx_tvalid;
    output [3:0] 		 s_axis_tx_tuser;
    output 			 cfg_turnoff_ok;
+   assign cfg_turnoff_ok  = 1'b0;
    assign s_axis_tx_tuser = 0;
 
    wire [144:0] txfifo_rdata;
@@ -394,7 +395,6 @@ module altpcie_stub (/*AUTOARG*/
 	    .clear_addr	        (0),
 	    .rewind		(0));
    
-   assign cfg_turnoff_ok    = 1'b0;
    
    /* PCIE RX */
    input [C_DATA_WIDTH-1:0] 	 m_axis_rx_tdata;
