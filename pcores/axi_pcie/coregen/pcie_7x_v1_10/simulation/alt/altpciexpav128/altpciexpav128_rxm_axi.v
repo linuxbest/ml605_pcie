@@ -232,13 +232,22 @@ module altpciexpav128_rxm_axi (/*AUTOARG*/
    // DW
    assign M_WVALID   = (state == S_ADDR && rxm_write) | (state == S_DATA);
    assign M_WSTRB    = fifo_data_out[143:128];
-   assign M_WDATA    = fifo_data_out[127:0];
    assign M_WLAST    = (state == S_ADDR && rxm_write && rxm_eop) | (state == S_DATA && rxm_eop);
    assign M_WUSER    = 0;
    
    assign M_BREADY   = 1'b1;
    // TODO
    //   WRESP
+   genvar      i;
+   generate
+   for (i = 0; i < 4; i = i + 1) begin: rdfifo_swap
+	   assign M_WDATA[(i*32)+ 7:(i*32)+ 0] = fifo_data_out[(i*32)+31:(i*32)+24];
+	   assign M_WDATA[(i*32)+15:(i*32)+ 8] = fifo_data_out[(i*32)+23:(i*32)+16];
+	   assign M_WDATA[(i*32)+23:(i*32)+16] = fifo_data_out[(i*32)+15:(i*32)+ 8];
+	   assign M_WDATA[(i*32)+31:(i*32)+24] = fifo_data_out[(i*32)+ 7:(i*32)+ 0];
+   end
+   endgenerate
+
 
    // AR
    assign M_ARVALID  = state == S_ADDR && rxm_read;
