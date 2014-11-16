@@ -218,7 +218,7 @@ module altpciexpav128_rxm_axi (/*AUTOARG*/
    assign M_AWVALID  = state == S_ADDR && rxm_write;
    assign M_AWADDR   = req_addr;
    assign M_AWBURST  = 2'b01;	// INCR ONLY
-   assign M_AWSIZE   = 3'b100;	// 16byte   
+   assign M_AWSIZE   = 3'b010;	// 16byte TODO  
    assign M_AWLEN    = req_len - 1;
    
    assign M_AWPROT   = 0;
@@ -244,7 +244,7 @@ module altpciexpav128_rxm_axi (/*AUTOARG*/
    assign M_ARVALID  = state == S_ADDR && rxm_read;
    assign M_ARADDR   = req_addr;
    assign M_ARBURST  = 2'b01;	// INCR ONLY
-   assign M_ARSIZE   = 3'b100;	// 16byte   
+   assign M_ARSIZE   = 3'b010;	// 16byte  TODO 
    assign M_ARLEN    = req_len - 1;
    
    assign M_ARPROT   = 0;

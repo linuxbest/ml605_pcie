@@ -1176,7 +1176,7 @@ assign rx_be = rxsm_rdena_0? rx_rd_be_reg : rx_wr_be_reg;
 			     .CoreRxmWriteSOP_i    (first_write_state | rxsm_rdena_0),
 			     .CoreRxmWriteEOP_i    (last_write_state | rxsm_rdena_0),
 			     .CoreRxmBarHit_i      (bar_hit_reg),
-			     .CoreRxmAddress_i     ({avl_addr_reg[AVALON_ADDR_WIDTH - 1:4], 4'h0}),
+			     .CoreRxmAddress_i     ({avl_addr_reg[AVALON_ADDR_WIDTH - 1:2], 2'h0}),
 			     .CoreRxmWriteData_i   (rx_data_reg),
 			     .CoreRxmByteEnable_i  (rx_be),
 			     .CoreRxmBurstCount_i  (rx_modlen_qdword_reg),
