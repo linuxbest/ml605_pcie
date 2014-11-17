@@ -39,6 +39,7 @@ module altpciexpav128_rx_resp
     
     // interface to tx control
     output         TagRelease_o,
+    output [7:0]   CplTag,
     
     // interface to Avalon slave
     output  [127:0]  TxsReadData_o,
@@ -177,6 +178,7 @@ assign TxsReadDataValid_o = rdpipe_st | rdvalid_st;
 assign TxsReadData_o[127:0] = CplBufData_i[127:0];
 assign cpl_done = (rdvalid_st | rdpipe_st) & cpl_eop ;
 //assign TagRelease_o =  rxcpl_idle_state & (last_cpl_reg[hol_cntr]);
+assign CplTag = tag;
 assign TagRelease_o = cpl_done;
 // head of line counter
 

@@ -133,6 +133,26 @@ eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_tran
 
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}p2a_addr_trans${ps}BarHit_i
 
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}CplRamWrEna_o
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}cpl_tag
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}cpl_add_cntr
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}CplRamWrAddr_o
+
+eval add wave -noupdate -divider {"rx rxavl resp"}
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rxavl_resp${ps}Clk_i
+
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rxavl_resp${ps}CplReq_i
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rxavl_resp${ps}tag
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rxavl_resp${ps}valid_cpl
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rxavl_resp${ps}cpl_eop
+eval add wave -noupdate $hexopt $pcie${ps}rx${ps}rxavl_resp${ps}CplDesc_i
+
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rxavl_resp${ps}tag_status_reg
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rxavl_resp${ps}valid_cpl_reg
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rxavl_resp${ps}last_cpl_reg
+
+eval add wave -noupdate $binopt $pcie${ps}rx${ps}rxavl_resp${ps}TagRelease_o
+
 eval add wave -noupdate -divider {"RXM adapter"}
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}Clk_i
 eval add wave -noupdate $binopt $pcie${ps}rx${ps}rx_pcie_cntrl${ps}rxm_0${ps}altpciexpav128_rxm_axi${ps}Rstn_i
@@ -232,6 +252,12 @@ eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}tx_cntrl${ps}tlp_buff_data(95
 eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}tx_cntrl${ps}tlp_buff_data(63 downto 32)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}tx_cntrl${ps}tlp_buff_data(31 downto 0)\"
 
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}adr_low
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}adr_hi
+
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}addr_low
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}addr_hi
+
 eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}req_header2
 eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}req_header1
 
@@ -256,6 +282,22 @@ eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}TxCredNpHdrLimit_i
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}np_header_avail
 eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}nph_cred_cons_reg
 eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}nph_cred_limit_reg
+
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}max_outstanding_read
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}outstanding_tag_cntr
+
+#eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}RxCplTag
+#eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}RxCplBuffFree_i
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}Clk_i
+
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}req_rtag
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}req_rtag_en
+
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}tx_cntrl${ps}cpl_rtag
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}cpl_rtag_en
+
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}tag_busy
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}tx_cntrl${ps}tag_error
 
 eval add wave -noupdate -divider {"PCIE stream TXM"}
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}Clk_i
@@ -302,6 +344,14 @@ eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}txavl${ps}pci_exp_address(63 
 eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}txavl${ps}pci_exp_address(31 downto 0)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}txavl${ps}PCIeAddr_i(63 downto 32)\"
 eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}txavl${ps}PCIeAddr_i(31 downto 0)\"
+
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}txavl${ps}pcie_address(63 downto 32)\"
+eval add wave -noupdate $hexopt \"$pcie${ps}tx${ps}txavl${ps}pcie_address(31 downto 0)\"
+
+eval add wave -noupdate $binopt $pcie${ps}tx${ps}txavl${ps}CmdFifoWrReq_o
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}txavl${ps}tag_cntr
+
+eval add wave -noupdate $hexopt $pcie${ps}tx${ps}txavl${ps}TxReqHeader_o
 eval add wave -noupdate $binopt $pcie${ps}tx${ps}txavl${ps}AddrTransDone_i
 
 #eval add wave -noupdate -divider {"Avalon Master"}

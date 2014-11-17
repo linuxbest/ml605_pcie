@@ -66,7 +66,7 @@ module altpciexpav128_rx
     input 					RxPndgRdFifoRdReq_i,
     
     output 					CplTagRelease_o,
-    
+    output [7:0]                                CplTag, 
     
 /// RX Master Read Write Interface
    
@@ -512,6 +512,7 @@ rxavl_resp
     
     // interface to tx control
      .TagRelease_o(CplTagRelease_o),
+     .CplTag(CplTag),
     
     // interface to Avalon slave
      //.TxsReadData_o(TxReadData_o),

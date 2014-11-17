@@ -73,6 +73,7 @@ module altpciexpav128_tx_cntrl
   
    // Rx/Tx Completion interface for buffer credit keeping
   input          RxCplBuffFree_i,
+  input [7:0]    RxCplTag,
   output         TxCplSent_o,
   output  [4:0]  TxCplLineSent_o, // in 128-bit line unit
   
@@ -1226,4 +1227,41 @@ assign TxRpFifoRdReq_o = txrp_sm_rdfifo | (txrp_sop & rp_span_2cydle & ~txrp_eop
       endcase
    end
    // End of automatics
+
+   wire [7:0] req_rtag;
+   wire       req_rtag_valid;
+
+   wire [7:0] cpl_rtag;
+   wire       cpl_rtag_valid;
+   assign req_rtag    = req_tag_reg;
+   assign req_rtag_en = output_fifo_wrreq & output_fifo_data_in[128] & sm_rd_hdr;
+   assign cpl_rtag    = RxCplTag;
+   assign cpl_rtag_en = RxCplBuffFree_i;
+
+   reg [31:0] tag_busy;
+   reg [31:0] tag_error;
+   generate
+      genvar  i;
+      for (i = 0; i < 32; i = i + 1)
+	begin
+	   always @(posedge Clk_i)
+	     begin
+		if (~Rstn_i)
+		  begin
+		     tag_busy[i] <= 1'b0;
+		     tag_error[i]<= 1'b0;
+		  end
+		else if (req_rtag == i && req_rtag_en)
+		  begin
+		     tag_busy[i] <= #1 1'b1;
+		     tag_error[i]<= #1 tag_busy[i];
+		  end
+		else if (cpl_rtag == i && cpl_rtag_en)
+		  begin
+		     tag_busy[i] <= #1 1'b0;	
+		     tag_error[i]<= #1~tag_busy[i];	     
+		  end
+	     end // always @ (posedge AvlClk_i)
+	end // for (i = 0; i < 32; i = i)
+   endgenerate
 endmodule

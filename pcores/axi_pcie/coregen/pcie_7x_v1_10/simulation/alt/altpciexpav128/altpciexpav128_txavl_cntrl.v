@@ -814,22 +814,22 @@ always @(posedge AvlClk_i or negedge Rstn_i)
   end 
 
 wire [15:0] TxByteEnable;
-assign TxByteEnable = S_AWADDR[3:0] == 4'h0 ? 16'b1111_1111_1111_1111 :
-                      S_AWADDR[3:0] == 4'h1 ? 16'b1111_1111_1111_1110 :
-                      S_AWADDR[3:0] == 4'h2 ? 16'b1111_1111_1111_1100 :
-                      S_AWADDR[3:0] == 4'h3 ? 16'b1111_1111_1111_1000 :
-                      S_AWADDR[3:0] == 4'h4 ? 16'b1111_1111_1110_0000 :
-                      S_AWADDR[3:0] == 4'h5 ? 16'b1111_1111_1100_0000 :
-                      S_AWADDR[3:0] == 4'h6 ? 16'b1111_1111_1000_0000 :
-                      S_AWADDR[3:0] == 4'h7 ? 16'b1111_1111_0000_0000 :
-                      S_AWADDR[3:0] == 4'h8 ? 16'b1111_1111_0000_0000 :
-                      S_AWADDR[3:0] == 4'h9 ? 16'b1111_1110_0000_0000 :
-                      S_AWADDR[3:0] == 4'ha ? 16'b1111_1100_0000_0000 :
-                      S_AWADDR[3:0] == 4'hb ? 16'b1111_1000_0000_0000 :
-                      S_AWADDR[3:0] == 4'hc ? 16'b1111_0000_0000_0000 :
-                      S_AWADDR[3:0] == 4'hd ? 16'b1110_0000_0000_0000 :
-                      S_AWADDR[3:0] == 4'he ? 16'b1100_0000_0000_0000 :
-                      S_AWADDR[3:0] == 4'hf ? 16'b1000_0000_0000_0000 :
+assign TxByteEnable = (S_ARREADY ? S_ARADDR[3:0] : S_AWADDR[3:0]) == 4'h0 ? 16'b1111_1111_1111_1111 :
+                      (S_ARREADY ? S_ARADDR[3:0] : S_AWADDR[3:0]) == 4'h1 ? 16'b1111_1111_1111_1110 :
+                      (S_ARREADY ? S_ARADDR[3:0] : S_AWADDR[3:0]) == 4'h2 ? 16'b1111_1111_1111_1100 :
+                      (S_ARREADY ? S_ARADDR[3:0] : S_AWADDR[3:0]) == 4'h3 ? 16'b1111_1111_1111_1000 :
+                      (S_ARREADY ? S_ARADDR[3:0] : S_AWADDR[3:0]) == 4'h4 ? 16'b1111_1111_1110_0000 :
+                      (S_ARREADY ? S_ARADDR[3:0] : S_AWADDR[3:0]) == 4'h5 ? 16'b1111_1111_1100_0000 :
+                      (S_ARREADY ? S_ARADDR[3:0] : S_AWADDR[3:0]) == 4'h6 ? 16'b1111_1111_1000_0000 :
+                      (S_ARREADY ? S_ARADDR[3:0] : S_AWADDR[3:0]) == 4'h7 ? 16'b1111_1111_0000_0000 :
+                      (S_ARREADY ? S_ARADDR[3:0] : S_AWADDR[3:0]) == 4'h8 ? 16'b1111_1111_0000_0000 :
+                      (S_ARREADY ? S_ARADDR[3:0] : S_AWADDR[3:0]) == 4'h9 ? 16'b1111_1110_0000_0000 :
+                      (S_ARREADY ? S_ARADDR[3:0] : S_AWADDR[3:0]) == 4'ha ? 16'b1111_1100_0000_0000 :
+                      (S_ARREADY ? S_ARADDR[3:0] : S_AWADDR[3:0]) == 4'hb ? 16'b1111_1000_0000_0000 :
+                      (S_ARREADY ? S_ARADDR[3:0] : S_AWADDR[3:0]) == 4'hc ? 16'b1111_0000_0000_0000 :
+                      (S_ARREADY ? S_ARADDR[3:0] : S_AWADDR[3:0]) == 4'hd ? 16'b1110_0000_0000_0000 :
+                      (S_ARREADY ? S_ARADDR[3:0] : S_AWADDR[3:0]) == 4'he ? 16'b1100_0000_0000_0000 :
+                      (S_ARREADY ? S_ARADDR[3:0] : S_AWADDR[3:0]) == 4'hf ? 16'b1000_0000_0000_0000 :
 		      16'hFF_FF;
   
 always @(posedge AvlClk_i or negedge Rstn_i)
@@ -838,16 +838,17 @@ always @(posedge AvlClk_i or negedge Rstn_i)
       first_avlbe_reg <= 16'h0;                  
     else if(sm_wrheader)       // after crossing MAX payload or 4KB
       first_avlbe_reg <= 16'hFFFF;
-    else if(sm_idle | (S_ARVALID & sm_idle))  // latch byte enable when transfering the first data word
+    else if(sm_idle)          // latch byte enable when transfering the first data word
       first_avlbe_reg <= TxByteEnable[15:0];
   end 
-  
+ 
+/* TODO: first_avlbe and last_avlbe */
 always @(posedge AvlClk_i or negedge Rstn_i)
   begin
     if(~Rstn_i)
       last_avlbe_reg <= 8'hFF;
-    else if(sm_burst_data & S_WVALID)  /// keep latching last byte enable until the last data transfer of a segment 
-      last_avlbe_reg <= S_WSTRB[15:0];
+    else if(sm_burst_data)  /// keep latching last byte enable until the last data transfer of a segment 
+      last_avlbe_reg <= S_AWREADY ? S_WSTRB[15:0] : 16'hFF_FF;
   end   
   
 

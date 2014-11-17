@@ -393,6 +393,7 @@ wire                                   a2p_mb_wrreq;
 wire [11:0]                            a2p_mb_wraddr;
 reg                                    tx_st_ready_reg;
 wire                                   cpl_tag_release;
+wire [7:0]                             cpl_tag;
 wire 	                                 atrans_wr_ena;
 wire 	                                 atrans_rdaddr_vld;
 wire 	                                 pci_irqn;
@@ -619,6 +620,7 @@ rx
    .RxPndgRdFifoEmpty_o(rxpndgrd_fifo_empty),
    .RxPndgRdFifoRdReq_i(rxpndgrd_fifo_rdreq),
    .CplTagRelease_o(cpl_tag_release),
+   .CplTag(cpl_tag),
     
    .RxmWrite_0_o(RxmWrite_0_o),
    .RxmAddress_0_o(RxmAddress_0_o),
@@ -809,7 +811,8 @@ rx
      
      .RxPndgRdFifoEmpty_i(rxpndgrd_fifo_empty),
      .RxPndgRdFifoDato_i(rxpndgrd_fifo_dato),
-      .CplTagRelease_i(cpl_tag_release),
+     .CplTagRelease_i(cpl_tag_release),
+     .RxCplTag(cpl_tag),
      
      .RxPndgRdFifoRdReq_o(rxpndgrd_fifo_rdreq),
      .TxCplSent_o(txcpl_sent),

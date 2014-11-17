@@ -91,6 +91,7 @@ module altpciexpav128_tx
     output [4:0] 			       TxCplLineSent_o,
     output 				       TxRespIdle_o,
     input 				       CplTagRelease_i,
+    input [7:0]                                RxCplTag,
     
     // Control reg interface for address translation table read and write
     input [11:2] 			       AdTrAddress_i, /// Trans table address
@@ -645,6 +646,7 @@ tx_cntrl
  .RdBypassFifoWrReq_o(rd_bpfifo_wrreq), 
  .RdBypassFifoRdReq_o(rd_bpfifo_rdreq), 
  .RxCplBuffFree_i(CplTagRelease_i),
+ .RxCplTag(RxCplTag),
   
   // Completion buffer interface
   .CplBuffRdAddr_o(cplbuff_rdaddr),
