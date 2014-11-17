@@ -471,9 +471,19 @@ always @(posedge Clk_i or negedge Rstn_i)  // state machine registers
   end
 //// Write Data FIFO to hold the write data
 
+wire [127:0] wrdat_fifo_data;
+genvar      i;
+generate
+for (i = 0; i < 4; i = i + 1) begin: rdfifo_swap
+	assign wrdat_fifo_data[(i*32)+ 7:(i*32)+ 0] = S_WDATA[(i*32)+31:(i*32)+24];
+	assign wrdat_fifo_data[(i*32)+15:(i*32)+ 8] = S_WDATA[(i*32)+23:(i*32)+16];
+	assign wrdat_fifo_data[(i*32)+23:(i*32)+16] = S_WDATA[(i*32)+15:(i*32)+ 8];
+	assign wrdat_fifo_data[(i*32)+31:(i*32)+24] = S_WDATA[(i*32)+ 7:(i*32)+ 0];
+end
+endgenerate
+
 generate if(CB_PCIE_MODE == 0)
 begin: wrdat_fifo
-
      sync_fifo #(
 		 // Parameters
 		 .WIDTH			(129),
@@ -496,7 +506,7 @@ begin: wrdat_fifo
 		       // Inputs
 		       .clk		(Clk_i),
 		       .rst_n		(Rstn_i),
-		       .din		({wrdat_fifo_eop,S_WDATA}),
+		       .din		({wrdat_fifo_eop, wrdat_fifo_data}),
 		       .wr_en		(wrdat_fifo_wrreq),
 		       .rd_en		(wrdat_fifo_rdreq),
 		       .mark_addr	(0),
