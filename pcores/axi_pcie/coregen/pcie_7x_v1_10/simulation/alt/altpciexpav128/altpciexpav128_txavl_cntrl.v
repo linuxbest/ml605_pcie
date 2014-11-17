@@ -298,11 +298,11 @@ assign cmd_fifo_ok = (CmdFifoUsedW_i <= 8);
      begin
 	if (~Rstn_i)
 	  begin
-	     write_gnt <= #1 1'b1;
+	     write_gnt <= 1'b1;
 	  end
 	else
 	  begin
-	     write_gnt <= #1 ~write_gnt;
+	     write_gnt <= ~write_gnt;
 	  end
      end // always @ (posedge AvlClk_i)
 
