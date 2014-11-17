@@ -29,6 +29,7 @@ eval add wave -noupdate $hexopt ${axi_bus}${ps}${name}_WSTRB
 eval add wave -noupdate $binopt ${axi_bus}${ps}${name}_WLAST    
 eval add wave -noupdate $binopt ${axi_bus}${ps}${name}_WVALID   
 eval add wave -noupdate $binopt ${axi_bus}${ps}${name}_WREADY   
+eval add wave -noupdate $hexopt ${axi_bus}${ps}${name}_WID
                                                                 
 # BID                                                           
 eval add wave -noupdate -divider {"${title} Write Rsp"}

@@ -425,7 +425,6 @@ assign S_ARREADY = (sm_idle & txavl_nxt_state == TXAVL_WAIT_RDADDR);
    /* Write Data */
    assign S_WREADY  = sm_burst_data;
    assign S_BUSER   = 0;
-   assign S_BID     = 0;
 
    assign S_BVALID  = sm_wrheader && burst_counter == 0;
    assign S_BRESP   = 2'b00;
@@ -455,6 +454,17 @@ assign wr_fifos_ok = cmd_fifo_ok & wrdat_fifo_ok;
     else if(sm_burst_data &  S_WVALID)
       avl_wr_addr_cntr <= avl_wr_addr_cntr + 16;
   end
+
+   reg [((C_S_AXI_THREAD_ID_WIDTH) - 1):0] S_BID_reg;
+   always @(posedge AvlClk_i)
+     begin
+	if (sm_idle)
+	  begin
+	     S_BID_reg <= S_AWID;
+	  end
+     end
+  assign S_BID = S_BID_reg;
+
   // hold the address for address translation
    // adjust the address based on Byte enable. Shoud use casez to maske don't care upper bits
   always @*
