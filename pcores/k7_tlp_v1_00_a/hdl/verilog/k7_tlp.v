@@ -254,7 +254,12 @@ pcie_7x_v1_10 #(
   .PL_FAST_TRAIN      ( PL_FAST_TRAIN ),
   .PCIE_EXT_CLK       ( PCIE_EXT_CLK ),
   .PIPE_SIM_MODE      ( PIPE_SIM_MODE ),
-  .BAR0               ( 32'hFF0_0000 )
+  .BAR0               ( 32'hFF0_0000 ),
+  .CFG_VEND_ID        ( C_VENDOR_ID ),
+  .CFG_DEV_ID         ( C_DEVICE_ID ),
+  .CFG_REV_ID         ( C_REV_ID ),
+  .CFG_SUBSYS_VEND_ID ( C_SUBSYSTEM_VENDOR_ID ),
+  .CFG_SUBSYS_ID      ( C_SUBSYSTEM_ID )
 ) pcie_7x_v1_10_i
  (
 
