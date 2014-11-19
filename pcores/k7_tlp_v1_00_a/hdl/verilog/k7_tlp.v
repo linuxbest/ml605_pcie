@@ -33,10 +33,10 @@ module k7_tlp (/*AUTOARG*/
    parameter C_DATA_WIDTH      = 128; // RX/TX interface data width
    parameter KEEP_WIDTH        = C_DATA_WIDTH / 8;// TSTRB width
    
-   output  [7:0]    pci_exp_txp;
-   output [7:0]     pci_exp_txn;
-   input [7:0] 	    pci_exp_rxp;
-   input [7:0] 	    pci_exp_rxn;
+   output  [C_NO_OF_LANES-1:0]    pci_exp_txp;
+   output  [C_NO_OF_LANES-1:0]    pci_exp_txn;
+   input [C_NO_OF_LANES-1:0] 	  pci_exp_rxp;
+   input [C_NO_OF_LANES-1:0] 	  pci_exp_rxn;
    
    input 	    REFCLK;
    input 	    sys_rst_n;
@@ -205,7 +205,7 @@ module k7_tlp (/*AUTOARG*/
       (
           .PCIE_ASYNC_EN                  ( "FALSE" ),     // PCIe async enable
           .PCIE_TXBUF_EN                  ( "FALSE" ),     // PCIe TX buffer enable for Gen1/Gen2 only
-          .PCIE_LANE                      ( 6'h08 ),     // PCIe number of lanes
+          .PCIE_LANE                      ( C_NO_OF_LANES ),     // PCIe number of lanes
           // synthesis translate_off
           .PCIE_LINK_SPEED                ( 2 ),
           // synthesis translate_on
@@ -259,7 +259,8 @@ pcie_7x_v1_10 #(
   .CFG_DEV_ID         ( C_DEVICE_ID ),
   .CFG_REV_ID         ( C_REV_ID ),
   .CFG_SUBSYS_VEND_ID ( C_SUBSYSTEM_VENDOR_ID ),
-  .CFG_SUBSYS_ID      ( C_SUBSYSTEM_ID )
+  .CFG_SUBSYS_ID      ( C_SUBSYSTEM_ID ),
+  .LINK_CAP_MAX_LINK_WIDTH ( C_NO_OF_LANES )
 ) pcie_7x_v1_10_i
  (
 

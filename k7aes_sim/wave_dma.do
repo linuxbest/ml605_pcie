@@ -1,5 +1,5 @@
 if { [info exists PathSeparator] } { set ps $PathSeparator } else { set ps "/" }
-if { ![info exists dma] } { set dma "/k7sim_tb/dut/axi_dma_0" }
+if { ![info exists dma] } { set dma "${top}/dut/axi_dma_0" }
 
 set binopt {-logic}
 set hexopt {-literal -hex}

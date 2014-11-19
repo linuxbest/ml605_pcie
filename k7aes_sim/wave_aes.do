@@ -1,5 +1,5 @@
 if { [info exists PathSeparator] } { set ps $PathSeparator } else { set ps "/" }
-if { ![info exists aes] } { set aes "/k7sim_tb/dut/axi_aes_0" }
+if { ![info exists aes] } { set aes "${top}/dut/axi_aes_0" }
 
 set binopt {-logic}
 set hexopt {-literal -hex}

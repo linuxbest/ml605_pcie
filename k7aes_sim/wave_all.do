@@ -1,4 +1,6 @@
-do ../../k7aes_sim/wave_tlp.do
+#set top k7sim_gt_tb
+
+#do ../../k7aes_sim/wave_tlp.do
 do ../../k7aes_sim/wave_xil.do
 do ../../k7aes_sim/wave_pcie.do
 do ../../k7aes_sim/wave_dma.do
