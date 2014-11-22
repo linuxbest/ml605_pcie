@@ -250,6 +250,8 @@ output 					     CraWaitRequest_o,
  input [1:0] 				     current_speed,
  input [3:0] 				     lane_act,
 
+ input [15:0]                                cfg_completer_id,
+
  output 				     M_AWVALID,
  output [((C_M_AXI_ADDR_WIDTH) - 1):0] 	     M_AWADDR,
  output [2:0] 				     M_AWPROT,
@@ -802,7 +804,7 @@ rx
      
      .CplPending_o(CplPending_o),
      .DevCsr_i(dev_csr_reg), 
-     .BusDev_i(cfg_busdev), 
+     .BusDev_i(cfg_device_number[15:3]), 
      .TxCredHipCons_i(TxCredHipCons_i),    
      .TxCredInfinit_i(TxCredInfinit_i),    
      .TxCredNpHdrLimit_i(TxCredNpHdrLimit_i),

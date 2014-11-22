@@ -136,7 +136,7 @@ module axi_tlp (/*AUTOARG*/
    input [(((C_S_AXI_DATA_WIDTH/8))-1):0] S_WSTRB;// To altpcie_avl of altpcie_avl.v
    input [((C_S_AXI_USER_WIDTH)-1):0] S_WUSER;	// To altpcie_avl of altpcie_avl.v
    input		S_WVALID;		// To altpcie_avl of altpcie_avl.v
-   input [11:0]		cfg_completer_id;	// To altpcie_avl of altpcie_avl.v
+   input [15:0]		cfg_completer_id;	// To altpcie_avl of altpcie_avl.v
    input		cfg_to_turnoff;		// To altpcie_avl of altpcie_avl.v
    input [11:0]		fc_cpld;		// To altpcie_avl of altpcie_avl.v
    input [7:0]		fc_cplh;		// To altpcie_avl of altpcie_avl.v
@@ -344,7 +344,7 @@ module axi_tlp (/*AUTOARG*/
 		 .m_axis_rx_tvalid	(m_axis_rx_tvalid),
 		 .m_axis_rx_tuser	(m_axis_rx_tuser[21:0]),
 		 .cfg_to_turnoff	(cfg_to_turnoff),
-		 .cfg_completer_id	(cfg_completer_id[11:0]),
+		 .cfg_completer_id	(cfg_completer_id[15:0]),
 		 .M_ARREADY		(M_ARREADY),
 		 .M_AWREADY		(M_AWREADY),
 		 .M_BID			(M_BID[((C_M_AXI_THREAD_ID_WIDTH)-1):0]),

@@ -591,6 +591,6 @@ pcie_7x_v1_10 #(
   //----------------------------------------------------------------------------------------------------------------//
   // Programmable I/O Module                                                                                        //
   //----------------------------------------------------------------------------------------------------------------//
-  output [11:0] cfg_completer_id;
+  output [15:0] cfg_completer_id;
   assign cfg_completer_id      = { cfg_bus_number, cfg_device_number, cfg_function_number };
 endmodule

@@ -108,7 +108,7 @@ module altpcie_avl (/*AUTOARG*/
    input                         cfg_to_turnoff;
    output                        cfg_turnoff_ok;
    
-   input [11:0] 		 cfg_completer_id;
+   input [15:0] 		 cfg_completer_id;
    
    /*AUTOINPUT*/
    // Beginning of automatic inputs (from unused autoinst inputs)
@@ -935,6 +935,7 @@ localparam CB_A2P_ADDR_MAP_FIXED_TABLE     = { CB_A2P_ADDR_MAP_FIXED_TABLE_15_HI
 			.ltssm_state	(ltssm_state[4:0]),
 			.current_speed	(current_speed[1:0]),
 			.lane_act	(lane_act[3:0]),
+			.cfg_completer_id(cfg_completer_id[15:0]),
 			.M_AWREADY	(M_AWREADY),
 			.M_WREADY	(M_WREADY),
 			.M_BVALID	(M_BVALID),

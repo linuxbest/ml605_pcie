@@ -610,5 +610,6 @@ BEGIN k7_tlp
  PORT pci_exp_rxn = PCI_Express_pci_exp_rxn
  PORT REFCLK = PCIe_Diff_Clk
  PORT mmcm_lock = PCIe_MMCM_Lock
+ PORT sys_rst_n = PCIe_perstn
  BUS_INTERFACE S_TLP = tlp_0
 END

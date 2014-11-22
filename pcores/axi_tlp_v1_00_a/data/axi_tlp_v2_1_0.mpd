@@ -279,7 +279,7 @@ PORT m_axis_rx_tvalid = s_axis_rx_tvalid,  DIR = I, BUS = M_TLP
 PORT cfg_to_turnoff   = cfg_to_turnoff,    DIR = I, BUS = M_TLP
 PORT cfg_turnoff_ok   = cfg_turnoff_ok,    DIR = O, BUS = M_TLP
 
-PORT cfg_completer_id = cfg_completer_id,  DIR = I, BUS = M_TLP, VEC = [11:0]
+PORT cfg_completer_id = cfg_completer_id,  DIR = I, BUS = M_TLP, VEC = [15:0]
 
 PORT fc_cpld          = fc_cpld,           DIR = I, BUS = M_TLP, VEC = [11:0]
 PORT fc_cplh          = fc_cplh,           DIR = I, BUS = M_TLP, VEC = [7:0]
