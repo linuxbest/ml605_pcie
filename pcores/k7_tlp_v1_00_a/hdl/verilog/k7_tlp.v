@@ -608,14 +608,14 @@ pcie_7x_v1_10 #(
 
    wire [255:0] ila_rx_data;
    wire [15:0]  ila_rx_trig;
-   assign ila_rx_data[127:0]   = s_axis_rx_tdata;
-   assign ila_rx_data[135:128] = s_axis_rx_tkeep;
+   assign ila_rx_data[127:0]   = m_axis_rx_tdata;
+   assign ila_rx_data[135:128] = m_axis_rx_tkeep;
    assign ila_rx_data[157:136] = m_axis_rx_tuser;
  
    assign ila_rx_data[255:240] = ila_tx_trig;
-   assign ila_rx_trig[15]      = s_axis_rx_tvalid;
-   assign ila_rx_trig[14]      = s_axis_rx_tready;
-   assign ila_rx_trig[13]      = s_axis_rx_tlast;
+   assign ila_rx_trig[15]      = m_axis_rx_tvalid;
+   assign ila_rx_trig[14]      = m_axis_rx_tready;
+   assign ila_rx_trig[13]      = m_axis_rx_tlast;
    assign ila_rx_trig[2]       = cfg_turnoff_ok;
    assign ila_rx_trig[1]       = cfg_to_turnoff;
    assign ila_rx_trig[0]       = user_link_up;
