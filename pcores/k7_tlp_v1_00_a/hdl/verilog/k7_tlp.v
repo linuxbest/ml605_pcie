@@ -647,7 +647,7 @@ pcie_7x_v1_10 #(
 		    // Outputs
 		    .TRIG_OUT		(),
 		    // Inouts
-		    .CONTROL		(CONTROL3[35:0]),
+		    .CONTROL		(CONTROL2[35:0]),
 		    // Inputs
 		    .CLK		(user_clk),
 		    .DATA		(ila_com_data[127:0]),
