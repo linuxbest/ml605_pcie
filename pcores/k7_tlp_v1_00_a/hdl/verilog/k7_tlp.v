@@ -594,9 +594,9 @@ pcie_7x_v1_10 #(
    wire [255:0] ila_tx_data;
    wire [15:0]  ila_tx_trig;
    assign ila_tx_data[127:0]   = s_axis_tx_tdata;
-   assign ila_tx_data[135:128] = s_axis_tx_tkeep;
-   assign ila_tx_data[139:136] = s_axis_tx_tuser;
-   assign ila_tx_data[145:140] = tx_buf_av;
+   assign ila_tx_data[143:128] = s_axis_tx_tkeep;
+   assign ila_tx_data[159:144] = s_axis_tx_tuser;
+   assign ila_tx_data[167:160] = tx_buf_av;
  
    assign ila_tx_data[255:240] = ila_tx_trig;
    assign ila_tx_trig[15]      = s_axis_tx_tvalid;
@@ -609,8 +609,8 @@ pcie_7x_v1_10 #(
    wire [255:0] ila_rx_data;
    wire [15:0]  ila_rx_trig;
    assign ila_rx_data[127:0]   = m_axis_rx_tdata;
-   assign ila_rx_data[135:128] = m_axis_rx_tkeep;
-   assign ila_rx_data[157:136] = m_axis_rx_tuser;
+   assign ila_rx_data[143:128] = m_axis_rx_tkeep;
+   assign ila_rx_data[181:160] = m_axis_rx_tuser;
  
    assign ila_rx_data[255:240] = ila_tx_trig;
    assign ila_rx_trig[15]      = m_axis_rx_tvalid;
