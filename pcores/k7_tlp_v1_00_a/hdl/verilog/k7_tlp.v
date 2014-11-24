@@ -585,4 +585,73 @@ pcie_7x_v1_10 #(
   //----------------------------------------------------------------------------------------------------------------//
   output [15:0] cfg_completer_id;
   assign cfg_completer_id      = { cfg_bus_number, cfg_device_number, cfg_function_number };
+
+   localparam C_CHIPSCOPE_ENABLE = 1;
+   wire [35:0] CONTROL0;
+   wire [35:0] CONTROL1;
+   wire [35:0] CONTROL2;
+
+   wire [255:0] ila_tx_data;
+   wire [15:0]  ila_tx_trig;
+   assign ila_tx_data[127:0]   = s_axis_tx_tdata;
+   assign ila_tx_data[135:128] = s_axis_tx_tkeep;
+   assign ila_tx_data[139:136] = s_axis_tx_tuser;
+   assign ila_tx_data[145:140] = tx_buf_av;
+ 
+   assign ila_tx_data[255:240] = ila_tx_trig;
+   assign ila_tx_trig[15]      = s_axis_tx_tvalid;
+   assign ila_tx_trig[14]      = s_axis_tx_tready;
+   assign ila_tx_trig[13]      = s_axis_tx_tlast;
+   assign ila_tx_trig[2]       = cfg_turnoff_ok;
+   assign ila_tx_trig[1]       = cfg_to_turnoff;
+   assign ila_tx_trig[0]       = user_link_up;
+
+   wire [255:0] ila_rx_data;
+   wire [15:0]  ila_rx_trig;
+   assign ila_rx_data[127:0]   = s_axis_rx_tdata;
+   assign ila_rx_data[135:128] = s_axis_rx_tkeep;
+   assign ila_rx_data[157:136] = m_axis_rx_tuser;
+ 
+   assign ila_rx_data[255:240] = ila_tx_trig;
+   assign ila_rx_trig[15]      = s_axis_rx_tvalid;
+   assign ila_rx_trig[14]      = s_axis_rx_tready;
+   assign ila_rx_trig[13]      = s_axis_rx_tlast;
+   assign ila_rx_trig[2]       = cfg_turnoff_ok;
+   assign ila_rx_trig[1]       = cfg_to_turnoff;
+   assign ila_rx_trig[0]       = user_link_up;
+
+   wire [127:0] ila_com_data;
+   wire [15:0]  ila_com_trig;
+
+   generate if (C_CHIPSCOPE_ENABLE == 1) begin
+   icon3     icon3 (
+		    // Inouts
+		    .CONTROL0		(CONTROL0[35:0]),
+		    .CONTROL1		(CONTROL1[35:0]),
+		    .CONTROL2		(CONTROL2[35:0]));
+   ila256_16 ila_0 (
+		    // Inouts
+		    .CONTROL		(CONTROL0[35:0]),
+		    // Inputs
+		    .CLK		(user_clk),
+		    .DATA		(ila_rx_data[255:0]),
+		    .TRIG0		(ila_rx_trig[15:0]));
+   ila256_16 ila_1 (
+		    // Inouts
+		    .CONTROL		(CONTROL1[35:0]),
+		    // Inputs
+		    .CLK		(user_clk),
+		    .DATA		(ila_tx_data[255:0]),
+		    .TRIG0		(ila_tx_trig[15:0]));
+   ila128_16 ila_2 (
+		    // Outputs
+		    .TRIG_OUT		(),
+		    // Inouts
+		    .CONTROL		(CONTROL3[35:0]),
+		    // Inputs
+		    .CLK		(user_clk),
+		    .DATA		(ila_com_data[127:0]),
+		    .TRIG0		(ila_com_trig[15:0]));
+
+   end
 endmodule
