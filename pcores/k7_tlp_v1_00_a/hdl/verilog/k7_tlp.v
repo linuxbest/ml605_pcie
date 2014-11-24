@@ -654,4 +654,5 @@ pcie_7x_v1_10 #(
 		    .TRIG0		(ila_com_trig[15:0]));
 
    end
+   endgenerate
 endmodule
