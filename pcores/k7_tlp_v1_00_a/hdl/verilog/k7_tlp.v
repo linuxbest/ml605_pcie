@@ -155,7 +155,7 @@ module k7_tlp (/*AUTOARG*/
   wire                                        pl_upstream_prefer_deemph;
 
   // Wires used for external clocking connectivity
-  wire                                        PIPE_PCLK_IN;
+  wire                                        PIPE_PCLK_IN /* synthesis syn_keep=1 */;
   wire                                        PIPE_RXUSRCLK_IN;
   wire   [7:0]   PIPE_RXOUTCLK_IN;
   wire                                        PIPE_DCLK_IN;
@@ -169,9 +169,12 @@ module k7_tlp (/*AUTOARG*/
 
   wire [7:0]     PIPE_PCLK_SEL_OUT;
   wire                                        PIPE_GEN3_OUT;
- 
-  wire                                        PIPE_OOBCLK_IN;
 
+  wire                                        PIPE_OOBCLK_IN /* synthesis syn_keep=1 */;
+  wire                                        user_clk;      /* synthesis syn_keep=1 */
+  /* synthesis attribute max_fanout of PIPE_OOBCLK_IN is 100 */
+  /* synthesis attribute max_fanout of PIPE_PCLK_IN   is 100 */
+  /* synthesis attribute max_fanout of user_clk       is 100 */
  
   localparam USER_CLK_FREQ = 4;
   localparam USER_CLK2_DIV2 = "TRUE";
@@ -180,21 +183,10 @@ module k7_tlp (/*AUTOARG*/
                              (USER_CLK_FREQ == 3) ? 2 : USER_CLK_FREQ :
                              USER_CLK_FREQ;
   //-------------------------------------------------------
-  wire sys_clk;
+  wire sys_clk /* synthesis syn_keep=1 */;
   assign sys_clk = REFCLK;
 
-
-  reg user_reset_q;
-  reg user_lnk_up_q;
   reg PIPE_MMCM_RST_N = 1'b1;
-
-  always @(posedge user_clk) begin
-    user_reset_q  <= user_reset;
-    user_lnk_up_q <= user_link_up;
-  end
-
-
-
  
   // Generate External Clock Module if External Clocking is selected
   generate

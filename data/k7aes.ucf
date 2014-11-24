@@ -20,7 +20,7 @@ TIMESPEC TS_sys_clk_pin = PERIOD sys_clk_pin 100000 kHz;
 # to suit your requirements and VCCO voltage banking rules.
 #
 
-NET "PCIe_perstn" LOC = "Y20" | IOSTANDARD = LVCMOS25 | PULLUP | NODELAY | TIG;
+NET "PCIe_perstn" LOC = "Y20" | IOSTANDARD = LVCMOS18 | PULLUP | NODELAY | TIG;
 
 
 
@@ -84,7 +84,7 @@ INST "*pcie_7x*/pcie_top_i/pcie_7x_i/pcie_bram_top/pcie_brams_tx/brams[3].ram/us
 
 
 # 100 MHz Reference Clock
-NET "PCIe_Diff_Clk" TNM_NET = "SYSCLK" ;
+NET "*k7_tlp*/sys_clk" TNM_NET = "SYSCLK" ;
 
 # 250MHz Refclk
 # TIMESPEC "TS_SYSCLK"  = PERIOD "SYSCLK" 250.00 MHz HIGH 50 % ;
@@ -92,39 +92,39 @@ NET "PCIe_Diff_Clk" TNM_NET = "SYSCLK" ;
 TIMESPEC "TS_SYSCLK"  = PERIOD "SYSCLK" 100.00 MHz HIGH 50 % ;
 
 
-NET "*pipe_clock_i/clk_125mhz" 	TNM_NET = "CLK_125" ;
-NET "*pipe_clock_i/clk_250mhz" 	TNM_NET = "CLK_250" ;
+NET "*pipe_clock_i/clk_125mhz" 	TNM_NET = "CLK_125";
+NET "*pipe_clock_i/clk_250mhz" 	TNM_NET = "CLK_250";
 NET "*pipe_clock_i/userclk1"    TNM_NET = "CLK_500";
-NET "*pipe_clock_i/userclk1" 	TNM_NET = "CLK_USERCLK" ;
-NET "*pipe_clock_i/userclk2" 	TNM_NET = "CLK_USERCLK2" ;
+NET "*pipe_clock_i/userclk1" 	TNM_NET = "CLK_USERCLK";
+NET "*pipe_clock_i/userclk2" 	TNM_NET = "CLK_USERCLK2";
+#NET "*pipe_clock_i/pclk_1" 	TNM_NET = "CLK_250_PCLK";
 
-TIMESPEC "TS_CLK_125"  = PERIOD "CLK_125" TS_SYSCLK*1.25 HIGH 50 % PRIORITY 1 ;
-TIMESPEC "TS_CLK_250" = PERIOD "CLK_250" TS_SYSCLK*2.5 HIGH 50 % PRIORITY 2;
-TIMESPEC "TS_CLK_500" = PERIOD "CLK_500" TS_SYSCLK*5   HIGH 50 % PRIORITY 3;
-TIMESPEC "TS_CLK_USERCLK" = PERIOD "CLK_USERCLK" TS_SYSCLK*1.25 HIGH 50 %;
-TIMESPEC "TS_CLK_USERCLK2" = PERIOD "CLK_USERCLK2" TS_SYSCLK*1.25 HIGH 50 %;
+TIMESPEC "TS_CLK_125"      = PERIOD "CLK_125"      TS_SYSCLK*1.25 HIGH 50 % PRIORITY 1;
+TIMESPEC "TS_CLK_250"      = PERIOD "CLK_250"      TS_SYSCLK*2.5  HIGH 50 % PRIORITY 2;
+TIMESPEC "TS_CLK_500"      = PERIOD "CLK_500"      TS_SYSCLK*5    HIGH 50 % PRIORITY 3;
+TIMESPEC "TS_CLK_USERCLK"  = PERIOD "CLK_USERCLK"  TS_SYSCLK*5    HIGH 50 %;
+TIMESPEC "TS_CLK_USERCLK2" = PERIOD "CLK_USERCLK2" TS_SYSCLK*2.5  HIGH 50 %;
+#TIMESPEC "TS_CLK_250_PCLK" = PERIOD "CLK_250_PCLK" TS_SYSCLK*2.5  HIGH 50;
 
+NET "*gt_top_i/pipe_wrapper_i/pipe_lane[0].pipe_rate.pipe_rate_i/*" TNM_NET = FFS "MC_PIPE";
+NET "*gt_top_i/pipe_wrapper_i/pipe_lane[1].pipe_rate.pipe_rate_i/*" TNM_NET = FFS "MC_PIPE";
+NET "*gt_top_i/pipe_wrapper_i/pipe_lane[2].pipe_rate.pipe_rate_i/*" TNM_NET = FFS "MC_PIPE";
+NET "*gt_top_i/pipe_wrapper_i/pipe_lane[3].pipe_rate.pipe_rate_i/*" TNM_NET = FFS "MC_PIPE";
+NET "*gt_top_i/pipe_wrapper_i/pipe_lane[4].pipe_rate.pipe_rate_i/*" TNM_NET = FFS "MC_PIPE";
+NET "*gt_top_i/pipe_wrapper_i/pipe_lane[5].pipe_rate.pipe_rate_i/*" TNM_NET = FFS "MC_PIPE";
+NET "*gt_top_i/pipe_wrapper_i/pipe_lane[6].pipe_rate.pipe_rate_i/*" TNM_NET = FFS "MC_PIPE";
+NET "*gt_top_i/pipe_wrapper_i/pipe_lane[7].pipe_rate.pipe_rate_i/*" TNM_NET = FFS "MC_PIPE";
 
-
-# (updated constraints from CoreGen)
-# K7
+TIMESPEC "TS_PIPE_RATE" = FROM "MC_PIPE" TS_CLK_USERCLK*0.5;
 
 #PIN "*pipe_clock_i/mmcm_i.RST" TIG;
-#NET "*pipe_clock_i/pclk_sel" TIG;
+#NET "*pipe_clock_i/pclk_sel"   TIG;
 #NET "*pipe_clock_i/clk_125mhz" TIG;
 
 #NET "*pcie_7x*/*gt_top_i/pipe_wrapper_i/user_resetdone*" TIG;
 #NET "*pcie_7x*/*gt_top_i/pipe_wrapper_i/pipe_lane[0].pipe_rate_i/*" TIG;
 #NET "*pcie_7x*/*gt_top_i/pipe_wrapper_i/pipe_lane[1].pipe_rate_i/*" TIG;
 #NET "*pcie_7x*/*gt_top_i/pipe_wrapper_i/pipe_reset_i/cpllreset" TIG;
-
-
-# New Constraints
-
-#NET "*/sig_blk_dcontrol<12>" TIG;
-#NET "*/sig_blk_dcontrol<13>" TIG;
-#NET "*/sig_blk_dcontrol<14>" TIG;
-
 #################
 # 10G mac pcs pma
 NET refclk_p LOC = C8;

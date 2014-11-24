@@ -56,14 +56,14 @@ module altpcie_stub (/*AUTOARG*/
    RxmReadDataValid_4_i, RxmWaitRequest_5_i, RxmReadData_5_i,
    RxmReadDataValid_5_i, RxmIrq_i, CraClk_i, CraRstn_i,
    CraChipSelect_i, CraRead, CraWrite, CraWriteData_i, CraAddress_i,
-   CraByteEnable_i, CfgCtlWr_i, CfgAddr_i, CfgCtl_i, MsiAck_i,
-   TxCredPDataLimit_i, TxCredNpDataLimit_i, TxCredCplDataLimit_i,
-   TxCredHipCons_i, TxCredInfinit_i, TxCredPHdrLimit_i,
-   TxCredNpHdrLimit_i, TxCredCplHdrLimit_i, RxStData_i, RxStBe_i,
-   RxStEmpty_i, RxStErr_i, RxStSop_i, RxStEop_i, RxStValid_i,
-   RxStBarDec1_i, RxStBarDec2_i, AvlClk_i, Rstn_i, IntxAck_i,
-   RxIntStatus_i, current_speed, ko_cpl_spc_data, ko_cpl_spc_header,
-   lane_act, ltssm_state, pld_clk_inuse, TxAdapterFifoEmpty_i, fc_sel,
+   CraByteEnable_i, MsiAck_i, TxCredPDataLimit_i, TxCredNpDataLimit_i,
+   TxCredCplDataLimit_i, TxCredHipCons_i, TxCredInfinit_i,
+   TxCredPHdrLimit_i, TxCredNpHdrLimit_i, TxCredCplHdrLimit_i,
+   RxStData_i, RxStBe_i, RxStEmpty_i, RxStErr_i, RxStSop_i, RxStEop_i,
+   RxStValid_i, RxStBarDec1_i, RxStBarDec2_i, AvlClk_i, Rstn_i,
+   CfgCtlWr_i, CfgAddr_i, CfgCtl_i, IntxAck_i, RxIntStatus_i,
+   current_speed, ko_cpl_spc_data, ko_cpl_spc_header, lane_act,
+   ltssm_state, pld_clk_inuse, TxAdapterFifoEmpty_i, fc_sel,
    s_axis_tx_tdata, s_axis_tx_tkeep, s_axis_tx_tlast,
    s_axis_tx_tvalid, s_axis_tx_tuser, cfg_turnoff_ok,
    m_axis_rx_tready, m_WaitRequest, m_ReadData, m_ReadDataValid,
@@ -139,12 +139,9 @@ module altpcie_stub (/*AUTOARG*/
    input [15:0]		MsixIntfc_o;
    // End of automatics
    
-   /*AUTOINOUTCOMP("altpciexpav128_app", "^Cfg")*/
-   // Beginning of automatic in/out/inouts (from specific module)
    output		CfgCtlWr_i;
    output [3:0]		CfgAddr_i;
    output [31:0]	CfgCtl_i;
-   // End of automatics
 
    /*AUTOINOUTCOMP("altpciexpav128_app", "^Cra")*/
    // Beginning of automatic in/out/inouts (from specific module)
@@ -339,22 +336,33 @@ module altpcie_stub (/*AUTOARG*/
    assign s_axis_tx_tvalid= ~txfifo_empty && txfifo_ready;
    assign txfifo_rd       = s_axis_tx_tvalid & s_axis_tx_tready;
 
-   always @(posedge user_clk)
+   always @(posedge user_clk or posedge user_reset)
      begin
-	if ((txfifo_rdata[144] && s_axis_tx_tready && txfifo_ready) ||
-	    tx_buf_av[5:4] == 2'b00)
+	if (user_reset)
 	  begin
 	     txfifo_ready <= #1 1'b0;
 	  end
 	else
 	  begin
-	     txfifo_ready <= #1 1'b1;
+	     txfifo_ready <= #1 ~((txfifo_rdata[144] && s_axis_tx_tready && txfifo_ready) ||
+				  (tx_buf_av[5:4] == 2'b00));
 	  end
-     end // always @ (posedge user_clk)
-   
+     end // always @ (posedge user_clk or negedge user_lnk_up)
+	
    reg [144:0]  txfifo_wdata;
    reg          txfifo_we;
    reg 		TxStReady_i;
+   always @(posedge user_clk or posedge user_reset)
+     begin
+	if (user_reset)
+	  begin
+	     txfifo_we        <= #1 1'b0;
+	  end
+	else
+	  begin
+	     txfifo_we        <= #1 TxStValid_o;
+	  end
+     end // always @ (posedge user_clk or negedge user_lnk_up)
    always @(posedge user_clk)
      begin
 	txfifo_wdata[127:0]   <= #1 TxStData_o;
@@ -362,7 +370,6 @@ module altpcie_stub (/*AUTOARG*/
 				 TxStEop_o & TxStValid_o & TxStSop_o & TxStData_o[30:24] == 0 ? 16'h0F_FF : 
 				 16'hFF_FF;
 	txfifo_wdata[144]     <= #1 TxStEop_o;
-	txfifo_we             <= #1 TxStValid_o;
 	TxStReady_i           <= #1 ~txfifo_count[3];
      end
    
