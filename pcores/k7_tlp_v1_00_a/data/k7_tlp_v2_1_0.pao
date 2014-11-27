@@ -35,3 +35,6 @@ lib k7_tlp_v1_00_a pcie_7x_v1_10/source/pcie_7x_v1_10_qpll_wrapper.v verilog
 lib k7_tlp_v1_00_a pcie_7x_v1_10/source/pcie_7x_v1_10_rxeq_scan.v verilog
 
 lib k7_tlp_v1_00_a k7_tlp.v verilog
+lib k7_tlp_v1_00_a icon3.v verilog
+lib k7_tlp_v1_00_a ila128_16.v verilog
+lib k7_tlp_v1_00_a ila256_16.v verilog
