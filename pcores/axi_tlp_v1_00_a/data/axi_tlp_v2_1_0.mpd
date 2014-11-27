@@ -268,7 +268,7 @@ PORT s_axis_tx_tdata  = s_axis_tx_tdata,   DIR = O, BUS = M_TLP, VEC = [127:0]
 PORT s_axis_tx_tkeep  = s_axis_tx_tkeep,   DIR = O, BUS = M_TLP, VEC = [15:0]
 PORT s_axis_tx_tlast  = s_axis_tx_tlast,   DIR = O, BUS = M_TLP
 PORT s_axis_tx_tvalid = s_axis_tx_tvalid,  DIR = O, BUS = M_TLP
-PORT s_axis_tx_tuser  = tx_src_dsc,        DIR = O, BUS = M_TLP, VEC = [3:0]
+PORT s_axis_tx_tuser  = s_axis_tx_tuser,   DIR = O, BUS = M_TLP, VEC = [3:0]
 
 PORT m_axis_rx_tready = s_axis_rx_tready,  DIR = O, BUS = M_TLP
 PORT m_axis_rx_tdata  = s_axis_rx_tdata,   DIR = I, BUS = M_TLP, VEC = [127:0]
