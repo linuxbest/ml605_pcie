@@ -342,10 +342,14 @@ module altpcie_stub (/*AUTOARG*/
 	  begin
 	     txfifo_ready <= #1 1'b0;
 	  end
+	else if ((txfifo_rdata[144] && s_axis_tx_tready && txfifo_ready) ||
+		 (tx_buf_av[5:4] == 2'b00))
+	  begin
+	     txfifo_ready <= #1 1'b0;
+	  end
 	else
 	  begin
-	     txfifo_ready <= #1 ((txfifo_rdata[144] && s_axis_tx_tready && txfifo_ready) ||
-				 (tx_buf_av[5:4] == 2'b00));
+	     txfifo_ready <= #1 1'b1;	     
 	  end
      end // always @ (posedge user_clk or negedge user_lnk_up)
 	
