@@ -63,5 +63,5 @@ set name M
 set axi_bus ${pcie}
 do ../../k7aes_sim/wave_AXI.do
 
-#eval add wave -noupdate $hexopt /k7sim_tb/dut/k7_tlp_0/k7_tlp_0/pcie_7x_v1_10_i/gt_top/gt_top_i/cycle_now
-#eval add wave -noupdate $hexopt /k7sim_tb/dut/k7_tlp_0/k7_tlp_0/pcie_7x_v1_10_i/gt_top/gt_top_i/cycle_start
+eval add wave -noupdate $hexopt /k7sim_tb/dut/k7_tlp_0/k7_tlp_0/pcie_7x_v1_10_i/gt_top/gt_top_i/cycle_now
+eval add wave -noupdate $hexopt /k7sim_tb/dut/k7_tlp_0/k7_tlp_0/pcie_7x_v1_10_i/gt_top/gt_top_i/cycle_start

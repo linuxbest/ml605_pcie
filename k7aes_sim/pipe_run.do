@@ -19,6 +19,6 @@ w
 set top k7sim_tb
 do ../../k7aes_sim/wave_all.do
 
-#log -r /*
+log -r /*
 
 run 80us
